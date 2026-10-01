@@ -1,0 +1,95 @@
+{
+  "capturedAt": "2026-10-01T22:39:01.374Z",
+  "st": "1.19.0 local docker",
+  "results": [
+    {
+      "name": "t1-st-native-v5full",
+      "ms": 3249,
+      "anlasSpent": 0,
+      "requestBody": {
+        "prompt": "1girl, solo, smile, cherry blossoms, outdoors, upper body, very aesthetic, masterpiece, no text",
+        "negative_prompt": "lowres",
+        "model": "nai-diffusion-5-full",
+        "sampler": "k_euler_ancestral",
+        "scheduler": "karras",
+        "steps": 23,
+        "scale": 7,
+        "width": 832,
+        "height": 1216,
+        "seed": 1234567890,
+        "sm": false,
+        "sm_dyn": false,
+        "decrisper": false,
+        "variety_boost": false,
+        "upscale_ratio": 1
+      },
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "responseKind": "base64 PNG text (2364580 chars, png magic PNG)"
+    },
+    {
+      "name": "t2-st-native-bad-model",
+      "ms": 347,
+      "anlasSpent": 0,
+      "requestBody": {
+        "prompt": "x",
+        "model": "nai-diffusion-5-curated-inpainting",
+        "steps": 23,
+        "width": 832,
+        "height": 1216
+      },
+      "status": 500,
+      "contentType": "text/plain; charset=utf-8",
+      "body": "Internal Server Error"
+    },
+    {
+      "name": "t3-cors-proxy-json",
+      "ms": 3232,
+      "anlasSpent": 0,
+      "status": 200,
+      "contentType": null,
+      "headers": [
+        "connection",
+        "cross-origin-opener-policy",
+        "cross-origin-resource-policy",
+        "date",
+        "keep-alive",
+        "origin-agent-cluster",
+        "referrer-policy",
+        "strict-transport-security",
+        "transfer-encoding",
+        "vary",
+        "x-content-type-options",
+        "x-dns-prefetch-control",
+        "x-download-options",
+        "x-frame-options",
+        "x-permitted-cross-domain-policies",
+        "x-response-time",
+        "x-xss-protection"
+      ],
+      "bytes": 2366442,
+      "kind": "JSON keys=images; images=1"
+    },
+    {
+      "name": "t4-cors-proxy-sse",
+      "ms": 3616,
+      "anlasSpent": 0,
+      "status": 200,
+      "contentType": null,
+      "bytes": 1905585,
+      "events": 23,
+      "firstEventMs": 674,
+      "lastEventMs": 3472,
+      "spreadMs": 2798
+    },
+    {
+      "name": "t5-direct-sse-timing",
+      "ms": 2622,
+      "anlasSpent": 0,
+      "status": 200,
+      "events": 23,
+      "firstEventMs": 557,
+      "lastEventMs": 2420
+    }
+  ]
+}

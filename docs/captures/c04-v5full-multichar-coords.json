@@ -1,0 +1,173 @@
+{
+  "name": "c04-v5full-multichar-coords",
+  "capturedAt": "2026-10-01T22:35:53.572Z",
+  "endpoint": "https://image.novelai.net/ai/generate-image",
+  "method": "POST",
+  "requestHeaders": {
+    "Authorization": "Bearer <redacted>",
+    "Content-Type": "application/json"
+  },
+  "requestBody": {
+    "input": "2girls, park, bench, daytime, very aesthetic, masterpiece, no text",
+    "model": "nai-diffusion-5-full",
+    "action": "generate",
+    "parameters": {
+      "params_version": 4,
+      "width": 832,
+      "height": 1216,
+      "scale": 7,
+      "sampler": "k_euler_ancestral",
+      "steps": 23,
+      "n_samples": 1,
+      "ucPresetId": "heavy",
+      "qualityPresetId": "standard",
+      "autoSmea": false,
+      "dynamic_thresholding": false,
+      "controlnet_strength": 1,
+      "legacy": false,
+      "add_original_image": true,
+      "cfg_rescale": 0,
+      "legacy_v3_extend": false,
+      "use_coords": true,
+      "legacy_uc": false,
+      "normalize_reference_strength_multiple": true,
+      "inpaintImg2ImgStrength": 1,
+      "seed": 42424242,
+      "straight_alpha": true,
+      "tag_hint_qt": 1,
+      "tag_hint_uc_preset": 2,
+      "characterPrompts": [
+        {
+          "prompt": "girl, red hair, long hair, green eyes, white dress, waving",
+          "uc": "blue hair",
+          "center": {
+            "x": 0.3,
+            "y": 0.5
+          },
+          "enabled": true
+        },
+        {
+          "prompt": "girl, black hair, short hair, glasses, school uniform, reading book",
+          "uc": "",
+          "center": {
+            "x": 0.7,
+            "y": 0.5
+          },
+          "enabled": true
+        }
+      ],
+      "v4_prompt": {
+        "caption": {
+          "base_caption": "2girls, park, bench, daytime, very aesthetic, masterpiece, no text",
+          "char_captions": [
+            {
+              "char_caption": "girl, red hair, long hair, green eyes, white dress, waving",
+              "centers": [
+                {
+                  "x": 0.3,
+                  "y": 0.5
+                }
+              ]
+            },
+            {
+              "char_caption": "girl, black hair, short hair, glasses, school uniform, reading book",
+              "centers": [
+                {
+                  "x": 0.7,
+                  "y": 0.5
+                }
+              ]
+            }
+          ]
+        },
+        "use_coords": true,
+        "use_order": true
+      },
+      "v4_negative_prompt": {
+        "caption": {
+          "base_caption": "nsfw, lowres, artistic error, film grain, scan artifacts, worst quality, bad quality, jpeg artifacts, very displeasing, chromatic aberration, dithering, halftone, screentone, multiple views, logo, too many watermarks, negative space, blank page",
+          "char_captions": [
+            {
+              "char_caption": "blue hair",
+              "centers": [
+                {
+                  "x": 0.3,
+                  "y": 0.5
+                }
+              ]
+            },
+            {
+              "char_caption": "",
+              "centers": [
+                {
+                  "x": 0.7,
+                  "y": 0.5
+                }
+              ]
+            }
+          ]
+        },
+        "legacy_uc": false
+      },
+      "negative_prompt": "nsfw, lowres, artistic error, film grain, scan artifacts, worst quality, bad quality, jpeg artifacts, very displeasing, chromatic aberration, dithering, halftone, screentone, multiple views, logo, too many watermarks, negative space, blank page",
+      "deliberate_euler_ancestral_bug": false,
+      "prefer_brownian": true,
+      "noise_schedule": "karras",
+      "image_format": "webp"
+    },
+    "use_new_shared_trial": true
+  },
+  "response": {
+    "status": 200,
+    "ms": 1926,
+    "headers": {
+      "connection": "keep-alive",
+      "content-disposition": "attachment; filename=images.zip",
+      "content-type": "binary/octet-stream",
+      "date": "Thu, 01 Oct 2026 22:35:56 GMT",
+      "server": "cloudflare",
+      "transfer-encoding": "chunked",
+      "vary": "Origin"
+    },
+    "bytes": 1127554,
+    "zip": [
+      {
+        "name": "image_0.webp",
+        "method": 8,
+        "compressed": 1127416,
+        "size": 1129578
+      }
+    ],
+    "webp": {
+      "riff": "RIFF",
+      "format": "WEBP",
+      "bytes": 1129578,
+      "hasExif": true,
+      "commentJson": null
+    }
+  },
+  "anlas": {
+    "before": {
+      "anlasFixed": 9646,
+      "anlasPurchased": 0,
+      "usage": {
+        "percent": 100,
+        "isNegative": false,
+        "timeUntilNextPercent": 7888
+      },
+      "tier": 3
+    },
+    "after": {
+      "anlasFixed": 9646,
+      "anlasPurchased": 0,
+      "usage": {
+        "percent": 100,
+        "isNegative": false,
+        "timeUntilNextPercent": 7888
+      },
+      "tier": 3
+    },
+    "spentFixed": 0,
+    "spentPurchased": 0
+  }
+}

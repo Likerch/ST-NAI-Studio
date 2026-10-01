@@ -1,0 +1,116 @@
+{
+  "name": "c15-v45full-overlong-prompt",
+  "capturedAt": "2026-10-01T22:36:37.585Z",
+  "endpoint": "https://image.novelai.net/ai/generate-image",
+  "method": "POST",
+  "requestHeaders": {
+    "Authorization": "Bearer <redacted>",
+    "Content-Type": "application/json"
+  },
+  "requestBody": {
+    "input": "1girl, solo, smile, cherry blossoms, outdoors, upper body, detailed background element number 0, detailed background element number 1, detailed background element number 2, detailed background element number 3, detailed background element number 4, detailed background element number 5, detailed background element number 6, detailed background element number 7, detailed background element number 8, detailed background element number 9, detailed background element number 10, detailed background element number 11, detailed background element number 12, detailed background element number 13, detailed background element number 14, detailed background element number 15, detailed background element number 16, detailed background element number 17, detailed background element number 18, detailed background element number 19, detailed background element number 20, detailed background element number 21, detailed background element number 22, detailed background element number 23, detailed background element number 24, detailed background element number 25, detailed background element number 26, detailed background element number 27, detailed background element number 28, detailed background element number 29, detailed background element number 30, detailed background element number 31, detailed background element number 32, detailed background element number 33, detailed background element number 34, detailed background element number 35, detailed background element number 36, detailed background element number 37, detailed background element number 38, detailed background element number 39, detailed background element number 40, detailed background element number 41, detailed background element number 42, detailed background element number 43, detailed background element number 44, detailed background element number 45, detailed background element number 46, detailed background element number 47, detailed background element number 48, detailed background element number 49, detailed background element number 50, detailed background element number 51, detailed background element number 52, detailed background element number 53, detailed background element number 54, detailed background element number 55, detailed background element number 56, detailed background element number 57, detailed background element number 58, detailed background element number 59, detailed background element number 60, detailed background element number 61, detailed background element number 62, detailed background element number 63, detailed background element number 64, detailed background element number 65, detailed background element number 66, detailed background element number 67, detailed background element number 68, detailed background element number 69, detailed background element number 70, detailed background element number 71, detailed background element number 72, detailed background element number 73, detailed background element number 74, detailed background element number 75, detailed background element number 76, detailed background element number 77, detailed background element number 78, detailed background element number 79, detailed background element number 80, detailed background element number 81, detailed background element number 82, detailed background element number 83, detailed background element number 84, detailed background element number 85, detailed background element number 86, detailed background element number 87, detailed background element number 88, detailed background element number 89, detailed background element number 90, detailed background element number 91, detailed background element number 92, detailed background element number 93, detailed background element number 94, detailed background element number 95, detailed background element number 96, detailed background element number 97, detailed background element number 98, detailed background element number 99, detailed background element number 100, detailed background element number 101, detailed background element number 102, detailed background element number 103, detailed background element number 104, detailed background element number 105, detailed background element number 106, detailed background element number 107, detailed background element number 108, detailed background element number 109, detailed background element number 110, detailed background element number 111, detailed background element number 112, detailed background element number 113, detailed background element number 114, detailed background element number 115, detailed background element number 116, detailed background element number 117, detailed background element number 118, detailed background element number 119, detailed background element number 120, detailed background element number 121, detailed background element number 122, detailed background element number 123, detailed background element number 124, detailed background element number 125, detailed background element number 126, detailed background element number 127, detailed background element number 128, detailed background element number 129, detailed background element number 130, detailed background element number 131, detailed background element number 132, detailed background element number 133, detailed background element number 134, detailed background element number 135, detailed background element number 136, detailed background element number 137, detailed background element number 138, detailed background element number 139, detailed background element number 140, detailed background element number 141, detailed background element number 142, detailed background element number 143, detailed background element number 144, detailed background element number 145, detailed background element number 146, detailed background element number 147, detailed background element number 148, detailed background element number 149, detailed background element number 150, detailed background element number 151, detailed background element number 152, detailed background element number 153, detailed background element number 154, detailed background element number 155, detailed background element number 156, detailed background element number 157, detailed background element number 158, detailed background element number 159, very aesthetic, masterpiece, no text",
+    "model": "nai-diffusion-4-5-full",
+    "action": "generate",
+    "parameters": {
+      "params_version": 4,
+      "width": 832,
+      "height": 1216,
+      "scale": 5,
+      "sampler": "k_euler_ancestral",
+      "steps": 23,
+      "n_samples": 1,
+      "ucPresetId": "heavy",
+      "qualityPresetId": "standard",
+      "autoSmea": false,
+      "dynamic_thresholding": false,
+      "controlnet_strength": 1,
+      "legacy": false,
+      "add_original_image": true,
+      "cfg_rescale": 0,
+      "noise_schedule": "karras",
+      "legacy_v3_extend": false,
+      "skip_cfg_above_sigma": null,
+      "use_coords": false,
+      "legacy_uc": false,
+      "normalize_reference_strength_multiple": true,
+      "inpaintImg2ImgStrength": 1,
+      "seed": 1234567895,
+      "tag_hint_qt": 1,
+      "tag_hint_uc_preset": 2,
+      "characterPrompts": [],
+      "v4_prompt": {
+        "caption": {
+          "base_caption": "1girl, solo, smile, cherry blossoms, outdoors, upper body, detailed background element number 0, detailed background element number 1, detailed background element number 2, detailed background element number 3, detailed background element number 4, detailed background element number 5, detailed background element number 6, detailed background element number 7, detailed background element number 8, detailed background element number 9, detailed background element number 10, detailed background element number 11, detailed background element number 12, detailed background element number 13, detailed background element number 14, detailed background element number 15, detailed background element number 16, detailed background element number 17, detailed background element number 18, detailed background element number 19, detailed background element number 20, detailed background element number 21, detailed background element number 22, detailed background element number 23, detailed background element number 24, detailed background element number 25, detailed background element number 26, detailed background element number 27, detailed background element number 28, detailed background element number 29, detailed background element number 30, detailed background element number 31, detailed background element number 32, detailed background element number 33, detailed background element number 34, detailed background element number 35, detailed background element number 36, detailed background element number 37, detailed background element number 38, detailed background element number 39, detailed background element number 40, detailed background element number 41, detailed background element number 42, detailed background element number 43, detailed background element number 44, detailed background element number 45, detailed background element number 46, detailed background element number 47, detailed background element number 48, detailed background element number 49, detailed background element number 50, detailed background element number 51, detailed background element number 52, detailed background element number 53, detailed background element number 54, detailed background element number 55, detailed background element number 56, detailed background element number 57, detailed background element number 58, detailed background element number 59, detailed background element number 60, detailed background element number 61, detailed background element number 62, detailed background element number 63, detailed background element number 64, detailed background element number 65, detailed background element number 66, detailed background element number 67, detailed background element number 68, detailed background element number 69, detailed background element number 70, detailed background element number 71, detailed background element number 72, detailed background element number 73, detailed background element number 74, detailed background element number 75, detailed background element number 76, detailed background element number 77, detailed background element number 78, detailed background element number 79, detailed background element number 80, detailed background element number 81, detailed background element number 82, detailed background element number 83, detailed background element number 84, detailed background element number 85, detailed background element number 86, detailed background element number 87, detailed background element number 88, detailed background element number 89, detailed background element number 90, detailed background element number 91, detailed background element number 92, detailed background element number 93, detailed background element number 94, detailed background element number 95, detailed background element number 96, detailed background element number 97, detailed background element number 98, detailed background element number 99, detailed background element number 100, detailed background element number 101, detailed background element number 102, detailed background element number 103, detailed background element number 104, detailed background element number 105, detailed background element number 106, detailed background element number 107, detailed background element number 108, detailed background element number 109, detailed background element number 110, detailed background element number 111, detailed background element number 112, detailed background element number 113, detailed background element number 114, detailed background element number 115, detailed background element number 116, detailed background element number 117, detailed background element number 118, detailed background element number 119, detailed background element number 120, detailed background element number 121, detailed background element number 122, detailed background element number 123, detailed background element number 124, detailed background element number 125, detailed background element number 126, detailed background element number 127, detailed background element number 128, detailed background element number 129, detailed background element number 130, detailed background element number 131, detailed background element number 132, detailed background element number 133, detailed background element number 134, detailed background element number 135, detailed background element number 136, detailed background element number 137, detailed background element number 138, detailed background element number 139, detailed background element number 140, detailed background element number 141, detailed background element number 142, detailed background element number 143, detailed background element number 144, detailed background element number 145, detailed background element number 146, detailed background element number 147, detailed background element number 148, detailed background element number 149, detailed background element number 150, detailed background element number 151, detailed background element number 152, detailed background element number 153, detailed background element number 154, detailed background element number 155, detailed background element number 156, detailed background element number 157, detailed background element number 158, detailed background element number 159, very aesthetic, masterpiece, no text",
+          "char_captions": []
+        },
+        "use_coords": false,
+        "use_order": true
+      },
+      "v4_negative_prompt": {
+        "caption": {
+          "base_caption": "nsfw, lowres, artistic error, film grain, scan artifacts, worst quality, bad quality, jpeg artifacts, very displeasing, chromatic aberration, dithering, halftone, screentone, multiple views, logo, too many watermarks, negative space, blank page",
+          "char_captions": []
+        },
+        "legacy_uc": false
+      },
+      "negative_prompt": "nsfw, lowres, artistic error, film grain, scan artifacts, worst quality, bad quality, jpeg artifacts, very displeasing, chromatic aberration, dithering, halftone, screentone, multiple views, logo, too many watermarks, negative space, blank page",
+      "deliberate_euler_ancestral_bug": false,
+      "prefer_brownian": true,
+      "image_format": "webp"
+    },
+    "use_new_shared_trial": true
+  },
+  "response": {
+    "status": 200,
+    "ms": 4429,
+    "headers": {
+      "connection": "keep-alive",
+      "content-disposition": "attachment; filename=images.zip",
+      "content-type": "binary/octet-stream",
+      "date": "Thu, 01 Oct 2026 22:36:40 GMT",
+      "server": "cloudflare",
+      "transfer-encoding": "chunked",
+      "vary": "Origin"
+    },
+    "bytes": 1067261,
+    "zip": [
+      {
+        "name": "image_0.webp",
+        "method": 8,
+        "compressed": 1067123,
+        "size": 1092788
+      }
+    ],
+    "webp": {
+      "riff": "RIFF",
+      "format": "WEBP",
+      "bytes": 1092788,
+      "hasExif": true,
+      "commentJson": null
+    }
+  },
+  "anlas": {
+    "before": {
+      "anlasFixed": 9646,
+      "anlasPurchased": 0,
+      "usage": {
+        "percent": 100,
+        "isNegative": false,
+        "timeUntilNextPercent": 7888
+      },
+      "tier": 3
+    },
+    "after": {
+      "anlasFixed": 9646,
+      "anlasPurchased": 0,
+      "usage": {
+        "percent": 100,
+        "isNegative": false,
+        "timeUntilNextPercent": 7888
+      },
+      "tier": 3
+    },
+    "spentFixed": 0,
+    "spentPurchased": 0
+  }
+}

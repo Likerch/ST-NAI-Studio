@@ -1,0 +1,77 @@
+{
+  "name": "d-declutter",
+  "capturedAt": "2026-10-01T22:37:29.771Z",
+  "endpoint": "https://image.novelai.net/ai/augment-image",
+  "method": "POST",
+  "requestHeaders": {
+    "Authorization": "Bearer <redacted>",
+    "Content-Type": "application/json"
+  },
+  "requestBody": {
+    "req_type": "declutter",
+    "use_new_shared_trial": true,
+    "width": 832,
+    "height": 1216,
+    "image": "<base64 2138616 chars sha256:8eddfdc1c73cbb97>"
+  },
+  "response": {
+    "status": 200,
+    "ms": 5597,
+    "headers": {
+      "connection": "keep-alive",
+      "content-disposition": "attachment; filename=images.zip",
+      "content-type": "binary/octet-stream",
+      "date": "Thu, 01 Oct 2026 22:37:32 GMT",
+      "server": "cloudflare",
+      "transfer-encoding": "chunked",
+      "vary": "Origin"
+    },
+    "bytes": 1380653,
+    "zip": [
+      {
+        "name": "image_0.png",
+        "method": 0,
+        "compressed": 1380533,
+        "size": 1380533
+      }
+    ],
+    "png": {
+      "width": 832,
+      "height": 1216,
+      "bitDepth": 8,
+      "colorType": 2,
+      "text": {
+        "Title": "AI augmented image",
+        "Software": "NovelAI",
+        "Generation time": "4.0182s",
+        "Comment": {
+          "req_type": "declutter"
+        }
+      }
+    }
+  },
+  "anlas": {
+    "before": {
+      "anlasFixed": 9646,
+      "anlasPurchased": 0,
+      "usage": {
+        "percent": 100,
+        "isNegative": false,
+        "timeUntilNextPercent": 7888
+      },
+      "tier": 3
+    },
+    "after": {
+      "anlasFixed": 9646,
+      "anlasPurchased": 0,
+      "usage": {
+        "percent": 100,
+        "isNegative": false,
+        "timeUntilNextPercent": 7888
+      },
+      "tier": 3
+    },
+    "spentFixed": 0,
+    "spentPurchased": 0
+  }
+}

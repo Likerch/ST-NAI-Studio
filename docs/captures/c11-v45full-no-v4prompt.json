@@ -1,0 +1,89 @@
+{
+  "name": "c11-v45full-no-v4prompt",
+  "capturedAt": "2026-10-01T22:36:10.648Z",
+  "endpoint": "https://image.novelai.net/ai/generate-image",
+  "method": "POST",
+  "requestHeaders": {
+    "Authorization": "Bearer <redacted>",
+    "Content-Type": "application/json"
+  },
+  "requestBody": {
+    "input": "1girl, solo, smile, cherry blossoms, outdoors, upper body, very aesthetic, masterpiece, no text",
+    "model": "nai-diffusion-4-5-full",
+    "action": "generate",
+    "parameters": {
+      "params_version": 4,
+      "width": 832,
+      "height": 1216,
+      "scale": 5,
+      "sampler": "k_euler_ancestral",
+      "steps": 23,
+      "n_samples": 1,
+      "ucPresetId": "heavy",
+      "qualityPresetId": "standard",
+      "autoSmea": false,
+      "dynamic_thresholding": false,
+      "controlnet_strength": 1,
+      "legacy": false,
+      "add_original_image": true,
+      "cfg_rescale": 0,
+      "noise_schedule": "karras",
+      "legacy_v3_extend": false,
+      "skip_cfg_above_sigma": null,
+      "use_coords": false,
+      "legacy_uc": false,
+      "normalize_reference_strength_multiple": true,
+      "inpaintImg2ImgStrength": 1,
+      "seed": 1234567893,
+      "tag_hint_qt": 1,
+      "tag_hint_uc_preset": 2,
+      "characterPrompts": [],
+      "negative_prompt": "nsfw, lowres, artistic error, film grain, scan artifacts, worst quality, bad quality, jpeg artifacts, very displeasing, chromatic aberration, dithering, halftone, screentone, multiple views, logo, too many watermarks, negative space, blank page",
+      "deliberate_euler_ancestral_bug": false,
+      "prefer_brownian": true,
+      "image_format": "webp"
+    },
+    "use_new_shared_trial": true
+  },
+  "response": {
+    "status": 500,
+    "ms": 623,
+    "headers": {
+      "connection": "keep-alive",
+      "content-length": "53",
+      "content-type": "application/json",
+      "date": "Thu, 01 Oct 2026 22:36:14 GMT",
+      "server": "cloudflare",
+      "vary": "Origin"
+    },
+    "bytes": 53,
+    "json": {
+      "statusCode": 500,
+      "message": "Internal Server Error"
+    }
+  },
+  "anlas": {
+    "before": {
+      "anlasFixed": 9646,
+      "anlasPurchased": 0,
+      "usage": {
+        "percent": 100,
+        "isNegative": false,
+        "timeUntilNextPercent": 7888
+      },
+      "tier": 3
+    },
+    "after": {
+      "anlasFixed": 9646,
+      "anlasPurchased": 0,
+      "usage": {
+        "percent": 100,
+        "isNegative": false,
+        "timeUntilNextPercent": 7888
+      },
+      "tier": 3
+    },
+    "spentFixed": 0,
+    "spentPurchased": 0
+  }
+}

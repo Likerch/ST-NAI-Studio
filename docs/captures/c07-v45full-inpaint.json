@@ -1,0 +1,121 @@
+{
+  "name": "c07-v45full-inpaint",
+  "capturedAt": "2026-10-01T22:36:04.114Z",
+  "endpoint": "https://image.novelai.net/ai/generate-image",
+  "method": "POST",
+  "requestHeaders": {
+    "Authorization": "Bearer <redacted>",
+    "Content-Type": "application/json"
+  },
+  "requestBody": {
+    "input": "1girl, solo, smile, cherry blossoms, outdoors, upper body, hair flower, very aesthetic, masterpiece, no text",
+    "model": "nai-diffusion-4-5-full-inpainting",
+    "action": "infill",
+    "parameters": {
+      "params_version": 4,
+      "width": 832,
+      "height": 1216,
+      "scale": 5,
+      "sampler": "k_euler_ancestral",
+      "steps": 23,
+      "n_samples": 1,
+      "ucPresetId": "heavy",
+      "qualityPresetId": "standard",
+      "autoSmea": false,
+      "dynamic_thresholding": false,
+      "controlnet_strength": 1,
+      "legacy": false,
+      "add_original_image": false,
+      "cfg_rescale": 0,
+      "noise_schedule": "karras",
+      "legacy_v3_extend": false,
+      "skip_cfg_above_sigma": null,
+      "use_coords": false,
+      "legacy_uc": false,
+      "normalize_reference_strength_multiple": true,
+      "inpaintImg2ImgStrength": 1,
+      "seed": 555000222,
+      "tag_hint_qt": 1,
+      "tag_hint_uc_preset": 2,
+      "characterPrompts": [],
+      "v4_prompt": {
+        "caption": {
+          "base_caption": "1girl, solo, smile, cherry blossoms, outdoors, upper body, hair flower, very aesthetic, masterpiece, no text",
+          "char_captions": []
+        },
+        "use_coords": false,
+        "use_order": true
+      },
+      "v4_negative_prompt": {
+        "caption": {
+          "base_caption": "nsfw, lowres, artistic error, film grain, scan artifacts, worst quality, bad quality, jpeg artifacts, very displeasing, chromatic aberration, dithering, halftone, screentone, multiple views, logo, too many watermarks, negative space, blank page",
+          "char_captions": []
+        },
+        "legacy_uc": false
+      },
+      "negative_prompt": "nsfw, lowres, artistic error, film grain, scan artifacts, worst quality, bad quality, jpeg artifacts, very displeasing, chromatic aberration, dithering, halftone, screentone, multiple views, logo, too many watermarks, negative space, blank page",
+      "deliberate_euler_ancestral_bug": false,
+      "prefer_brownian": true,
+      "image_format": "webp",
+      "image": "<base64 2138616 chars sha256:8eddfdc1c73cbb97>",
+      "mask": "<base64 6896 chars sha256:f7d7fa429b4e252d>",
+      "strength": 0.7,
+      "noise": 0,
+      "extra_noise_seed": 555000221
+    },
+    "use_new_shared_trial": true
+  },
+  "response": {
+    "status": 200,
+    "ms": 2752,
+    "headers": {
+      "connection": "keep-alive",
+      "content-disposition": "attachment; filename=images.zip",
+      "content-type": "binary/octet-stream",
+      "date": "Thu, 01 Oct 2026 22:36:07 GMT",
+      "server": "cloudflare",
+      "transfer-encoding": "chunked",
+      "vary": "Origin"
+    },
+    "bytes": 1053504,
+    "zip": [
+      {
+        "name": "image_0.webp",
+        "method": 8,
+        "compressed": 1053366,
+        "size": 1054908
+      }
+    ],
+    "webp": {
+      "riff": "RIFF",
+      "format": "WEBP",
+      "bytes": 1054908,
+      "hasExif": true,
+      "commentJson": null
+    }
+  },
+  "anlas": {
+    "before": {
+      "anlasFixed": 9646,
+      "anlasPurchased": 0,
+      "usage": {
+        "percent": 100,
+        "isNegative": false,
+        "timeUntilNextPercent": 7888
+      },
+      "tier": 3
+    },
+    "after": {
+      "anlasFixed": 9646,
+      "anlasPurchased": 0,
+      "usage": {
+        "percent": 100,
+        "isNegative": false,
+        "timeUntilNextPercent": 7888
+      },
+      "tier": 3
+    },
+    "spentFixed": 0,
+    "spentPurchased": 0
+  }
+}

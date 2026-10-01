@@ -1,0 +1,98 @@
+{
+  "name": "c12-v3-txt2img-webclient",
+  "capturedAt": "2026-10-01T22:36:13.722Z",
+  "endpoint": "https://image.novelai.net/ai/generate-image",
+  "method": "POST",
+  "requestHeaders": {
+    "Authorization": "Bearer <redacted>",
+    "Content-Type": "application/json"
+  },
+  "requestBody": {
+    "input": "1girl, solo, smile, cherry blossoms, outdoors, upper body, best quality, amazing quality, very aesthetic, absurdres",
+    "model": "nai-diffusion-3",
+    "action": "generate",
+    "parameters": {
+      "params_version": 4,
+      "width": 832,
+      "height": 1216,
+      "scale": 5,
+      "sampler": "k_euler_ancestral",
+      "steps": 23,
+      "n_samples": 1,
+      "ucPresetId": "heavy",
+      "qualityPresetId": "standard",
+      "sm": false,
+      "sm_dyn": false,
+      "dynamic_thresholding": false,
+      "controlnet_strength": 1,
+      "legacy": false,
+      "add_original_image": true,
+      "cfg_rescale": 0,
+      "noise_schedule": "karras",
+      "legacy_v3_extend": false,
+      "skip_cfg_above_sigma": null,
+      "seed": 1234567890,
+      "tag_hint_qt": 1,
+      "tag_hint_uc_preset": 2,
+      "characterPrompts": [],
+      "negative_prompt": "nsfw, lowres, {bad}, error, fewer, extra, missing, worst quality, jpeg artifacts, bad quality, watermark, unfinished, displeasing, chromatic aberration, signature, extra digits, artistic error, username, scan, [abstract]",
+      "deliberate_euler_ancestral_bug": false,
+      "prefer_brownian": true,
+      "image_format": "webp"
+    },
+    "use_new_shared_trial": true
+  },
+  "response": {
+    "status": 200,
+    "ms": 2536,
+    "headers": {
+      "connection": "keep-alive",
+      "content-disposition": "attachment; filename=images.zip",
+      "content-type": "binary/octet-stream",
+      "date": "Thu, 01 Oct 2026 22:36:17 GMT",
+      "server": "cloudflare",
+      "transfer-encoding": "chunked",
+      "vary": "Origin"
+    },
+    "bytes": 987151,
+    "zip": [
+      {
+        "name": "image_0.webp",
+        "method": 8,
+        "compressed": 987013,
+        "size": 988332
+      }
+    ],
+    "webp": {
+      "riff": "RIFF",
+      "format": "WEBP",
+      "bytes": 988332,
+      "hasExif": true,
+      "commentJson": null
+    }
+  },
+  "anlas": {
+    "before": {
+      "anlasFixed": 9646,
+      "anlasPurchased": 0,
+      "usage": {
+        "percent": 100,
+        "isNegative": false,
+        "timeUntilNextPercent": 7888
+      },
+      "tier": 3
+    },
+    "after": {
+      "anlasFixed": 9646,
+      "anlasPurchased": 0,
+      "usage": {
+        "percent": 100,
+        "isNegative": false,
+        "timeUntilNextPercent": 7888
+      },
+      "tier": 3
+    },
+    "spentFixed": 0,
+    "spentPurchased": 0
+  }
+}

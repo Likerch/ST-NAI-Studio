@@ -1,0 +1,360 @@
+{
+  "name": "c13-v45full-stream-msgpack",
+  "capturedAt": "2026-10-01T22:36:29.684Z",
+  "endpoint": "https://image.novelai.net/ai/generate-image-stream",
+  "method": "POST",
+  "requestHeaders": {
+    "Authorization": "Bearer <redacted>",
+    "Content-Type": "application/json"
+  },
+  "requestBody": {
+    "input": "1girl, solo, smile, cherry blossoms, outdoors, upper body, very aesthetic, masterpiece, no text",
+    "model": "nai-diffusion-4-5-full",
+    "action": "generate",
+    "parameters": {
+      "params_version": 4,
+      "width": 832,
+      "height": 1216,
+      "scale": 5,
+      "sampler": "k_euler_ancestral",
+      "steps": 23,
+      "n_samples": 1,
+      "ucPresetId": "heavy",
+      "qualityPresetId": "standard",
+      "autoSmea": false,
+      "dynamic_thresholding": false,
+      "controlnet_strength": 1,
+      "legacy": false,
+      "add_original_image": true,
+      "cfg_rescale": 0,
+      "noise_schedule": "karras",
+      "legacy_v3_extend": false,
+      "skip_cfg_above_sigma": null,
+      "use_coords": false,
+      "legacy_uc": false,
+      "normalize_reference_strength_multiple": true,
+      "inpaintImg2ImgStrength": 1,
+      "seed": 1234567894,
+      "tag_hint_qt": 1,
+      "tag_hint_uc_preset": 2,
+      "characterPrompts": [],
+      "v4_prompt": {
+        "caption": {
+          "base_caption": "1girl, solo, smile, cherry blossoms, outdoors, upper body, very aesthetic, masterpiece, no text",
+          "char_captions": []
+        },
+        "use_coords": false,
+        "use_order": true
+      },
+      "v4_negative_prompt": {
+        "caption": {
+          "base_caption": "nsfw, lowres, artistic error, film grain, scan artifacts, worst quality, bad quality, jpeg artifacts, very displeasing, chromatic aberration, dithering, halftone, screentone, multiple views, logo, too many watermarks, negative space, blank page",
+          "char_captions": []
+        },
+        "legacy_uc": false
+      },
+      "negative_prompt": "nsfw, lowres, artistic error, film grain, scan artifacts, worst quality, bad quality, jpeg artifacts, very displeasing, chromatic aberration, dithering, halftone, screentone, multiple views, logo, too many watermarks, negative space, blank page",
+      "deliberate_euler_ancestral_bug": false,
+      "prefer_brownian": true,
+      "image_format": "webp",
+      "stream": "msgpack"
+    },
+    "use_new_shared_trial": true
+  },
+  "response": {
+    "status": 200,
+    "ms": 3960,
+    "headers": {
+      "cache-control": "no-cache",
+      "connection": "keep-alive",
+      "content-type": "application/msgpack",
+      "date": "Thu, 01 Oct 2026 22:36:29 GMT",
+      "server": "cloudflare",
+      "transfer-encoding": "chunked",
+      "vary": "Origin"
+    },
+    "bytes": 1462729,
+    "msgpackFrames": 23,
+    "frames": [
+      {
+        "event_type": "intermediate",
+        "samp_ix": 0,
+        "step_ix": 0,
+        "gen_id": 8292275,
+        "sigma": 20000,
+        "image": {
+          "__bin": 9089,
+          "magic": "ffd8ffe0"
+        }
+      },
+      {
+        "event_type": "intermediate",
+        "samp_ix": 0,
+        "step_ix": 1,
+        "gen_id": 8292275,
+        "sigma": 113.89996337890625,
+        "image": {
+          "__bin": 9032,
+          "magic": "ffd8ffe0"
+        }
+      },
+      {
+        "event_type": "intermediate",
+        "samp_ix": 0,
+        "step_ix": 2,
+        "gen_id": 8292275,
+        "sigma": 81.93485260009766,
+        "image": {
+          "__bin": 8997,
+          "magic": "ffd8ffe0"
+        }
+      },
+      {
+        "event_type": "intermediate",
+        "samp_ix": 0,
+        "step_ix": 3,
+        "gen_id": 8292275,
+        "sigma": 57.86742401123047,
+        "image": {
+          "__bin": 9805,
+          "magic": "ffd8ffe0"
+        }
+      },
+      {
+        "event_type": "intermediate",
+        "samp_ix": 0,
+        "step_ix": 4,
+        "gen_id": 8292275,
+        "sigma": 41.3076286315918,
+        "image": {
+          "__bin": 10009,
+          "magic": "ffd8ffe0"
+        }
+      },
+      {
+        "event_type": "intermediate",
+        "samp_ix": 0,
+        "step_ix": 5,
+        "gen_id": 8292275,
+        "sigma": 29.042739868164062,
+        "image": {
+          "__bin": 10906,
+          "magic": "ffd8ffe0"
+        }
+      },
+      {
+        "event_type": "intermediate",
+        "samp_ix": 0,
+        "step_ix": 6,
+        "gen_id": 8292275,
+        "sigma": 22.6481876373291,
+        "image": {
+          "__bin": 11471,
+          "magic": "ffd8ffe0"
+        }
+      },
+      {
+        "event_type": "intermediate",
+        "samp_ix": 0,
+        "step_ix": 7,
+        "gen_id": 8292275,
+        "sigma": 17.490964889526367,
+        "image": {
+          "__bin": 12008,
+          "magic": "ffd8ffe0"
+        }
+      },
+      {
+        "event_type": "intermediate",
+        "samp_ix": 0,
+        "step_ix": 8,
+        "gen_id": 8292275,
+        "sigma": 13.628925323486328,
+        "image": {
+          "__bin": 12115,
+          "magic": "ffd8ffe0"
+        }
+      },
+      {
+        "event_type": "intermediate",
+        "samp_ix": 0,
+        "step_ix": 9,
+        "gen_id": 8292275,
+        "sigma": 10.533465385437012,
+        "image": {
+          "__bin": 13596,
+          "magic": "ffd8ffe0"
+        }
+      },
+      {
+        "event_type": "intermediate",
+        "samp_ix": 0,
+        "step_ix": 10,
+        "gen_id": 8292275,
+        "sigma": 8.186910629272461,
+        "image": {
+          "__bin": 14412,
+          "magic": "ffd8ffe0"
+        }
+      },
+      {
+        "event_type": "intermediate",
+        "samp_ix": 0,
+        "step_ix": 11,
+        "gen_id": 8292275,
+        "sigma": 6.322396755218506,
+        "image": {
+          "__bin": 15018,
+          "magic": "ffd8ffe0"
+        }
+      },
+      {
+        "event_type": "intermediate",
+        "samp_ix": 0,
+        "step_ix": 12,
+        "gen_id": 8292275,
+        "sigma": 4.901496410369873,
+        "image": {
+          "__bin": 15719,
+          "magic": "ffd8ffe0"
+        }
+      },
+      {
+        "event_type": "intermediate",
+        "samp_ix": 0,
+        "step_ix": 13,
+        "gen_id": 8292275,
+        "sigma": 3.7801311016082764,
+        "image": {
+          "__bin": 16009,
+          "magic": "ffd8ffe0"
+        }
+      },
+      {
+        "event_type": "intermediate",
+        "samp_ix": 0,
+        "step_ix": 14,
+        "gen_id": 8292275,
+        "sigma": 2.9214534759521484,
+        "image": {
+          "__bin": 16330,
+          "magic": "ffd8ffe0"
+        }
+      },
+      {
+        "event_type": "intermediate",
+        "samp_ix": 0,
+        "step_ix": 15,
+        "gen_id": 8292275,
+        "sigma": 2.261305570602417,
+        "image": {
+          "__bin": 16873,
+          "magic": "ffd8ffe0"
+        }
+      },
+      {
+        "event_type": "intermediate",
+        "samp_ix": 0,
+        "step_ix": 16,
+        "gen_id": 8292275,
+        "sigma": 1.7424652576446533,
+        "image": {
+          "__bin": 17085,
+          "magic": "ffd8ffe0"
+        }
+      },
+      {
+        "event_type": "intermediate",
+        "samp_ix": 0,
+        "step_ix": 17,
+        "gen_id": 8292275,
+        "sigma": 1.3446406126022339,
+        "image": {
+          "__bin": 17350,
+          "magic": "ffd8ffe0"
+        }
+      },
+      {
+        "event_type": "intermediate",
+        "samp_ix": 0,
+        "step_ix": 18,
+        "gen_id": 8292275,
+        "sigma": 1.0364311933517456,
+        "image": {
+          "__bin": 17483,
+          "magic": "ffd8ffe0"
+        }
+      },
+      {
+        "event_type": "intermediate",
+        "samp_ix": 0,
+        "step_ix": 19,
+        "gen_id": 8292275,
+        "sigma": 0.7986377477645874,
+        "image": {
+          "__bin": 17716,
+          "magic": "ffd8ffe0"
+        }
+      },
+      {
+        "event_type": "intermediate",
+        "samp_ix": 0,
+        "step_ix": 20,
+        "gen_id": 8292275,
+        "sigma": 0.5548192262649536,
+        "image": {
+          "__bin": 17844,
+          "magic": "ffd8ffe0"
+        }
+      },
+      {
+        "event_type": "intermediate",
+        "samp_ix": 0,
+        "step_ix": 21,
+        "gen_id": 8292275,
+        "sigma": 0.31205201148986816,
+        "image": {
+          "__bin": 17978,
+          "magic": "ffd8ffe0"
+        }
+      },
+      {
+        "event_type": "final",
+        "samp_ix": 0,
+        "gen_id": 8292275,
+        "image": {
+          "__bin": 1154004,
+          "magic": "52494646"
+        }
+      }
+    ],
+    "eventTypes": [
+      "intermediate",
+      "final"
+    ]
+  },
+  "anlas": {
+    "before": {
+      "anlasFixed": 9646,
+      "anlasPurchased": 0,
+      "usage": {
+        "percent": 100,
+        "isNegative": false,
+        "timeUntilNextPercent": 7888
+      },
+      "tier": 3
+    },
+    "after": {
+      "anlasFixed": 9646,
+      "anlasPurchased": 0,
+      "usage": {
+        "percent": 100,
+        "isNegative": false,
+        "timeUntilNextPercent": 7888
+      },
+      "tier": 3
+    },
+    "spentFixed": 0,
+    "spentPurchased": 0
+  }
+}

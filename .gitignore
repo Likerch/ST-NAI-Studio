@@ -1,0 +1,46 @@
+# --- Secrets (never commit) ---
+# Local secrets file (kept outside the repo); blocked anywhere in case of a copy.
+Server.txt
+**/Server.txt
+*.secret
+*.secrets
+secrets.json
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*.p12
+*.pfx
+
+# --- Local configs ---
+config.local.*
+*.local.json
+*.local.yaml
+server/config.json
+.dev/
+local/
+
+# --- Vibe / image caches ---
+server/cache/
+vibe-cache/
+.cache/
+*.naiv4vibe
+
+# --- Phase 0 raw captures (may contain images / account data) ---
+docs/captures/raw/
+
+# --- Node / build tooling ---
+node_modules/
+coverage/
+*.log
+npm-debug.log*
+.vite/
+.vitest/
+
+# --- Editors / OS ---
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db

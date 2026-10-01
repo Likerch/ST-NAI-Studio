@@ -1,0 +1,167 @@
+/* NAI Studio — every selector is prefixed with .naist- (TZ rule 9). */
+.naist-content {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.naist-content label {
+    font-size: 0.9em;
+    opacity: 0.85;
+}
+
+.naist-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.naist-grow {
+    flex: 1;
+}
+
+.naist-grid2,
+.naist-grid3 {
+    display: grid;
+    gap: 6px;
+}
+
+.naist-grid2 {
+    grid-template-columns: 1fr 1fr;
+}
+
+.naist-grid3 {
+    grid-template-columns: 1.4fr 1fr 1fr;
+}
+
+.naist-flags {
+    display: flex;
+    flex-wrap: wrap;
+    column-gap: 12px;
+}
+
+.naist-hidden {
+    display: none !important;
+}
+
+.naist-disabled {
+    opacity: 0.55;
+}
+
+.naist-muted {
+    opacity: 0.7;
+    font-size: 0.9em;
+}
+
+.naist-badge {
+    font-size: 0.85em;
+    padding: 2px 6px;
+    border-radius: 6px;
+    border: 1px solid var(--SmartThemeBorderColor);
+}
+
+.naist-badge-warn {
+    border-color: var(--warning, #d4a017);
+}
+
+.naist-account,
+.naist-hint,
+.naist-feature-hint {
+    font-size: 0.85em;
+    opacity: 0.85;
+}
+
+.naist-feature-hint:empty,
+.naist-hint:empty {
+    display: none;
+}
+
+.naist-block {
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 8px;
+    padding: 6px;
+}
+
+.naist-character {
+    border-top: 1px dashed var(--SmartThemeBorderColor);
+    padding-top: 6px;
+    margin-top: 6px;
+}
+
+.naist-cost {
+    font-size: 0.9em;
+}
+
+.naist-cost-paid {
+    color: var(--warning, #d4a017);
+}
+
+.naist-warning {
+    color: var(--warning, #d4a017);
+    font-size: 0.9em;
+}
+
+.naist-message:empty {
+    display: none;
+}
+
+.naist-message {
+    padding: 6px;
+    border-radius: 6px;
+    background: var(--black30a, rgba(0, 0, 0, 0.3));
+    font-size: 0.9em;
+}
+
+.naist-message-error {
+    border-left: 3px solid var(--fullred, #c33);
+}
+
+.naist-inspector {
+    text-align: left;
+}
+
+.naist-json {
+    max-height: 50vh;
+    overflow: auto;
+    font-size: 0.8em;
+    white-space: pre;
+    background: var(--black30a, rgba(0, 0, 0, 0.3));
+    padding: 8px;
+    border-radius: 6px;
+}
+
+.naist-json-key {
+    color: var(--SmartThemeQuoteColor, #e6a);
+}
+
+.naist-json-string {
+    color: var(--SmartThemeEmColor, #9cf);
+}
+
+.naist-json-number,
+.naist-json-boolean,
+.naist-json-null {
+    color: var(--SmartThemeUnderlineColor, #fc6);
+}
+
+.naist-json-b64 {
+    opacity: 0.6;
+    font-style: italic;
+}
+
+.naist-json-override {
+    background: rgba(255, 120, 0, 0.25);
+    outline: 1px solid rgba(255, 120, 0, 0.7);
+}
+
+.naist-list {
+    margin: 0;
+    padding-left: 18px;
+    font-size: 0.9em;
+}
+
+.naist-dropped-user {
+    color: var(--warning, #d4a017);
+}
+/*$vite$:1*/

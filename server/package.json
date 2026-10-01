@@ -1,0 +1,9 @@
+{
+  "name": "nai-studio-server-plugin",
+  "version": "0.1.0",
+  "private": true,
+  "description": "SillyTavern server plugin for NAI Studio: proxies NovelAI image requests with the token kept server-side",
+  "license": "AGPL-3.0-only",
+  "type": "module",
+  "main": "index.js"
+}

@@ -1,0 +1,25 @@
+{
+  "display_name": "NAI Studio",
+  "loading_order": 100,
+  "requires": [],
+  "optional": [],
+  "js": "dist/index.js",
+  "css": "dist/style.css",
+  "author": "Likerchik",
+  "version": "0.1.0",
+  "auto_update": true,
+  "minimum_client_version": "1.19.0",
+  "i18n": {
+    "ru-ru": "src/i18n/ru-ru.json",
+    "en-us": "src/i18n/en-us.json"
+  },
+  "hooks": {
+    "activate": "onActivate",
+    "install": "onInstall",
+    "update": "onUpdate",
+    "delete": "onDelete",
+    "clean": "onClean",
+    "enable": "onEnable",
+    "disable": "onDisable"
+  }
+}

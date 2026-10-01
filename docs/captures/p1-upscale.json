@@ -1,0 +1,149 @@
+{
+  "name": "p1-upscale",
+  "expectedSpend": 1,
+  "capturedAt": "2026-10-01T22:53:44.557Z",
+  "endpoint": "https://image.novelai.net/ai/upscale",
+  "method": "POST",
+  "requestHeaders": {
+    "Authorization": "Bearer <redacted>",
+    "Content-Type": "application/json"
+  },
+  "requestBody": {
+    "image": "<base64 2138616 chars sha256:8eddfdc1c73cbb97>",
+    "model": "nai-diffusion-5-curated",
+    "declared_blur_sigma": 0
+  },
+  "response": {
+    "status": 200,
+    "ms": 2739,
+    "headers": {
+      "connection": "keep-alive",
+      "content-disposition": "attachment; filename=images.zip",
+      "content-type": "binary/octet-stream",
+      "date": "Thu, 01 Oct 2026 22:53:47 GMT",
+      "server": "cloudflare",
+      "transfer-encoding": "chunked",
+      "vary": "Origin"
+    },
+    "bytes": 5774360,
+    "zip": [
+      {
+        "name": "image_0.png",
+        "method": 8,
+        "compressed": 5774224,
+        "size": 5773463
+      }
+    ],
+    "png": {
+      "width": 1664,
+      "height": 2432,
+      "bitDepth": 8,
+      "colorType": 6,
+      "text": {
+        "Source": "NovelAI Diffusion V4.5 4BDE2A90",
+        "Comment": {
+          "prompt": "1girl, solo, smile, cherry blossoms, outdoors, upper body",
+          "steps": 23,
+          "height": 1216,
+          "width": 832,
+          "scale": 5,
+          "uncond_scale": 0,
+          "cfg_rescale": 0,
+          "seed": 1234567890,
+          "n_samples": 1,
+          "noise_schedule": "karras",
+          "legacy_v3_extend": false,
+          "reference_information_extracted_multiple": [],
+          "reference_strength_multiple": [],
+          "extra_passthrough_testing": {
+            "prompt": null,
+            "uc": null,
+            "hide_debug_overlay": false,
+            "r": 0,
+            "eta": 1,
+            "negative_momentum": 0,
+            "director_reference_images": null,
+            "director_reference_descriptions": null,
+            "director_reference_information_extracted": null,
+            "director_reference_strengths": null,
+            "director_reference_secondary_strengths": null,
+            "crash_hydra": false
+          },
+          "v4_prompt": {
+            "caption": {
+              "base_caption": "1girl, solo, smile, cherry blossoms, outdoors, upper body",
+              "char_captions": []
+            },
+            "use_coords": false,
+            "use_order": true,
+            "legacy_uc": false
+          },
+          "v4_negative_prompt": {
+            "caption": {
+              "base_caption": "lowres",
+              "char_captions": []
+            },
+            "use_coords": false,
+            "use_order": false,
+            "legacy_uc": false
+          },
+          "director_reference_strengths": null,
+          "director_reference_descriptions": null,
+          "director_reference_information_extracted": null,
+          "director_reference_secondary_strengths": null,
+          "sampler": "k_euler_ancestral",
+          "controlnet_strength": 1,
+          "controlnet_model": null,
+          "dynamic_thresholding": false,
+          "dynamic_thresholding_percentile": 0.999,
+          "dynamic_thresholding_mimic_scale": 10,
+          "sm": false,
+          "sm_dyn": false,
+          "skip_cfg_above_sigma": null,
+          "skip_cfg_below_sigma": 0,
+          "lora_unet_weights": null,
+          "lora_clip_weights": null,
+          "deliberate_euler_ancestral_bug": false,
+          "prefer_brownian": true,
+          "cfg_sched_eligibility": "enable_for_post_summer_samplers",
+          "explike_fine_detail": false,
+          "minimize_sigma_inf": false,
+          "uncond_per_vibe": true,
+          "wonky_vibe_correlation": true,
+          "stream": "none",
+          "version": 1,
+          "uc": "lowres",
+          "request_type": "PromptGenerateRequest",
+          "signed_hash": "fMFqVQbWHTm+N40UbhHXioVNa4uf3zCF/K35WMFOYrCL4zlRYSx4lpcgAvlSegS/XzNIQ0/fzATNKhailnwjCA=="
+        },
+        "Title": "AI generated image",
+        "Description": "1girl, solo, smile, cherry blossoms, outdoors, upper body",
+        "Software": "NovelAI"
+      }
+    }
+  },
+  "anlas": {
+    "before": {
+      "anlasFixed": 9646,
+      "anlasPurchased": 0,
+      "usage": {
+        "percent": 100,
+        "isNegative": false,
+        "timeUntilNextPercent": 7888
+      },
+      "tier": 3
+    },
+    "after": {
+      "anlasFixed": 9645,
+      "anlasPurchased": 0,
+      "usage": {
+        "percent": 100,
+        "isNegative": false,
+        "timeUntilNextPercent": 7888
+      },
+      "tier": 3
+    },
+    "spentFixed": 1,
+    "spentPurchased": 0
+  }
+}

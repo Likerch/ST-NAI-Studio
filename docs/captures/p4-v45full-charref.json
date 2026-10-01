@@ -1,0 +1,138 @@
+{
+  "name": "p4-v45full-charref",
+  "expectedSpend": 12,
+  "capturedAt": "2026-10-01T22:54:04.083Z",
+  "endpoint": "https://image.novelai.net/ai/generate-image",
+  "method": "POST",
+  "requestHeaders": {
+    "Authorization": "Bearer <redacted>",
+    "Content-Type": "application/json"
+  },
+  "requestBody": {
+    "input": "1girl, solo, standing, library, bookshelves, full body, very aesthetic, masterpiece, no text",
+    "model": "nai-diffusion-4-5-full",
+    "action": "generate",
+    "parameters": {
+      "params_version": 4,
+      "width": 512,
+      "height": 768,
+      "scale": 5,
+      "sampler": "k_euler_ancestral",
+      "steps": 23,
+      "n_samples": 1,
+      "ucPresetId": "heavy",
+      "qualityPresetId": "standard",
+      "autoSmea": false,
+      "dynamic_thresholding": false,
+      "controlnet_strength": 1,
+      "legacy": false,
+      "add_original_image": true,
+      "cfg_rescale": 0,
+      "noise_schedule": "karras",
+      "legacy_v3_extend": false,
+      "skip_cfg_above_sigma": null,
+      "use_coords": false,
+      "legacy_uc": false,
+      "normalize_reference_strength_multiple": true,
+      "inpaintImg2ImgStrength": 1,
+      "seed": 31337002,
+      "tag_hint_qt": 1,
+      "tag_hint_uc_preset": 2,
+      "characterPrompts": [],
+      "v4_prompt": {
+        "caption": {
+          "base_caption": "1girl, solo, standing, library, bookshelves, full body, very aesthetic, masterpiece, no text",
+          "char_captions": []
+        },
+        "use_coords": false,
+        "use_order": true
+      },
+      "v4_negative_prompt": {
+        "caption": {
+          "base_caption": "nsfw, lowres, artistic error, film grain, scan artifacts, worst quality, bad quality, jpeg artifacts, very displeasing, chromatic aberration, dithering, halftone, screentone, multiple views, logo, too many watermarks, negative space, blank page",
+          "char_captions": []
+        },
+        "legacy_uc": false
+      },
+      "negative_prompt": "nsfw, lowres, artistic error, film grain, scan artifacts, worst quality, bad quality, jpeg artifacts, very displeasing, chromatic aberration, dithering, halftone, screentone, multiple views, logo, too many watermarks, negative space, blank page",
+      "deliberate_euler_ancestral_bug": false,
+      "prefer_brownian": true,
+      "image_format": "webp",
+      "director_reference_images": [
+        "<base64 2745824 chars sha256:2b7dcd22b566dd40>"
+      ],
+      "director_reference_descriptions": [
+        {
+          "caption": {
+            "base_caption": "character&style",
+            "char_captions": []
+          },
+          "legacy_uc": false
+        }
+      ],
+      "director_reference_information_extracted": [
+        1
+      ],
+      "director_reference_strength_values": [
+        1
+      ],
+      "director_reference_secondary_strength_values": [
+        0
+      ]
+    },
+    "use_new_shared_trial": true
+  },
+  "response": {
+    "status": 200,
+    "ms": 3644,
+    "headers": {
+      "connection": "keep-alive",
+      "content-disposition": "attachment; filename=images.zip",
+      "content-type": "binary/octet-stream",
+      "date": "Thu, 01 Oct 2026 22:54:07 GMT",
+      "server": "cloudflare",
+      "transfer-encoding": "chunked",
+      "vary": "Origin"
+    },
+    "bytes": 487220,
+    "zip": [
+      {
+        "name": "image_0.webp",
+        "method": 8,
+        "compressed": 487082,
+        "size": 488778
+      }
+    ],
+    "webp": {
+      "riff": "RIFF",
+      "format": "WEBP",
+      "bytes": 488778,
+      "hasExif": true,
+      "commentJson": null
+    }
+  },
+  "anlas": {
+    "before": {
+      "anlasFixed": 9643,
+      "anlasPurchased": 0,
+      "usage": {
+        "percent": 100,
+        "isNegative": false,
+        "timeUntilNextPercent": 7888
+      },
+      "tier": 3
+    },
+    "after": {
+      "anlasFixed": 9638,
+      "anlasPurchased": 0,
+      "usage": {
+        "percent": 100,
+        "isNegative": false,
+        "timeUntilNextPercent": 7888
+      },
+      "tier": 3
+    },
+    "spentFixed": 5,
+    "spentPurchased": 0
+  }
+}

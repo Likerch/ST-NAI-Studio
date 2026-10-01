@@ -1,0 +1,90 @@
+{
+  "name": "p5-bg-removal",
+  "expectedSpend": 65,
+  "capturedAt": "2026-10-01T22:54:19.249Z",
+  "endpoint": "https://image.novelai.net/ai/augment-image",
+  "method": "POST",
+  "requestHeaders": {
+    "Authorization": "Bearer <redacted>",
+    "Content-Type": "application/json"
+  },
+  "requestBody": {
+    "req_type": "bg-removal",
+    "use_new_shared_trial": true,
+    "width": 832,
+    "height": 1216,
+    "image": "<base64 2138616 chars sha256:8eddfdc1c73cbb97>"
+  },
+  "response": {
+    "status": 200,
+    "ms": 14642,
+    "headers": {
+      "connection": "keep-alive",
+      "content-disposition": "attachment; filename=images.zip",
+      "content-type": "binary/octet-stream",
+      "date": "Thu, 01 Oct 2026 22:54:22 GMT",
+      "server": "cloudflare",
+      "transfer-encoding": "chunked",
+      "vary": "Origin"
+    },
+    "bytes": 2964650,
+    "zip": [
+      {
+        "name": "image_0.png",
+        "method": 0,
+        "compressed": 1020445,
+        "size": 1020445
+      },
+      {
+        "name": "image_1.png",
+        "method": 0,
+        "compressed": 919953,
+        "size": 919953
+      },
+      {
+        "name": "image_2.png",
+        "method": 0,
+        "compressed": 1023936,
+        "size": 1023936
+      }
+    ],
+    "png": {
+      "width": 832,
+      "height": 1216,
+      "bitDepth": 8,
+      "colorType": 6,
+      "text": {
+        "Title": "AI augmented image",
+        "Software": "NovelAI",
+        "Generation time": "11.9300s",
+        "Comment": {
+          "req_type": "bg-removal"
+        }
+      }
+    }
+  },
+  "anlas": {
+    "before": {
+      "anlasFixed": 9638,
+      "anlasPurchased": 0,
+      "usage": {
+        "percent": 100,
+        "isNegative": false,
+        "timeUntilNextPercent": 7888
+      },
+      "tier": 3
+    },
+    "after": {
+      "anlasFixed": 9573,
+      "anlasPurchased": 0,
+      "usage": {
+        "percent": 100,
+        "isNegative": false,
+        "timeUntilNextPercent": 7888
+      },
+      "tier": 3
+    },
+    "spentFixed": 65,
+    "spentPurchased": 0
+  }
+}

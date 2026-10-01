@@ -1,0 +1,57 @@
+{
+  "name": "p2-encode-vibe-v45full",
+  "expectedSpend": 2,
+  "capturedAt": "2026-10-01T22:53:46.264Z",
+  "endpoint": "https://image.novelai.net/ai/encode-vibe",
+  "method": "POST",
+  "requestHeaders": {
+    "Authorization": "Bearer <redacted>",
+    "Content-Type": "application/json"
+  },
+  "requestBody": {
+    "image": "<base64 2138616 chars sha256:8eddfdc1c73cbb97>",
+    "information_extracted": 1,
+    "model": "nai-diffusion-4-5-full"
+  },
+  "response": {
+    "status": 200,
+    "ms": 1166,
+    "headers": {
+      "connection": "keep-alive",
+      "content-disposition": "attachment; filename=9o31xEsI.vibe40",
+      "content-type": "application/binary",
+      "date": "Thu, 01 Oct 2026 22:53:49 GMT",
+      "server": "cloudflare",
+      "transfer-encoding": "chunked",
+      "vary": "Origin"
+    },
+    "bytes": 48916,
+    "firstBytesHex": "489bea09cde5f00a8f747e8600035e797423fb39cdb7211490216f08c3ab8322",
+    "sha256": "4de64bce29254ae24ecae066c72eb797e2434d074d2a78a2dfc59ac445569f27",
+    "binary": true
+  },
+  "anlas": {
+    "before": {
+      "anlasFixed": 9645,
+      "anlasPurchased": 0,
+      "usage": {
+        "percent": 100,
+        "isNegative": false,
+        "timeUntilNextPercent": 7888
+      },
+      "tier": 3
+    },
+    "after": {
+      "anlasFixed": 9643,
+      "anlasPurchased": 0,
+      "usage": {
+        "percent": 100,
+        "isNegative": false,
+        "timeUntilNextPercent": 7888
+      },
+      "tier": 3
+    },
+    "spentFixed": 2,
+    "spentPurchased": 0
+  }
+}

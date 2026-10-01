@@ -30,7 +30,7 @@ NAI Studio состоит из двух частей:
 
 ### По URL репозитория (штатно)
 
-SillyTavern → Extensions → Install extension → URL репозитория. В репозитории лежат готовые `manifest.json` и собранный `dist/`, сборка на сервере не нужна.
+SillyTavern → Extensions → Install extension → `https://github.com/Likerch/ST-NAI-Studio`. В репозитории лежат готовые `manifest.json` и собранный `dist/`, сборка на сервере не нужна.
 
 Многопользовательский режим тоже поддерживается: расширение не зависит от пути установки (`public/scripts/extensions/third-party/…` или `data/<user>/extensions/…`).
 

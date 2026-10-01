@@ -32,6 +32,7 @@
   - Интеграционные тесты плагина против мок-сервера NovelAI.
   - Покрытие `domain` — 97%.
 - `npm run deploy:local`, `install-server.ps1` / `install-server.sh`, `docs/DEPLOY.md`, `README.md`.
+- `docs/reports/phase-1.md`: результаты приёмки. Сверка стоимости на трёх платных конфигурациях совпала точно (8/8, 12/12, 10/10 Anlas).
 
 ### Изменено относительно ТЗ (решения Фазы 0)
 

@@ -22,7 +22,7 @@
 
 Подробно — [docs/DEPLOY.md](docs/DEPLOY.md). Коротко:
 
-1. Extensions → Install extension → URL этого репозитория.
+1. Extensions → Install extension → `https://github.com/Likerch/ST-NAI-Studio`.
 2. Токен NovelAI задаётся в SillyTavern: API Connections → NovelAI.
 3. Для полного функционала — серверный плагин: `install-server.ps1` / `install-server.sh`, затем `enableServerPlugins: true` и перезапуск ST.
 

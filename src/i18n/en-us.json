@@ -1092,5 +1092,13 @@
   "naist.multimodal.keyMissing": "no key",
   "naist.multimodal.modelCaptioning": "from Image Captioning",
   "naist.multimodal.hint": "Multimodal modes (\"you\", \"face\", \"me\") first describe the avatar with a vision model; the key is the one saved in SillyTavern (API Connections) for that API.",
-  "naist.multimodal.noKey": "No {api} key is saved in SillyTavern: choose an API with a key (e.g. OpenRouter) or save the key in API Connections."
+  "naist.multimodal.noKey": "No {api} key is saved in SillyTavern: choose an API with a key (e.g. OpenRouter) or save the key in API Connections.",
+  "naist.card.personaAvatar": "NAI Studio: avatar from the persona passport",
+  "naist.personaAvatar.title": "Persona avatar",
+  "naist.personaAvatar.noPassport": "The persona has no passport yet: fill it in (or from the description), then draw the avatar.",
+  "naist.personaAvatar.drawing": "Drawing an avatar from the passport…",
+  "naist.personaAvatar.heading": "New avatar for {name}",
+  "naist.personaAvatar.set": "Set as avatar",
+  "naist.personaAvatar.again": "Another one",
+  "naist.personaAvatar.done": "Avatar of {name} updated."
 }

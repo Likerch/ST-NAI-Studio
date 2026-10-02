@@ -1125,7 +1125,15 @@ var EN = {
 	"naist.multimodal.keyMissing": "no key",
 	"naist.multimodal.modelCaptioning": "from Image Captioning",
 	"naist.multimodal.hint": "Multimodal modes (\"you\", \"face\", \"me\") first describe the avatar with a vision model; the key is the one saved in SillyTavern (API Connections) for that API.",
-	"naist.multimodal.noKey": "No {api} key is saved in SillyTavern: choose an API with a key (e.g. OpenRouter) or save the key in API Connections."
+	"naist.multimodal.noKey": "No {api} key is saved in SillyTavern: choose an API with a key (e.g. OpenRouter) or save the key in API Connections.",
+	"naist.card.personaAvatar": "NAI Studio: avatar from the persona passport",
+	"naist.personaAvatar.title": "Persona avatar",
+	"naist.personaAvatar.noPassport": "The persona has no passport yet: fill it in (or from the description), then draw the avatar.",
+	"naist.personaAvatar.drawing": "Drawing an avatar from the passport…",
+	"naist.personaAvatar.heading": "New avatar for {name}",
+	"naist.personaAvatar.set": "Set as avatar",
+	"naist.personaAvatar.again": "Another one",
+	"naist.personaAvatar.done": "Avatar of {name} updated."
 };
 var translator = (text) => text;
 /** Wires the host translator (SillyTavern's translate). Called once on activation. */
@@ -14098,6 +14106,77 @@ function registerCommands$1(pipeline, compat) {
 	}));
 }
 //#endregion
+//#region src/features/characters/persona-avatar.ts
+/** Framing of an avatar portrait. */
+var AVATAR_FRAMING = "portrait, upper body, looking at viewer, simple background";
+/** One portrait from the passport (free size on Opus); null when cancelled. */
+async function drawPersonaAvatar(pipeline, passport) {
+	const scene = joinTags(passportTags(passport, { allowNsfw: false }), AVATAR_FRAMING);
+	const size = markerDimensions("portrait", void 0, true);
+	return (await pipeline.produce({
+		initiator: "panel",
+		trigger: scene,
+		scene,
+		mode: MODE.FREE,
+		interpret: "auto",
+		noContinuity: true,
+		overrides: {
+			quiet: true,
+			edit: false,
+			negative: passport.negative,
+			generation: {
+				width: size.width,
+				height: size.height,
+				seed: -1,
+				samples: 1,
+				characters: []
+			}
+		}
+	}))?.images[0] ?? null;
+}
+var imageDataUrl = (image) => `data:${image.mime};base64,${image.base64}`;
+/**
+* Replaces the avatar file of a persona. Returns false when the user closed the crop popup.
+* `file` is the persona's avatar file name (personas.js user_avatar).
+*/
+async function uploadPersonaAvatar(file, image) {
+	const c = ctx();
+	let url = "/api/avatars/upload";
+	if (c.powerUserSettings.never_resize_avatars !== true) {
+		const popup = new c.Popup("", c.POPUP_TYPE.CROP ?? 5, "", { cropImage: imageDataUrl(image) });
+		if (!await popup.show()) return false;
+		const crop = popup.cropData;
+		if (crop !== void 0) url += `?crop=${encodeURIComponent(JSON.stringify(crop))}`;
+	}
+	const form = new FormData();
+	const extension = image.mime === "image/webp" ? "webp" : "png";
+	form.append("avatar", new File([base64ToBlob(image.base64, image.mime)], `avatar.${extension}`, { type: image.mime }));
+	form.append("overwrite_name", file);
+	const response = await fetch(url, {
+		method: "POST",
+		headers: requestHeaders(true),
+		cache: "no-cache",
+		body: form
+	});
+	if (!response.ok) throw new Error(`persona avatar upload failed: HTTP ${response.status}`);
+	const { path = file } = await response.json().catch(() => ({})) ?? {};
+	const avatarUrl = `/User Avatars/${encodeURIComponent(path)}`;
+	const thumbnailUrl = c.getThumbnailUrl("persona", path);
+	await fetch(avatarUrl, { cache: "reload" }).catch(() => null);
+	await fetch(thumbnailUrl, { cache: "reload" }).catch(() => null);
+	try {
+		await (await importHost("/scripts/personas.js")).getUserAvatars?.(true, path);
+	} catch {}
+	const encoded = encodeURIComponent(path);
+	document.querySelectorAll("img").forEach((img) => {
+		const src = img.getAttribute("src") ?? "";
+		if (!src.includes(encoded) && !src.includes(path)) return;
+		img.src = "";
+		img.src = src;
+	});
+	return true;
+}
+//#endregion
 //#region src/ui/components/json-view.ts
 var BASE64_MIN = 256;
 function escapeHtml$1(text) {
@@ -14806,16 +14885,56 @@ function installCardButton() {
 	const emotions = cardButton("naist_emotions_button", "fa-masks-theater", "naist.card.emotions", () => withEditedCharacter((index) => emotionsHandler(index)));
 	button.after(passports, emotions);
 }
-/** Passport button among the persona panel's buttons. */
+/**
+* A new avatar for the current persona drawn from its passport: preview with "set", "another one"
+* and "cancel"; an empty passport opens the passport editor first.
+*/
+async function personaAvatarFromPassport() {
+	if (!state$1) return;
+	const c = ctx();
+	const key = await currentPersonaKey();
+	const passport = personaPassport(key);
+	if (!passport || isPassportEmpty(passport)) {
+		toastr.info(t("naist.personaAvatar.noPassport"), t("naist.personaAvatar.title"));
+		await editPersonaPassport();
+		return;
+	}
+	for (;;) {
+		toastr.info(t("naist.personaAvatar.drawing"), t("naist.personaAvatar.title"));
+		const image = await drawPersonaAvatar(state$1.pipeline, passport);
+		if (!image) return;
+		const root = document.createElement("div");
+		root.className = "naist-dialog naist-persona-avatar";
+		root.innerHTML = `<h3>${escapeHtml$2(t("naist.personaAvatar.heading", { name: c.name1 }))}</h3>
+            <img class="naist-persona-avatar-preview" alt="" src="${imageDataUrl(image)}">`;
+		const result = await c.callGenericPopup(root, c.POPUP_TYPE.CONFIRM, "", {
+			okButton: t("naist.personaAvatar.set"),
+			cancelButton: t("naist.inspector.cancel"),
+			customButtons: [{
+				text: t("naist.personaAvatar.again"),
+				result: 3,
+				classes: []
+			}]
+		});
+		if (result === 3) continue;
+		if (result !== c.POPUP_RESULT.AFFIRMATIVE) return;
+		if (await uploadPersonaAvatar(key, image)) toastr.success(t("naist.personaAvatar.done", { name: c.name1 }));
+		return;
+	}
+}
+/** Passport and avatar buttons among the persona panel's buttons. */
 function installPersonaButton() {
 	const block = document.querySelector("#persona_controls .persona_controls_buttons_block");
 	if (!block || block.querySelector("#naist_persona_passport")) return;
 	const button = cardButton("naist_persona_passport", "fa-id-card", "naist.card.personaPassport", () => {
 		editPersonaPassport().catch(reportGenerationError);
 	});
+	const avatar = cardButton("naist_persona_avatar", "fa-image-portrait", "naist.card.personaAvatar", () => {
+		personaAvatarFromPassport().catch(reportGenerationError);
+	});
 	const anchor = block.querySelector("#persona_lore_button");
-	if (anchor) anchor.after(button);
-	else block.prepend(button);
+	if (anchor) anchor.after(button, avatar);
+	else block.prepend(button, avatar);
 }
 function installMenuOptions() {
 	const select = document.querySelector("#char-management-dropdown");
@@ -16214,7 +16333,7 @@ var ComicService = class {
 };
 //#endregion
 //#region package.json
-var version = "0.9.1";
+var version = "0.9.2";
 //#endregion
 //#region src/features/settings-io/settings-io.ts
 async function exportSettingsFile(includeImages) {

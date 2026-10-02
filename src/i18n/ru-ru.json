@@ -1092,5 +1092,13 @@
   "naist.multimodal.keyMissing": "нет ключа",
   "naist.multimodal.modelCaptioning": "из Image Captioning",
   "naist.multimodal.hint": "Мультимодальные режимы («ты», «лицо», «я») сначала описывают аватар vision-моделью; ключ — тот, что сохранён в SillyTavern (API Connections) для этого API.",
-  "naist.multimodal.noKey": "Ключ {api} в SillyTavern не сохранён: выберите API с ключом (например, OpenRouter) или сохраните ключ в API Connections."
+  "naist.multimodal.noKey": "Ключ {api} в SillyTavern не сохранён: выберите API с ключом (например, OpenRouter) или сохраните ключ в API Connections.",
+  "naist.card.personaAvatar": "NAI Studio: аватар по паспорту персоны",
+  "naist.personaAvatar.title": "Аватар персоны",
+  "naist.personaAvatar.noPassport": "У персоны ещё нет паспорта: заполните его (или по описанию), затем рисуйте аватар.",
+  "naist.personaAvatar.drawing": "Рисую аватар по паспорту…",
+  "naist.personaAvatar.heading": "Новый аватар для {name}",
+  "naist.personaAvatar.set": "Поставить аватаром",
+  "naist.personaAvatar.again": "Ещё вариант",
+  "naist.personaAvatar.done": "Аватар {name} обновлён."
 }

@@ -125,7 +125,7 @@ declare global {
             options?: Record<string, unknown>,
         ): Promise<unknown>;
         Popup: STPopupStatic;
-        POPUP_TYPE: { TEXT: number; CONFIRM: number; INPUT: number; DISPLAY: number };
+        POPUP_TYPE: { TEXT: number; CONFIRM: number; INPUT: number; DISPLAY: number; CROP?: number };
         POPUP_RESULT: { AFFIRMATIVE: number; NEGATIVE: number; CANCELLED: null };
         translate(text: string, key?: string | null): string;
         getCurrentLocale(): string;

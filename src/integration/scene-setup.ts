@@ -7,6 +7,9 @@ import { log } from '../core/logger';
 import { reportGenerationError } from '../core/notify';
 import { avatarKey } from '../features/characters/character-prompts';
 import { generatePersonaPassport } from '../features/characters/passport-generator';
+import { drawPersonaAvatar, imageDataUrl, uploadPersonaAvatar } from '../features/characters/persona-avatar';
+import { isPassportEmpty } from '../domain';
+import { escapeHtml } from '../ui/components/dom';
 import { currentPersonaKey, personaPassport, savePersonaPassport } from '../features/characters/passport-store';
 import type { Pipeline } from '../features/generation/pipeline';
 import type { SceneService } from '../features/scene/scene-service';
@@ -103,16 +106,53 @@ function installCardButton(): void {
     button.after(passports, emotions);
 }
 
-/** Passport button among the persona panel's buttons. */
+/**
+ * A new avatar for the current persona drawn from its passport: preview with "set", "another one"
+ * and "cancel"; an empty passport opens the passport editor first.
+ */
+export async function personaAvatarFromPassport(): Promise<void> {
+    if (!state) return;
+    const c = ctx();
+    const key = await currentPersonaKey();
+    const passport = personaPassport(key);
+    if (!passport || isPassportEmpty(passport)) {
+        toastr.info(t('naist.personaAvatar.noPassport'), t('naist.personaAvatar.title'));
+        await editPersonaPassport();
+        return;
+    }
+    for (;;) {
+        toastr.info(t('naist.personaAvatar.drawing'), t('naist.personaAvatar.title'));
+        const image = await drawPersonaAvatar(state.pipeline, passport);
+        if (!image) return;
+        const root = document.createElement('div');
+        root.className = 'naist-dialog naist-persona-avatar';
+        root.innerHTML = `<h3>${escapeHtml(t('naist.personaAvatar.heading', { name: c.name1 }))}</h3>
+            <img class="naist-persona-avatar-preview" alt="" src="${imageDataUrl(image)}">`;
+        const result = await c.callGenericPopup(root, c.POPUP_TYPE.CONFIRM, '', {
+            okButton: t('naist.personaAvatar.set'),
+            cancelButton: t('naist.inspector.cancel'),
+            customButtons: [{ text: t('naist.personaAvatar.again'), result: 3, classes: [] }],
+        });
+        if (result === 3) continue;
+        if (result !== c.POPUP_RESULT.AFFIRMATIVE) return;
+        if (await uploadPersonaAvatar(key, image)) toastr.success(t('naist.personaAvatar.done', { name: c.name1 }));
+        return;
+    }
+}
+
+/** Passport and avatar buttons among the persona panel's buttons. */
 function installPersonaButton(): void {
     const block = document.querySelector('#persona_controls .persona_controls_buttons_block');
     if (!block || block.querySelector('#naist_persona_passport')) return;
     const button = cardButton('naist_persona_passport', 'fa-id-card', 'naist.card.personaPassport', () => {
         void editPersonaPassport().catch(reportGenerationError);
     });
+    const avatar = cardButton('naist_persona_avatar', 'fa-image-portrait', 'naist.card.personaAvatar', () => {
+        void personaAvatarFromPassport().catch(reportGenerationError);
+    });
     const anchor = block.querySelector('#persona_lore_button');
-    if (anchor) anchor.after(button);
-    else block.prepend(button);
+    if (anchor) anchor.after(button, avatar);
+    else block.prepend(button, avatar);
 }
 
 function installMenuOptions(): void {

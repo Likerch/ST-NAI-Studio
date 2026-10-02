@@ -105,7 +105,7 @@ beforeEach(() => {
     state.chatId = 'chat-1';
     state.now = 1000;
     state.candidates = [
-        { key: 'alice.png', name: 'Alice', aliases: [], passport: null, fallbackPrompt: '', fallbackNegative: '' },
+        { key: 'alice.png', name: 'Alice', aliases: [], passport: null, fallbackPrompt: 'blonde', fallbackNegative: '' },
     ];
     state.setting = { world: '', location: '', locations: [] };
     vi.spyOn(Date, 'now').mockImplementation(() => (state.now += 1000));
@@ -205,10 +205,12 @@ describe('MarkerService lifecycle', () => {
         await service.finalize(0, 'normal');
         await settle();
         expect(state.chat[0]!.mes).toBe('<b>Alice</b> opens the door. Snow falls.\n[nai:img:id1]');
-        expect(markerScene).toHaveBeenCalledWith('Alice opens the door. Snow falls.', [{ name: 'Alice' }], {
-            messageId: 0,
-            text: '<b>Alice</b> opens the door. Snow falls.',
-        });
+        expect(markerScene).toHaveBeenCalledWith(
+            'Alice opens the door. Snow falls.',
+            [{ name: 'Alice' }],
+            { messageId: 0, text: '<b>Alice</b> opens the door. Snow falls.' },
+            { counts: false },
+        );
         expect(produce).toHaveBeenCalledTimes(1);
         await service.finalize(0, 'normal');
         expect(inline.addPending).toHaveBeenCalledTimes(1);
@@ -307,7 +309,7 @@ describe('MarkerService requests', () => {
             text: 'X',
             model: 'v3',
         });
-        expect(markerScene).toHaveBeenCalledWith('they talk', [{ name: 'Alice', pos: 'left' }], {});
+        expect(markerScene).toHaveBeenCalledWith('they talk', [{ name: 'Alice', pos: 'left' }], {}, { counts: true });
         const req = lastRequest(produce);
         expect(req.scene).toBe('scene: they talk');
         expect(req.overrides.generation).toMatchObject({ useCoords: true, model: 'nai-diffusion-3' });
@@ -335,10 +337,19 @@ describe('MarkerService requests', () => {
             locations: [{ name: 'tavern', aliases: [], tags: 'tavern, wooden interior' }],
         };
         await service.produce({ prompt: 'Mira and Bob drink in the tavern' });
-        expect(markerScene).toHaveBeenCalledWith('Mira and Bob drink in the tavern', [{ name: 'Mira' }], {});
+        expect(markerScene).toHaveBeenCalledWith(
+            'Mira and Bob drink in the tavern',
+            [{ name: 'Mira' }],
+            {},
+            { counts: false },
+        );
         expect(lastRequest(produce).scene).toBe(
             'scene: Mira and Bob drink in the tavern, tavern, wooden interior, medieval, fantasy',
         );
+        // A caption names who is looked at, not who is drawn.
+        markerScene.mockClear();
+        await service.produce({ prompt: 'a maid with a tea tray', caption: 'The maid winks at Mira' });
+        expect(markerScene).not.toHaveBeenCalled();
         markerScene.mockClear();
         await service.produce({ prompt: 'an empty road', location: 'tavern' });
         expect(markerScene).not.toHaveBeenCalled();
@@ -364,7 +375,12 @@ describe('MarkerService requests', () => {
             locations: [{ name: 'tavern', aliases: [], tags: 'wooden interior' }],
         };
         await service.produce({ prompt: 'Nia waves' }, undefined, { messageId: 3, text: 'x' });
-        expect(markerScene).toHaveBeenCalledWith('Nia waves', [{ name: 'Nia' }], { messageId: 3, text: 'x' });
+        expect(markerScene).toHaveBeenCalledWith(
+            'Nia waves',
+            [{ name: 'Nia' }],
+            { messageId: 3, text: 'x' },
+            { counts: false },
+        );
         expect(lastRequest(produce).scene).toBe('scene: Nia waves, wooden interior, night, rain');
     });
 });

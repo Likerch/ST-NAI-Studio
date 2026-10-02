@@ -217,9 +217,9 @@ export class MarkerService {
         const excerpt = m ? replyExcerpt(m.mes) : '';
         if (!m || !excerpt) return;
         const query: SceneQuery = { messageId, text: m.mes };
-        const candidates = await sceneCandidates(query);
-        const names = detectParticipants(excerpt, candidates, { max: 3 }).map((cand) => ({ name: cand.name }));
-        const params: MarkerParams = { prompt: excerpt, ...(names.length ? { chars: names } : {}) };
+        // The characters are found by name in the excerpt when the picture is made (no "chars": the
+        // text may also be about people without a passport, so no count tags either).
+        const params: MarkerParams = { prompt: excerpt };
         const c = ctx();
         const ids = Array.from({ length: Math.min(missing, 3) }, () => c.uuidv4());
         const entries = ids.map((id) =>
@@ -334,17 +334,20 @@ export class MarkerService {
                 negative = join(negative, saved.negative);
             } else scene = join(style, scene);
         }
-        // Characters with a passport named in the description take part without "chars" too.
+        // Characters with a passport named in the description take part without "chars" too. Only the
+        // description counts: a caption often names who is looked at ("winks at Arthur"), not who is drawn.
         let chars = params.chars;
-        if (!chars?.length) {
+        const declared = Boolean(chars?.length);
+        if (!declared) {
             const known = (await sceneCandidates(query)).filter(
-                (cand) => cand.passport !== null || Boolean(cand.currentLook?.trim()),
+                (cand) =>
+                    cand.passport !== null || cand.fallbackPrompt.trim() !== '' || Boolean(cand.currentLook?.trim()),
             );
-            const named = detectParticipants(`${params.prompt} ${params.caption ?? ''}`, known, { max: 4 });
+            const named = detectParticipants(params.prompt, known, { max: 4 });
             if (named.length) chars = named.map((cand) => ({ name: cand.name }));
         }
         if (chars?.length) {
-            const built = await this.scenes.markerScene(scene, chars, query);
+            const built = await this.scenes.markerScene(scene, chars, query, { counts: declared });
             if (built) {
                 scene = built.prompt;
                 generation.characters = built.characters;

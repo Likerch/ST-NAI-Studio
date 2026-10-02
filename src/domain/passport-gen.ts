@@ -1,6 +1,6 @@
 // Passports written by an LLM from a character card or a persona description (v0.8). Pure: the
 // prompt, the JSON schema for Chat Completion and a forgiving parser of the answer.
-import { defaultPassport, joinTags, newPassportId, PASSPORT_KINDS, PASSPORT_SLOTS } from './passport';
+import { defaultPassport, joinTags, newPassportId, PASSPORT_KINDS, PASSPORT_SLOTS, splitTags } from './passport';
 import { mentionIndex } from './scene-assembly';
 import type { Passport, PassportKind } from './passport';
 
@@ -24,13 +24,13 @@ const SYSTEM_CARD = [
     '- kind "location": a recurring named place, how it looks, in "tags".',
     '- kind "scenario": only when the card is a scenario or a narrator rather than one character; the visual tags of the situation in "tags".',
     '- kind "object": an important item or vehicle, how it looks, in "tags".',
-    'Rules: English Danbooru tags, lowercase, comma separated, spaces instead of underscores. Only what the text says or clearly implies, never invent; leave a field empty when unknown. Keep names as written in the card. No quality or art style tags.',
+    'Rules: English Danbooru tags, lowercase, comma separated, spaces instead of underscores. Only what the text says or clearly implies, never invent; leave a field empty when unknown. Keep names as written in the card. No quality, art style or colour palette tags (pastel colors, vibrant colors, muted colors, monochrome). clothing is ONE default outfit (what they wear most): one item per body part, one colour per item, never alternatives ("blue or grey coat"); every other outfit of the text goes to "outfits".',
 ].join('\n');
 
 const SYSTEM_PERSONA = [
     "You read the description of the player's persona in a roleplay and write one visual passport for an image generator (NovelAI, Danbooru tags).",
     'Answer only with JSON: {"passports": [ one entry of kind "character" ]} with the fields name, aliases, base (count tag and what they are: "1girl, adult", "1boy, elf"), hair, eyes, body, skin, clothing, accessories, outfits ({"name","tags"}), nsfw (explicit body details only if given), negative.',
-    'Rules: English Danbooru tags, lowercase, comma separated, spaces instead of underscores. Only what the text says or clearly implies, never invent; leave a field empty when unknown. No quality or art style tags.',
+    'Rules: English Danbooru tags, lowercase, comma separated, spaces instead of underscores. Only what the text says or clearly implies, never invent; leave a field empty when unknown. No quality, art style or colour palette tags (pastel colors, vibrant colors, muted colors, monochrome). clothing is ONE default outfit (what they wear most): one item per body part, one colour per item, never alternatives ("blue or grey coat"); every other outfit of the text goes to "outfits".',
 ].join('\n');
 
 const SYSTEM_NPC = [
@@ -38,7 +38,7 @@ const SYSTEM_NPC = [
     'Answer only with JSON: {"passports": [ one entry of kind "character" ]} with the fields name, aliases, base (count tag and what they are: "1girl, elf, adult", "1boy, orc"), hair, eyes, body, skin, clothing (what they wear in the tracker), accessories, outfits, nsfw (explicit body details only if given), negative.',
     'Permanent features (species, body, face, hair, eyes, skin) go to their fields; temporary states (wet, wounded, blushing) are left out.',
     'The story card describes the world and other characters: take from it only what it says about this character by name, never the traits of anyone else (race, hair, clothes).',
-    'Rules: English Danbooru tags, lowercase, comma separated, spaces instead of underscores. Only what the texts say or clearly imply about this character, never invent; leave a field empty when unknown. No quality or art style tags.',
+    'Rules: English Danbooru tags, lowercase, comma separated, spaces instead of underscores. Only what the texts say or clearly imply about this character, never invent; leave a field empty when unknown. No quality, art style or colour palette tags (pastel colors, vibrant colors, muted colors, monochrome). clothing is ONE default outfit (what they wear most): one item per body part, one colour per item, never alternatives ("blue or grey coat"); every other outfit of the text goes to "outfits".',
 ].join('\n');
 
 const str = { type: 'string' };
@@ -127,9 +127,17 @@ const asText = (value: unknown): string =>
           ? value.filter((v) => typeof v === 'string').join(', ')
           : '';
 
-/** Danbooru tags as NovelAI reads them: spaces, not underscores; duplicates dropped. */
+/** Palette and quality words that belong to the art style, not to a passport. */
+const STYLE_TAG =
+    /^(?:(?:pastel|vibrant|muted|vivid|bright|dark|soft|warm|cool|earth|neutral|light) colou?rs?|colou?rful|monochrome|limited palette|masterpiece|best quality|high quality|amazing quality|very aesthetic|absurdres|highres)$/i;
+
+/** Danbooru tags as NovelAI reads them: spaces, not underscores; duplicates and style words dropped. */
 function tags(value: unknown): string {
-    return joinTags(asText(value).replace(/_/g, ' '));
+    return joinTags(
+        splitTags(asText(value).replace(/_/g, ' '))
+            .filter((tag) => !STYLE_TAG.test(tag))
+            .join(', '),
+    );
 }
 
 /** Passports from the answer; entries without a name or anything visual are dropped. */
@@ -160,6 +168,8 @@ export function parseGeneratedPassports(raw: unknown, fallbackName = ''): Passpo
                 .map((x) => ({ name: asText(x.name).trim(), tags: tags(x.tags) }))
                 .filter((x) => x.name && x.tags);
             passport.nsfw = { enabled: false, tags: tags(o.nsfw) };
+            // Only named outfits: the first one is worn by default.
+            if (!passport.slots.clothing && passport.outfits[0]) passport.activeOutfit = passport.outfits[0].name;
         } else {
             passport.tags = tags(o.tags);
         }

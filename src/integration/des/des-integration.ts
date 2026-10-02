@@ -464,7 +464,7 @@ export class DesIntegration {
         );
         const s = settings();
         const identity = found
-            ? passportTags(found.passport, { allowNsfw: s.scene.allowNsfw, withoutClothing: Boolean(look) })
+            ? passportTags(found.passport, { allowNsfw: false, withoutClothing: Boolean(look) })
             : '';
         const size = markerDimensions('portrait', undefined, s.anlas.freeOnly);
         return {

@@ -281,7 +281,12 @@ export interface BuiltScene {
 export function buildScene(
     spec: SceneSpec,
     caps: Pick<ModelCapabilities, 'maxCharacters' | 'positioning' | 'canPositionSingleCharacter' | 'v4Prompt'>,
-    options: { allowNsfw: boolean; customPoses?: readonly PosePreset[] },
+    options: {
+        allowNsfw: boolean;
+        customPoses?: readonly PosePreset[];
+        /** Count tags ("1girl, 1boy") in the base prompt; off when others may be in the picture too. */
+        counts?: boolean;
+    },
 ): BuiltScene {
     const active = spec.participants.filter((p) => p.enabled);
     const capacity = caps.maxCharacters;
@@ -321,7 +326,10 @@ export function buildScene(
         };
     });
 
-    const counts = countTags(kept.map((p) => (p.passport ? p.passport.slots.base : p.fallbackPrompt)));
+    const counts =
+        options.counts === false
+            ? ''
+            : countTags(kept.map((p) => (p.passport ? p.passport.slots.base : p.fallbackPrompt)));
     const framing = joinTags(
         optionTags(FRAMINGS, spec.framing),
         optionTags(CAMERA_ANGLES, spec.camera),

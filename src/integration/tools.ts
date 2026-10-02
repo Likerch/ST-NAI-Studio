@@ -55,7 +55,7 @@ async function generate(pipeline: Pipeline, args: ToolArgs): Promise<string> {
             const shot = SHOTS[text(args.shot).toLowerCase()];
             if (shot?.framing) spec.framing = shot.framing;
             if (shot?.distance) spec.distance = shot.distance;
-            const result = await scenes.generate(spec, 'message');
+            const result = await scenes.generate(spec, 'message', { auto: true });
             return result && typeof result === 'object' ? encodeURI((result as PictureResult).path) : '';
         }
     }

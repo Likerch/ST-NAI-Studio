@@ -6,6 +6,7 @@ import { NaiError } from '../../core/errors';
 import { log } from '../../core/logger';
 import { settings } from '../../core/settings';
 import {
+    isExplicitScene,
     applyPairLayout,
     autoLayout,
     buildScene,
@@ -314,7 +315,16 @@ export class SceneService {
      * poses from the marker, the marker prompt as the shared part. A name without a passport or a
      * character prompt adds nothing; null when no name is usable.
      */
-    async markerScene(prompt: string, chars: MarkerCharacter[], query: SceneQuery = {}): Promise<BuiltScene | null> {
+    /**
+     * `counts`: false when the characters were found by name in the description rather than listed
+     * by the LLM; someone without a passport may be in the picture too, so no "1girl, 1boy".
+     */
+    async markerScene(
+        prompt: string,
+        chars: MarkerCharacter[],
+        query: SceneQuery = {},
+        options: { counts?: boolean } = {},
+    ): Promise<BuiltScene | null> {
         const { spec, candidates } = await this.emptySpec(query);
         const caps = currentCaps();
         const max = caps.maxCharacters > 0 ? caps.maxCharacters : 3;
@@ -346,7 +356,7 @@ export class SceneService {
         });
         spec.base = prompt;
         if (wanted.some(Boolean)) spec.useCoords = true;
-        return this.build(spec);
+        return this.build(spec, { auto: true, counts: options.counts });
     }
 
     /** Location tags written by the LLM with the built-in "background" template. */
@@ -361,8 +371,14 @@ export class SceneService {
         }
     }
 
-    build(spec: SceneSpec): BuiltScene {
-        return buildScene(spec, currentCaps(), { allowNsfw: settings().scene.allowNsfw, customPoses: customPoses() });
+    /**
+     * `auto`: a scene nobody composed by hand (markers, the LLM tool) gets the NSFW layer of the
+     * passports only when the scene itself is explicit.
+     */
+    build(spec: SceneSpec, options: { auto?: boolean; counts?: boolean } = {}): BuiltScene {
+        const text = [spec.base, ...spec.participants.map((p) => p.poseTags)].join(', ');
+        const allowNsfw = settings().scene.allowNsfw && (!options.auto || isExplicitScene(text));
+        return buildScene(spec, currentCaps(), { allowNsfw, customPoses: customPoses(), counts: options.counts });
     }
 
     /** Overrides for the panel preview and the inspector. */
@@ -374,8 +390,12 @@ export class SceneService {
     }
 
     /** Generates the composed scene into a new message or inline into the last message. */
-    async generate(spec: SceneSpec, target: 'message' | 'inline'): Promise<PictureResult | string | null> {
-        const built = this.build(spec);
+    async generate(
+        spec: SceneSpec,
+        target: 'message' | 'inline',
+        options: { auto?: boolean } = {},
+    ): Promise<PictureResult | string | null> {
+        const built = this.build(spec, options);
         if (!built.prompt.trim() && !built.characters.some((c) => c.prompt.trim())) {
             throw new NaiError('no-usable-message', 'none');
         }

@@ -5252,7 +5252,7 @@ function buildScene(spec, caps, options) {
 			negative: joinTags(p.passport?.negative ?? p.fallbackNegative, p.negative)
 		};
 	});
-	const counts = countTags(kept.map((p) => p.passport ? p.passport.slots.base : p.fallbackPrompt));
+	const counts = options.counts === false ? "" : countTags(kept.map((p) => p.passport ? p.passport.slots.base : p.fallbackPrompt));
 	const framing = joinTags(optionTags(FRAMINGS, spec.framing), optionTags(CAMERA_ANGLES, spec.camera), optionTags(DISTANCES, spec.distance));
 	if (capacity === 0) return {
 		prompt: joinTags(counts, spec.base, ...characterTags.map((c) => c.prompt), framing),
@@ -7362,19 +7362,19 @@ var SYSTEM_CARD = [
 	"- kind \"location\": a recurring named place, how it looks, in \"tags\".",
 	"- kind \"scenario\": only when the card is a scenario or a narrator rather than one character; the visual tags of the situation in \"tags\".",
 	"- kind \"object\": an important item or vehicle, how it looks, in \"tags\".",
-	"Rules: English Danbooru tags, lowercase, comma separated, spaces instead of underscores. Only what the text says or clearly implies, never invent; leave a field empty when unknown. Keep names as written in the card. No quality or art style tags."
+	"Rules: English Danbooru tags, lowercase, comma separated, spaces instead of underscores. Only what the text says or clearly implies, never invent; leave a field empty when unknown. Keep names as written in the card. No quality, art style or colour palette tags (pastel colors, vibrant colors, muted colors, monochrome). clothing is ONE default outfit (what they wear most): one item per body part, one colour per item, never alternatives (\"blue or grey coat\"); every other outfit of the text goes to \"outfits\"."
 ].join("\n");
 var SYSTEM_PERSONA = [
 	"You read the description of the player's persona in a roleplay and write one visual passport for an image generator (NovelAI, Danbooru tags).",
 	"Answer only with JSON: {\"passports\": [ one entry of kind \"character\" ]} with the fields name, aliases, base (count tag and what they are: \"1girl, adult\", \"1boy, elf\"), hair, eyes, body, skin, clothing, accessories, outfits ({\"name\",\"tags\"}), nsfw (explicit body details only if given), negative.",
-	"Rules: English Danbooru tags, lowercase, comma separated, spaces instead of underscores. Only what the text says or clearly implies, never invent; leave a field empty when unknown. No quality or art style tags."
+	"Rules: English Danbooru tags, lowercase, comma separated, spaces instead of underscores. Only what the text says or clearly implies, never invent; leave a field empty when unknown. No quality, art style or colour palette tags (pastel colors, vibrant colors, muted colors, monochrome). clothing is ONE default outfit (what they wear most): one item per body part, one colour per item, never alternatives (\"blue or grey coat\"); every other outfit of the text goes to \"outfits\"."
 ].join("\n");
 var SYSTEM_NPC = [
 	"You read how a roleplay scene tracker describes a character right now, and the story card they come from, and write one visual passport for an image generator (NovelAI, Danbooru tags).",
 	"Answer only with JSON: {\"passports\": [ one entry of kind \"character\" ]} with the fields name, aliases, base (count tag and what they are: \"1girl, elf, adult\", \"1boy, orc\"), hair, eyes, body, skin, clothing (what they wear in the tracker), accessories, outfits, nsfw (explicit body details only if given), negative.",
 	"Permanent features (species, body, face, hair, eyes, skin) go to their fields; temporary states (wet, wounded, blushing) are left out.",
 	"The story card describes the world and other characters: take from it only what it says about this character by name, never the traits of anyone else (race, hair, clothes).",
-	"Rules: English Danbooru tags, lowercase, comma separated, spaces instead of underscores. Only what the texts say or clearly imply about this character, never invent; leave a field empty when unknown. No quality or art style tags."
+	"Rules: English Danbooru tags, lowercase, comma separated, spaces instead of underscores. Only what the texts say or clearly imply about this character, never invent; leave a field empty when unknown. No quality, art style or colour palette tags (pastel colors, vibrant colors, muted colors, monochrome). clothing is ONE default outfit (what they wear most): one item per body part, one colour per item, never alternatives (\"blue or grey coat\"); every other outfit of the text goes to \"outfits\"."
 ].join("\n");
 var str$1 = { type: "string" };
 var PASSPORT_GEN_SCHEMA = {
@@ -7462,9 +7462,11 @@ function extractJson(text) {
 	}
 }
 var asText$1 = (value) => typeof value === "string" ? value : Array.isArray(value) ? value.filter((v) => typeof v === "string").join(", ") : "";
-/** Danbooru tags as NovelAI reads them: spaces, not underscores; duplicates dropped. */
-function tags(value) {
-	return joinTags(asText$1(value).replace(/_/g, " "));
+/** Palette and quality words that belong to the art style, not to a passport. */
+var STYLE_TAG = /^(?:(?:pastel|vibrant|muted|vivid|bright|dark|soft|warm|cool|earth|neutral|light) colou?rs?|colou?rful|monochrome|limited palette|masterpiece|best quality|high quality|amazing quality|very aesthetic|absurdres|highres)$/i;
+/** Danbooru tags as NovelAI reads them: spaces, not underscores; duplicates and style words dropped. */
+function tags$1(value) {
+	return joinTags(splitTags(asText$1(value).replace(/_/g, " ")).filter((tag) => !STYLE_TAG.test(tag)).join(", "));
 }
 /** Passports from the answer; entries without a name or anything visual are dropped. */
 function parseGeneratedPassports(raw, fallbackName = "") {
@@ -7480,17 +7482,18 @@ function parseGeneratedPassports(raw, fallbackName = "") {
 		const passport = defaultPassport(kind, name, newPassportId());
 		passport.aliases = (Array.isArray(o.aliases) ? o.aliases.map(asText$1) : asText$1(o.aliases).split(",")).map((a) => a.trim()).filter((a) => a && a.toLowerCase() !== name.toLowerCase());
 		if (kind === "character") {
-			for (const field of FIELDS) passport.slots[field] = tags(o[field]);
+			for (const field of FIELDS) passport.slots[field] = tags$1(o[field]);
 			passport.outfits = (Array.isArray(o.outfits) ? o.outfits : []).filter((x) => !!x && typeof x === "object").map((x) => ({
 				name: asText$1(x.name).trim(),
-				tags: tags(x.tags)
+				tags: tags$1(x.tags)
 			})).filter((x) => x.name && x.tags);
 			passport.nsfw = {
 				enabled: false,
-				tags: tags(o.nsfw)
+				tags: tags$1(o.nsfw)
 			};
-		} else passport.tags = tags(o.tags);
-		passport.negative = tags(o.negative);
+			if (!passport.slots.clothing && passport.outfits[0]) passport.activeOutfit = passport.outfits[0].name;
+		} else passport.tags = tags$1(o.tags);
+		passport.negative = tags$1(o.negative);
 		if (kind === "character" ? PASSPORT_SLOTS.some((slot) => passport.slots[slot]) || passport.outfits.length > 0 : passport.tags !== "") result.push(passport);
 	}
 	return result;
@@ -7629,7 +7632,44 @@ var des_words_default = {
 		"помещени",
 		"в доме",
 		"в комнате",
-		"в здании"
+		"в здании",
+		"hall",
+		"room",
+		"corridor",
+		"kitchen",
+		"library",
+		"office",
+		"lobby",
+		"foyer",
+		"chamber",
+		"basement",
+		"attic",
+		"tavern",
+		"холл",
+		"зал ",
+		"зала",
+		"зале",
+		"залы",
+		"залу",
+		"гостин",
+		"спальн",
+		"кухн",
+		"кабинет",
+		"коридор",
+		"библиотек",
+		"столов",
+		"ванн",
+		"комнат",
+		"таверн",
+		"трактир",
+		"подвал",
+		"чердак",
+		"фойе",
+		"вестибюл",
+		"прихож",
+		"лобби",
+		"кают",
+		"аудитори"
 	],
 	outdoors: [
 		"outdoor",
@@ -7929,6 +7969,92 @@ function hasSecret(state, secret) {
 /** The model to send: the chosen one, else the API's starting model. */
 function visionModel(apiId, model) {
 	return model.trim() || visionApi(apiId)?.defaultModel || "";
+}
+var explicit_words_default = {
+	tags: [
+		"nsfw",
+		"explicit",
+		"nude",
+		"nudity",
+		"naked",
+		"topless",
+		"bottomless",
+		"sex",
+		"hetero",
+		"yuri",
+		"yaoi",
+		"penis",
+		"erection",
+		"testicles",
+		"pussy",
+		"vagina",
+		"vaginal",
+		"anal",
+		"clitoris",
+		"nipples",
+		"areolae",
+		"breasts out",
+		"cum",
+		"ejaculation",
+		"fellatio",
+		"blowjob",
+		"oral",
+		"handjob",
+		"paizuri",
+		"cunnilingus",
+		"masturbation",
+		"fingering",
+		"orgasm",
+		"penetration",
+		"missionary",
+		"doggystyle",
+		"cowgirl position",
+		"spread legs",
+		"genitals",
+		"lewd",
+		"hentai",
+		"no panties",
+		"no bra",
+		"undressing",
+		"секс",
+		"сексом",
+		"сексе",
+		"секса",
+		"голая",
+		"голый",
+		"голые",
+		"голой",
+		"голую",
+		"голым",
+		"голых",
+		"нагая",
+		"нагой",
+		"нагие",
+		"нагишом",
+		"соски",
+		"сосков"
+	],
+	stems: [
+		"обнажен",
+		"обнажён",
+		"раздет",
+		"минет",
+		"оргазм",
+		"пенис",
+		"эрекц",
+		"вагин",
+		"мастурб"
+	]
+};
+//#endregion
+//#region src/domain/explicit.ts
+var escape = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+var WHOLE = new RegExp(`(^|[^\\p{L}\\p{N}])(${explicit_words_default.tags.map(escape).join("|")})(?=$|[^\\p{L}\\p{N}])`, "iu");
+var STEMS = new RegExp(`(^|[^\\p{L}\\p{N}])(${explicit_words_default.stems.map(escape).join("|")})`, "iu");
+/** True when the text of a scene asks for nudity or sex. */
+function isExplicitScene(text) {
+	const normalized = text.replace(/_/g, " ");
+	return WHOLE.test(normalized) || STEMS.test(normalized);
 }
 //#endregion
 //#region src/features/auto/auto-generation.ts
@@ -10592,7 +10718,11 @@ var SceneService = class {
 	* poses from the marker, the marker prompt as the shared part. A name without a passport or a
 	* character prompt adds nothing; null when no name is usable.
 	*/
-	async markerScene(prompt, chars, query = {}) {
+	/**
+	* `counts`: false when the characters were found by name in the description rather than listed
+	* by the LLM; someone without a passport may be in the picture too, so no "1girl, 1boy".
+	*/
+	async markerScene(prompt, chars, query = {}, options = {}) {
 		const { spec, candidates } = await this.emptySpec(query);
 		const caps = currentCaps();
 		const max = caps.maxCharacters > 0 ? caps.maxCharacters : 3;
@@ -10621,7 +10751,10 @@ var SceneService = class {
 		});
 		spec.base = prompt;
 		if (wanted.some(Boolean)) spec.useCoords = true;
-		return this.build(spec);
+		return this.build(spec, {
+			auto: true,
+			counts: options.counts
+		});
 	}
 	/** Location tags written by the LLM with the built-in "background" template. */
 	async describeLocation() {
@@ -10632,10 +10765,17 @@ var SceneService = class {
 			return "";
 		}
 	}
-	build(spec) {
+	/**
+	* `auto`: a scene nobody composed by hand (markers, the LLM tool) gets the NSFW layer of the
+	* passports only when the scene itself is explicit.
+	*/
+	build(spec, options = {}) {
+		const text = [spec.base, ...spec.participants.map((p) => p.poseTags)].join(", ");
+		const allowNsfw = settings().scene.allowNsfw && (!options.auto || isExplicitScene(text));
 		return buildScene(spec, currentCaps(), {
-			allowNsfw: settings().scene.allowNsfw,
-			customPoses: customPoses()
+			allowNsfw,
+			customPoses: customPoses(),
+			counts: options.counts
 		});
 	}
 	/** Overrides for the panel preview and the inspector. */
@@ -10646,8 +10786,8 @@ var SceneService = class {
 		};
 	}
 	/** Generates the composed scene into a new message or inline into the last message. */
-	async generate(spec, target) {
-		const built = this.build(spec);
+	async generate(spec, target, options = {}) {
+		const built = this.build(spec, options);
 		if (!built.prompt.trim() && !built.characters.some((c) => c.prompt.trim())) throw new NaiError("no-usable-message", "none");
 		const overrides = {
 			edit: false,
@@ -15495,7 +15635,7 @@ var DesIntegration = class {
 		const look = await this.lookTags(this.latestTracker()?.characters.find((ch) => sameName(ch.name, name))?.look ?? "");
 		const s = settings();
 		const identity = found ? passportTags(found.passport, {
-			allowNsfw: s.scene.allowNsfw,
+			allowNsfw: false,
 			withoutClothing: Boolean(look)
 		}) : "";
 		const size = markerDimensions("portrait", void 0, s.anlas.freeOnly);
@@ -15884,11 +16024,7 @@ var MarkerService = class {
 			messageId,
 			text: m.mes
 		};
-		const names = detectParticipants(excerpt, await sceneCandidates(query), { max: 3 }).map((cand) => ({ name: cand.name }));
-		const params = {
-			prompt: excerpt,
-			...names.length ? { chars: names } : {}
-		};
+		const params = { prompt: excerpt };
 		const c = ctx();
 		const ids = Array.from({ length: Math.min(missing, 3) }, () => c.uuidv4());
 		const entries = ids.map((id) => createPendingImage(id, params, this.inline.displayDefaults(markerDisplay(params))));
@@ -15990,13 +16126,14 @@ var MarkerService = class {
 			} else scene = join(style, scene);
 		}
 		let chars = params.chars;
-		if (!chars?.length) {
-			const known = (await sceneCandidates(query)).filter((cand) => cand.passport !== null || Boolean(cand.currentLook?.trim()));
-			const named = detectParticipants(`${params.prompt} ${params.caption ?? ""}`, known, { max: 4 });
+		const declared = Boolean(chars?.length);
+		if (!declared) {
+			const known = (await sceneCandidates(query)).filter((cand) => cand.passport !== null || cand.fallbackPrompt.trim() !== "" || Boolean(cand.currentLook?.trim()));
+			const named = detectParticipants(params.prompt, known, { max: 4 });
 			if (named.length) chars = named.map((cand) => ({ name: cand.name }));
 		}
 		if (chars?.length) {
-			const built = await this.scenes.markerScene(scene, chars, query);
+			const built = await this.scenes.markerScene(scene, chars, query, { counts: declared });
 			if (built) {
 				scene = built.prompt;
 				generation.characters = built.characters;
@@ -16333,7 +16470,7 @@ var ComicService = class {
 };
 //#endregion
 //#region package.json
-var version = "0.9.3";
+var version = "0.9.4";
 //#endregion
 //#region src/features/settings-io/settings-io.ts
 async function exportSettingsFile(includeImages) {
@@ -16809,7 +16946,7 @@ async function generate(pipeline, args) {
 			const shot = SHOTS[text(args.shot).toLowerCase()];
 			if (shot?.framing) spec.framing = shot.framing;
 			if (shot?.distance) spec.distance = shot.distance;
-			const result = await scenes.generate(spec, "message");
+			const result = await scenes.generate(spec, "message", { auto: true });
 			return result && typeof result === "object" ? encodeURI(result.path) : "";
 		}
 	}

@@ -16333,7 +16333,7 @@ var ComicService = class {
 };
 //#endregion
 //#region package.json
-var version = "0.9.2";
+var version = "0.9.3";
 //#endregion
 //#region src/features/settings-io/settings-io.ts
 async function exportSettingsFile(includeImages) {
@@ -18211,15 +18211,18 @@ function installCharacterCardMenu(pipeline) {
 var INTERCEPTOR_NAME = "NAIST_ProcessTriggers";
 /**
 * Inline image placeholders never reach the LLM as raw markers (RECON §2.3 item 8). The prompt array
-* is ST's own copy, so replacing an element with a clone leaves the chat untouched.
+* is ST's own copy, so replacing an element with a copy leaves the chat untouched. The copy is shallow on
+* purpose: `structuredClone` drops symbol keys, and ST leaves a message out of the prompt by
+* `extra[symbols.ignore]` — Qvink Memory removes summarized messages this way before our interceptor runs.
 */
 function stripPlaceholders(chat, mode) {
 	for (let i = 0; i < chat.length; i++) {
 		const message = chat[i];
 		if (!message?.mes?.includes("[nai:img:")) continue;
-		const copy = structuredClone(message);
-		copy.mes = textForPrompt(message.mes, readEntries(message.extra), mode);
-		chat[i] = copy;
+		chat[i] = {
+			...message,
+			mes: textForPrompt(message.mes, readEntries(message.extra), mode)
+		};
 	}
 }
 function installInterceptor(pipeline) {

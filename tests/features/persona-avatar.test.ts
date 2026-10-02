@@ -83,8 +83,8 @@ describe('drawPersonaAvatar', () => {
 
 describe('uploadPersonaAvatar', () => {
     it('crops, overwrites the persona file and refreshes the persona list', async () => {
-        const fetch = vi.fn(
-            async (_url: string, _init?: RequestInit) => new Response(JSON.stringify({ path: 'me.png' })),
+        const fetch = vi.fn<(url: string, init?: RequestInit) => Promise<Response>>(
+            async () => new Response(JSON.stringify({ path: 'me.png' })),
         );
         vi.stubGlobal('fetch', fetch);
         expect(await uploadPersonaAvatar('me.png', image)).toBe(true);

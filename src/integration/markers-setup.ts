@@ -117,15 +117,31 @@ export function setupMarkers(pipeline: Pipeline, inline: InlineImages, scenes: S
     };
     // Awaited by ST before the prompt is built, so the instruction is current.
     on('GENERATION_STARTED', async (type, _options, dryRun) => {
+        keepFirst();
         markers.generationStarted(String(type ?? ''), Boolean(dryRun));
         if (!dryRun) await refreshMarkerInstruction();
     });
     on('STREAM_TOKEN_RECEIVED', () => markers.streamProgress());
-    on('MESSAGE_RECEIVED', (id, type) => {
+    // First of all listeners: the markers become placeholders before anyone else reads the reply.
+    // Doom's Enhancement Suite parses every balanced {…} of the reply in the same event and loses
+    // its info box and quests when a marker's JSON is a second object.
+    const received = (id: unknown, type: unknown) => {
         void markers
             .finalize(Number(id), typeof type === 'string' ? type : undefined)
             .catch((error) => log.warn('markers', error));
-    });
+    };
+    const receivedEvent = c.eventTypes.MESSAGE_RECEIVED;
+    if (receivedEvent && c.eventSource.makeFirst) c.eventSource.makeFirst(receivedEvent, received);
+    else on('MESSAGE_RECEIVED', received);
+    // Another extension may put itself first later (the DES-RU add-on does): take the place back
+    // before every generation, while no reply is being handled.
+    const keepFirst = () => {
+        const list = receivedEvent
+            ? (c.eventSource as { events?: Record<string, unknown[]> }).events?.[receivedEvent]
+            : undefined;
+        const at = Array.isArray(list) ? list.indexOf(received) : -1;
+        if (list && at > 0) list.unshift(...list.splice(at, 1));
+    };
     for (const name of ['GENERATION_ENDED', 'GENERATION_STOPPED']) {
         on(name, () => {
             // After MESSAGE_RECEIVED handlers: only a reply that did not get one is finalized.

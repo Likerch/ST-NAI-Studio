@@ -12435,13 +12435,22 @@ function setupMarkers(pipeline, inline, scenes) {
 		if (event) c.eventSource.on(event, handler);
 	};
 	on("GENERATION_STARTED", async (type, _options, dryRun) => {
+		keepFirst();
 		markers.generationStarted(String(type ?? ""), Boolean(dryRun));
 		if (!dryRun) await refreshMarkerInstruction();
 	});
 	on("STREAM_TOKEN_RECEIVED", () => markers.streamProgress());
-	on("MESSAGE_RECEIVED", (id, type) => {
+	const received = (id, type) => {
 		markers.finalize(Number(id), typeof type === "string" ? type : void 0).catch((error) => log.warn("markers", error));
-	});
+	};
+	const receivedEvent = c.eventTypes.MESSAGE_RECEIVED;
+	if (receivedEvent && c.eventSource.makeFirst) c.eventSource.makeFirst(receivedEvent, received);
+	else on("MESSAGE_RECEIVED", received);
+	const keepFirst = () => {
+		const list = receivedEvent ? c.eventSource.events?.[receivedEvent] : void 0;
+		const at = Array.isArray(list) ? list.indexOf(received) : -1;
+		if (list && at > 0) list.unshift(...list.splice(at, 1));
+	};
 	for (const name of ["GENERATION_ENDED", "GENERATION_STOPPED"]) on(name, () => {
 		setTimeout(() => void markers.generationEnded().catch((error) => log.warn("markers", error)), 150);
 	});
@@ -14191,7 +14200,7 @@ var ComicService = class {
 };
 //#endregion
 //#region package.json
-var version = "0.8.0";
+var version = "0.8.1";
 //#endregion
 //#region src/features/settings-io/settings-io.ts
 async function exportSettingsFile(includeImages) {

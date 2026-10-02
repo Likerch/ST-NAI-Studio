@@ -7,7 +7,7 @@
   "css": "dist/style.css",
   "generate_interceptor": "NAIST_ProcessTriggers",
   "author": "Likerchik",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "homePage": "https://github.com/Likerch/ST-NAI-Studio",
   "auto_update": true,
   "minimum_client_version": "1.19.0",

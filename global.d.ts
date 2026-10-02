@@ -6,6 +6,8 @@ export {};
 declare global {
     interface STEventSource {
         on(event: string, listener: (...args: unknown[]) => unknown): void;
+        /** Puts the listener before the others (ST 1.12+, public/lib/eventemitter.js). */
+        makeFirst?(event: string, listener: (...args: unknown[]) => unknown): void;
         removeListener(event: string, listener: (...args: unknown[]) => unknown): void;
         emit(event: string, ...args: unknown[]): Promise<void>;
     }

@@ -430,7 +430,8 @@ export class Pipeline {
         const trigger = req.trigger.trim();
         if (!trigger && !req.swipe && req.scene === undefined) return null;
 
-        const refine = o.edit ?? s.modes.refine;
+        // Quiet calls come from scripts and extensions (DES portraits): no prompt editor unless asked.
+        const refine = o.edit ?? (o.quiet ? false : s.modes.refine);
         const minimal = o.minimalProcessing ?? s.modes.minimalProcessing;
         let mode: ModeId;
         let scene: string;
@@ -598,7 +599,7 @@ export class Pipeline {
             throw new NaiError('free-only-blocked', 'none', { cost: prepared.cost.total });
         }
 
-        if (s.inspector.openBeforeSend) {
+        if (s.inspector.openBeforeSend && !o.quiet) {
             if (!(await this.ui.inspect(prepared))) return null;
         } else if (
             !req.skipCostConfirm &&

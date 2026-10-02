@@ -69,15 +69,26 @@ function extraPassport(characterIndex: number, passportId: string | undefined): 
     return main?.id === passportId ? null : (rest.find((p) => p.id === passportId) ?? null);
 }
 
+let extraFolder: ((name: string) => string | null) | null = null;
+
+/**
+ * Where the sprites of another character of a card go instead of "<card>/<name>" (Doom's
+ * Enhancement Suite reads characters/<name>, v0.9); null keeps the default.
+ */
+export function setExtraSpriteFolder(rule: ((name: string) => string | null) | null): void {
+    extraFolder = rule;
+}
+
 /**
  * Folder Expressions reads for a character: its override, else the character name (RECON §2.12);
- * another character of the card gets "<folder>/<name>".
+ * another character of the card gets "<folder>/<name>" (or the integration's folder).
  */
 export function spriteFolder(characterIndex: number, passportId?: string): string {
     const base = cardSpriteFolder(characterIndex);
     const extra = extraPassport(characterIndex, passportId);
     const sub = extra?.name.replace(/[\\/:*?"<>|]+/g, ' ').trim();
-    return extra && sub && base ? `${base}/${sub}` : base;
+    if (!extra || !sub) return base;
+    return extraFolder?.(sub) ?? (base ? `${base}/${sub}` : sub);
 }
 
 function cardSpriteFolder(characterIndex: number): string {

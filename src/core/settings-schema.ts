@@ -37,7 +37,7 @@ export interface CustomPoseSettings {
     name: string;
 }
 
-export const CURRENT_SCHEMA_VERSION = 7;
+export const CURRENT_SCHEMA_VERSION = 8;
 
 export type TransportMode = 'auto' | 'plugin' | 'native';
 
@@ -207,6 +207,29 @@ export interface NaiStudioSettings {
         /** Paid marker images are allowed up to maxCost each (free-only mode still wins). */
         allowPaid: boolean;
         maxCost: number;
+    };
+    /** Doom's Enhancement Suite integration (v0.9); works only while DES is installed and on. */
+    des: {
+        enabled: boolean;
+        /** Time of day, weather, indoors / outdoors and the location from the tracker. */
+        sceneTags: boolean;
+        /** Characters of the tracker take part in pictures with their current look. */
+        characters: boolean;
+        /** A new character without a passport gets one written from the tracker. */
+        autoPassports: boolean;
+        /** NAI Studio draws the DES portraits (DES's own auto portraits are off meanwhile). */
+        portraits: boolean;
+        portraitPolicy: 'missing' | 'state' | 'every';
+        /** Framing tags of a portrait. */
+        portraitTags: string;
+        /** Emotions of another character of a card go to characters/<name>, where DES looks. */
+        emotionsToDes: boolean;
+        /** NAI Studio items in the DES portrait menu, a Workshop button. */
+        menu: boolean;
+        /** "Illustrate" on DES scene banners. */
+        banners: boolean;
+        /** DES auto-portrait settings kept while NAI Studio draws the portraits. */
+        saved: { autoPortraitMode: string; autoGenerateAvatars: boolean } | null;
     };
     /** Human language (Russian / English prose) to NovelAI prompts (TZ Phase 7). */
     language: {
@@ -415,6 +438,19 @@ export function defaultSettings(): NaiStudioSettings {
             maxCost: 5,
         },
         language: { mode: 'auto', backend: 'main', profileId: '', novelaiModel: 'glm-4-6', russianOnV5: false },
+        des: {
+            enabled: true,
+            sceneTags: true,
+            characters: true,
+            autoPassports: true,
+            portraits: true,
+            portraitPolicy: 'state',
+            portraitTags: 'portrait, upper body, looking at viewer',
+            emotionsToDes: true,
+            menu: true,
+            banners: true,
+            saved: null,
+        },
         gallery: { enabled: true, thumbSize: 256 },
         png: { stripMetadata: false },
         poses: { custom: [], favorites: [] },
@@ -533,6 +569,13 @@ export const MIGRATIONS: readonly Migration[] = [
             const next: Raw = { ...settings, schemaVersion: 7 };
             if (translate.auto === true && language.mode === undefined) next.language = { ...language, mode: 'auto' };
             return next;
+        },
+    },
+    {
+        // v8: Doom's Enhancement Suite integration; defaults are filled by the merge.
+        to: 8,
+        migrate(settings) {
+            return { ...settings, schemaVersion: 8 };
         },
     },
 ];

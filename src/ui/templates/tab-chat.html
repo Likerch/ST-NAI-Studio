@@ -245,3 +245,52 @@
         <div id="naist_markers_preview" class="menu_button" data-i18n="naist.markers.preview"></div>
     </div>
 </div>
+
+<div class="naist-section" id="naist_des_section">
+    <b data-i18n="naist.des.title"></b>
+    <div class="naist-hint" data-i18n="naist.des.hint"></div>
+    <div class="naist-muted" id="naist_des_status"></div>
+    <label class="checkbox_label"
+        ><input type="checkbox" data-setting="des.enabled" /><span data-i18n="naist.des.enabled"></span
+    ></label>
+    <div class="naist-des-options">
+        <label class="checkbox_label"
+            ><input type="checkbox" data-setting="des.sceneTags" /><span data-i18n="naist.des.sceneTags"></span
+        ></label>
+        <label class="checkbox_label"
+            ><input type="checkbox" data-setting="des.characters" /><span data-i18n="naist.des.characters"></span
+        ></label>
+        <label class="checkbox_label"
+            ><input type="checkbox" data-setting="des.autoPassports" /><span data-i18n="naist.des.autoPassports"></span
+        ></label>
+        <label class="checkbox_label"
+            ><input type="checkbox" data-setting="des.portraits" /><span data-i18n="naist.des.portraits"></span
+        ></label>
+        <div class="naist-grid2">
+            <div>
+                <label for="naist_des_policy" data-i18n="naist.des.policy"></label>
+                <select id="naist_des_policy" class="text_pole" data-setting="des.portraitPolicy">
+                    <option value="missing" data-i18n="naist.des.policyMissing"></option>
+                    <option value="state" data-i18n="naist.des.policyState"></option>
+                    <option value="every" data-i18n="naist.des.policyEvery"></option>
+                </select>
+            </div>
+            <div>
+                <label for="naist_des_framing" data-i18n="naist.des.framing"></label>
+                <input id="naist_des_framing" class="text_pole" data-setting="des.portraitTags" />
+            </div>
+        </div>
+        <label class="checkbox_label"
+            ><input type="checkbox" data-setting="des.emotionsToDes" /><span data-i18n="naist.des.emotionsToDes"></span
+        ></label>
+        <label class="checkbox_label"
+            ><input type="checkbox" data-setting="des.menu" /><span data-i18n="naist.des.menu"></span
+        ></label>
+        <label class="checkbox_label"
+            ><input type="checkbox" data-setting="des.banners" /><span data-i18n="naist.des.banners"></span
+        ></label>
+        <div id="naist_des_passports" class="menu_button">
+            <i class="fa-solid fa-wand-magic-sparkles"></i> <span data-i18n="naist.des.passportsButton"></span>
+        </div>
+    </div>
+</div>

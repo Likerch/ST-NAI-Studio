@@ -36,11 +36,23 @@ import { blobToBase64, toPngBlob } from '../images/image-utils';
 import type { InlineImages } from '../inline/inline-service';
 import type { SceneService } from '../scene/scene-service';
 import { mentionedLocationTags, sceneCandidates, sceneSetting } from '../scene/scene-service';
+import type { SceneQuery } from '../scene/scene-service';
 import { vibeItems } from '../vibes/vibe-library';
 
 interface Job {
     promise: Promise<ProducedImages | null>;
     abort: AbortController;
+}
+
+/**
+ * Holds generations until an integration has its data for the reply (Doom's Enhancement Suite in
+ * separate / external mode writes its tracker after the reply, v0.9).
+ */
+export interface MarkerGate {
+    /** No generation while the reply streams. */
+    holdEarlyStart(): boolean;
+    /** Resolves when the data for this message is there (or after a time limit). */
+    wait(messageId: number, signal?: AbortSignal): Promise<void>;
 }
 
 /** Generation types that never carry markers to illustrate. */
@@ -59,6 +71,7 @@ export class MarkerService {
     private readonly running = new Set<string>();
     private readonly listeners = new Set<(imageId: string) => void>();
     private lastScan = 0;
+    private gate: MarkerGate | null = null;
     /** Messages already illustrated automatically during this generation. */
     private readonly filled = new Set<string>();
     /** A reply is being generated (the formatter hides a marker that is still being written). */
@@ -69,6 +82,10 @@ export class MarkerService {
         private readonly inline: InlineImages,
         private readonly scenes: SceneService,
     ) {}
+
+    setGate(gate: MarkerGate | null): void {
+        this.gate = gate;
+    }
 
     isRunning(imageId: string): boolean {
         return this.running.has(imageId);
@@ -128,7 +145,8 @@ export class MarkerService {
     /** Streaming progress: start generating every complete marker of the reply so far. */
     streamProgress(): void {
         const s = settings().markers;
-        if (!s.enabled || !s.earlyStart || SKIPPED_TYPES.has(this.generationType)) return;
+        if (!s.enabled || !s.earlyStart || SKIPPED_TYPES.has(this.generationType) || this.gate?.holdEarlyStart())
+            return;
         const now = Date.now();
         if (now - this.lastScan < 250) return;
         this.lastScan = now;
@@ -141,7 +159,7 @@ export class MarkerService {
             const key = `${i}:${markerGenerationKey(match.params)}`;
             if (!this.early.has(key)) {
                 log.info('marker complete while streaming, generation queued');
-                this.early.set(key, this.start(match.params));
+                this.early.set(key, this.start(match.params, { messageId: chat.length - 1, text: m.mes }));
             }
         });
     }
@@ -164,6 +182,8 @@ export class MarkerService {
             return;
         }
         const markers = this.markersIn(m.mes);
+        // The reply as written: a tracker at its start describes the scene of these markers.
+        const query: SceneQuery = { messageId, text: m.mes };
         const existing = kind === 'continue' ? readEntries(m.extra).filter((e) => e.marker).length : 0;
         const { keep, drop } = limitMarkers(markers, Math.max(0, s.max - existing));
         if (markers.length) {
@@ -175,7 +195,7 @@ export class MarkerService {
             await this.inline.addPending(messageId, text, entries);
             keep.forEach((match, i) => {
                 const key = `${i}:${markerGenerationKey(match.params)}`;
-                const job = early.get(key) ?? this.start(match.params);
+                const job = early.get(key) ?? this.start(match.params, query);
                 early.delete(key);
                 void this.deliver(messageId, ids[i]!, job);
             });
@@ -196,7 +216,8 @@ export class MarkerService {
         const m = ctx().chat[messageId];
         const excerpt = m ? replyExcerpt(m.mes) : '';
         if (!m || !excerpt) return;
-        const candidates = await sceneCandidates();
+        const query: SceneQuery = { messageId, text: m.mes };
+        const candidates = await sceneCandidates(query);
         const names = detectParticipants(excerpt, candidates, { max: 3 }).map((cand) => ({ name: cand.name }));
         const params: MarkerParams = { prompt: excerpt, ...(names.length ? { chars: names } : {}) };
         const c = ctx();
@@ -205,7 +226,17 @@ export class MarkerService {
             createPendingImage(id, params, this.inline.displayDefaults(markerDisplay(params))),
         );
         await this.inline.addPending(messageId, `${m.mes}\n${ids.map((id) => `[nai:img:${id}]`).join('\n')}`, entries);
-        for (const id of ids) void this.deliver(messageId, id, this.start(params));
+        for (const id of ids) void this.deliver(messageId, id, this.start(params, query));
+    }
+
+    /** One picture asked for from outside the reply (a menu, a scene banner), appended to a message. */
+    async illustrate(messageId: number, params: MarkerParams): Promise<void> {
+        const m = ctx().chat[messageId];
+        if (!m) return;
+        const id = ctx().uuidv4();
+        const entry = createPendingImage(id, params, this.inline.displayDefaults(markerDisplay(params)));
+        await this.inline.addPending(messageId, `${m.mes}\n[nai:img:${id}]`, [entry]);
+        await this.deliver(messageId, id, this.start(params, { messageId, text: m.mes }));
     }
 
     /** Generates a marker image again (after an error or an interrupted generation). */
@@ -213,7 +244,8 @@ export class MarkerService {
         const entry = this.inline.entries(messageId).find((e) => e.id === imageId);
         if (!entry?.marker || this.running.has(imageId)) return;
         await this.inline.setMarkerStatus(messageId, imageId, 'pending');
-        await this.deliver(messageId, imageId, this.start(entry.marker.params));
+        const text = ctx().chat[messageId]?.mes;
+        await this.deliver(messageId, imageId, this.start(entry.marker.params, { messageId, text }));
     }
 
     // ---- generation -----------------------------------------------------------------------
@@ -224,11 +256,15 @@ export class MarkerService {
         return run;
     }
 
-    private start(params: MarkerParams): Job {
+    private start(params: MarkerParams, query: SceneQuery = {}): Job {
         const abort = new AbortController();
-        const promise = this.enqueue(async () =>
-            abort.signal.aborted ? null : await this.produce(params, abort.signal),
-        );
+        const gate = this.gate;
+        const promise = (async () => {
+            if (gate && query.messageId !== undefined) await gate.wait(query.messageId, abort.signal);
+            return await this.enqueue(async () =>
+                abort.signal.aborted ? null : await this.produce(params, abort.signal, query),
+            );
+        })();
         // An early job that is dropped must not end as an unhandled rejection.
         promise.catch(() => undefined);
         return { promise, abort };
@@ -259,13 +295,19 @@ export class MarkerService {
     }
 
     /** One marker as a generation request: every parameter it may carry. */
-    async produce(params: MarkerParams, signal?: AbortSignal): Promise<ProducedImages | null> {
+    async produce(params: MarkerParams, signal?: AbortSignal, query: SceneQuery = {}): Promise<ProducedImages | null> {
         const s = settings();
         const freeOnly = s.anlas.freeOnly || !s.markers.allowPaid;
         const model = markerModel(params.model) ?? s.generation.model;
         const caps = getCapabilities(isModelId(model) ? model : DEFAULT_MODEL);
         const dims = markerDimensions(params.ratio, params.size, freeOnly);
-        const generation: Partial<GenerationSettings> = { model, width: dims.width, height: dims.height };
+        // No character slots of the panel: a marker's characters come from its own description.
+        const generation: Partial<GenerationSettings> = {
+            model,
+            width: dims.width,
+            height: dims.height,
+            characters: [],
+        };
         if (params.seed !== undefined) generation.seed = params.seed;
         if (params.steps !== undefined) generation.steps = clamp(Math.round(params.steps), 1, freeOnly ? 28 : 50);
         if (params.scale !== undefined) generation.scale = clamp(params.scale, 0, 10);
@@ -295,12 +337,14 @@ export class MarkerService {
         // Characters with a passport named in the description take part without "chars" too.
         let chars = params.chars;
         if (!chars?.length) {
-            const known = (await sceneCandidates()).filter((cand) => cand.passport !== null);
+            const known = (await sceneCandidates(query)).filter(
+                (cand) => cand.passport !== null || Boolean(cand.currentLook?.trim()),
+            );
             const named = detectParticipants(`${params.prompt} ${params.caption ?? ''}`, known, { max: 4 });
             if (named.length) chars = named.map((cand) => ({ name: cand.name }));
         }
         if (chars?.length) {
-            const built = await this.scenes.markerScene(scene, chars);
+            const built = await this.scenes.markerScene(scene, chars, query);
             if (built) {
                 scene = built.prompt;
                 generation.characters = built.characters;
@@ -312,11 +356,15 @@ export class MarkerService {
             }
         }
         // Setting of the chat: world / scenario tags and the locations the marker names.
-        const setting = await sceneSetting();
-        const place = mentionedLocationTags(`${params.location ?? ''} ${params.prompt}`, setting.locations);
+        const setting = await sceneSetting(query);
+        const place = mentionedLocationTags(
+            `${params.location ?? ''} ${setting.location} ${params.prompt}`,
+            setting.locations,
+        );
         if (place || setting.world) scene = joinTags(scene, place, setting.world);
         if (params.text && caps.family !== 'v3') scene = `${scene}, text: ${params.text}`;
-        if (params.location && s.continuity.enabled) await setCurrentLocation(params.location).catch(() => undefined);
+        const where = params.location || setting.location;
+        if (where && s.continuity.enabled) await setCurrentLocation(where).catch(() => undefined);
 
         const requestPatch = params.ref ? await this.refPatch(params.ref, dims) : undefined;
         const vibes = params.vibe ? this.namedVibe(params.vibe) : undefined;

@@ -196,6 +196,8 @@ export interface PassportOptions {
     states?: string[];
     /** Global permission for the NSFW layer (the passport switch must be on too). */
     allowNsfw: boolean;
+    /** Leave out clothing and outfits (the current look comes from elsewhere, e.g. a tracker). */
+    withoutClothing?: boolean;
 }
 
 /** Tags of the clothing slot or the chosen outfit. */
@@ -219,7 +221,7 @@ export function passportTags(passport: Passport, options: PassportOptions): stri
         passport.slots.eyes,
         passport.slots.body,
         passport.slots.skin,
-        clothingTags(passport, options.outfit),
+        options.withoutClothing ? '' : clothingTags(passport, options.outfit),
         passport.slots.accessories,
         ...states,
         nsfw,

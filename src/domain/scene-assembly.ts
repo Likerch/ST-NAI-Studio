@@ -28,6 +28,8 @@ export interface SceneCandidate {
     fallbackPrompt: string;
     fallbackNegative: string;
     isUser: boolean;
+    /** What they wear and how they are right now (a scene tracker); replaces the passport's clothing. */
+    currentLook?: string;
 }
 
 export interface SceneParticipant {
@@ -47,6 +49,8 @@ export interface SceneParticipant {
     position: Point;
     /** Extra undesired content for this scene. */
     negative: string;
+    /** Current look from a scene tracker (see SceneCandidate.currentLook). */
+    currentLook?: string;
 }
 
 export interface SceneSpec {
@@ -225,6 +229,7 @@ export function participantFrom(
         fallbackNegative: candidate.fallbackNegative,
         outfit: '',
         states: [],
+        ...(candidate.currentLook ? { currentLook: candidate.currentLook } : {}),
         pose: pose?.id ?? candidate.passport?.pose.preset ?? '',
         poseTags: candidate.passport?.pose.custom ?? '',
         position,
@@ -286,13 +291,19 @@ export function buildScene(
     const pairTags = pair ? pairPoseTags(pair, caps.v4Prompt && capacity > 0) : null;
 
     const characterTags = kept.map((p) => {
+        // A current look (scene tracker) replaces the clothing of the passport, unless an outfit is chosen.
+        const look = p.outfit ? '' : (p.currentLook ?? '');
         const identity = p.passport
-            ? passportTags(p.passport, {
-                  outfit: p.outfit || undefined,
-                  states: p.states,
-                  allowNsfw: options.allowNsfw,
-              })
-            : p.fallbackPrompt;
+            ? joinTags(
+                  passportTags(p.passport, {
+                      outfit: p.outfit || undefined,
+                      states: p.states,
+                      allowNsfw: options.allowNsfw,
+                      withoutClothing: Boolean(look),
+                  }),
+                  look,
+              )
+            : joinTags(p.fallbackPrompt, look);
         const pose = p.pose ? (findPose(p.pose, options.customPoses)?.tags ?? '') : '';
         const index = spec.participants.indexOf(p);
         const pairTag =

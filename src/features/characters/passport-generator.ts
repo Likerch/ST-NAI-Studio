@@ -4,12 +4,12 @@
 import { ctx } from '../../core/context';
 import { NaiError } from '../../core/errors';
 import { log } from '../../core/logger';
-import { PASSPORT_GEN_SCHEMA, parseGeneratedPassports, passportGenMessages } from '../../domain';
-import type { Passport, PassportSource } from '../../domain';
+import { PASSPORT_GEN_SCHEMA, parseGeneratedPassports, passportGenMessages, sentencesNaming } from '../../domain';
+import type { Passport, PassportSource, PassportTarget } from '../../domain';
 import { askLlm } from '../language/llm';
 import { loadCharacter } from './passport-store';
 
-async function ask(source: PassportSource, target: 'card' | 'persona'): Promise<Passport[]> {
+async function ask(source: PassportSource, target: PassportTarget): Promise<Passport[]> {
     if (!source.description.trim() && !source.firstMessage?.trim()) {
         throw new NaiError('translation-failed', 'none', { message: 'the description is empty' });
     }
@@ -48,6 +48,28 @@ export async function generateCardPassports(index: number): Promise<Passport[]> 
     const own = passports.find((p) => p.kind === 'character' && p.name.toLowerCase() === character.name.toLowerCase());
     if (own) own.name = '';
     return passports;
+}
+
+/**
+ * One character passport for a character of a scene tracker (Doom's Enhancement Suite, v0.9): their
+ * current look from the tracker, and the sentences of the card that name them.
+ */
+export async function generateTrackerPassport(name: string, look: string, cardIndex: number | null): Promise<Passport> {
+    const character = cardIndex === null ? undefined : await loadCharacter(cardIndex);
+    const c = ctx();
+    const [first] = await ask(
+        {
+            name,
+            description: look,
+            // Only what the card says about this character: its other people must not leak in.
+            scenario: character ? sentencesNaming(c.substituteParams(character.description ?? ''), [name]) : '',
+        },
+        'npc',
+    );
+    const passport = first!;
+    passport.kind = 'character';
+    passport.name = name;
+    return passport;
 }
 
 /** One character passport from the current persona's description. */

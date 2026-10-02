@@ -232,6 +232,14 @@ export class InlineRenderer {
             if (container && container !== text && text.contains(container)) img.removeAttribute(IMG_ATTR);
             else img.replaceWith(el('span', '', { [IMG_ATTR]: img.getAttribute(IMG_ATTR) ?? '' }));
         });
+        // Copies another extension made of mounted images (DES chat bubbles rebuild .mes_text from
+        // outerHTML) keep our marks but not the loaded picture: load them again.
+        text.querySelectorAll<HTMLImageElement>('img.naist-inline-img:not([src])').forEach((img) => {
+            if ((img.dataset.naistKey || img.dataset.naistPath) && !this.waiting.has(img)) {
+                this.waiting.add(img);
+                this.intersection?.observe(img);
+            }
+        });
         const widgetImages = [...text.querySelectorAll<HTMLImageElement>(`img[src*="${WIDGET_SRC_MARK}"]`)];
         const spans = [...text.querySelectorAll<HTMLElement>(`[${IMG_ATTR}]:not([${MOUNTED_ATTR}])`)];
         if (!spans.length && !widgetImages.length) return;

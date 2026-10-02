@@ -1083,8 +1083,39 @@ var EN = {
 	"naist.passports.mergeReplace": "Replace all",
 	"naist.passports.generated": "Passports generated: {count}. Check them and press Save.",
 	"naist.sprites.who": "For",
-	"naist.sprites.costume": "own folder, switch with /costume",
-	"naist.macro.characters": "Characters of the chat with a NAI Studio passport (name them in an image marker, their looks are added)."
+	"naist.sprites.costume": "own folder",
+	"naist.macro.characters": "Characters of the chat with a NAI Studio passport (name them in an image marker, their looks are added).",
+	"naist.des.title": "Doom's Enhancement Suite",
+	"naist.des.hint": "When DES is installed, NAI Studio takes its scene and characters for pictures, keeps passports for its characters and draws its portraits.",
+	"naist.des.statusSearching": "Looking for DES…",
+	"naist.des.statusAbsent": "DES is not installed or is disabled in SillyTavern.",
+	"naist.des.statusConnected": "DES {version} connected, tracker mode: {mode}.",
+	"naist.des.statusOff": "DES itself is switched off.",
+	"naist.des.statusUnverified": "Checked on DES 2.6.0; this version may differ.",
+	"naist.des.enabled": "Integrate with DES",
+	"naist.des.sceneTags": "Scene from the tracker: time of day, weather, indoors / outdoors, location",
+	"naist.des.characters": "Characters of the tracker in pictures, with their current look",
+	"naist.des.autoPassports": "New character without a passport: write one from the tracker (saved in the card)",
+	"naist.des.portraits": "NAI Studio draws the DES portraits (DES's own auto portraits are off meanwhile)",
+	"naist.des.policy": "Draw a portrait",
+	"naist.des.policyMissing": "when there is none",
+	"naist.des.policyState": "when the look changes",
+	"naist.des.policyEvery": "every reply",
+	"naist.des.framing": "Portrait framing tags",
+	"naist.des.emotionsToDes": "Emotions of other characters of a card go to characters/<name>, where DES looks",
+	"naist.des.menu": "NAI Studio items in the DES portrait menu and the Workshop",
+	"naist.des.banners": "\"Illustrate\" button on DES scene banners",
+	"naist.des.passportsButton": "Passports for the characters of the tracker",
+	"naist.des.passportsDone": "Passports written: {count}.",
+	"naist.des.passportCreated": "Passport written for {name} (saved in the card).",
+	"naist.des.noPassport": "No passport for {name}: nothing to draw from.",
+	"naist.des.portraitStarted": "Drawing the portrait of {name}…",
+	"naist.des.menuPassport": "NAI Studio: passport",
+	"naist.des.menuEmotions": "NAI Studio: emotions",
+	"naist.des.menuPortrait": "NAI Studio: new portrait",
+	"naist.des.menuScene": "NAI Studio: picture with this character",
+	"naist.des.illustrate": "Illustrate this scene (NAI Studio)",
+	"naist.des.workshopPassport": "NAI Studio passport"
 };
 var translator = (text) => text;
 /** Wires the host translator (SillyTavern's translate). Called once on activation. */
@@ -1186,7 +1217,7 @@ function defaultGeneration() {
 }
 function defaultSettings() {
 	return {
-		schemaVersion: 7,
+		schemaVersion: 8,
 		transport: { mode: "auto" },
 		generation: defaultGeneration(),
 		prompts: {
@@ -1277,6 +1308,19 @@ function defaultSettings() {
 			novelaiModel: "glm-4-6",
 			russianOnV5: false
 		},
+		des: {
+			enabled: true,
+			sceneTags: true,
+			characters: true,
+			autoPassports: true,
+			portraits: true,
+			portraitPolicy: "state",
+			portraitTags: "portrait, upper body, looking at viewer",
+			emotionsToDes: true,
+			menu: true,
+			banners: true,
+			saved: null
+		},
 		gallery: {
 			enabled: true,
 			thumbSize: 256
@@ -1352,7 +1396,7 @@ function defaultSettings() {
 		log: { level: "info" }
 	};
 }
-function isObject$2(value) {
+function isObject$3(value) {
 	return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 /**
@@ -1378,12 +1422,12 @@ var MIGRATIONS = [
 				...rest,
 				schemaVersion: 2
 			};
-			if (isObject$2(output) && output.hiddenFromPrompt === false) {
-				const chat = isObject$2(rest.chat) ? rest.chat : {};
+			if (isObject$3(output) && output.hiddenFromPrompt === false) {
+				const chat = isObject$3(rest.chat) ? rest.chat : {};
 				next.chat = {
 					...chat,
 					visibility: {
-						...isObject$2(chat.visibility) ? chat.visibility : {},
+						...isObject$3(chat.visibility) ? chat.visibility : {},
 						panel: true
 					}
 				};
@@ -1430,8 +1474,8 @@ var MIGRATIONS = [
 	{
 		to: 7,
 		migrate(settings) {
-			const translate = isObject$2(settings.translate) ? settings.translate : {};
-			const language = isObject$2(settings.language) ? settings.language : {};
+			const translate = isObject$3(settings.translate) ? settings.translate : {};
+			const language = isObject$3(settings.language) ? settings.language : {};
 			const next = {
 				...settings,
 				schemaVersion: 7
@@ -1442,46 +1486,55 @@ var MIGRATIONS = [
 			};
 			return next;
 		}
+	},
+	{
+		to: 8,
+		migrate(settings) {
+			return {
+				...settings,
+				schemaVersion: 8
+			};
+		}
 	}
 ];
 /** Applies pending migrations, then fills missing keys from defaults (lodash.merge in the host). */
 function migrateAndFill(stored, merge) {
-	let raw = isObject$2(stored) ? structuredClone(stored) : {};
+	let raw = isObject$3(stored) ? structuredClone(stored) : {};
 	const fromVersion = typeof raw.schemaVersion === "number" ? raw.schemaVersion : 0;
-	if (fromVersion > 7) return {
+	if (fromVersion > 8) return {
 		settings: merge(defaultSettings(), raw),
 		fromVersion,
 		migrated: false
 	};
 	for (const migration of MIGRATIONS) if (migration.to > fromVersion) raw = migration.migrate(raw);
 	const settings = merge(defaultSettings(), raw);
-	const generation = isObject$2(raw.generation) ? raw.generation : {};
+	const generation = isObject$3(raw.generation) ? raw.generation : {};
 	settings.generation.characters = Array.isArray(generation.characters) ? generation.characters : [];
-	const prompts = isObject$2(raw.prompts) ? raw.prompts : {};
+	const prompts = isObject$3(raw.prompts) ? raw.prompts : {};
 	settings.prompts.styles = Array.isArray(prompts.styles) ? prompts.styles : [];
-	const poses = isObject$2(raw.poses) ? raw.poses : {};
+	const poses = isObject$3(raw.poses) ? raw.poses : {};
 	settings.poses.custom = Array.isArray(poses.custom) ? poses.custom : [];
 	settings.poses.favorites = Array.isArray(poses.favorites) ? poses.favorites : [];
-	const vibes = isObject$2(raw.vibes) ? raw.vibes : {};
+	const vibes = isObject$3(raw.vibes) ? raw.vibes : {};
 	settings.vibes.items = Array.isArray(vibes.items) ? vibes.items : [];
 	settings.vibes.sets = Array.isArray(vibes.sets) ? vibes.sets : [];
-	const translate = isObject$2(raw.translate) ? raw.translate : {};
+	const translate = isObject$3(raw.translate) ? raw.translate : {};
 	settings.translate.glossary = Array.isArray(translate.glossary) ? translate.glossary : [];
-	const sprites = isObject$2(raw.sprites) ? raw.sprites : {};
+	const sprites = isObject$3(raw.sprites) ? raw.sprites : {};
 	if (Array.isArray(sprites.labels)) settings.sprites.labels = sprites.labels;
-	const takeover = isObject$2(raw.takeover) ? raw.takeover : {};
+	const takeover = isObject$3(raw.takeover) ? raw.takeover : {};
 	settings.takeover.migrationReport = Array.isArray(takeover.migrationReport) ? takeover.migrationReport : [];
-	settings.schemaVersion = 7;
+	settings.schemaVersion = 8;
 	return {
 		settings,
 		fromVersion,
-		migrated: fromVersion !== 7
+		migrated: fromVersion !== 8
 	};
 }
 //#endregion
 //#region src/core/storage.ts
 var instances = /* @__PURE__ */ new Map();
-function instance(storeName) {
+function instance$1(storeName) {
 	let found = instances.get(storeName);
 	if (!found) {
 		found = libs().localforage.createInstance({
@@ -1494,15 +1547,15 @@ function instance(storeName) {
 }
 /** Settings backups and small caches. */
 function store() {
-	return instance("data");
+	return instance$1("data");
 }
 /** Full images and thumbnails (Blob values). */
 function imageStore() {
-	return instance("images");
+	return instance$1("images");
 }
 /** Gallery records (one per generated image). */
 function galleryStore() {
-	return instance("gallery");
+	return instance$1("gallery");
 }
 var BACKUP_PREFIX = "settings-backup:";
 /** Snapshot of settings taken before a migration, keyed by date. */
@@ -4305,7 +4358,7 @@ function passportTags(passport, options) {
 	if (passport.kind !== "character") return joinTags(passport.tags);
 	const states = passport.states.filter((s) => s.enabled || options.states?.includes(s.id)).map((s) => s.tags);
 	const nsfw = options.allowNsfw && passport.nsfw.enabled ? passport.nsfw.tags : "";
-	return joinTags(passport.slots.base, passport.slots.hair, passport.slots.eyes, passport.slots.body, passport.slots.skin, clothingTags(passport, options.outfit), passport.slots.accessories, ...states, nsfw, passport.slots.style);
+	return joinTags(passport.slots.base, passport.slots.hair, passport.slots.eyes, passport.slots.body, passport.slots.skin, options.withoutClothing ? "" : clothingTags(passport, options.outfit), passport.slots.accessories, ...states, nsfw, passport.slots.style);
 }
 function isPassportEmpty(passport) {
 	if (!passport) return true;
@@ -5104,6 +5157,7 @@ function participantFrom(candidate, position, pose) {
 		fallbackNegative: candidate.fallbackNegative,
 		outfit: "",
 		states: [],
+		...candidate.currentLook ? { currentLook: candidate.currentLook } : {},
 		pose: pose?.id ?? candidate.passport?.pose.preset ?? "",
 		poseTags: candidate.passport?.pose.custom ?? "",
 		position,
@@ -5148,11 +5202,13 @@ function buildScene(spec, caps, options) {
 	const pair = spec.pair ? findPairPose(spec.pair.pose) : void 0;
 	const pairTags = pair ? pairPoseTags(pair, caps.v4Prompt && capacity > 0) : null;
 	const characterTags = kept.map((p) => {
-		const identity = p.passport ? passportTags(p.passport, {
+		const look = p.outfit ? "" : p.currentLook ?? "";
+		const identity = p.passport ? joinTags(passportTags(p.passport, {
 			outfit: p.outfit || void 0,
 			states: p.states,
-			allowNsfw: options.allowNsfw
-		}) : p.fallbackPrompt;
+			allowNsfw: options.allowNsfw,
+			withoutClothing: Boolean(look)
+		}), look) : joinTags(p.fallbackPrompt, look);
 		const pose = p.pose ? findPose(p.pose, options.customPoses)?.tags ?? "" : "";
 		const index = spec.participants.indexOf(p);
 		const pairTag = pairTags && spec.pair ? index === spec.pair.a ? pairTags[0] : index === spec.pair.b ? pairTags[1] : "" : "";
@@ -6163,7 +6219,7 @@ function buildSettingsExport(settings, schemaVersion, appVersion, images = {}, n
 		...Object.keys(images).length ? { images } : {}
 	};
 }
-var isObject$1 = (v) => typeof v === "object" && v !== null && !Array.isArray(v);
+var isObject$2 = (v) => typeof v === "object" && v !== null && !Array.isArray(v);
 function checkSettingsImport(text, currentSchema) {
 	let data;
 	try {
@@ -6174,12 +6230,12 @@ function checkSettingsImport(text, currentSchema) {
 			reason: "not-json"
 		};
 	}
-	if (!isObject$1(data) || data.format !== "nai-studio-settings") return {
+	if (!isObject$2(data) || data.format !== "nai-studio-settings") return {
 		ok: false,
 		reason: "wrong-format"
 	};
 	const schemaVersion = Number(data.schemaVersion);
-	if (!Number.isInteger(schemaVersion) || schemaVersion < 1 || !isObject$1(data.settings)) return {
+	if (!Number.isInteger(schemaVersion) || schemaVersion < 1 || !isObject$2(data.settings)) return {
 		ok: false,
 		reason: "invalid"
 	};
@@ -6189,7 +6245,7 @@ function checkSettingsImport(text, currentSchema) {
 		schemaVersion
 	};
 	const images = {};
-	if (isObject$1(data.images)) {
+	if (isObject$2(data.images)) {
 		for (const [key, value] of Object.entries(data.images)) if (typeof value === "string" && /^vibe(thumb)?:/.test(key)) images[key] = value;
 	}
 	return {
@@ -7279,6 +7335,13 @@ var SYSTEM_PERSONA = [
 	"Answer only with JSON: {\"passports\": [ one entry of kind \"character\" ]} with the fields name, aliases, base (count tag and what they are: \"1girl, adult\", \"1boy, elf\"), hair, eyes, body, skin, clothing, accessories, outfits ({\"name\",\"tags\"}), nsfw (explicit body details only if given), negative.",
 	"Rules: English Danbooru tags, lowercase, comma separated, spaces instead of underscores. Only what the text says or clearly implies, never invent; leave a field empty when unknown. No quality or art style tags."
 ].join("\n");
+var SYSTEM_NPC = [
+	"You read how a roleplay scene tracker describes a character right now, and the story card they come from, and write one visual passport for an image generator (NovelAI, Danbooru tags).",
+	"Answer only with JSON: {\"passports\": [ one entry of kind \"character\" ]} with the fields name, aliases, base (count tag and what they are: \"1girl, elf, adult\", \"1boy, orc\"), hair, eyes, body, skin, clothing (what they wear in the tracker), accessories, outfits, nsfw (explicit body details only if given), negative.",
+	"Permanent features (species, body, face, hair, eyes, skin) go to their fields; temporary states (wet, wounded, blushing) are left out.",
+	"The story card describes the world and other characters: take from it only what it says about this character by name, never the traits of anyone else (race, hair, clothes).",
+	"Rules: English Danbooru tags, lowercase, comma separated, spaces instead of underscores. Only what the texts say or clearly imply about this character, never invent; leave a field empty when unknown. No quality or art style tags."
+].join("\n");
 var str$1 = { type: "string" };
 var PASSPORT_GEN_SCHEMA = {
 	name: "nai_passports",
@@ -7326,14 +7389,24 @@ function clip(text, max) {
 	const value = (text ?? "").trim();
 	return value.length > max ? `${value.slice(0, max)}…` : value;
 }
-/** System and user messages for a card or a persona. */
+var SYSTEMS = {
+	card: SYSTEM_CARD,
+	persona: SYSTEM_PERSONA,
+	npc: SYSTEM_NPC
+};
+var LABELS = {
+	card: "Card",
+	persona: "Persona",
+	npc: "Character"
+};
+/** System and user messages for a card, a persona or one character of a scene tracker. */
 function passportGenMessages(source, target) {
-	const parts = [`${target === "card" ? "Card" : "Persona"}: ${source.name}`, `Description:\n${clip(source.description, LIMITS.description)}`];
+	const parts = [`${LABELS[target]}: ${source.name}`, `${target === "npc" ? "Tracker" : "Description"}:\n${clip(source.description, LIMITS.description)}`];
 	if (source.personality?.trim()) parts.push(`Personality:\n${clip(source.personality, LIMITS.personality)}`);
-	if (source.scenario?.trim()) parts.push(`Scenario:\n${clip(source.scenario, LIMITS.scenario)}`);
+	if (source.scenario?.trim()) parts.push(`${target === "npc" ? "Story card" : "Scenario"}:\n${clip(source.scenario, target === "npc" ? LIMITS.description : LIMITS.scenario)}`);
 	if (source.firstMessage?.trim()) parts.push(`First message:\n${clip(source.firstMessage, LIMITS.firstMessage)}`);
 	return {
-		system: target === "card" ? SYSTEM_CARD : SYSTEM_PERSONA,
+		system: SYSTEMS[target],
 		user: parts.join("\n\n")
 	};
 }
@@ -7387,6 +7460,377 @@ function parseGeneratedPassports(raw, fallbackName = "") {
 		if (kind === "character" ? PASSPORT_SLOTS.some((slot) => passport.slots[slot]) || passport.outfits.length > 0 : passport.tags !== "") result.push(passport);
 	}
 	return result;
+}
+/** Sentences of a text that name a character (any spelling the name matcher accepts), joined. */
+function sentencesNaming(text, names) {
+	return text.split(/(?<=[.!?…])\s+|\n+/).filter((sentence) => sentence.trim() && mentionIndex(sentence, names) >= 0).join(" ").trim();
+}
+var des_words_default = {
+	time: {
+		"dawn": [
+			"dawn",
+			"daybreak",
+			"sunrise",
+			"рассвет",
+			"заря",
+			"зари",
+			"восход"
+		],
+		"morning": [
+			"morning",
+			"утро",
+			"утра",
+			"утром",
+			"утрен"
+		],
+		"day": [
+			"noon",
+			"midday",
+			"afternoon",
+			"daytime",
+			"день",
+			"дня",
+			"днём",
+			"днем",
+			"полдень",
+			"полдня",
+			"дневн"
+		],
+		"sunset": [
+			"sunset",
+			"dusk",
+			"twilight",
+			"закат",
+			"сумерк",
+			"смеркается"
+		],
+		"evening": [
+			"evening",
+			"вечер",
+			"вечером",
+			"вечерн"
+		],
+		"night": [
+			"night",
+			"midnight",
+			"ночь",
+			"ночи",
+			"ночью",
+			"ночн",
+			"полночь",
+			"полуночи"
+		]
+	},
+	weather: {
+		"storm": [
+			"storm",
+			"thunder",
+			"lightning",
+			"гроза",
+			"грозы",
+			"шторм",
+			"буря",
+			"бури",
+			"молни",
+			"гром"
+		],
+		"snow": [
+			"snow",
+			"blizzard",
+			"flurr",
+			"снег",
+			"снеж",
+			"метель",
+			"вьюг",
+			"пурга"
+		],
+		"rain": [
+			"rain",
+			"drizzle",
+			"shower",
+			"downpour",
+			"дожд",
+			"ливень",
+			"ливн",
+			"морос"
+		],
+		"fog": [
+			"fog",
+			"mist",
+			"haze",
+			"туман",
+			"дымк",
+			"мгла"
+		],
+		"cloudy": [
+			"cloud",
+			"overcast",
+			"облач",
+			"пасмур",
+			"тучи",
+			"туч"
+		],
+		"wind": [
+			"wind",
+			"gale",
+			"ветер",
+			"ветр",
+			"ветрен"
+		],
+		"clear": [
+			"clear",
+			"sunny",
+			"ясно",
+			"ясн",
+			"солнеч",
+			"безоблач"
+		]
+	},
+	indoors: [
+		"indoor",
+		"inside",
+		"interior",
+		"в помещении",
+		"внутри",
+		"помещени",
+		"в доме",
+		"в комнате",
+		"в здании"
+	],
+	outdoors: [
+		"outdoor",
+		"outside",
+		"на улице",
+		"снаружи",
+		"под открытым небом"
+	],
+	appearanceKeys: [
+		"appearance",
+		"look",
+		"outfit",
+		"cloth",
+		"attire",
+		"wear",
+		"dress",
+		"equipment",
+		"equipement",
+		"внешн",
+		"облик",
+		"одежд",
+		"наряд",
+		"экипир",
+		"vneshn",
+		"odezhd",
+		"naryad"
+	],
+	stateKeys: [
+		"effect",
+		"status",
+		"condition",
+		"injur",
+		"состоян",
+		"эффект",
+		"ранени",
+		"sostoyan"
+	]
+};
+//#endregion
+//#region src/domain/des.ts
+var isObject$1 = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
+function text$1(value) {
+	if (typeof value === "string") return value.trim();
+	if (typeof value === "number") return String(value);
+	if (isObject$1(value)) {
+		for (const key of [
+			"value",
+			"forecast",
+			"text",
+			"content",
+			"name"
+		]) if (typeof value[key] === "string" && value[key]) return value[key].trim();
+	}
+	return "";
+}
+/** JSON as DES's models write it: tolerate trailing commas. */
+function parseLoose(json) {
+	try {
+		return JSON.parse(json);
+	} catch {
+		try {
+			return JSON.parse(json.replace(/,\s*([}\]])/g, "$1"));
+		} catch {
+			return null;
+		}
+	}
+}
+/** Balanced top-level {…} of a text (strings respected), like DES's own scanner. */
+function jsonObjectsIn(source, limit = 5e4) {
+	const found = [];
+	const end = Math.min(source.length, limit);
+	let i = 0;
+	while (i < end) {
+		if (source[i] !== "{") {
+			i++;
+			continue;
+		}
+		let depth = 1;
+		let j = i + 1;
+		let inString = false;
+		let escape = false;
+		while (j < end && depth > 0) {
+			const ch = source[j];
+			if (escape) escape = false;
+			else if (ch === "\\") escape = true;
+			else if (ch === "\"") inString = !inString;
+			else if (!inString) {
+				if (ch === "{") depth++;
+				else if (ch === "}") depth--;
+			}
+			j++;
+		}
+		if (depth === 0) {
+			found.push(source.slice(i, j));
+			i = j;
+		} else i++;
+	}
+	return found;
+}
+/** The DES tracker object in a reply text (the first object with quests, infoBox or characters). */
+function trackerFromText(reply) {
+	const cleaned = reply.replace(/<think(?:ing)?>[\s\S]*?<\/think(?:ing)?>/gi, "");
+	for (const json of jsonObjectsIn(cleaned)) {
+		const data = parseLoose(json);
+		if (isObject$1(data) && ("infoBox" in data || "characters" in data || "quests" in data)) return normalizeTracker(data.infoBox, data.characters);
+	}
+	return null;
+}
+/** The tracker DES saved for a message swipe (`extra.dooms_tracker_swipes`, JSON strings). */
+function trackerFromSwipe(extra, swipeId = 0) {
+	const store = isObject$1(extra) ? extra.dooms_tracker_swipes : void 0;
+	const entry = Array.isArray(store) ? store[swipeId] : isObject$1(store) ? store[String(swipeId)] : void 0;
+	if (!isObject$1(entry)) return null;
+	const read = (value) => typeof value === "string" ? parseLoose(value) : value;
+	const infoBox = read(entry.infoBox);
+	const thoughts = read(entry.characterThoughts);
+	if (!infoBox && !thoughts) return null;
+	return normalizeTracker(infoBox, thoughts);
+}
+function normalizeTracker(infoBox, characters) {
+	const list = Array.isArray(characters) ? characters : isObject$1(characters) && Array.isArray(characters.characters) ? characters.characters : [];
+	const box = isObject$1(infoBox) && isObject$1(infoBox.infoBox) ? infoBox.infoBox : infoBox;
+	return {
+		scene: isObject$1(box) ? sceneFromInfoBox(box) : null,
+		characters: list.map(characterOf).filter(Boolean)
+	};
+}
+var has = (haystack, stems) => stems.some((stem) => haystack.includes(stem));
+function characterOf(raw) {
+	if (!isObject$1(raw)) return null;
+	const name = text$1(raw.name);
+	if (!name) return null;
+	const details = isObject$1(raw.details) ? raw.details : {};
+	const fields = [...Object.entries(details).map(([k, v]) => [k.toLowerCase(), text$1(v)]), ...[
+		"appearance",
+		"outfit",
+		"clothing",
+		"status",
+		"effects"
+	].map((k) => [k, text$1(raw[k])])];
+	const pick = (stems) => fields.filter(([k, v]) => v && has(k, stems)).map(([, v]) => v);
+	return {
+		name,
+		look: [.../* @__PURE__ */ new Set([...pick(des_words_default.appearanceKeys), ...pick(des_words_default.stateKeys)])].join("; ")
+	};
+}
+/** Hour of a time text ("14:20", "Evening, 19:40"), or null. */
+function hourOf(time) {
+	const match = time.match(/(\d{1,2})[:.](\d{2})/);
+	if (!match) return null;
+	const hour = Number(match[1]);
+	return hour >= 0 && hour < 24 ? hour : null;
+}
+function timeOfDay(time) {
+	const lower = time.toLowerCase();
+	for (const [part, stems] of Object.entries(des_words_default.time)) if (has(lower, stems)) return part;
+	const hour = hourOf(time);
+	if (hour === null) return "";
+	if (hour >= 4 && hour < 6) return "dawn";
+	if (hour >= 6 && hour < 11) return "morning";
+	if (hour >= 11 && hour < 17) return "day";
+	if (hour >= 17 && hour < 21) return "evening";
+	return "night";
+}
+var TIME_TAGS = {
+	dawn: ["sunrise"],
+	morning: ["morning"],
+	day: ["day"],
+	sunset: ["sunset"],
+	evening: ["evening"],
+	night: ["night"]
+};
+var EMOJI_WEATHER = [
+	[/⛈|🌩/u, "storm"],
+	[/❄|🌨|☃/u, "snow"],
+	[/🌧|☔|🌦/u, "rain"],
+	[/🌫/u, "fog"],
+	[/☁|🌥/u, "cloudy"],
+	[/🌬/u, "wind"],
+	[/☀|🌤/u, "clear"]
+];
+function weatherOf(forecast, emoji) {
+	const lower = forecast.toLowerCase();
+	for (const [kind, stems] of Object.entries(des_words_default.weather)) if (has(lower, stems)) return kind;
+	for (const [pattern, kind] of EMOJI_WEATHER) if (pattern.test(emoji)) return kind;
+	return "";
+}
+/** Scene of a DES info box with its image tags. */
+function sceneFromInfoBox(box) {
+	const location = text$1(box.location);
+	const timeRaw = box.time;
+	const time = isObject$1(timeRaw) ? text$1(timeRaw.end) || text$1(timeRaw.start) || text$1(timeRaw) : text$1(timeRaw);
+	const weatherRaw = box.weather;
+	const weather = text$1(weatherRaw);
+	const emoji = isObject$1(weatherRaw) ? text$1(weatherRaw.emoji) : "";
+	const context = [
+		weather,
+		location,
+		text$1(box.conditions),
+		text$1(box.terrain)
+	].join(" ").toLowerCase();
+	const indoors = has(context, des_words_default.indoors);
+	const outdoors = !indoors && has(context, des_words_default.outdoors);
+	const tags = [];
+	const part = timeOfDay(time);
+	tags.push(...TIME_TAGS[part] ?? []);
+	if (indoors) tags.push("indoors");
+	else {
+		if (outdoors) tags.push("outdoors");
+		const kind = weatherOf(weather, emoji);
+		if (kind === "storm") tags.push("storm", "lightning");
+		else if (kind === "snow") tags.push("snow", "snowing");
+		else if (kind === "rain") tags.push("rain");
+		else if (kind === "fog") tags.push("fog");
+		else if (kind === "cloudy") tags.push("cloudy sky");
+		else if (kind === "wind") tags.push("wind");
+		else if (kind === "clear" && part) tags.push(part === "night" || part === "evening" ? "night sky" : "blue sky");
+	}
+	return {
+		location,
+		time,
+		weather,
+		tags: [...new Set(tags)]
+	};
+}
+var COUNT_TAG = /^(?:\d+\+?\s?(?:girls?|boys?|others?)|solo|solo focus|multiple (?:girls|boys|others)|no humans)$/i;
+/**
+* A converted look without subject-count tags ("1girl", "solo"): who the character is comes from
+* their passport; a converter guessing the count from a clothing description is often wrong.
+*/
+function withoutCountTags(prompt) {
+	const cut = prompt.search(/\.\s/);
+	const head = cut >= 0 ? prompt.slice(0, cut) : prompt;
+	const tail = cut >= 0 ? prompt.slice(cut) : "";
+	return `${head.split(",").map((tag) => tag.trim()).filter((tag) => tag && !COUNT_TAG.test(tag)).join(", ")}${tail}`.trim();
 }
 //#endregion
 //#region src/features/auto/auto-generation.ts
@@ -8994,7 +9438,7 @@ var Pipeline = class {
 		const o = req.overrides ?? {};
 		const trigger = req.trigger.trim();
 		if (!trigger && !req.swipe && req.scene === void 0) return null;
-		const refine = o.edit ?? s.modes.refine;
+		const refine = o.edit ?? (o.quiet ? false : s.modes.refine);
 		const minimal = o.minimalProcessing ?? s.modes.minimalProcessing;
 		let mode;
 		let scene;
@@ -9136,7 +9580,7 @@ var Pipeline = class {
 		if (s.stream.enabled && transport?.features.stream === true && caps.family !== "v3" && patch.stream === void 0) patch.stream = "sse";
 		const prepared = this.controller.prepare(assembled.overrides, patch);
 		if (req.maxCost !== void 0 && prepared.cost.total > req.maxCost) throw new NaiError("free-only-blocked", "none", { cost: prepared.cost.total });
-		if (s.inspector.openBeforeSend) {
+		if (s.inspector.openBeforeSend && !o.quiet) {
 			if (!await this.ui.inspect(prepared)) return null;
 		} else if (!req.skipCostConfirm && prepared.blockers.length === 0 && prepared.cost.total > 0 && prepared.cost.total > s.anlas.confirmAbove) {
 			if (!await this.ui.confirmCost(prepared)) return null;
@@ -9715,6 +10159,11 @@ var InlineImages = class {
 };
 //#endregion
 //#region src/features/characters/passport-store.ts
+var savedListeners = /* @__PURE__ */ new Set();
+/** Called after the passports of a card are saved (integrations keep their copies in sync). */
+function onPassportsSaved(listener) {
+	savedListeners.add(listener);
+}
 function cardField(character) {
 	return character?.data?.extensions?.[CARD_FIELD];
 }
@@ -9744,6 +10193,9 @@ async function saveCardPassports(index, passports) {
 		passports,
 		passport: main ?? void 0
 	});
+	for (const listener of savedListeners) try {
+		listener(index, passports);
+	} catch {}
 }
 /** Replaces one passport of the card by id (or adds it). */
 async function saveCardPassport(index, passport) {
@@ -9789,6 +10241,29 @@ function currentCaps() {
 function aliasesOf(name) {
 	const first = name.trim().split(/\s+/)[0] ?? "";
 	return first && first !== name.trim() ? [first] : [];
+}
+var provider = null;
+function setSceneProvider(next) {
+	provider = next;
+}
+var sameCandidate = (a, b) => mentionIndex(a.name, [b.name, ...b.aliases]) >= 0 || mentionIndex(b.name, [a.name, ...a.aliases]) >= 0;
+/** Candidates of the cards and the persona, with the provider's people merged in. */
+async function withProvided(base, query) {
+	if (!provider) return base;
+	let extra = [];
+	try {
+		extra = await provider.candidates(query);
+	} catch (error) {
+		log.warn("scene provider: people not available", error);
+	}
+	for (const person of extra) {
+		const known = base.find((c) => !c.isUser && sameCandidate(c, person));
+		if (known) {
+			if (person.currentLook) known.currentLook = person.currentLook;
+			known.aliases = [.../* @__PURE__ */ new Set([...known.aliases, ...person.aliases])];
+		} else base.push(person);
+	}
+	return base;
 }
 /**
 * The people of a card: one candidate per character passport (the main one keeps the card key);
@@ -9836,8 +10311,11 @@ function chatCardIndexes() {
 	if (c.characterId !== void 0 && c.characterId !== null && c.characterId !== "") return [Number(c.characterId)];
 	return [];
 }
-/** Setting of the chat from its cards: world and scenario tags, named locations. */
-async function sceneSetting() {
+/**
+* Setting of the chat: world and scenario tags and named locations of its cards, plus the setting
+* tags and the current location of a provider (a scene tracker).
+*/
+async function sceneSetting(query = {}) {
 	const world = [];
 	const locations = [];
 	for (const index of chatCardIndexes()) for (const passport of cardPassports(await loadCharacter(index))) if (passport.kind === "world" || passport.kind === "scenario") world.push(passport.tags);
@@ -9846,9 +10324,19 @@ async function sceneSetting() {
 		aliases: passport.aliases,
 		tags: passport.tags
 	});
+	let tracked = {
+		tags: [],
+		location: ""
+	};
+	if (provider) try {
+		tracked = await provider.setting(query);
+	} catch (error) {
+		log.warn("scene provider: setting not available", error);
+	}
 	return {
-		world: joinTags(...world),
-		locations
+		world: joinTags(...world, tracked.tags.join(", ")),
+		locations,
+		location: tracked.location
 	};
 }
 /** Tags of the locations a text names (whole-word name or alias). */
@@ -9856,7 +10344,7 @@ function mentionedLocationTags(text, locations) {
 	return joinTags(...locations.filter((l) => mentionIndex(text, [l.name, ...l.aliases]) >= 0).map((l) => l.tags));
 }
 /** Characters of the current chat (the 1:1 character or every group member) and the persona. */
-async function sceneCandidates() {
+async function sceneCandidates(query = {}) {
 	const c = ctx();
 	const result = [];
 	for (const index of chatCardIndexes()) result.push(...await characterCandidates(index));
@@ -9870,7 +10358,7 @@ async function sceneCandidates() {
 		fallbackNegative: "",
 		isUser: true
 	});
-	return result;
+	return await withProvided(result, query);
 }
 function sentencesMentioning(text, candidate) {
 	const names = [candidate.name, ...candidate.aliases].map((n) => n.toLowerCase()).filter((n) => n.length > 1);
@@ -9902,10 +10390,10 @@ var SceneService = class {
 		this.inline = inline;
 	}
 	/** An empty scene with every candidate available (the composer starts from this). */
-	async emptySpec() {
+	async emptySpec(query = {}) {
 		const s = settings().scene;
 		return {
-			candidates: await sceneCandidates(),
+			candidates: await sceneCandidates(query),
 			spec: {
 				base: "",
 				framing: s.framing,
@@ -9950,7 +10438,7 @@ var SceneService = class {
 		}
 		if (settings().scene.llmBase && source.text.trim()) spec.base = await this.describeLocation();
 		const setting = await sceneSetting();
-		spec.base = joinTags(spec.base, mentionedLocationTags(source.text, setting.locations), setting.world);
+		spec.base = joinTags(spec.base, mentionedLocationTags(`${setting.location} ${source.text}`, setting.locations), setting.world);
 		return {
 			spec,
 			candidates
@@ -9961,14 +10449,14 @@ var SceneService = class {
 	* poses from the marker, the marker prompt as the shared part. A name without a passport or a
 	* character prompt adds nothing; null when no name is usable.
 	*/
-	async markerScene(prompt, chars) {
-		const { spec, candidates } = await this.emptySpec();
+	async markerScene(prompt, chars, query = {}) {
+		const { spec, candidates } = await this.emptySpec(query);
 		const caps = currentCaps();
 		const max = caps.maxCharacters > 0 ? caps.maxCharacters : 3;
 		const picked = [];
 		for (const ch of chars) {
 			if (picked.length >= max) break;
-			const candidate = candidates.find((c) => (c.passport !== null || c.fallbackPrompt.trim() !== "") && !picked.some((p) => p.candidate.key === c.key) && mentionIndex(ch.name, [c.name, ...c.aliases]) >= 0);
+			const candidate = candidates.find((c) => (c.passport !== null || c.fallbackPrompt.trim() !== "" || Boolean(c.currentLook?.trim())) && !picked.some((p) => p.candidate.key === c.key) && mentionIndex(ch.name, [c.name, ...c.aliases]) >= 0);
 			if (candidate) picked.push({
 				candidate,
 				ch
@@ -11077,6 +11565,12 @@ var InlineRenderer = class {
 			if (container && container !== text && text.contains(container)) img.removeAttribute(IMG_ATTR);
 			else img.replaceWith(el("span", "", { [IMG_ATTR]: img.getAttribute("data-naist-img") ?? "" }));
 		});
+		text.querySelectorAll("img.naist-inline-img:not([src])").forEach((img) => {
+			if ((img.dataset.naistKey || img.dataset.naistPath) && !this.waiting.has(img)) {
+				this.waiting.add(img);
+				this.intersection?.observe(img);
+			}
+		});
 		const widgetImages = [...text.querySelectorAll(`img[src*="${WIDGET_SRC_MARK}"]`)];
 		const spans = [...text.querySelectorAll(`[${IMG_ATTR}]:not([${MOUNTED_ATTR}])`)];
 		if (!spans.length && !widgetImages.length) return;
@@ -11719,6 +12213,180 @@ function registerInlineCommands(pipeline, service) {
 	}));
 	log.info("inline image commands registered");
 }
+//#endregion
+//#region src/features/language/llm.ts
+var asText = (value) => typeof value === "string" ? value : value && typeof value === "object" && "content" in value ? asText(value.content) : value === void 0 || value === null ? "" : JSON.stringify(value);
+async function viaMain(req) {
+	const c = ctx();
+	if (c.mainApi === "openai") return asText(await c.generateRaw({
+		prompt: req.user,
+		systemPrompt: req.system,
+		responseLength: req.maxTokens,
+		...req.schema ? { jsonSchema: req.schema } : {}
+	}));
+	const answer = asText(await c.generateRaw({
+		prompt: [{
+			role: "system",
+			content: `${req.system}\n\n${req.user}`
+		}],
+		prefill: "{",
+		responseLength: req.maxTokens
+	}));
+	return answer.trimStart().startsWith("{") ? answer : `{${answer}`;
+}
+async function viaProfile(req) {
+	const service = ctx().ConnectionManagerRequestService;
+	const id = settings().language.profileId;
+	if (!id) throw new NaiError("translation-failed", "none", { message: "no connection profile selected" });
+	const chat = service.validateProfile(service.getProfile(id)).selected === "openai";
+	const text = asText(chat ? await service.sendRequest(id, [{
+		role: "system",
+		content: req.system
+	}, {
+		role: "user",
+		content: req.user
+	}], req.maxTokens, {
+		stream: false,
+		extractData: true,
+		includePreset: false
+	}, req.schema ? { json_schema: req.schema } : {}) : await service.sendRequest(id, `${req.system}\n\n${req.user}\n{`, req.maxTokens, {
+		stream: false,
+		extractData: true,
+		includePreset: true,
+		includeInstruct: false
+	}));
+	return chat || text.trimStart().startsWith("{") ? text : `{${text}`;
+}
+async function viaNovelAi(req) {
+	return await novelAiText({
+		fetch: (input, init) => fetch(input, init),
+		headers: () => requestHeaders()
+	}, {
+		model: settings().language.novelaiModel,
+		messages: [{
+			role: "system",
+			content: req.system
+		}, {
+			role: "user",
+			content: req.user
+		}],
+		maxTokens: req.maxTokens
+	});
+}
+async function askLlm(req) {
+	try {
+		const backend = settings().language.backend;
+		if (backend === "profile") return await viaProfile(req);
+		if (backend === "novelai") return await viaNovelAi(req);
+		return await viaMain(req);
+	} catch (error) {
+		if (error instanceof NaiError) throw error;
+		throw new NaiError("translation-failed", "none", { message: String(error?.message ?? error) });
+	}
+}
+//#endregion
+//#region src/features/characters/passport-generator.ts
+async function ask(source, target) {
+	if (!source.description.trim() && !source.firstMessage?.trim()) throw new NaiError("translation-failed", "none", { message: "the description is empty" });
+	const { system, user } = passportGenMessages(source, target);
+	const answer = await askLlm({
+		system,
+		user,
+		schema: PASSPORT_GEN_SCHEMA,
+		maxTokens: target === "card" ? 3500 : 1200
+	});
+	const passports = parseGeneratedPassports(answer, source.name);
+	if (!passports.length) {
+		log.warn("passport generation: no usable passports in", answer.slice(0, 300));
+		throw new NaiError("translation-failed", "none", { message: "the answer had no usable passports" });
+	}
+	return passports;
+}
+/** Passports for every character, the world, places, the scenario and objects of a card. */
+async function generateCardPassports(index) {
+	const character = await loadCharacter(index);
+	if (!character) throw new NaiError("no-usable-message", "none");
+	const c = ctx();
+	const sub = (text) => c.substituteParams(text ?? "");
+	const passports = await ask({
+		name: character.name,
+		description: sub(character.description),
+		personality: sub(character.personality),
+		scenario: sub(character.scenario),
+		firstMessage: sub(character.first_mes)
+	}, "card");
+	const own = passports.find((p) => p.kind === "character" && p.name.toLowerCase() === character.name.toLowerCase());
+	if (own) own.name = "";
+	return passports;
+}
+/**
+* One character passport for a character of a scene tracker (Doom's Enhancement Suite, v0.9): their
+* current look from the tracker, and the sentences of the card that name them.
+*/
+async function generateTrackerPassport(name, look, cardIndex) {
+	const character = cardIndex === null ? void 0 : await loadCharacter(cardIndex);
+	const c = ctx();
+	const [first] = await ask({
+		name,
+		description: look,
+		scenario: character ? sentencesNaming(c.substituteParams(character.description ?? ""), [name]) : ""
+	}, "npc");
+	const passport = first;
+	passport.kind = "character";
+	passport.name = name;
+	return passport;
+}
+/** One character passport from the current persona's description. */
+async function generatePersonaPassport() {
+	const c = ctx();
+	const description = String(c.powerUserSettings.persona_description ?? "");
+	const [first] = await ask({
+		name: c.name1,
+		description: c.substituteParams(description)
+	}, "persona");
+	const passport = first;
+	passport.kind = "character";
+	passport.name = "";
+	return passport;
+}
+//#endregion
+//#region src/features/prompt-tools/tag-db.ts
+var index = null;
+var loaded = null;
+var remoteCache = /* @__PURE__ */ new Map();
+async function fetchJson(path) {
+	const response = await fetch(`${extensionBaseUrl()}/${path}`);
+	if (!response.ok) throw new Error(`${path}: HTTP ${response.status}`);
+	return await response.json();
+}
+function tagIndex() {
+	if (!index) index = Promise.all([fetchJson("src/data/tags.json"), fetchJson("src/data/tags-ru.json")]).then(([rows, ru]) => {
+		loaded = buildTagIndex(rows, ru);
+		log.info("tag list ready:", rows.length, "tags");
+		return loaded;
+	}).catch((error) => {
+		log.warn("tag list unavailable:", error);
+		index = null;
+		return null;
+	});
+	return index;
+}
+function readyTagIndex() {
+	return loaded;
+}
+/** NovelAI suggestions for a fragment (cached per model and fragment). */
+async function remoteTagSuggestions(model, fragment, signal) {
+	const key = `${model}\u0000${fragment.toLowerCase()}`;
+	const cached = remoteCache.get(key);
+	if (cached) return cached;
+	const tags = await fetchTagSuggestions({
+		fetch: (input, init) => fetch(input, init),
+		headers: () => requestHeaders()
+	}, model, fragment, signal);
+	if (remoteCache.size > 500) remoteCache.clear();
+	remoteCache.set(key, tags);
+	return tags;
+}
 async function sha256Hex(text) {
 	const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
 	return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
@@ -11905,729 +12573,6 @@ var VibeLibraryProvider = class {
 		}));
 	}
 };
-//#endregion
-//#region src/features/continuity/continuity-service.ts
-var META_KEY = "nai_studio";
-function data() {
-	const meta = ctx().chatMetadata;
-	const root = meta[META_KEY] ??= {};
-	const value = root.continuity;
-	if (!value || typeof value !== "object") root.continuity = {
-		current: "",
-		locations: {}
-	};
-	else {
-		value.current ??= "";
-		value.locations ??= {};
-	}
-	return root.continuity;
-}
-function continuityData() {
-	return structuredClone(data());
-}
-async function setCurrentLocation(name) {
-	data().current = name.trim();
-	await ctx().saveMetadata();
-}
-async function forgetLocation(name) {
-	const d = data();
-	const key = locationKey(name);
-	const old = d.locations[key];
-	delete d.locations[key];
-	if (locationKey(d.current) === key) d.current = "";
-	await ctx().saveMetadata();
-	if (old?.vibeId) await removeVibe(old.vibeId);
-}
-/** Makes the image the reference of the location; in vibe mode also a vibe library item. */
-async function bindLocation(name, ref) {
-	const d = data();
-	const key = locationKey(name);
-	if (!key) return;
-	const previous = d.locations[key];
-	const stored = {
-		...ref,
-		name: name.trim(),
-		updatedAt: (/* @__PURE__ */ new Date()).toISOString()
-	};
-	if (settings().continuity.mode === "vibe") try {
-		const response = await fetch(ref.filePath);
-		if (response.ok) stored.vibeId = (await addVibe(await response.blob(), `@${name.trim()}`)).id;
-	} catch (error) {
-		log.warn("continuity vibe not created:", error);
-	}
-	d.locations[key] = stored;
-	d.current ||= name.trim();
-	await ctx().saveMetadata();
-	if (previous?.vibeId && previous.vibeId !== stored.vibeId) await removeVibe(previous.vibeId);
-}
-var ContinuityService = class {
-	follow(text) {
-		const d = data();
-		const detected = detectLocation(text, Object.values(d.locations).map((l) => l.name));
-		if (detected && locationKey(detected) !== locationKey(d.current)) {
-			d.current = detected;
-			ctx().saveMetadata();
-			log.info("continuity: location", detected);
-		}
-		return d;
-	}
-	async prepare(input) {
-		const s = settings().continuity;
-		if (!s.enabled) return null;
-		const d = this.follow(input.text);
-		if (s.mode !== "img2img" || !d.current) return null;
-		const ref = d.locations[locationKey(d.current)];
-		if (!ref?.filePath) return null;
-		const response = await fetch(ref.filePath, { signal: input.signal });
-		if (!response.ok) return null;
-		const png = await toPngBlob(await response.blob(), input.size);
-		log.info("continuity: img2img from", ref.name);
-		return {
-			image: await blobToBase64$1(png),
-			strength: clampContinuityStrength(s.strength)
-		};
-	}
-	/** Vibe mode: the reference of the current location as an extra vibe. */
-	vibes() {
-		const s = settings().continuity;
-		if (!s.enabled || s.mode !== "vibe" || !ctx().getCurrentChatId()) return [];
-		const d = data();
-		const vibeId = d.locations[locationKey(d.current)]?.vibeId;
-		const item = vibeId ? settings().vibes.items.find((i) => i.id === vibeId) : void 0;
-		return item ? [{
-			item,
-			strength: .6,
-			informationExtracted: 1
-		}] : [];
-	}
-	/** Auto-bind: plain generations (not tool results) become the reference of the current location. */
-	observe = (produced, outcome) => {
-		const s = settings().continuity;
-		if (!s.enabled || !s.autoBind || produced.meta.tool) return;
-		if (produced.meta.requestType !== "txt2img" && produced.meta.requestType !== "img2img") return;
-		if (produced.chatId !== ctx().getCurrentChatId()) return;
-		const d = data();
-		const path = outcome.paths[0];
-		if (!d.current || !path) return;
-		bindLocation(d.current, {
-			filePath: path,
-			width: produced.meta.width,
-			height: produced.meta.height,
-			model: produced.meta.model,
-			seed: produced.meta.seed,
-			prompt: produced.meta.scenePrompt
-		}).catch((error) => log.warn("continuity bind failed:", error));
-	};
-};
-//#endregion
-//#region src/features/markers/marker-service.ts
-/** Generation types that never carry markers to illustrate. */
-var SKIPPED_TYPES = /* @__PURE__ */ new Set(["impersonate", "quiet"]);
-/** Replies that may be illustrated automatically (not image messages, greetings, commands). */
-var AUTO_FILL_TYPES = /* @__PURE__ */ new Set([
-	"normal",
-	"swipe",
-	"regenerate"
-]);
-var clamp = (n, min, max) => Math.min(max, Math.max(min, n));
-var MarkerService = class {
-	pipeline;
-	inline;
-	scenes;
-	/** Jobs started while the current reply streams, by ordinal + generation key. */
-	early = /* @__PURE__ */ new Map();
-	generationType = "";
-	queue = Promise.resolve();
-	/** Images with a generation in flight (the renderer shows a spinner, not "interrupted"). */
-	running = /* @__PURE__ */ new Set();
-	listeners = /* @__PURE__ */ new Set();
-	lastScan = 0;
-	/** Messages already illustrated automatically during this generation. */
-	filled = /* @__PURE__ */ new Set();
-	/** A reply is being generated (the formatter hides a marker that is still being written). */
-	generating = false;
-	constructor(pipeline, inline, scenes) {
-		this.pipeline = pipeline;
-		this.inline = inline;
-		this.scenes = scenes;
-	}
-	isRunning(imageId) {
-		return this.running.has(imageId);
-	}
-	onRunningChange(listener) {
-		this.listeners.add(listener);
-	}
-	setRunning(imageId, on) {
-		if (on) this.running.add(imageId);
-		else this.running.delete(imageId);
-		for (const listener of this.listeners) listener(imageId);
-	}
-	/** Markers of a text that this configuration accepts. */
-	markersIn(text) {
-		const all = findMarkers(text);
-		return settings().markers.legacy ? all : all.filter((m) => m.format === "nai");
-	}
-	generationStarted(type, dryRun) {
-		if (dryRun || type === "quiet") return;
-		this.generationType = type || "normal";
-		this.generating = true;
-		this.filled.clear();
-		this.dropEarly();
-	}
-	get currentType() {
-		return this.generationType;
-	}
-	/** Generation ended or stopped: a reply that never got MESSAGE_RECEIVED is finalized here. */
-	async generationEnded() {
-		if (!this.generating) return;
-		this.generating = false;
-		const chat = ctx().chat;
-		const last = chat.length - 1;
-		const m = chat[last];
-		if (m && !m.is_user && !m.is_system && this.markersIn(m.mes).length) await this.finalize(last);
-		else this.dropEarly();
-	}
-	chatChanged() {
-		this.dropEarly();
-	}
-	dropEarly() {
-		for (const job of this.early.values()) job.abort.abort();
-		this.early.clear();
-	}
-	/** Streaming progress: start generating every complete marker of the reply so far. */
-	streamProgress() {
-		const s = settings().markers;
-		if (!s.enabled || !s.earlyStart || SKIPPED_TYPES.has(this.generationType)) return;
-		const now = Date.now();
-		if (now - this.lastScan < 250) return;
-		this.lastScan = now;
-		const chat = ctx().chat;
-		const m = chat[chat.length - 1];
-		if (!m || m.is_user || m.is_system) return;
-		const markers = this.markersIn(m.mes);
-		const allowed = Math.max(0, s.max - this.existingMarkers(m));
-		markers.slice(0, allowed).forEach((match, i) => {
-			const key = `${i}:${markerGenerationKey(match.params)}`;
-			if (!this.early.has(key)) {
-				log.info("marker complete while streaming, generation queued");
-				this.early.set(key, this.start(match.params));
-			}
-		});
-	}
-	/** Marker images already in a continued message count against the per-reply limit. */
-	existingMarkers(m) {
-		return this.generationType === "continue" ? readEntries(m.extra).filter((e) => e.marker).length : 0;
-	}
-	/** A finished reply: markers become pending inline images, generations are delivered. */
-	async finalize(messageId, type) {
-		const s = settings().markers;
-		const kind = type || this.generationType || "normal";
-		const early = this.early;
-		this.early = /* @__PURE__ */ new Map();
-		const c = ctx();
-		const m = c.chat[messageId];
-		if (!s.enabled || SKIPPED_TYPES.has(kind) || !m || m.is_user || m.is_system) {
-			for (const job of early.values()) job.abort.abort();
-			return;
-		}
-		const markers = this.markersIn(m.mes);
-		const existing = kind === "continue" ? readEntries(m.extra).filter((e) => e.marker).length : 0;
-		const { keep, drop } = limitMarkers(markers, Math.max(0, s.max - existing));
-		if (markers.length) {
-			const ids = keep.map(() => c.uuidv4());
-			const entries = keep.map((match, i) => createPendingImage(ids[i], match.params, this.inline.displayDefaults(markerDisplay(match.params))));
-			const text = replaceMarkers(m.mes, markers, (_match, i) => i < keep.length ? `[nai:img:${ids[i]}]` : "");
-			await this.inline.addPending(messageId, text, entries);
-			keep.forEach((match, i) => {
-				const key = `${i}:${markerGenerationKey(match.params)}`;
-				const job = early.get(key) ?? this.start(match.params);
-				early.delete(key);
-				this.deliver(messageId, ids[i], job);
-			});
-			if (drop.length) log.info(`${drop.length} marker(s) over the limit of ${s.max} removed`);
-		}
-		for (const job of early.values()) job.abort.abort();
-		const count = keep.length + existing;
-		const filledKey = `${messageId}:${m.swipe_id ?? 0}`;
-		if (s.autoFill && count < s.min && AUTO_FILL_TYPES.has(kind) && !this.filled.has(filledKey)) {
-			this.filled.add(filledKey);
-			await this.autoFill(messageId, s.min - count);
-		}
-	}
-	/** Fewer markers than the minimum: illustrations of the reply itself, appended at its end. */
-	async autoFill(messageId, missing) {
-		const m = ctx().chat[messageId];
-		const excerpt = m ? replyExcerpt(m.mes) : "";
-		if (!m || !excerpt) return;
-		const names = detectParticipants(excerpt, await sceneCandidates(), { max: 3 }).map((cand) => ({ name: cand.name }));
-		const params = {
-			prompt: excerpt,
-			...names.length ? { chars: names } : {}
-		};
-		const c = ctx();
-		const ids = Array.from({ length: Math.min(missing, 3) }, () => c.uuidv4());
-		const entries = ids.map((id) => createPendingImage(id, params, this.inline.displayDefaults(markerDisplay(params))));
-		await this.inline.addPending(messageId, `${m.mes}\n${ids.map((id) => `[nai:img:${id}]`).join("\n")}`, entries);
-		for (const id of ids) this.deliver(messageId, id, this.start(params));
-	}
-	/** Generates a marker image again (after an error or an interrupted generation). */
-	async retry(messageId, imageId) {
-		const entry = this.inline.entries(messageId).find((e) => e.id === imageId);
-		if (!entry?.marker || this.running.has(imageId)) return;
-		await this.inline.setMarkerStatus(messageId, imageId, "pending");
-		await this.deliver(messageId, imageId, this.start(entry.marker.params));
-	}
-	enqueue(task) {
-		const run = this.queue.then(task, task);
-		this.queue = run.catch(() => void 0);
-		return run;
-	}
-	start(params) {
-		const abort = new AbortController();
-		const promise = this.enqueue(async () => abort.signal.aborted ? null : await this.produce(params, abort.signal));
-		promise.catch(() => void 0);
-		return {
-			promise,
-			abort
-		};
-	}
-	async deliver(hint, imageId, job) {
-		const chatId = ctx().getCurrentChatId();
-		this.setRunning(imageId, true);
-		try {
-			const produced = await job.promise;
-			if (ctx().getCurrentChatId() !== chatId) return;
-			if (produced) await this.inline.completePending(hint, imageId, produced);
-			else await this.inline.setMarkerStatus(hint, imageId, "error", t("naist.markers.cancelled"));
-		} catch (error) {
-			const naiError = toNaiError(error);
-			log.warn("marker image failed:", naiError.code);
-			if (ctx().getCurrentChatId() === chatId) await this.inline.setMarkerStatus(hint, imageId, "error", naiError.code === "aborted" ? t("naist.markers.cancelled") : naiError.text);
-		} finally {
-			this.setRunning(imageId, false);
-		}
-	}
-	/** One marker as a generation request: every parameter it may carry. */
-	async produce(params, signal) {
-		const s = settings();
-		const freeOnly = s.anlas.freeOnly || !s.markers.allowPaid;
-		const model = markerModel(params.model) ?? s.generation.model;
-		const caps = getCapabilities(isModelId(model) ? model : DEFAULT_MODEL);
-		const dims = markerDimensions(params.ratio, params.size, freeOnly);
-		const generation = {
-			model,
-			width: dims.width,
-			height: dims.height
-		};
-		if (params.seed !== void 0) generation.seed = params.seed;
-		if (params.steps !== void 0) generation.steps = clamp(Math.round(params.steps), 1, freeOnly ? 28 : 50);
-		if (params.scale !== void 0) generation.scale = clamp(params.scale, 0, 10);
-		if (params.sampler) generation.sampler = params.sampler;
-		if (params.rescale !== void 0) generation.cfgRescale = clamp(params.rescale, 0, 1);
-		if (params.variety !== void 0) generation.varietyBoost = params.variety;
-		if (params.quality !== void 0) {
-			const current = s.generation.qualityPreset;
-			generation.qualityPreset = params.quality ? current === "none" ? "standard" : current : "none";
-		}
-		if (params.uc && UC_PRESETS.includes(params.uc)) generation.ucPreset = params.uc;
-		if (params.transparent !== void 0) generation.transparentBackground = params.transparent;
-		generation.samples = freeOnly ? 1 : clamp(Math.round(params.count ?? 1), 1, 4);
-		let scene = params.prompt;
-		let negative = params.negative ?? "";
-		const style = params.style?.trim();
-		if (style) {
-			const saved = s.prompts.styles.find((st) => st.name.trim().toLowerCase() === style.toLowerCase());
-			const join = (...parts) => parts.filter((p) => p.trim()).join(", ");
-			if (saved) {
-				scene = join(saved.prefix, scene, saved.suffix);
-				negative = join(negative, saved.negative);
-			} else scene = join(style, scene);
-		}
-		let chars = params.chars;
-		if (!chars?.length) {
-			const known = (await sceneCandidates()).filter((cand) => cand.passport !== null);
-			const named = detectParticipants(`${params.prompt} ${params.caption ?? ""}`, known, { max: 4 });
-			if (named.length) chars = named.map((cand) => ({ name: cand.name }));
-		}
-		if (chars?.length) {
-			const built = await this.scenes.markerScene(scene, chars);
-			if (built) {
-				scene = built.prompt;
-				generation.characters = built.characters;
-				generation.useCoords = built.useCoords;
-			} else {
-				const actions = chars.map((ch) => [ch.pose, ch.action].filter(Boolean).join(" ")).filter(Boolean);
-				scene = [scene, ...actions].join(", ");
-			}
-		}
-		const setting = await sceneSetting();
-		const place = mentionedLocationTags(`${params.location ?? ""} ${params.prompt}`, setting.locations);
-		if (place || setting.world) scene = joinTags(scene, place, setting.world);
-		if (params.text && caps.family !== "v3") scene = `${scene}, text: ${params.text}`;
-		if (params.location && s.continuity.enabled) await setCurrentLocation(params.location).catch(() => void 0);
-		const requestPatch = params.ref ? await this.refPatch(params.ref, dims) : void 0;
-		const vibes = params.vibe ? this.namedVibe(params.vibe) : void 0;
-		const overrides = {
-			edit: false,
-			negative,
-			generation
-		};
-		return await this.pipeline.produce({
-			initiator: "message",
-			trigger: scene,
-			scene,
-			mode: MODE.FREE,
-			interpret: "auto",
-			interpretCharacters: "cyrillic",
-			overrides,
-			...requestPatch ? {
-				requestPatch,
-				noContinuity: true
-			} : {},
-			...vibes?.length ? { vibes } : {},
-			signal,
-			skipCostConfirm: true,
-			maxCost: freeOnly ? 0 : s.markers.maxCost
-		});
-	}
-	/** "ref": an earlier image of the chat (marker id or image id) as the img2img base. */
-	async refPatch(ref, size) {
-		if (!this.pipeline.studio.state.selection?.transport?.features.img2img) return void 0;
-		const chat = ctx().chat;
-		for (let i = chat.length - 1; i >= 0; i--) {
-			const entry = readEntries(chat[i]?.extra).find((e) => e.id === ref || e.marker?.params.id === ref);
-			const swipe = entry ? activeSwipe(entry) : void 0;
-			if (!swipe) continue;
-			try {
-				return {
-					mode: "img2img",
-					image: await blobToBase64$1(await toPngBlob(await this.inline.sourceBlob(swipe), size)),
-					strength: settings().continuity.strength
-				};
-			} catch (error) {
-				log.warn("marker ref image not available:", error);
-				return;
-			}
-		}
-	}
-	namedVibe(name) {
-		const wanted = name.trim().toLowerCase();
-		const item = vibeItems().find((v) => v.name.trim().toLowerCase() === wanted);
-		return item ? [{
-			item,
-			strength: .6,
-			informationExtracted: 1
-		}] : [];
-	}
-};
-//#endregion
-//#region src/integration/macros.ts
-function registerMacros() {
-	const c = ctx();
-	const positive = () => currentCharacterPrompt().positive;
-	const negative = () => currentCharacterPrompt().negative;
-	if (c.powerUserSettings.experimental_macro_engine !== false && c.macros) {
-		const category = c.macros.category?.PROMPTS;
-		c.macros.register("charPrefix", {
-			category,
-			description: t("naist.macro.charPrefix"),
-			handler: positive
-		});
-		c.macros.register("charNegativePrefix", {
-			category,
-			description: t("naist.macro.charNegativePrefix"),
-			handler: negative
-		});
-	} else if (c.registerMacro) {
-		c.registerMacro("charPrefix", positive, t("naist.macro.charPrefix"));
-		c.registerMacro("charNegativePrefix", negative, t("naist.macro.charNegativePrefix"));
-	}
-}
-/** {{nai_characters}}: characters of the chat with a passport (their looks are added by name). */
-function registerCharactersMacro(names) {
-	const c = ctx();
-	if (c.powerUserSettings.experimental_macro_engine !== false && c.macros) c.macros.register("nai_characters", {
-		category: c.macros.category?.PROMPTS,
-		description: t("naist.macro.characters"),
-		handler: names
-	});
-	else if (c.registerMacro) c.registerMacro("nai_characters", names, t("naist.macro.characters"));
-}
-//#endregion
-//#region src/integration/markers-setup.ts
-var PROMPT_KEY = "nai_studio_markers";
-/** extension_prompt_types.IN_CHAT and extension_prompt_roles in public/script.js. */
-var IN_CHAT = 1;
-var ROLES = {
-	system: 0,
-	user: 1,
-	assistant: 2
-};
-var NO_INSTRUCTION = /* @__PURE__ */ new Set(["impersonate", "quiet"]);
-var service = null;
-/** Names for {{nai_characters}}, refreshed with the instruction. */
-var knownCharacters = "";
-/** Placeholder as <img> for display regexes; the id is in the attribute and in the src fragment. */
-function compatImage(id) {
-	return `<img ${IMG_ATTR}="${id}" class="naist-compat" src="${PIXEL}${WIDGET_SRC_MARK}${id}" alt="">`;
-}
-/** A complete marker while the reply streams: an <img> box (widgets keep their layout). */
-function streamingImage(params) {
-	const size = markerDimensions(params.ratio, params.size, true);
-	const label = escapeHtml$2((params.caption || params.prompt).slice(0, 200));
-	return `<img class="naist-marker-stream" src="${PIXEL}#naist-stream" width="${size.width}" height="${size.height}" alt="${label}" title="${label}">`;
-}
-function formatHook(mes, info) {
-	const s = settings();
-	let out = mes;
-	if (s.markers.enabled && service && !info.isUser) {
-		if (service.generating && info.messageId === ctx().chat.length - 1) {
-			const cut = partialMarkerStart(out);
-			if (cut >= 0) out = out.slice(0, cut);
-		}
-		const markers = service.markersIn(out);
-		if (markers.length) out = replaceMarkers(out, markers, (m) => streamingImage(m.params));
-	}
-	if (s.inline.regexCompat && out.includes("[nai:img:")) out = out.replace(new RegExp(PLACEHOLDER_PATTERN.source, "g"), (_m, id) => compatImage(id));
-	return out;
-}
-/** Puts the current instruction in place (or clears it); called on settings and chat changes. */
-async function refreshMarkerInstruction() {
-	const c = ctx();
-	const s = settings().markers;
-	let value = "";
-	let chars = [];
-	if (s.enabled) try {
-		chars = (await sceneCandidates()).filter((cand) => cand.passport).map((cand) => cand.name);
-	} catch (error) {
-		log.warn("marker instruction: characters not available", error);
-	}
-	knownCharacters = chars.join(", ");
-	if (s.enabled && s.inject) value = markerInstruction(s.preset, s.template, {
-		min: s.min,
-		max: s.max,
-		captionLanguage: s.captionLanguage,
-		chars
-	});
-	c.setExtensionPrompt(PROMPT_KEY, value, IN_CHAT, Math.max(0, s.depth), false, ROLES[s.role] ?? 0, () => {
-		const now = settings().markers;
-		return now.enabled && now.inject && !NO_INSTRUCTION.has(service?.currentType ?? "");
-	});
-}
-function setupMarkers(pipeline, inline, scenes) {
-	const c = ctx();
-	const markers = new MarkerService(pipeline, inline, scenes);
-	service = markers;
-	c.messageFormatter.addHook(formatHook, { stage: "beforeRegex" });
-	try {
-		registerCharactersMacro(() => knownCharacters);
-	} catch (error) {
-		log.warn("{{nai_characters}} macro not registered", error);
-	}
-	const renderer = inlineRenderer();
-	renderer?.setMarkerHooks({
-		isRunning: (id) => markers.isRunning(id),
-		retry: (messageId, imageId) => markers.retry(messageId, imageId)
-	});
-	markers.onRunningChange((id) => renderer?.refreshImage(id));
-	const on = (name, handler) => {
-		const event = c.eventTypes[name];
-		if (event) c.eventSource.on(event, handler);
-	};
-	on("GENERATION_STARTED", async (type, _options, dryRun) => {
-		keepFirst();
-		markers.generationStarted(String(type ?? ""), Boolean(dryRun));
-		if (!dryRun) await refreshMarkerInstruction();
-	});
-	on("STREAM_TOKEN_RECEIVED", () => markers.streamProgress());
-	const received = (id, type) => {
-		markers.finalize(Number(id), typeof type === "string" ? type : void 0).catch((error) => log.warn("markers", error));
-	};
-	const receivedEvent = c.eventTypes.MESSAGE_RECEIVED;
-	if (receivedEvent && c.eventSource.makeFirst) c.eventSource.makeFirst(receivedEvent, received);
-	else on("MESSAGE_RECEIVED", received);
-	const keepFirst = () => {
-		const list = receivedEvent ? c.eventSource.events?.[receivedEvent] : void 0;
-		const at = Array.isArray(list) ? list.indexOf(received) : -1;
-		if (list && at > 0) list.unshift(...list.splice(at, 1));
-	};
-	for (const name of ["GENERATION_ENDED", "GENERATION_STOPPED"]) on(name, () => {
-		setTimeout(() => void markers.generationEnded().catch((error) => log.warn("markers", error)), 150);
-	});
-	on("CHAT_CHANGED", () => {
-		markers.chatChanged();
-		refreshMarkerInstruction();
-	});
-	refreshMarkerInstruction();
-	return markers;
-}
-/** Settings that change how messages are formatted: re-render the chat. */
-function onMarkerSettingChange(path) {
-	if (path.startsWith("markers.")) refreshMarkerInstruction();
-	if (path === "markers.enabled" || path === "markers.legacy" || path === "inline.regexCompat") {
-		const c = ctx();
-		c.chat.forEach((m, id) => {
-			if (document.querySelector(`#chat .mes[mesid="${id}"]`)) c.updateMessageBlock(id, m);
-		});
-	}
-}
-//#endregion
-//#region src/features/language/llm.ts
-var asText = (value) => typeof value === "string" ? value : value && typeof value === "object" && "content" in value ? asText(value.content) : value === void 0 || value === null ? "" : JSON.stringify(value);
-async function viaMain(req) {
-	const c = ctx();
-	if (c.mainApi === "openai") return asText(await c.generateRaw({
-		prompt: req.user,
-		systemPrompt: req.system,
-		responseLength: req.maxTokens,
-		...req.schema ? { jsonSchema: req.schema } : {}
-	}));
-	const answer = asText(await c.generateRaw({
-		prompt: [{
-			role: "system",
-			content: `${req.system}\n\n${req.user}`
-		}],
-		prefill: "{",
-		responseLength: req.maxTokens
-	}));
-	return answer.trimStart().startsWith("{") ? answer : `{${answer}`;
-}
-async function viaProfile(req) {
-	const service = ctx().ConnectionManagerRequestService;
-	const id = settings().language.profileId;
-	if (!id) throw new NaiError("translation-failed", "none", { message: "no connection profile selected" });
-	const chat = service.validateProfile(service.getProfile(id)).selected === "openai";
-	const text = asText(chat ? await service.sendRequest(id, [{
-		role: "system",
-		content: req.system
-	}, {
-		role: "user",
-		content: req.user
-	}], req.maxTokens, {
-		stream: false,
-		extractData: true,
-		includePreset: false
-	}, req.schema ? { json_schema: req.schema } : {}) : await service.sendRequest(id, `${req.system}\n\n${req.user}\n{`, req.maxTokens, {
-		stream: false,
-		extractData: true,
-		includePreset: true,
-		includeInstruct: false
-	}));
-	return chat || text.trimStart().startsWith("{") ? text : `{${text}`;
-}
-async function viaNovelAi(req) {
-	return await novelAiText({
-		fetch: (input, init) => fetch(input, init),
-		headers: () => requestHeaders()
-	}, {
-		model: settings().language.novelaiModel,
-		messages: [{
-			role: "system",
-			content: req.system
-		}, {
-			role: "user",
-			content: req.user
-		}],
-		maxTokens: req.maxTokens
-	});
-}
-async function askLlm(req) {
-	try {
-		const backend = settings().language.backend;
-		if (backend === "profile") return await viaProfile(req);
-		if (backend === "novelai") return await viaNovelAi(req);
-		return await viaMain(req);
-	} catch (error) {
-		if (error instanceof NaiError) throw error;
-		throw new NaiError("translation-failed", "none", { message: String(error?.message ?? error) });
-	}
-}
-//#endregion
-//#region src/features/characters/passport-generator.ts
-async function ask(source, target) {
-	if (!source.description.trim() && !source.firstMessage?.trim()) throw new NaiError("translation-failed", "none", { message: "the description is empty" });
-	const { system, user } = passportGenMessages(source, target);
-	const answer = await askLlm({
-		system,
-		user,
-		schema: PASSPORT_GEN_SCHEMA,
-		maxTokens: target === "card" ? 3500 : 1200
-	});
-	const passports = parseGeneratedPassports(answer, source.name);
-	if (!passports.length) {
-		log.warn("passport generation: no usable passports in", answer.slice(0, 300));
-		throw new NaiError("translation-failed", "none", { message: "the answer had no usable passports" });
-	}
-	return passports;
-}
-/** Passports for every character, the world, places, the scenario and objects of a card. */
-async function generateCardPassports(index) {
-	const character = await loadCharacter(index);
-	if (!character) throw new NaiError("no-usable-message", "none");
-	const c = ctx();
-	const sub = (text) => c.substituteParams(text ?? "");
-	const passports = await ask({
-		name: character.name,
-		description: sub(character.description),
-		personality: sub(character.personality),
-		scenario: sub(character.scenario),
-		firstMessage: sub(character.first_mes)
-	}, "card");
-	const own = passports.find((p) => p.kind === "character" && p.name.toLowerCase() === character.name.toLowerCase());
-	if (own) own.name = "";
-	return passports;
-}
-/** One character passport from the current persona's description. */
-async function generatePersonaPassport() {
-	const c = ctx();
-	const description = String(c.powerUserSettings.persona_description ?? "");
-	const [first] = await ask({
-		name: c.name1,
-		description: c.substituteParams(description)
-	}, "persona");
-	const passport = first;
-	passport.kind = "character";
-	passport.name = "";
-	return passport;
-}
-//#endregion
-//#region src/features/prompt-tools/tag-db.ts
-var index = null;
-var loaded = null;
-var remoteCache = /* @__PURE__ */ new Map();
-async function fetchJson(path) {
-	const response = await fetch(`${extensionBaseUrl()}/${path}`);
-	if (!response.ok) throw new Error(`${path}: HTTP ${response.status}`);
-	return await response.json();
-}
-function tagIndex() {
-	if (!index) index = Promise.all([fetchJson("src/data/tags.json"), fetchJson("src/data/tags-ru.json")]).then(([rows, ru]) => {
-		loaded = buildTagIndex(rows, ru);
-		log.info("tag list ready:", rows.length, "tags");
-		return loaded;
-	}).catch((error) => {
-		log.warn("tag list unavailable:", error);
-		index = null;
-		return null;
-	});
-	return index;
-}
-function readyTagIndex() {
-	return loaded;
-}
-/** NovelAI suggestions for a fragment (cached per model and fragment). */
-async function remoteTagSuggestions(model, fragment, signal) {
-	const key = `${model}\u0000${fragment.toLowerCase()}`;
-	const cached = remoteCache.get(key);
-	if (cached) return cached;
-	const tags = await fetchTagSuggestions({
-		fetch: (input, init) => fetch(input, init),
-		headers: () => requestHeaders()
-	}, model, fragment, signal);
-	if (remoteCache.size > 500) remoteCache.clear();
-	remoteCache.set(key, tags);
-	return tags;
-}
 //#endregion
 //#region src/features/language/interpreter.ts
 var memory$1 = /* @__PURE__ */ new Map();
@@ -12835,6 +12780,455 @@ var languageInterpreter = {
 	original(text) {
 		const trimmed = text.trim();
 		for (const [prompt, original] of originals) if (prompt && trimmed.includes(prompt)) return original;
+	}
+};
+//#endregion
+//#region src/features/continuity/continuity-service.ts
+var META_KEY = "nai_studio";
+function data() {
+	const meta = ctx().chatMetadata;
+	const root = meta[META_KEY] ??= {};
+	const value = root.continuity;
+	if (!value || typeof value !== "object") root.continuity = {
+		current: "",
+		locations: {}
+	};
+	else {
+		value.current ??= "";
+		value.locations ??= {};
+	}
+	return root.continuity;
+}
+function continuityData() {
+	return structuredClone(data());
+}
+async function setCurrentLocation(name) {
+	data().current = name.trim();
+	await ctx().saveMetadata();
+}
+async function forgetLocation(name) {
+	const d = data();
+	const key = locationKey(name);
+	const old = d.locations[key];
+	delete d.locations[key];
+	if (locationKey(d.current) === key) d.current = "";
+	await ctx().saveMetadata();
+	if (old?.vibeId) await removeVibe(old.vibeId);
+}
+/** Makes the image the reference of the location; in vibe mode also a vibe library item. */
+async function bindLocation(name, ref) {
+	const d = data();
+	const key = locationKey(name);
+	if (!key) return;
+	const previous = d.locations[key];
+	const stored = {
+		...ref,
+		name: name.trim(),
+		updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+	};
+	if (settings().continuity.mode === "vibe") try {
+		const response = await fetch(ref.filePath);
+		if (response.ok) stored.vibeId = (await addVibe(await response.blob(), `@${name.trim()}`)).id;
+	} catch (error) {
+		log.warn("continuity vibe not created:", error);
+	}
+	d.locations[key] = stored;
+	d.current ||= name.trim();
+	await ctx().saveMetadata();
+	if (previous?.vibeId && previous.vibeId !== stored.vibeId) await removeVibe(previous.vibeId);
+}
+var ContinuityService = class {
+	follow(text) {
+		const d = data();
+		const detected = detectLocation(text, Object.values(d.locations).map((l) => l.name));
+		if (detected && locationKey(detected) !== locationKey(d.current)) {
+			d.current = detected;
+			ctx().saveMetadata();
+			log.info("continuity: location", detected);
+		}
+		return d;
+	}
+	async prepare(input) {
+		const s = settings().continuity;
+		if (!s.enabled) return null;
+		const d = this.follow(input.text);
+		if (s.mode !== "img2img" || !d.current) return null;
+		const ref = d.locations[locationKey(d.current)];
+		if (!ref?.filePath) return null;
+		const response = await fetch(ref.filePath, { signal: input.signal });
+		if (!response.ok) return null;
+		const png = await toPngBlob(await response.blob(), input.size);
+		log.info("continuity: img2img from", ref.name);
+		return {
+			image: await blobToBase64$1(png),
+			strength: clampContinuityStrength(s.strength)
+		};
+	}
+	/** Vibe mode: the reference of the current location as an extra vibe. */
+	vibes() {
+		const s = settings().continuity;
+		if (!s.enabled || s.mode !== "vibe" || !ctx().getCurrentChatId()) return [];
+		const d = data();
+		const vibeId = d.locations[locationKey(d.current)]?.vibeId;
+		const item = vibeId ? settings().vibes.items.find((i) => i.id === vibeId) : void 0;
+		return item ? [{
+			item,
+			strength: .6,
+			informationExtracted: 1
+		}] : [];
+	}
+	/** Auto-bind: plain generations (not tool results) become the reference of the current location. */
+	observe = (produced, outcome) => {
+		const s = settings().continuity;
+		if (!s.enabled || !s.autoBind || produced.meta.tool) return;
+		if (produced.meta.requestType !== "txt2img" && produced.meta.requestType !== "img2img") return;
+		if (produced.chatId !== ctx().getCurrentChatId()) return;
+		const d = data();
+		const path = outcome.paths[0];
+		if (!d.current || !path) return;
+		bindLocation(d.current, {
+			filePath: path,
+			width: produced.meta.width,
+			height: produced.meta.height,
+			model: produced.meta.model,
+			seed: produced.meta.seed,
+			prompt: produced.meta.scenePrompt
+		}).catch((error) => log.warn("continuity bind failed:", error));
+	};
+};
+//#endregion
+//#region src/features/tools/tool-common.ts
+/** Free-only blocks every paid tool call; otherwise a paid call above the threshold is confirmed. */
+async function guardCost(cost, what, confirm) {
+	const s = settings().anlas;
+	if (cost <= 0) return;
+	if (s.freeOnly) throw new NaiError("free-only-blocked", "enable-free-only", { cost });
+	if (cost > s.confirmAbove && !await confirm(cost, what)) throw new NaiError("aborted", "none");
+}
+/** The source as a base64 PNG of exactly width x height (NovelAI wants PNG of the request size). */
+async function sourcePng(source, size) {
+	return await blobToBase64$1(await toPngBlob(await source.blob(), size ?? {
+		width: source.width,
+		height: source.height
+	}));
+}
+/** Image source for an inline image of a message. */
+async function inlineSource(inline, messageId, imageId) {
+	const entry = readEntries(ctx().chat[messageId]?.extra).find((e) => e.id === imageId);
+	const swipe = entry ? activeSwipe(entry) : void 0;
+	if (!entry || !swipe) throw new NaiError("image-not-found", "none");
+	const blob = await inline.sourceBlob(swipe);
+	const size = swipe.meta.width && swipe.meta.height ? {
+		width: swipe.meta.width,
+		height: swipe.meta.height
+	} : await imageSize(blob);
+	return {
+		target: {
+			kind: "inline",
+			messageId,
+			imageId
+		},
+		...size,
+		meta: swipe.meta,
+		blob: async () => blob
+	};
+}
+/** Image source for a media attachment of a message (generated or uploaded by the user). */
+async function mediaSource(messageId, mediaIndex) {
+	const attachment = (ctx().chat[messageId]?.extra?.media ?? [])[mediaIndex];
+	if (!attachment?.url) throw new NaiError("image-not-found", "none");
+	const response = await fetch(attachment.url);
+	if (!response.ok) throw new NaiError("image-load-failed", "none");
+	const blob = await response.blob();
+	const size = await imageSize(blob);
+	return {
+		target: {
+			kind: "media",
+			messageId,
+			mediaIndex
+		},
+		...size,
+		meta: attachment.title ? metaFromMedia(attachment, size) : void 0,
+		blob: async () => blob
+	};
+}
+function metaFromMedia(attachment, size) {
+	return {
+		scenePrompt: attachment.title ?? "",
+		prompt: attachment.nai_studio?.prompt ?? attachment.title ?? "",
+		negativePrompt: "",
+		negative: "",
+		mode: 6,
+		model: attachment.nai_studio?.model ?? settings().generation.model,
+		seed: attachment.nai_studio?.seed ?? 0,
+		width: size.width,
+		height: size.height,
+		steps: settings().generation.steps,
+		scale: settings().generation.scale,
+		cfgRescale: 0,
+		sampler: settings().generation.sampler,
+		noiseSchedule: settings().generation.noiseSchedule,
+		ucPreset: settings().generation.ucPreset,
+		qualityPreset: settings().generation.qualityPreset,
+		requestType: "txt2img",
+		characters: [],
+		transport: "",
+		cost: 0,
+		createdAt: (/* @__PURE__ */ new Date()).toISOString()
+	};
+}
+/** Images of a NovelAI ZIP answer, in file-name order (image_0, image_1, …). */
+async function unzipImages(zipBase64) {
+	await importHost("/lib/jszip.min.js");
+	const JSZip = globalThis.JSZip;
+	if (!JSZip) throw new NaiError("invalid-response", "none", { preview: "JSZip unavailable" });
+	const zip = await JSZip.loadAsync(base64ToBytes(zipBase64));
+	const files = Object.values(zip.files).filter((f) => !f.dir && /\.(png|webp|jpe?g)$/i.test(f.name)).sort((a, b) => a.name.localeCompare(b.name, void 0, { numeric: true }));
+	const images = [];
+	for (const [index, file] of files.entries()) {
+		const base64 = await file.async("base64");
+		const mime = sniffMime(base64ToBytes(base64.slice(0, 32)));
+		images.push({
+			base64,
+			mime: mime === "image/webp" ? "image/webp" : "image/png",
+			index
+		});
+	}
+	if (!images.length) throw new NaiError("invalid-response", "none", { preview: "empty ZIP" });
+	return images;
+}
+function legacyMeta(meta) {
+	return {
+		scenePrompt: meta.scenePrompt,
+		prompt: meta.prompt,
+		negative: meta.negative,
+		mode: meta.mode,
+		model: meta.model,
+		seed: meta.seed,
+		transport: meta.transport,
+		cost: meta.cost,
+		width: meta.width,
+		height: meta.height,
+		...meta.tool ? { tool: meta.tool } : {}
+	};
+}
+/** Adds tool results as new swipes of the source image (the original is kept). */
+async function deliver(source, produced, services) {
+	if (source.target.kind === "inline") {
+		await services.inline.addProducedSwipe(source.target.messageId, source.target.imageId, produced);
+		return;
+	}
+	const folder = imageFolder();
+	const saved = await saveImages(produced.images, folder);
+	await appendToMessage(source.target.messageId, saved, legacyMeta(produced.meta));
+	services.pipeline.notify(produced, {
+		target: "message",
+		paths: saved.map((s) => s.path)
+	});
+}
+/** Meta of a tool result derived from the source (Director Tools, upscale keep its prompt). */
+function toolMeta(source, patch) {
+	return {
+		...source.meta ?? metaFromMedia({ url: "" }, {
+			width: source.width,
+			height: source.height
+		}),
+		createdAt: (/* @__PURE__ */ new Date()).toISOString(),
+		...patch
+	};
+}
+/** Dimensions of a generated image (results of tools may differ from the request size). */
+async function generatedSize(image) {
+	return await imageSize(new Blob([base64ToBytes(image.base64)], { type: image.mime }));
+}
+//#endregion
+//#region src/features/sprites/sprite-service.ts
+/** Character passports of a card that can get sprites (main character first). */
+function spritePassports(characterIndex) {
+	const character = ctx().characters[characterIndex];
+	const list = cardPassports(character).filter((p) => p.kind === "character");
+	const main = primaryPassport(list, character?.name ?? "");
+	return main ? [main, ...list.filter((p) => p !== main)] : list;
+}
+function extraPassport(characterIndex, passportId) {
+	if (!passportId) return null;
+	const [main, ...rest] = spritePassports(characterIndex);
+	return main?.id === passportId ? null : rest.find((p) => p.id === passportId) ?? null;
+}
+var extraFolder = null;
+/**
+* Where the sprites of another character of a card go instead of "<card>/<name>" (Doom's
+* Enhancement Suite reads characters/<name>, v0.9); null keeps the default.
+*/
+function setExtraSpriteFolder(rule) {
+	extraFolder = rule;
+}
+/**
+* Folder Expressions reads for a character: its override, else the character name (RECON §2.12);
+* another character of the card gets "<folder>/<name>" (or the integration's folder).
+*/
+function spriteFolder(characterIndex, passportId) {
+	const base = cardSpriteFolder(characterIndex);
+	const extra = extraPassport(characterIndex, passportId);
+	const sub = extra?.name.replace(/[\\/:*?"<>|]+/g, " ").trim();
+	if (!extra || !sub) return base;
+	return extraFolder?.(sub) ?? (base ? `${base}/${sub}` : sub);
+}
+function cardSpriteFolder(characterIndex) {
+	const c = ctx();
+	const character = c.characters[characterIndex];
+	const overrides = c.extensionSettings.expressionOverrides;
+	const key = avatarKey(character?.avatar);
+	if (Array.isArray(overrides)) {
+		const found = overrides.find((o) => o?.name === key && o.path);
+		if (found) return String(found.path);
+	}
+	return character?.name ?? "";
+}
+/** Appearance tags: the passport when the card has one, else the character prompt, else the name. */
+function spriteAppearance(characterIndex, passportId) {
+	const character = ctx().characters[characterIndex];
+	const extra = extraPassport(characterIndex, passportId);
+	if (extra) return passportTags(extra, { allowNsfw: false });
+	const passport = cardPassport(character);
+	if (passport) return passportTags(passport, { allowNsfw: false });
+	return readCharacterPrompt(character).positive.trim() || character?.name || "";
+}
+function spriteLabels(selected) {
+	return selected.length ? selected : [...EXPRESSION_LABELS];
+}
+async function uploadSprite(folder, label, image) {
+	const png = await toPngBlob(base64ToBlob(image.base64, image.mime));
+	const form = new FormData();
+	const file = spriteFileName(label);
+	form.append("name", folder);
+	form.append("label", label);
+	form.append("spriteName", file.replace(/\.png$/, ""));
+	form.append("avatar", new File([png], file, { type: "image/png" }));
+	const response = await fetch("/api/sprites/upload", {
+		method: "POST",
+		headers: requestHeaders(true),
+		body: form
+	});
+	if (!response.ok) throw new NaiError("image-load-failed", "none", { status: response.status });
+	return file;
+}
+var SpriteService = class {
+	pipeline;
+	constructor(pipeline) {
+		this.pipeline = pipeline;
+	}
+	async draw(appearance, label, options, seed, base) {
+		const caps = getCapabilities(isModelId(options.model) ? options.model : DEFAULT_MODEL);
+		const image = (await this.pipeline.produce({
+			initiator: "panel",
+			trigger: label,
+			scene: spritePrompt(appearance, label),
+			mode: MODE.FREE,
+			noContinuity: true,
+			signal: options.signal,
+			overrides: {
+				edit: false,
+				generation: {
+					model: options.model,
+					seed,
+					samples: 1,
+					characters: [],
+					...base ? {
+						width: base.width,
+						height: base.height
+					} : {},
+					transparentBackground: options.transparent && caps.transparency && !base
+				}
+			},
+			...base ? { requestPatch: {
+				mode: "img2img",
+				image: base.image,
+				strength: base.strength
+			} } : {}
+		}))?.images[0];
+		if (!image) throw new NaiError("aborted", "none");
+		return image;
+	}
+	async emotion(base, emotion, signal) {
+		const transport = this.pipeline.studio.state.selection?.transport;
+		if (!transport?.features.director || !transport.extras) throw new NaiError("feature-unavailable", "install-plugin", { feature: "Director Tools" });
+		const blob = base64ToBlob(base.base64, base.mime);
+		const bitmap = await createImageBitmap(blob);
+		const size = directorSize(bitmap.width, bitmap.height);
+		bitmap.close();
+		const cost = directorToolCost("emotion", size.width, size.height, this.pipeline.studio.state.account);
+		if (cost > 0) throw new NaiError("free-only-blocked", "enable-free-only", { cost });
+		const body = directorBody("emotion", await blobToBase64$1(await toPngBlob(blob, size)), size, {
+			emotion,
+			defry: 0,
+			prompt: ""
+		});
+		const [first] = await unzipImages(await transport.extras.augment(body, {
+			retryable: true,
+			signal
+		}));
+		if (!first) throw new NaiError("invalid-response", "none", { preview: "empty ZIP" });
+		return first;
+	}
+	async generate(options) {
+		const folder = spriteFolder(options.characterIndex, options.passportId);
+		if (!folder) throw new NaiError("image-not-found", "none");
+		const appearance = spriteAppearance(options.characterIndex, options.passportId);
+		const jobs = spriteLabels(options.labels).map((label) => ({
+			label,
+			status: "pending"
+		}));
+		const report = () => options.onProgress?.(jobs.map((j) => ({ ...j })));
+		const seed = settings().generation.seed >= 0 ? settings().generation.seed : randomSeed();
+		let base = null;
+		const order = options.mode === "director" ? [...jobs].sort((a, b) => Number(b.label === "neutral") - Number(a.label === "neutral")) : jobs;
+		report();
+		for (const job of order) {
+			if (options.signal?.aborted) break;
+			job.status = "running";
+			report();
+			try {
+				let image;
+				if (options.mode === "seed") {
+					image = await this.draw(appearance, job.label, options, seed);
+					job.how = "seed";
+				} else if (!base) {
+					image = await this.draw(appearance, "neutral", options, seed);
+					base = image;
+					job.how = "base";
+					if (job.label !== "neutral") image = await this.variant(base, appearance, job, options, seed);
+				} else image = await this.variant(base, appearance, job, options, seed);
+				job.file = await uploadSprite(folder, job.label, image);
+				job.status = "done";
+			} catch (error) {
+				if (options.signal?.aborted) break;
+				job.status = "failed";
+				job.error = error?.message ?? String(error);
+				log.warn("sprite failed", job.label, job.error);
+			}
+			report();
+		}
+		log.info("sprites", folder, jobs.filter((j) => j.status === "done").length, "of", jobs.length);
+		return jobs;
+	}
+	async variant(base, appearance, job, options, seed) {
+		const emotion = EXPRESSION_DIRECTOR[job.label];
+		if (emotion) {
+			job.how = "director";
+			return await this.emotion(base, emotion, options.signal);
+		}
+		job.how = "img2img";
+		const png = await toPngBlob(base64ToBlob(base.base64, base.mime));
+		const bitmap = await createImageBitmap(png);
+		const source = {
+			image: await blobToBase64$1(png),
+			width: bitmap.width,
+			height: bitmap.height,
+			strength: .6
+		};
+		bitmap.close();
+		return await this.draw(appearance, job.label, options, seed, source);
 	}
 };
 //#endregion
@@ -13056,111 +13450,6 @@ function attachPromptAssist(root, selector, model) {
 			hide();
 		}
 	});
-}
-//#endregion
-//#region src/ui/components/json-view.ts
-var BASE64_MIN = 256;
-function escapeHtml$1(text) {
-	return text.replace(/[&<>"']/g, (ch) => ({
-		"&": "&amp;",
-		"<": "&lt;",
-		">": "&gt;",
-		"\"": "&quot;",
-		"'": "&#39;"
-	})[ch] ?? ch);
-}
-function renderValue(value, path, highlight, indent) {
-	const pad = "  ".repeat(indent);
-	let html;
-	if (value === null || typeof value !== "object") {
-		if (typeof value === "string" && value.length > BASE64_MIN && /^[A-Za-z0-9+/=]+$/.test(value)) html = `<span class="naist-json-b64">"&lt;base64 ${value.length}&gt;"</span>`;
-		else html = `<span class="naist-json-${value === null ? "null" : typeof value}">${escapeHtml$1(JSON.stringify(value))}</span>`;
-	} else if (Array.isArray(value)) {
-		if (value.length === 0) html = "[]";
-		else html = `[\n${value.map((item, i) => `${pad}  ${renderValue(item, `${path}[${i}]`, highlight, indent + 1)}`).join(",\n")}\n${pad}]`;
-	} else {
-		const entries = Object.entries(value);
-		if (entries.length === 0) html = "{}";
-		else html = `{\n${entries.map(([key, item]) => {
-			const childPath = path ? `${path}.${key}` : key;
-			return `${pad}  <span class="naist-json-key">${escapeHtml$1(JSON.stringify(key))}</span>: ${renderValue(item, childPath, highlight, indent + 1)}`;
-		}).join(",\n")}\n${pad}}`;
-	}
-	return highlight.has(path) ? `<span class="naist-json-override">${html}</span>` : html;
-}
-function renderJson(value, highlightPaths = []) {
-	return `<pre class="naist-json">${renderValue(value, "", new Set(highlightPaths), 0)}</pre>`;
-}
-//#endregion
-//#region src/ui/panel/inspector.ts
-function escapeHtml(text) {
-	const div = document.createElement("div");
-	div.textContent = text;
-	return div.innerHTML;
-}
-function droppedList(prepared) {
-	if (prepared.build.dropped.length === 0) return `<p class="naist-muted" data-i18n="naist.inspector.nothingDropped"></p>`;
-	return `<ul class="naist-list">${[...prepared.build.dropped].sort((a, b) => Number(b.userSet) - Number(a.userSet)).map((d) => `<li class="${d.userSet ? "naist-dropped-user" : "naist-muted"}"><code>${escapeHtml(d.path)}</code> — ${escapeHtml(t(`naist.drop.${d.reason}`))}</li>`).join("")}</ul>`;
-}
-function warningsList(prepared) {
-	const warnings = prepared.build.warnings.map((w) => `<li>${escapeHtml(t(`naist.warning.${w.code}`, w.params))}</li>`);
-	const clamps = prepared.clampChanges.map((c) => `<li>${escapeHtml(t(`naist.clamp.${c.kind}`, c))}</li>`);
-	const all = [...warnings, ...clamps];
-	return all.length ? `<ul class="naist-list">${all.join("")}</ul>` : `<p class="naist-muted" data-i18n="naist.inspector.noWarnings"></p>`;
-}
-function lostList(prepared) {
-	if (prepared.effective.lost.length === 0) return "";
-	return `<h4 data-i18n="naist.inspector.lost"></h4><ul class="naist-list naist-dropped-user">${prepared.effective.lost.map((l) => `<li>${escapeHtml(t(`naist.lost.${l}`))}</li>`).join("")}</ul>`;
-}
-/** Opens the inspector popup. Resolves true when the user chose to send (confirmSend mode). */
-async function openInspector(prepared, options = { confirmSend: false }) {
-	const c = ctx();
-	const root = document.createElement("div");
-	root.className = "naist-inspector";
-	const native = prepared.transportId === "native";
-	const costText = prepared.cost.total === 0 ? t("naist.cost.free") : t("naist.cost.paid", {
-		total: prepared.cost.total,
-		perImage: prepared.cost.perImage,
-		billable: prepared.cost.billableSamples
-	});
-	root.innerHTML = `
-        <h3 data-i18n="naist.inspector.title"></h3>
-        <div class="naist-row">
-            <span>${escapeHtml(t(`naist.transport.${prepared.transportId}`))}</span>
-            <span class="naist-muted">${escapeHtml(prepared.body.model)} · ${escapeHtml(prepared.body.action)}</span>
-            <span class="naist-cost-inline">${escapeHtml(costText)}</span>
-        </div>
-        ${prepared.overridePaths.length ? `<div class="naist-warning" data-i18n="naist.inspector.overrideApplied"></div>` : ""}
-        ${lostList(prepared)}
-        <div class="naist-row">
-            <div class="menu_button menu_button_icon naist-copy"><i class="fa-solid fa-copy"></i><span data-i18n="naist.inspector.copy"></span></div>
-        </div>
-        <h4 data-i18n="naist.inspector.body"></h4>
-        ${renderJson(prepared.body, prepared.overridePaths)}
-        ${native ? `<h4 data-i18n="naist.inspector.effectiveNative"></h4>${renderJson(prepared.effective.body)}` : ""}
-        <h4 data-i18n="naist.inspector.dropped"></h4>
-        ${droppedList(prepared)}
-        <h4 data-i18n="naist.inspector.warnings"></h4>
-        ${warningsList(prepared)}
-    `;
-	localize(root);
-	root.querySelector(".naist-copy")?.addEventListener("click", async () => {
-		const json = JSON.stringify(native ? prepared.effective.body : prepared.body, null, 2);
-		try {
-			await navigator.clipboard.writeText(json);
-			toastr.success(t("naist.inspector.copied"));
-		} catch {
-			toastr.error(t("naist.inspector.copyFailed"));
-		}
-	});
-	const result = await c.callGenericPopup(root, options.confirmSend ? c.POPUP_TYPE.CONFIRM : c.POPUP_TYPE.TEXT, "", {
-		wide: true,
-		large: true,
-		allowVerticalScrolling: true,
-		okButton: options.confirmSend ? t("naist.inspector.send") : t("naist.inspector.close"),
-		cancelButton: options.confirmSend ? t("naist.inspector.cancel") : false
-	});
-	return options.confirmSend && result === c.POPUP_RESULT.AFFIRMATIVE;
 }
 //#endregion
 //#region src/ui/pose-helpers.ts
@@ -13387,6 +13676,396 @@ async function editPassport(name, initial, options = {}) {
 		y: clamp(root.querySelector(".naist-pos-y")?.value)
 	} : null;
 	return passport;
+}
+//#endregion
+//#region src/integration/command-args.ts
+/** Built-in arguments without a NovelAI meaning (SD-WebUI/ComfyUI specific). */
+var IGNORED_ARGS = [
+	"skip",
+	"vae",
+	"upscaler",
+	"hires",
+	"scale",
+	"denoise",
+	"2ndpass",
+	"faces"
+];
+var MODEL_ALIASES = {
+	v5: "nai-diffusion-5-full",
+	"v5-full": "nai-diffusion-5-full",
+	"v5-curated": "nai-diffusion-5-curated",
+	"v4.5": "nai-diffusion-4-5-full",
+	"v4.5-full": "nai-diffusion-4-5-full",
+	"v4.5-curated": "nai-diffusion-4-5-curated",
+	v4: "nai-diffusion-4-full",
+	"v4-full": "nai-diffusion-4-full",
+	"v4-curated": "nai-diffusion-4-curated-preview",
+	v3: "nai-diffusion-3",
+	"anime-v3": "nai-diffusion-3",
+	furry: "nai-diffusion-furry-3",
+	"furry-v3": "nai-diffusion-furry-3"
+};
+/** Same coercion as the built-in: anything that is not explicitly false counts as true. */
+function boolArg(value) {
+	const text = String(value).trim().toLowerCase();
+	if (["on", "true"].includes(text)) return true;
+	return !["off", "false"].includes(text);
+}
+function numberArg(value) {
+	const n = Number(value);
+	return value === void 0 || value === "" || !Number.isFinite(n) ? void 0 : n;
+}
+function resolveModel(value) {
+	const key = value.trim().toLowerCase();
+	const id = MODEL_ALIASES[key] ?? key;
+	return isModelId(id) ? id : void 0;
+}
+function parseCommandArgs(args) {
+	const has = (name) => args[name] !== void 0 && !name.startsWith("_");
+	const overrides = {};
+	const generation = {};
+	const ignored = [];
+	const invalid = [];
+	if (has("quiet")) overrides.quiet = boolArg(args.quiet);
+	if (has("gallery")) overrides.gallery = boolArg(args.gallery);
+	if (has("negative")) overrides.negative = String(args.negative);
+	if (has("extend")) overrides.extend = boolArg(args.extend);
+	if (has("edit")) overrides.edit = boolArg(args.edit);
+	if (has("multimodal")) overrides.multimodal = boolArg(args.multimodal);
+	if (has("snap")) overrides.snap = boolArg(args.snap);
+	if (has("processing")) {
+		const value = String(args.processing).toLowerCase();
+		if (value.includes("minimal")) overrides.minimalProcessing = true;
+		else if (value.includes("standard")) overrides.minimalProcessing = false;
+		else invalid.push("processing");
+	}
+	for (const [name, key] of [
+		["seed", "seed"],
+		["width", "width"],
+		["height", "height"],
+		["steps", "steps"],
+		["cfg", "scale"],
+		["cfgrescale", "cfgRescale"],
+		["samples", "samples"]
+	]) {
+		if (!has(name)) continue;
+		const value = numberArg(args[name]);
+		if (value === void 0) invalid.push(name);
+		else generation[key] = value;
+	}
+	if (has("model")) {
+		const model = resolveModel(String(args.model));
+		if (model) generation.model = model;
+		else invalid.push("model");
+	}
+	const enums = [
+		[
+			"sampler",
+			"sampler",
+			SAMPLERS
+		],
+		[
+			"scheduler",
+			"noiseSchedule",
+			NOISE_SCHEDULES
+		],
+		[
+			"uc",
+			"ucPreset",
+			UC_PRESETS
+		],
+		[
+			"quality",
+			"qualityPreset",
+			QUALITY_PRESETS
+		]
+	];
+	for (const [name, key, allowed] of enums) {
+		if (!has(name)) continue;
+		const value = String(args[name]);
+		if (allowed.includes(value)) generation[key] = value;
+		else invalid.push(name);
+	}
+	for (const [name, key] of [
+		["smea", "smea"],
+		["dyn", "smeaDyn"],
+		["variety", "varietyBoost"],
+		["decrisper", "decrisper"],
+		["transparent", "transparentBackground"]
+	]) if (has(name)) generation[key] = boolArg(args[name]);
+	if (has("smea")) generation.autoSmea = false;
+	for (const name of IGNORED_ARGS) if (has(name)) ignored.push(name);
+	if (Object.keys(generation).length > 0) overrides.generation = generation;
+	return {
+		overrides,
+		ignored,
+		invalid
+	};
+}
+//#endregion
+//#region src/integration/commands.ts
+function namedArguments() {
+	const { SlashCommandNamedArgument: Arg, ARGUMENT_TYPE: T } = ctx();
+	const named = (name, type, enumList, defaultValue) => Arg.fromProps({
+		name,
+		description: t(`naist.command.arg.${name}`),
+		typeList: [type],
+		isRequired: false,
+		...enumList ? { enumList: [...enumList] } : {},
+		...defaultValue !== void 0 ? { defaultValue } : {}
+	});
+	return [
+		named("quiet", T.BOOLEAN ?? "bool", void 0, "false"),
+		named("gallery", T.BOOLEAN ?? "bool", void 0, "true"),
+		named("negative", T.STRING ?? "string"),
+		named("extend", T.BOOLEAN ?? "bool"),
+		named("edit", T.BOOLEAN ?? "bool"),
+		named("multimodal", T.BOOLEAN ?? "bool"),
+		named("snap", T.BOOLEAN ?? "bool"),
+		named("processing", T.STRING ?? "string", ["standard", "minimal"]),
+		named("seed", T.NUMBER ?? "number"),
+		named("width", T.NUMBER ?? "number"),
+		named("height", T.NUMBER ?? "number"),
+		named("steps", T.NUMBER ?? "number"),
+		named("cfg", T.NUMBER ?? "number"),
+		named("cfgrescale", T.NUMBER ?? "number"),
+		named("samples", T.NUMBER ?? "number"),
+		named("model", T.STRING ?? "string", [...MODEL_IDS, ...Object.keys(MODEL_ALIASES)]),
+		named("sampler", T.STRING ?? "string", SAMPLERS),
+		named("scheduler", T.STRING ?? "string", NOISE_SCHEDULES),
+		named("uc", T.STRING ?? "string", UC_PRESETS),
+		named("quality", T.STRING ?? "string", QUALITY_PRESETS),
+		named("smea", T.BOOLEAN ?? "bool"),
+		named("dyn", T.BOOLEAN ?? "bool"),
+		named("variety", T.BOOLEAN ?? "bool"),
+		named("decrisper", T.BOOLEAN ?? "bool"),
+		named("transparent", T.BOOLEAN ?? "bool"),
+		...IGNORED_ARGS.map((name) => named(name, T.STRING ?? "string"))
+	];
+}
+var portraitHook = null;
+/** The DES integration recognises its own portrait prompts here. */
+function setPortraitHook(hook) {
+	portraitHook = hook;
+}
+function imagineCallback(pipeline) {
+	return async (args, value) => {
+		const parsed = parseCommandArgs(args);
+		if (parsed.ignored.length) log.info("ignored (not applicable to NovelAI):", parsed.ignored.join(", "));
+		if (parsed.invalid.length) toastr.warning(t("naist.command.invalidArgs", { args: parsed.invalid.join(", ") }));
+		const controller = new AbortController();
+		args._abortController?.addEventListener?.("abort", () => controller.abort());
+		try {
+			const trigger = String(value ?? "");
+			const plan = parsed.overrides.quiet && portraitHook ? await portraitHook(trigger) : null;
+			return (plan ? await pipeline.generatePicture({
+				initiator: "command",
+				trigger: plan.scene,
+				scene: plan.scene,
+				mode: MODE.FREE,
+				interpret: "auto",
+				overrides: {
+					...parsed.overrides,
+					edit: false,
+					negative: plan.negative ?? parsed.overrides.negative,
+					generation: {
+						...parsed.overrides.generation,
+						...plan.generation
+					}
+				},
+				signal: controller.signal
+			}) : await pipeline.generatePicture({
+				initiator: "command",
+				trigger,
+				overrides: parsed.overrides,
+				signal: controller.signal
+			}))?.path ?? "";
+		} catch (error) {
+			reportGenerationError(error);
+			return "";
+		}
+	};
+}
+function styleCallback() {
+	return async (_args, value) => {
+		const name = String(value ?? "").trim();
+		const prompts = settings().prompts;
+		if (!name) return prompts.activeStyle;
+		const style = prompts.styles.find((s) => s.name.toLowerCase() === name.toLowerCase());
+		if (!style) {
+			toastr.warning(t("naist.command.styleMissing", { name }));
+			return prompts.activeStyle;
+		}
+		prompts.activeStyle = style.name;
+		prompts.prefix = style.prefix;
+		prompts.suffix = style.suffix;
+		settings().generation.negativePrompt = style.negative;
+		saveSettings();
+		notifyExternalChange();
+		return style.name;
+	};
+}
+function registerCommands$1(pipeline, compat) {
+	const { SlashCommandParser: parser, SlashCommand: Command, SlashCommandArgument: Arg, ARGUMENT_TYPE: T } = ctx();
+	const triggerArg = () => Arg.fromProps({
+		description: t("naist.command.trigger"),
+		typeList: [T.STRING ?? "string"],
+		isRequired: false,
+		enumList: Object.values(TRIGGER_WORDS)
+	});
+	const imagine = (name, aliases) => Command.fromProps({
+		name,
+		aliases,
+		callback: imagineCallback(pipeline),
+		returns: t("naist.command.returns"),
+		namedArgumentList: namedArguments(),
+		unnamedArgumentList: [triggerArg()],
+		helpString: t("naist.command.help")
+	});
+	parser.addCommandObject(imagine("nai", ["nai-imagine"]));
+	const styleAliases = compat ? [
+		"sd-style",
+		"img-style",
+		"nai-style"
+	] : [];
+	parser.addCommandObject(Command.fromProps({
+		name: compat ? "imagine-style" : "nai-style",
+		aliases: styleAliases,
+		callback: styleCallback(),
+		returns: t("naist.command.styleReturns"),
+		unnamedArgumentList: [Arg.fromProps({
+			description: t("naist.command.styleName"),
+			typeList: [T.STRING ?? "string"],
+			isRequired: false
+		})],
+		helpString: t("naist.command.styleHelp")
+	}));
+	if (!compat) return;
+	parser.addCommandObject(imagine("imagine", [
+		"sd",
+		"img",
+		"image"
+	]));
+	parser.addCommandObject(Command.fromProps({
+		name: "imagine-source",
+		aliases: ["sd-source", "img-source"],
+		callback: async (_args, value) => {
+			if (String(value ?? "").trim() && String(value).trim() !== "novel") toastr.info(t("naist.command.sourceFixed"));
+			return "novel";
+		},
+		returns: t("naist.command.sourceReturns"),
+		unnamedArgumentList: [Arg.fromProps({
+			description: t("naist.command.sourceName"),
+			typeList: [T.STRING ?? "string"],
+			isRequired: false
+		})],
+		helpString: t("naist.command.sourceHelp")
+	}));
+}
+//#endregion
+//#region src/ui/components/json-view.ts
+var BASE64_MIN = 256;
+function escapeHtml$1(text) {
+	return text.replace(/[&<>"']/g, (ch) => ({
+		"&": "&amp;",
+		"<": "&lt;",
+		">": "&gt;",
+		"\"": "&quot;",
+		"'": "&#39;"
+	})[ch] ?? ch);
+}
+function renderValue(value, path, highlight, indent) {
+	const pad = "  ".repeat(indent);
+	let html;
+	if (value === null || typeof value !== "object") {
+		if (typeof value === "string" && value.length > BASE64_MIN && /^[A-Za-z0-9+/=]+$/.test(value)) html = `<span class="naist-json-b64">"&lt;base64 ${value.length}&gt;"</span>`;
+		else html = `<span class="naist-json-${value === null ? "null" : typeof value}">${escapeHtml$1(JSON.stringify(value))}</span>`;
+	} else if (Array.isArray(value)) {
+		if (value.length === 0) html = "[]";
+		else html = `[\n${value.map((item, i) => `${pad}  ${renderValue(item, `${path}[${i}]`, highlight, indent + 1)}`).join(",\n")}\n${pad}]`;
+	} else {
+		const entries = Object.entries(value);
+		if (entries.length === 0) html = "{}";
+		else html = `{\n${entries.map(([key, item]) => {
+			const childPath = path ? `${path}.${key}` : key;
+			return `${pad}  <span class="naist-json-key">${escapeHtml$1(JSON.stringify(key))}</span>: ${renderValue(item, childPath, highlight, indent + 1)}`;
+		}).join(",\n")}\n${pad}}`;
+	}
+	return highlight.has(path) ? `<span class="naist-json-override">${html}</span>` : html;
+}
+function renderJson(value, highlightPaths = []) {
+	return `<pre class="naist-json">${renderValue(value, "", new Set(highlightPaths), 0)}</pre>`;
+}
+//#endregion
+//#region src/ui/panel/inspector.ts
+function escapeHtml(text) {
+	const div = document.createElement("div");
+	div.textContent = text;
+	return div.innerHTML;
+}
+function droppedList(prepared) {
+	if (prepared.build.dropped.length === 0) return `<p class="naist-muted" data-i18n="naist.inspector.nothingDropped"></p>`;
+	return `<ul class="naist-list">${[...prepared.build.dropped].sort((a, b) => Number(b.userSet) - Number(a.userSet)).map((d) => `<li class="${d.userSet ? "naist-dropped-user" : "naist-muted"}"><code>${escapeHtml(d.path)}</code> — ${escapeHtml(t(`naist.drop.${d.reason}`))}</li>`).join("")}</ul>`;
+}
+function warningsList(prepared) {
+	const warnings = prepared.build.warnings.map((w) => `<li>${escapeHtml(t(`naist.warning.${w.code}`, w.params))}</li>`);
+	const clamps = prepared.clampChanges.map((c) => `<li>${escapeHtml(t(`naist.clamp.${c.kind}`, c))}</li>`);
+	const all = [...warnings, ...clamps];
+	return all.length ? `<ul class="naist-list">${all.join("")}</ul>` : `<p class="naist-muted" data-i18n="naist.inspector.noWarnings"></p>`;
+}
+function lostList(prepared) {
+	if (prepared.effective.lost.length === 0) return "";
+	return `<h4 data-i18n="naist.inspector.lost"></h4><ul class="naist-list naist-dropped-user">${prepared.effective.lost.map((l) => `<li>${escapeHtml(t(`naist.lost.${l}`))}</li>`).join("")}</ul>`;
+}
+/** Opens the inspector popup. Resolves true when the user chose to send (confirmSend mode). */
+async function openInspector(prepared, options = { confirmSend: false }) {
+	const c = ctx();
+	const root = document.createElement("div");
+	root.className = "naist-inspector";
+	const native = prepared.transportId === "native";
+	const costText = prepared.cost.total === 0 ? t("naist.cost.free") : t("naist.cost.paid", {
+		total: prepared.cost.total,
+		perImage: prepared.cost.perImage,
+		billable: prepared.cost.billableSamples
+	});
+	root.innerHTML = `
+        <h3 data-i18n="naist.inspector.title"></h3>
+        <div class="naist-row">
+            <span>${escapeHtml(t(`naist.transport.${prepared.transportId}`))}</span>
+            <span class="naist-muted">${escapeHtml(prepared.body.model)} · ${escapeHtml(prepared.body.action)}</span>
+            <span class="naist-cost-inline">${escapeHtml(costText)}</span>
+        </div>
+        ${prepared.overridePaths.length ? `<div class="naist-warning" data-i18n="naist.inspector.overrideApplied"></div>` : ""}
+        ${lostList(prepared)}
+        <div class="naist-row">
+            <div class="menu_button menu_button_icon naist-copy"><i class="fa-solid fa-copy"></i><span data-i18n="naist.inspector.copy"></span></div>
+        </div>
+        <h4 data-i18n="naist.inspector.body"></h4>
+        ${renderJson(prepared.body, prepared.overridePaths)}
+        ${native ? `<h4 data-i18n="naist.inspector.effectiveNative"></h4>${renderJson(prepared.effective.body)}` : ""}
+        <h4 data-i18n="naist.inspector.dropped"></h4>
+        ${droppedList(prepared)}
+        <h4 data-i18n="naist.inspector.warnings"></h4>
+        ${warningsList(prepared)}
+    `;
+	localize(root);
+	root.querySelector(".naist-copy")?.addEventListener("click", async () => {
+		const json = JSON.stringify(native ? prepared.effective.body : prepared.body, null, 2);
+		try {
+			await navigator.clipboard.writeText(json);
+			toastr.success(t("naist.inspector.copied"));
+		} catch {
+			toastr.error(t("naist.inspector.copyFailed"));
+		}
+	});
+	const result = await c.callGenericPopup(root, options.confirmSend ? c.POPUP_TYPE.CONFIRM : c.POPUP_TYPE.TEXT, "", {
+		wide: true,
+		large: true,
+		allowVerticalScrolling: true,
+		okButton: options.confirmSend ? t("naist.inspector.send") : t("naist.inspector.close"),
+		cancelButton: options.confirmSend ? t("naist.inspector.cancel") : false
+	});
+	return options.confirmSend && result === c.POPUP_RESULT.AFFIRMATIVE;
 }
 //#endregion
 //#region src/ui/composer.ts
@@ -13735,7 +14414,7 @@ async function chooseMerge() {
 	if (result === 3) return "replace";
 	return null;
 }
-function sameName(a, b, cardName) {
+function sameName$1(a, b, cardName) {
 	return a.kind === b.kind && (a.name || cardName).trim().toLowerCase() === (b.name || cardName).trim().toLowerCase();
 }
 async function openPassportManager(index, actions) {
@@ -13822,7 +14501,7 @@ async function openPassportManager(index, actions) {
 				const mode = list.some((p) => !isPassportEmpty(p)) ? await chooseMerge() : "replace";
 				if (!mode) return;
 				if (mode === "replace") list = generated;
-				else list.push(...generated.filter((g) => !list.some((p) => sameName(p, g, character.name))));
+				else list.push(...generated.filter((g) => !list.some((p) => sameName$1(p, g, character.name))));
 				dirty = true;
 				render();
 				toastr.success(t("naist.passports.generated", { count: generated.length }));
@@ -13926,6 +14605,10 @@ var emotionsHandler = () => {};
 /** The sprite generator registers itself here (it lives with the Phase 6 tools). */
 function setEmotionsHandler(handler) {
 	emotionsHandler = handler;
+}
+/** Opens the sprite generator for a character passport of a card. */
+function openEmotions(index, passportId) {
+	emotionsHandler(index, passportId);
 }
 async function openSceneComposer(auto = true, focusKey) {
 	if (!state$1) return;
@@ -14085,6 +14768,1202 @@ function setupScenes(pipeline, service) {
 		log.info("scene composer ready");
 	});
 }
+var DES_VERIFIED = ["2.6.0"];
+var MODULES = {
+	state: {
+		path: "src/core/state.js",
+		exports: { extensionSettings: "object" }
+	},
+	persistence: {
+		path: "src/core/persistence.js",
+		exports: { saveSettings: "function" }
+	},
+	avatars: {
+		path: "src/systems/features/avatarGenerator.js",
+		exports: { regenerateAvatar: "function" }
+	},
+	portraitBar: {
+		path: "src/systems/ui/portraitBar.js",
+		exports: { updatePortraitBar: "function" }
+	}
+};
+async function extensionNames() {
+	try {
+		const module = await importHost("/scripts/extensions.js");
+		if (Array.isArray(module.extensionNames) && module.extensionNames.length) return module.extensionNames;
+	} catch (error) {
+		log.warn("DES: extension list not available", error);
+	}
+	return ["third-party/Dooms-Enhancement-Suite"];
+}
+async function manifestOf(name) {
+	try {
+		const response = await fetch(`/scripts/extensions/${name}/manifest.json`, { cache: "no-store" });
+		return response.ok ? await response.json() : null;
+	} catch {
+		return null;
+	}
+}
+var isDes = (manifest) => !!manifest && (String(manifest.homePage ?? "").toLowerCase().includes("dangerdaza/dooms-enhancement-suite") || manifest.display_name === "Doom's Enhancement Suite");
+/** DES's own module script on the page: its address is the base for importing DES modules. */
+function scriptOf(name, manifest) {
+	const suffix = `/scripts/extensions/${name}/${manifest.js || "index.js"}`;
+	for (const script of document.querySelectorAll("script[type=\"module\"][src]")) try {
+		if (decodeURIComponent(new URL(script.src, location.href).pathname).endsWith(suffix)) return script.src;
+	} catch {}
+	return null;
+}
+/** The imported settings are DES's live object (or share its nested objects before its first save). */
+function isLive(settings, saved) {
+	if (!settings || typeof settings !== "object") return false;
+	if (!saved || typeof saved !== "object") return true;
+	if (settings === saved) return true;
+	return Object.entries(saved).some(([key, value]) => value && typeof value === "object" && settings[key] === value);
+}
+var wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+/**
+* Finds DES and connects to it; null when DES is not installed, disabled in ST, or its modules
+* do not have what NAI Studio uses. Waits for DES's asynchronous start (up to `timeoutMs`).
+*/
+async function connectDes(timeoutMs = 6e4) {
+	let found = null;
+	for (const name of await extensionNames()) {
+		if (!name.startsWith("third-party/")) continue;
+		const manifest = await manifestOf(name);
+		if (isDes(manifest)) {
+			found = {
+				name,
+				manifest
+			};
+			break;
+		}
+	}
+	if (!found) return null;
+	const c = ctx();
+	const disabled = c.extensionSettings.disabledExtensions;
+	if (Array.isArray(disabled) && disabled.includes(found.name)) return null;
+	const started = Date.now();
+	let script = null;
+	while (Date.now() - started < timeoutMs) {
+		script = scriptOf(found.name, found.manifest);
+		if (script && document.querySelector("#rpg-extension-enabled")) break;
+		await wait(500);
+	}
+	if (!script) return null;
+	const namespaces = {};
+	for (const [key, spec] of Object.entries(MODULES)) try {
+		const namespace = await import(
+			/* @vite-ignore */
+			new URL(spec.path, script).href
+);
+		for (const [exportName, type] of Object.entries(spec.exports)) if (typeof namespace[exportName] !== type || namespace[exportName] === null) {
+			log.warn(`DES: ${spec.path} has no ${exportName}`);
+			return null;
+		}
+		namespaces[key] = namespace;
+	} catch (error) {
+		log.warn(`DES: ${spec.path} did not load`, error);
+		return null;
+	}
+	const settings = namespaces.state.extensionSettings;
+	if (!isLive(settings, c.extensionSettings[found.name])) {
+		log.warn("DES: the settings object is not the live one");
+		return null;
+	}
+	const version = found.manifest.version ?? null;
+	return {
+		name: found.name,
+		version,
+		verified: version !== null && DES_VERIFIED.includes(version),
+		settings,
+		enabled: () => settings.enabled !== false,
+		mode: () => settings.generationMode === "separate" || settings.generationMode === "external" ? settings.generationMode : "together",
+		save: () => namespaces.persistence.saveSettings(),
+		regeneratePortrait: async (character) => await namespaces.avatars.regenerateAvatar(character) ?? null,
+		refreshPortraits: () => {
+			try {
+				namespaces.portraitBar.updatePortraitBar();
+			} catch (error) {
+				log.warn("DES: portrait bar refresh failed", error);
+			}
+		}
+	};
+}
+//#endregion
+//#region src/integration/des/des-integration.ts
+var TRACKER_EVENT = "dooms_tracker_update_complete";
+var TRACKER_WAIT_MS = 12e4;
+/** Letters and digits only: DES cleans /sd prompts (quotes, pipes, commas) before sending them. */
+var normalizeLine = (text) => text.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "");
+var sameName = (a, b) => mentionIndex(a, [b]) >= 0 || mentionIndex(b, [a]) >= 0;
+/** One seed per character name: the same face across regenerated portraits. */
+function stableSeed(name) {
+	let hash = 5381;
+	for (const ch of name.toLowerCase()) hash = (hash << 5) + hash + ch.codePointAt(0) >>> 0;
+	return hash % 4294967295;
+}
+function hashOf(text) {
+	let hash = 0;
+	for (let i = 0; i < text.length; i++) hash = Math.imul(31, hash) + text.charCodeAt(i) | 0;
+	return (hash >>> 0).toString(16);
+}
+var DesIntegration = class {
+	markers;
+	api = null;
+	state = "searching";
+	/** Normalised appearance line written to DES → character name. */
+	lines = /* @__PURE__ */ new Map();
+	passportJobs = /* @__PURE__ */ new Map();
+	failed = /* @__PURE__ */ new Set();
+	portraitQueue = Promise.resolve();
+	lastLocation = "";
+	timer = null;
+	listeners = /* @__PURE__ */ new Set();
+	/** Russian tracker looks converted to tags (kept apart from the passport tags they join). */
+	looks = /* @__PURE__ */ new Map();
+	constructor(markers) {
+		this.markers = markers;
+	}
+	status() {
+		return {
+			state: this.state,
+			version: this.api?.version ?? null,
+			verified: this.api?.verified ?? false,
+			mode: this.api?.mode() ?? "",
+			enabled: this.api?.enabled() ?? false
+		};
+	}
+	onStatus(listener) {
+		this.listeners.add(listener);
+	}
+	changed() {
+		for (const listener of this.listeners) listener();
+		notifyExternalChange();
+	}
+	active() {
+		return !!this.api && this.api.enabled() && settings().des.enabled;
+	}
+	async start() {
+		this.api = await connectDes();
+		this.state = this.api ? "connected" : "absent";
+		if (this.api) {
+			log.info(`Doom's Enhancement Suite ${this.api.version ?? "?"} connected (${this.api.mode()})`);
+			if (!this.api.verified) log.warn(`DES ${this.api.version}: integration checked on 2.6.0 only`);
+			this.install();
+		}
+		this.changed();
+	}
+	/** Settings of the integration changed in the panel. */
+	settingsChanged() {
+		if (!this.api) return;
+		this.applyPortraitMode();
+		if (this.active()) this.schedule(false);
+		this.changed();
+	}
+	install() {
+		const c = ctx();
+		setSceneProvider({
+			candidates: (query) => this.candidates(query),
+			setting: (query) => this.setting(query)
+		});
+		this.markers.setGate({
+			holdEarlyStart: () => this.active() && this.api.mode() !== "together",
+			wait: (messageId, signal) => this.waitForTracker(messageId, signal)
+		});
+		setPortraitHook((prompt) => this.portraitPlan(prompt));
+		setExtraSpriteFolder((name) => this.active() && settings().des.emotionsToDes ? name : null);
+		onPassportsSaved((index, passports) => this.syncCard(index, passports));
+		const received = c.eventTypes.MESSAGE_RECEIVED;
+		const after = (_id, type) => {
+			if (type !== "quiet" && type !== "impersonate") this.schedule(true);
+		};
+		const source = c.eventSource;
+		if (received && source.makeLast) source.makeLast(received, after);
+		else if (received) c.eventSource.on(received, after);
+		c.eventSource.on(TRACKER_EVENT, () => this.schedule(true));
+		if (c.eventTypes.MESSAGE_SWIPED) c.eventSource.on(c.eventTypes.MESSAGE_SWIPED, () => this.schedule(false));
+		if (c.eventTypes.CHAT_CHANGED) c.eventSource.on(c.eventTypes.CHAT_CHANGED, () => {
+			this.lastLocation = "";
+			this.schedule(false);
+		});
+		this.applyPortraitMode();
+		this.installMenu();
+		this.installBanners();
+		this.installWorkshop();
+		this.schedule(false);
+	}
+	/** NAI Studio draws the portraits: DES's auto portraits are off meanwhile and come back after. */
+	applyPortraitMode() {
+		if (!this.api) return;
+		const d = settings().des;
+		const des = this.api.settings;
+		const want = this.active() && d.portraits;
+		if (want && !d.saved) {
+			d.saved = {
+				autoPortraitMode: String(des.autoPortraitMode ?? "only_missing"),
+				autoGenerateAvatars: des.autoGenerateAvatars === true
+			};
+			des.autoPortraitMode = "off";
+			des.autoGenerateAvatars = false;
+		} else if (!want && d.saved) {
+			des.autoPortraitMode = d.saved.autoPortraitMode;
+			des.autoGenerateAvatars = d.saved.autoGenerateAvatars;
+			d.saved = null;
+		} else return;
+		this.api.save();
+		saveSettings();
+	}
+	trackerOf(messageId) {
+		const m = ctx().chat[messageId];
+		if (!m || m.is_user || m.is_system) return null;
+		return trackerFromSwipe(m.extra, Number(m.swipe_id ?? 0)) ?? (this.api?.mode() === "together" ? trackerFromText(m.mes) : null);
+	}
+	latestTracker() {
+		const chat = ctx().chat;
+		for (let i = chat.length - 1; i >= 0; i--) {
+			const tracker = this.trackerOf(i);
+			if (tracker) return tracker;
+		}
+		return null;
+	}
+	/** The tracker of a reply: in its text (together mode, before DES parses it), saved, or the latest. */
+	trackerFor(query) {
+		if (query.text && this.api?.mode() === "together") {
+			const inText = trackerFromText(query.text);
+			if (inText) return inText;
+		}
+		if (query.messageId !== void 0) {
+			const saved = this.trackerOf(query.messageId);
+			if (saved) return saved;
+		}
+		return this.latestTracker();
+	}
+	async waitForTracker(messageId, signal) {
+		if (!this.active() || this.api.mode() === "together") return;
+		const started = Date.now();
+		while (Date.now() - started < TRACKER_WAIT_MS && !signal?.aborted) {
+			const m = ctx().chat[messageId];
+			if (!m || trackerFromSwipe(m.extra, Number(m.swipe_id ?? 0))) return;
+			await new Promise((resolve) => setTimeout(resolve, 1e3));
+		}
+		log.warn("DES: no tracker for the reply, marker images use the latest one");
+	}
+	isUserName(name) {
+		return sameName(name, ctx().name1);
+	}
+	aliasesOf(name) {
+		const list = (this.api?.settings.characterAliases)?.[name];
+		return Array.isArray(list) ? list.filter((a) => typeof a === "string") : [];
+	}
+	/**
+	* A tracker look as tags: converted on its own, so the passport tags it joins are not sent
+	* through the converter again. English is used as written.
+	*/
+	lookTags(look) {
+		if (!look.trim() || !hasCyrillic(look)) return Promise.resolve(look);
+		let converted = this.looks.get(look);
+		if (!converted) {
+			converted = interpretForModel(look, settings().generation.model, { force: true }).then((result) => withoutCountTags(result?.prompt ?? look)).catch(() => look);
+			if (this.looks.size > 200) this.looks.clear();
+			this.looks.set(look, converted);
+		}
+		return converted;
+	}
+	async candidates(query) {
+		if (!this.active() || !settings().des.characters) return [];
+		const tracker = this.trackerFor(query);
+		if (!tracker) return [];
+		const people = tracker.characters.filter((ch) => !this.isUserName(ch.name));
+		return await Promise.all(people.map(async (ch) => {
+			const look = await this.lookTags(ch.look);
+			return {
+				key: `des:${ch.name}`,
+				name: ch.name,
+				aliases: this.aliasesOf(ch.name),
+				passport: null,
+				fallbackPrompt: "",
+				fallbackNegative: "",
+				isUser: false,
+				...look ? { currentLook: look } : {}
+			};
+		}));
+	}
+	async setting(query) {
+		if (!this.active() || !settings().des.sceneTags) return {
+			tags: [],
+			location: ""
+		};
+		const scene = this.trackerFor(query)?.scene;
+		return {
+			tags: scene?.tags ?? [],
+			location: scene?.location ?? ""
+		};
+	}
+	schedule(portraits) {
+		if (this.timer) clearTimeout(this.timer);
+		const withPortraits = portraits;
+		this.timer = setTimeout(() => {
+			this.timer = null;
+			this.handleTracker(withPortraits).catch((error) => log.warn("DES tracker handling failed", error));
+		}, 400);
+	}
+	/** After a tracker update: location, passports of new characters, appearance lines, portraits. */
+	async handleTracker(portraits) {
+		if (!this.active()) return;
+		const tracker = this.latestTracker();
+		if (!tracker) return;
+		const d = settings().des;
+		const location = tracker.scene?.location ?? "";
+		if (d.sceneTags && location && location !== this.lastLocation) {
+			this.lastLocation = location;
+			if (settings().continuity.enabled) await setCurrentLocation(location).catch(() => void 0);
+		}
+		for (const character of tracker.characters) {
+			if (this.isUserName(character.name)) continue;
+			const found = await this.findPassport(character.name) ?? (d.autoPassports ? await this.createPassport(character) : null);
+			this.syncLine(character.name, found?.passport ?? null, character.look);
+			if (portraits && d.portraits) this.maybePortrait(character, found);
+		}
+	}
+	chatCards() {
+		const c = ctx();
+		if (c.groupId) return (c.groups.find((g) => g.id === c.groupId)?.members ?? []).map((avatar) => c.characters.findIndex((ch) => ch.avatar === avatar)).filter((i) => i >= 0);
+		const id = c.characterId;
+		return id === void 0 || id === null || id === "" ? [] : [Number(id)];
+	}
+	/** Card new passports go to: the 1:1 character, in a group the speaker of the last reply. */
+	targetCard() {
+		const c = ctx();
+		const cards = this.chatCards();
+		if (cards.length <= 1) return cards[0] ?? null;
+		const last = [...c.chat].reverse().find((m) => !m.is_user && !m.is_system);
+		const avatar = typeof last?.original_avatar === "string" ? last.original_avatar : "";
+		const speaker = c.characters.findIndex((ch) => ch.avatar === avatar);
+		return speaker >= 0 ? speaker : cards[0] ?? null;
+	}
+	isCardCharacter(name) {
+		return this.chatCards().some((i) => sameName(ctx().characters[i]?.name ?? "", name));
+	}
+	/** The character passport of a name in the cards of the chat (name, aliases, sound). */
+	async findPassport(name) {
+		for (const cardIndex of this.chatCards()) {
+			const card = await loadCharacter(cardIndex);
+			for (const passport of cardPassports(card)) {
+				if (passport.kind !== "character") continue;
+				const own = passport.name || card?.name || "";
+				if (mentionIndex(name, [own, ...passport.aliases]) >= 0 || mentionIndex(own, [name]) >= 0) return {
+					cardIndex,
+					passport
+				};
+			}
+		}
+		return null;
+	}
+	/** A passport written from the tracker for a character the cards do not know yet. */
+	createPassport(character) {
+		const key = character.name.toLowerCase();
+		if (this.failed.has(key)) return Promise.resolve(null);
+		const running = this.passportJobs.get(key);
+		if (running) return running;
+		const job = (async () => {
+			const cardIndex = this.targetCard();
+			if (cardIndex === null) return null;
+			try {
+				const passport = await generateTrackerPassport(character.name, character.look, cardIndex);
+				passport.aliases = [.../* @__PURE__ */ new Set([...passport.aliases, ...this.aliasesOf(character.name)])];
+				await saveCardPassport(cardIndex, passport);
+				toastr.info(t("naist.des.passportCreated", { name: character.name }), t("naist.des.title"));
+				return {
+					cardIndex,
+					passport
+				};
+			} catch (error) {
+				this.failed.add(key);
+				log.warn(`DES: passport for ${character.name} not written`, error);
+				return null;
+			} finally {
+				this.passportJobs.delete(key);
+			}
+		})();
+		this.passportJobs.set(key, job);
+		return job;
+	}
+	/** The passport as the DES "Portrait prompt" of the character (or the current look without one). */
+	syncLine(name, passport, look = "") {
+		if (!this.api) return;
+		const line = passport ? passportTags(passport, { allowNsfw: false }) : look.trim();
+		if (!line) return;
+		this.lines.set(normalizeLine(line), name);
+		const store = this.api.settings.characterAppearance ??= {};
+		if (store[name] === line) return;
+		store[name] = line;
+		this.api.save();
+	}
+	syncCard(index, passports) {
+		if (!this.active()) return;
+		const cardName = ctx().characters[index]?.name ?? "";
+		for (const passport of passports) if (passport.kind === "character") this.syncLine(passport.name || cardName, passport);
+	}
+	portraitRecords() {
+		const meta = ctx().chatMetadata.nai_studio ??= {};
+		return meta.desPortraits ??= {};
+	}
+	maybePortrait(character, found) {
+		const api = this.api;
+		if (!api || this.isCardCharacter(character.name)) return;
+		const name = character.name;
+		const existing = api.settings.npcAvatars?.[name];
+		const records = this.portraitRecords();
+		if (existing && !records[name] && !api.settings.generatedPortraits?.[name]) return;
+		const line = found ? passportTags(found.passport, { allowNsfw: false }) : character.look;
+		if (!line.trim()) return;
+		const hash = hashOf(`${found?.passport.id ?? ""}|${line}|${character.look}`);
+		const policy = settings().des.portraitPolicy;
+		if (!(!existing || policy === "every" || policy === "state" && records[name] !== hash)) return;
+		this.portraitQueue = this.portraitQueue.then(async () => {
+			try {
+				if (await api.regeneratePortrait(name)) {
+					records[name] = hash;
+					await ctx().saveMetadata();
+					api.refreshPortraits();
+				}
+			} catch (error) {
+				log.warn(`DES: portrait of ${name} failed`, error);
+			}
+		});
+	}
+	/** DES's /sd call for an appearance line NAI Studio wrote: the full portrait request. */
+	async portraitPlan(prompt) {
+		if (!this.active()) return null;
+		const name = this.lines.get(normalizeLine(prompt));
+		if (!name) return null;
+		const found = await this.findPassport(name);
+		const look = await this.lookTags(this.latestTracker()?.characters.find((ch) => sameName(ch.name, name))?.look ?? "");
+		const s = settings();
+		const identity = found ? passportTags(found.passport, {
+			allowNsfw: s.scene.allowNsfw,
+			withoutClothing: Boolean(look)
+		}) : "";
+		const size = markerDimensions("portrait", void 0, s.anlas.freeOnly);
+		return {
+			scene: joinTags(identity, look, s.des.portraitTags),
+			...found?.passport.negative ? { negative: found.passport.negative } : {},
+			generation: {
+				width: size.width,
+				height: size.height,
+				seed: stableSeed(name),
+				characters: []
+			}
+		};
+	}
+	lastReplyId() {
+		const chat = ctx().chat;
+		for (let i = chat.length - 1; i >= 0; i--) if (!chat[i]?.is_user && !chat[i]?.is_system) return i;
+		return chat.length - 1;
+	}
+	async openPassport(name) {
+		let found = await this.findPassport(name);
+		if (!found) {
+			const look = this.latestTracker()?.characters.find((ch) => sameName(ch.name, name))?.look ?? "";
+			found = look ? await this.createPassport({
+				name,
+				look
+			}) : null;
+		}
+		if (!found) {
+			const cardIndex = this.targetCard();
+			if (cardIndex === null) return;
+			found = {
+				cardIndex,
+				passport: defaultPassport("character", name)
+			};
+		}
+		const cardName = ctx().characters[found.cardIndex]?.name ?? name;
+		const edited = await editPassport(cardName, found.passport, { identity: true });
+		if (!edited) return;
+		await saveCardPassport(found.cardIndex, edited);
+		toastr.success(t("naist.passport.saved", { name: edited.name || cardName }));
+	}
+	async ensureFound(name) {
+		const found = await this.findPassport(name);
+		if (found) return found;
+		const look = this.latestTracker()?.characters.find((ch) => sameName(ch.name, name))?.look ?? "";
+		return await this.createPassport({
+			name,
+			look
+		});
+	}
+	async menuAction(action, name, isUser) {
+		if (!name) return;
+		if (action === "passport") {
+			if (isUser) await editPersonaPassport();
+			else await this.openPassport(name);
+		} else if (action === "emotions") {
+			const found = await this.ensureFound(name);
+			if (found) openEmotions(found.cardIndex, found.passport.id);
+			else toastr.warning(t("naist.des.noPassport", { name }));
+		} else if (action === "portrait" && this.api) {
+			const found = await this.ensureFound(name);
+			const look = this.latestTracker()?.characters.find((ch) => sameName(ch.name, name))?.look ?? "";
+			this.syncLine(name, found?.passport ?? null, look);
+			toastr.info(t("naist.des.portraitStarted", { name }), t("naist.des.title"));
+			if (await this.api.regeneratePortrait(name)) this.api.refreshPortraits();
+		} else if (action === "scene") {
+			const params = {
+				prompt: name,
+				chars: [{ name }],
+				ratio: "portrait"
+			};
+			await this.markers.illustrate(this.lastReplyId(), params);
+		}
+	}
+	installMenu() {
+		const items = [
+			[
+				"passport",
+				"fa-id-card",
+				"naist.des.menuPassport"
+			],
+			[
+				"emotions",
+				"fa-masks-theater",
+				"naist.des.menuEmotions"
+			],
+			[
+				"portrait",
+				"fa-image-portrait",
+				"naist.des.menuPortrait"
+			],
+			[
+				"scene",
+				"fa-image",
+				"naist.des.menuScene"
+			]
+		];
+		const add = () => {
+			const menu = document.querySelector("#dooms-pb-context-menu");
+			if (!menu || menu.querySelector(".naist-des-ctx")) return;
+			const divider = document.createElement("div");
+			divider.className = "dooms-pb-ctx-divider naist-des-ctx";
+			menu.append(divider);
+			for (const [action, icon, key] of items) {
+				const item = document.createElement("div");
+				item.className = "dooms-pb-ctx-item naist-des-ctx";
+				item.dataset.naistDes = action;
+				item.innerHTML = `<i class="fa-solid ${icon}"></i> `;
+				item.append(document.createTextNode(t(key)));
+				menu.append(item);
+			}
+		};
+		add();
+		new MutationObserver(() => {
+			if (settings().des.menu && this.active()) add();
+		}).observe(document.body, { childList: true });
+		document.addEventListener("click", (event) => {
+			const item = event.target.closest(".naist-des-ctx[data-naist-des]");
+			if (!item) return;
+			event.preventDefault();
+			event.stopPropagation();
+			const $ = window.jQuery;
+			const menu = $?.("#dooms-pb-context-menu");
+			const name = String(menu?.data("character") ?? "");
+			const isUser = menu?.data("isUser") === true;
+			menu?.hide();
+			this.menuAction(item.dataset.naistDes ?? "", name, isUser).catch(reportGenerationError);
+		}, true);
+		document.addEventListener("contextmenu", () => {
+			const visible = settings().des.menu && this.active();
+			document.querySelectorAll(".naist-des-ctx").forEach((el) => {
+				el.style.display = visible ? "" : "none";
+			});
+		}, true);
+	}
+	installBanners() {
+		const chat = document.getElementById("chat");
+		if (!chat) return;
+		let pending = false;
+		const decorate = () => {
+			pending = false;
+			if (!settings().des.banners || !this.active()) return;
+			chat.querySelectorAll(":scope > .dooms-info-banner, :scope > .dooms-scene-transition").forEach((el) => {
+				if (el.querySelector(".naist-des-illustrate")) return;
+				const button = document.createElement("div");
+				button.className = "menu_button fa-solid fa-image naist-des-illustrate";
+				button.title = t("naist.des.illustrate");
+				el.append(button);
+			});
+		};
+		new MutationObserver(() => {
+			if (pending) return;
+			pending = true;
+			setTimeout(decorate, 300);
+		}).observe(chat, { childList: true });
+		chat.addEventListener("click", (event) => {
+			const button = event.target.closest(".naist-des-illustrate");
+			if (!button) return;
+			event.preventDefault();
+			event.stopPropagation();
+			const host = button.parentElement;
+			if (!host) return;
+			let mes = host;
+			const forward = host.classList.contains("dooms-scene-transition");
+			do
+				mes = forward ? mes.nextElementSibling : mes.previousElementSibling;
+			while (mes && !mes.classList.contains("mes"));
+			const messageId = Number(mes?.getAttribute("mesid"));
+			if (!Number.isInteger(messageId)) return;
+			const scene = this.trackerOf(messageId)?.scene ?? this.latestTracker()?.scene;
+			const prompt = [
+				scene?.location,
+				scene?.time,
+				scene?.weather
+			].filter(Boolean).join(", ") || (host.textContent ?? "").replace(/\s+/g, " ").trim();
+			if (!prompt) return;
+			this.markers.illustrate(messageId, {
+				prompt,
+				ratio: "landscape"
+			}).catch(reportGenerationError);
+		});
+		decorate();
+	}
+	installWorkshop() {
+		const add = () => {
+			const header = document.querySelector("#character-workshop-popup header h3");
+			if (!header || header.querySelector("#naist-des-workshop")) return;
+			const button = document.createElement("span");
+			button.id = "naist-des-workshop";
+			button.className = "menu_button fa-solid fa-id-card naist-des-workshop";
+			button.title = t("naist.des.workshopPassport");
+			header.append(button);
+			button.addEventListener("click", () => {
+				const name = document.querySelector("#cw-char-title")?.textContent?.trim() ?? "";
+				const isUser = !document.querySelector("#cw-user-badge")?.hidden;
+				this.menuAction("passport", name, isUser).catch(reportGenerationError);
+			});
+		};
+		add();
+		new MutationObserver(() => {
+			if (settings().des.menu && this.active()) add();
+		}).observe(document.body, { childList: true });
+	}
+	/** Passports for every character of the latest tracker that has none (the panel button). */
+	async passportsForTracker() {
+		const tracker = this.latestTracker();
+		let created = 0;
+		for (const character of tracker?.characters ?? []) {
+			if (this.isUserName(character.name) || await this.findPassport(character.name)) continue;
+			this.failed.delete(character.name.toLowerCase());
+			const found = await this.createPassport(character);
+			if (found) {
+				created++;
+				this.syncLine(character.name, found.passport);
+			}
+		}
+		return created;
+	}
+};
+var instance = null;
+function desIntegration() {
+	return instance;
+}
+/** Started after APP_READY: DES initialises asynchronously and late. */
+function setupDes(markers) {
+	instance = new DesIntegration(markers);
+	const c = ctx();
+	const begin = () => void instance.start().catch((error) => log.warn("DES integration failed to start", error));
+	if (document.readyState === "complete" && document.querySelector("#rpg-extension-enabled")) begin();
+	else c.eventSource.on(c.eventTypes.APP_READY ?? "app_ready", begin);
+	return instance;
+}
+//#endregion
+//#region src/features/markers/marker-service.ts
+/** Generation types that never carry markers to illustrate. */
+var SKIPPED_TYPES = /* @__PURE__ */ new Set(["impersonate", "quiet"]);
+/** Replies that may be illustrated automatically (not image messages, greetings, commands). */
+var AUTO_FILL_TYPES = /* @__PURE__ */ new Set([
+	"normal",
+	"swipe",
+	"regenerate"
+]);
+var clamp = (n, min, max) => Math.min(max, Math.max(min, n));
+var MarkerService = class {
+	pipeline;
+	inline;
+	scenes;
+	/** Jobs started while the current reply streams, by ordinal + generation key. */
+	early = /* @__PURE__ */ new Map();
+	generationType = "";
+	queue = Promise.resolve();
+	/** Images with a generation in flight (the renderer shows a spinner, not "interrupted"). */
+	running = /* @__PURE__ */ new Set();
+	listeners = /* @__PURE__ */ new Set();
+	lastScan = 0;
+	gate = null;
+	/** Messages already illustrated automatically during this generation. */
+	filled = /* @__PURE__ */ new Set();
+	/** A reply is being generated (the formatter hides a marker that is still being written). */
+	generating = false;
+	constructor(pipeline, inline, scenes) {
+		this.pipeline = pipeline;
+		this.inline = inline;
+		this.scenes = scenes;
+	}
+	setGate(gate) {
+		this.gate = gate;
+	}
+	isRunning(imageId) {
+		return this.running.has(imageId);
+	}
+	onRunningChange(listener) {
+		this.listeners.add(listener);
+	}
+	setRunning(imageId, on) {
+		if (on) this.running.add(imageId);
+		else this.running.delete(imageId);
+		for (const listener of this.listeners) listener(imageId);
+	}
+	/** Markers of a text that this configuration accepts. */
+	markersIn(text) {
+		const all = findMarkers(text);
+		return settings().markers.legacy ? all : all.filter((m) => m.format === "nai");
+	}
+	generationStarted(type, dryRun) {
+		if (dryRun || type === "quiet") return;
+		this.generationType = type || "normal";
+		this.generating = true;
+		this.filled.clear();
+		this.dropEarly();
+	}
+	get currentType() {
+		return this.generationType;
+	}
+	/** Generation ended or stopped: a reply that never got MESSAGE_RECEIVED is finalized here. */
+	async generationEnded() {
+		if (!this.generating) return;
+		this.generating = false;
+		const chat = ctx().chat;
+		const last = chat.length - 1;
+		const m = chat[last];
+		if (m && !m.is_user && !m.is_system && this.markersIn(m.mes).length) await this.finalize(last);
+		else this.dropEarly();
+	}
+	chatChanged() {
+		this.dropEarly();
+	}
+	dropEarly() {
+		for (const job of this.early.values()) job.abort.abort();
+		this.early.clear();
+	}
+	/** Streaming progress: start generating every complete marker of the reply so far. */
+	streamProgress() {
+		const s = settings().markers;
+		if (!s.enabled || !s.earlyStart || SKIPPED_TYPES.has(this.generationType) || this.gate?.holdEarlyStart()) return;
+		const now = Date.now();
+		if (now - this.lastScan < 250) return;
+		this.lastScan = now;
+		const chat = ctx().chat;
+		const m = chat[chat.length - 1];
+		if (!m || m.is_user || m.is_system) return;
+		const markers = this.markersIn(m.mes);
+		const allowed = Math.max(0, s.max - this.existingMarkers(m));
+		markers.slice(0, allowed).forEach((match, i) => {
+			const key = `${i}:${markerGenerationKey(match.params)}`;
+			if (!this.early.has(key)) {
+				log.info("marker complete while streaming, generation queued");
+				this.early.set(key, this.start(match.params, {
+					messageId: chat.length - 1,
+					text: m.mes
+				}));
+			}
+		});
+	}
+	/** Marker images already in a continued message count against the per-reply limit. */
+	existingMarkers(m) {
+		return this.generationType === "continue" ? readEntries(m.extra).filter((e) => e.marker).length : 0;
+	}
+	/** A finished reply: markers become pending inline images, generations are delivered. */
+	async finalize(messageId, type) {
+		const s = settings().markers;
+		const kind = type || this.generationType || "normal";
+		const early = this.early;
+		this.early = /* @__PURE__ */ new Map();
+		const c = ctx();
+		const m = c.chat[messageId];
+		if (!s.enabled || SKIPPED_TYPES.has(kind) || !m || m.is_user || m.is_system) {
+			for (const job of early.values()) job.abort.abort();
+			return;
+		}
+		const markers = this.markersIn(m.mes);
+		const query = {
+			messageId,
+			text: m.mes
+		};
+		const existing = kind === "continue" ? readEntries(m.extra).filter((e) => e.marker).length : 0;
+		const { keep, drop } = limitMarkers(markers, Math.max(0, s.max - existing));
+		if (markers.length) {
+			const ids = keep.map(() => c.uuidv4());
+			const entries = keep.map((match, i) => createPendingImage(ids[i], match.params, this.inline.displayDefaults(markerDisplay(match.params))));
+			const text = replaceMarkers(m.mes, markers, (_match, i) => i < keep.length ? `[nai:img:${ids[i]}]` : "");
+			await this.inline.addPending(messageId, text, entries);
+			keep.forEach((match, i) => {
+				const key = `${i}:${markerGenerationKey(match.params)}`;
+				const job = early.get(key) ?? this.start(match.params, query);
+				early.delete(key);
+				this.deliver(messageId, ids[i], job);
+			});
+			if (drop.length) log.info(`${drop.length} marker(s) over the limit of ${s.max} removed`);
+		}
+		for (const job of early.values()) job.abort.abort();
+		const count = keep.length + existing;
+		const filledKey = `${messageId}:${m.swipe_id ?? 0}`;
+		if (s.autoFill && count < s.min && AUTO_FILL_TYPES.has(kind) && !this.filled.has(filledKey)) {
+			this.filled.add(filledKey);
+			await this.autoFill(messageId, s.min - count);
+		}
+	}
+	/** Fewer markers than the minimum: illustrations of the reply itself, appended at its end. */
+	async autoFill(messageId, missing) {
+		const m = ctx().chat[messageId];
+		const excerpt = m ? replyExcerpt(m.mes) : "";
+		if (!m || !excerpt) return;
+		const query = {
+			messageId,
+			text: m.mes
+		};
+		const names = detectParticipants(excerpt, await sceneCandidates(query), { max: 3 }).map((cand) => ({ name: cand.name }));
+		const params = {
+			prompt: excerpt,
+			...names.length ? { chars: names } : {}
+		};
+		const c = ctx();
+		const ids = Array.from({ length: Math.min(missing, 3) }, () => c.uuidv4());
+		const entries = ids.map((id) => createPendingImage(id, params, this.inline.displayDefaults(markerDisplay(params))));
+		await this.inline.addPending(messageId, `${m.mes}\n${ids.map((id) => `[nai:img:${id}]`).join("\n")}`, entries);
+		for (const id of ids) this.deliver(messageId, id, this.start(params, query));
+	}
+	/** One picture asked for from outside the reply (a menu, a scene banner), appended to a message. */
+	async illustrate(messageId, params) {
+		const m = ctx().chat[messageId];
+		if (!m) return;
+		const id = ctx().uuidv4();
+		const entry = createPendingImage(id, params, this.inline.displayDefaults(markerDisplay(params)));
+		await this.inline.addPending(messageId, `${m.mes}\n[nai:img:${id}]`, [entry]);
+		await this.deliver(messageId, id, this.start(params, {
+			messageId,
+			text: m.mes
+		}));
+	}
+	/** Generates a marker image again (after an error or an interrupted generation). */
+	async retry(messageId, imageId) {
+		const entry = this.inline.entries(messageId).find((e) => e.id === imageId);
+		if (!entry?.marker || this.running.has(imageId)) return;
+		await this.inline.setMarkerStatus(messageId, imageId, "pending");
+		const text = ctx().chat[messageId]?.mes;
+		await this.deliver(messageId, imageId, this.start(entry.marker.params, {
+			messageId,
+			text
+		}));
+	}
+	enqueue(task) {
+		const run = this.queue.then(task, task);
+		this.queue = run.catch(() => void 0);
+		return run;
+	}
+	start(params, query = {}) {
+		const abort = new AbortController();
+		const gate = this.gate;
+		const promise = (async () => {
+			if (gate && query.messageId !== void 0) await gate.wait(query.messageId, abort.signal);
+			return await this.enqueue(async () => abort.signal.aborted ? null : await this.produce(params, abort.signal, query));
+		})();
+		promise.catch(() => void 0);
+		return {
+			promise,
+			abort
+		};
+	}
+	async deliver(hint, imageId, job) {
+		const chatId = ctx().getCurrentChatId();
+		this.setRunning(imageId, true);
+		try {
+			const produced = await job.promise;
+			if (ctx().getCurrentChatId() !== chatId) return;
+			if (produced) await this.inline.completePending(hint, imageId, produced);
+			else await this.inline.setMarkerStatus(hint, imageId, "error", t("naist.markers.cancelled"));
+		} catch (error) {
+			const naiError = toNaiError(error);
+			log.warn("marker image failed:", naiError.code);
+			if (ctx().getCurrentChatId() === chatId) await this.inline.setMarkerStatus(hint, imageId, "error", naiError.code === "aborted" ? t("naist.markers.cancelled") : naiError.text);
+		} finally {
+			this.setRunning(imageId, false);
+		}
+	}
+	/** One marker as a generation request: every parameter it may carry. */
+	async produce(params, signal, query = {}) {
+		const s = settings();
+		const freeOnly = s.anlas.freeOnly || !s.markers.allowPaid;
+		const model = markerModel(params.model) ?? s.generation.model;
+		const caps = getCapabilities(isModelId(model) ? model : DEFAULT_MODEL);
+		const dims = markerDimensions(params.ratio, params.size, freeOnly);
+		const generation = {
+			model,
+			width: dims.width,
+			height: dims.height,
+			characters: []
+		};
+		if (params.seed !== void 0) generation.seed = params.seed;
+		if (params.steps !== void 0) generation.steps = clamp(Math.round(params.steps), 1, freeOnly ? 28 : 50);
+		if (params.scale !== void 0) generation.scale = clamp(params.scale, 0, 10);
+		if (params.sampler) generation.sampler = params.sampler;
+		if (params.rescale !== void 0) generation.cfgRescale = clamp(params.rescale, 0, 1);
+		if (params.variety !== void 0) generation.varietyBoost = params.variety;
+		if (params.quality !== void 0) {
+			const current = s.generation.qualityPreset;
+			generation.qualityPreset = params.quality ? current === "none" ? "standard" : current : "none";
+		}
+		if (params.uc && UC_PRESETS.includes(params.uc)) generation.ucPreset = params.uc;
+		if (params.transparent !== void 0) generation.transparentBackground = params.transparent;
+		generation.samples = freeOnly ? 1 : clamp(Math.round(params.count ?? 1), 1, 4);
+		let scene = params.prompt;
+		let negative = params.negative ?? "";
+		const style = params.style?.trim();
+		if (style) {
+			const saved = s.prompts.styles.find((st) => st.name.trim().toLowerCase() === style.toLowerCase());
+			const join = (...parts) => parts.filter((p) => p.trim()).join(", ");
+			if (saved) {
+				scene = join(saved.prefix, scene, saved.suffix);
+				negative = join(negative, saved.negative);
+			} else scene = join(style, scene);
+		}
+		let chars = params.chars;
+		if (!chars?.length) {
+			const known = (await sceneCandidates(query)).filter((cand) => cand.passport !== null || Boolean(cand.currentLook?.trim()));
+			const named = detectParticipants(`${params.prompt} ${params.caption ?? ""}`, known, { max: 4 });
+			if (named.length) chars = named.map((cand) => ({ name: cand.name }));
+		}
+		if (chars?.length) {
+			const built = await this.scenes.markerScene(scene, chars, query);
+			if (built) {
+				scene = built.prompt;
+				generation.characters = built.characters;
+				generation.useCoords = built.useCoords;
+			} else {
+				const actions = chars.map((ch) => [ch.pose, ch.action].filter(Boolean).join(" ")).filter(Boolean);
+				scene = [scene, ...actions].join(", ");
+			}
+		}
+		const setting = await sceneSetting(query);
+		const place = mentionedLocationTags(`${params.location ?? ""} ${setting.location} ${params.prompt}`, setting.locations);
+		if (place || setting.world) scene = joinTags(scene, place, setting.world);
+		if (params.text && caps.family !== "v3") scene = `${scene}, text: ${params.text}`;
+		const where = params.location || setting.location;
+		if (where && s.continuity.enabled) await setCurrentLocation(where).catch(() => void 0);
+		const requestPatch = params.ref ? await this.refPatch(params.ref, dims) : void 0;
+		const vibes = params.vibe ? this.namedVibe(params.vibe) : void 0;
+		const overrides = {
+			edit: false,
+			negative,
+			generation
+		};
+		return await this.pipeline.produce({
+			initiator: "message",
+			trigger: scene,
+			scene,
+			mode: MODE.FREE,
+			interpret: "auto",
+			interpretCharacters: "cyrillic",
+			overrides,
+			...requestPatch ? {
+				requestPatch,
+				noContinuity: true
+			} : {},
+			...vibes?.length ? { vibes } : {},
+			signal,
+			skipCostConfirm: true,
+			maxCost: freeOnly ? 0 : s.markers.maxCost
+		});
+	}
+	/** "ref": an earlier image of the chat (marker id or image id) as the img2img base. */
+	async refPatch(ref, size) {
+		if (!this.pipeline.studio.state.selection?.transport?.features.img2img) return void 0;
+		const chat = ctx().chat;
+		for (let i = chat.length - 1; i >= 0; i--) {
+			const entry = readEntries(chat[i]?.extra).find((e) => e.id === ref || e.marker?.params.id === ref);
+			const swipe = entry ? activeSwipe(entry) : void 0;
+			if (!swipe) continue;
+			try {
+				return {
+					mode: "img2img",
+					image: await blobToBase64$1(await toPngBlob(await this.inline.sourceBlob(swipe), size)),
+					strength: settings().continuity.strength
+				};
+			} catch (error) {
+				log.warn("marker ref image not available:", error);
+				return;
+			}
+		}
+	}
+	namedVibe(name) {
+		const wanted = name.trim().toLowerCase();
+		const item = vibeItems().find((v) => v.name.trim().toLowerCase() === wanted);
+		return item ? [{
+			item,
+			strength: .6,
+			informationExtracted: 1
+		}] : [];
+	}
+};
+//#endregion
+//#region src/integration/macros.ts
+function registerMacros() {
+	const c = ctx();
+	const positive = () => currentCharacterPrompt().positive;
+	const negative = () => currentCharacterPrompt().negative;
+	if (c.powerUserSettings.experimental_macro_engine !== false && c.macros) {
+		const category = c.macros.category?.PROMPTS;
+		c.macros.register("charPrefix", {
+			category,
+			description: t("naist.macro.charPrefix"),
+			handler: positive
+		});
+		c.macros.register("charNegativePrefix", {
+			category,
+			description: t("naist.macro.charNegativePrefix"),
+			handler: negative
+		});
+	} else if (c.registerMacro) {
+		c.registerMacro("charPrefix", positive, t("naist.macro.charPrefix"));
+		c.registerMacro("charNegativePrefix", negative, t("naist.macro.charNegativePrefix"));
+	}
+}
+/** {{nai_characters}}: characters of the chat with a passport (their looks are added by name). */
+function registerCharactersMacro(names) {
+	const c = ctx();
+	if (c.powerUserSettings.experimental_macro_engine !== false && c.macros) c.macros.register("nai_characters", {
+		category: c.macros.category?.PROMPTS,
+		description: t("naist.macro.characters"),
+		handler: names
+	});
+	else if (c.registerMacro) c.registerMacro("nai_characters", names, t("naist.macro.characters"));
+}
+//#endregion
+//#region src/integration/markers-setup.ts
+var PROMPT_KEY = "nai_studio_markers";
+/** extension_prompt_types.IN_CHAT and extension_prompt_roles in public/script.js. */
+var IN_CHAT = 1;
+var ROLES = {
+	system: 0,
+	user: 1,
+	assistant: 2
+};
+var NO_INSTRUCTION = /* @__PURE__ */ new Set(["impersonate", "quiet"]);
+var service = null;
+/** Names for {{nai_characters}}, refreshed with the instruction. */
+var knownCharacters = "";
+/** Placeholder as <img> for display regexes; the id is in the attribute and in the src fragment. */
+function compatImage(id) {
+	return `<img ${IMG_ATTR}="${id}" class="naist-compat" src="${PIXEL}${WIDGET_SRC_MARK}${id}" alt="">`;
+}
+/** A complete marker while the reply streams: an <img> box (widgets keep their layout). */
+function streamingImage(params) {
+	const size = markerDimensions(params.ratio, params.size, true);
+	const label = escapeHtml$2((params.caption || params.prompt).slice(0, 200));
+	return `<img class="naist-marker-stream" src="${PIXEL}#naist-stream" width="${size.width}" height="${size.height}" alt="${label}" title="${label}">`;
+}
+function formatHook(mes, info) {
+	const s = settings();
+	let out = mes;
+	if (s.markers.enabled && service && !info.isUser) {
+		if (service.generating && info.messageId === ctx().chat.length - 1) {
+			const cut = partialMarkerStart(out);
+			if (cut >= 0) out = out.slice(0, cut);
+		}
+		const markers = service.markersIn(out);
+		if (markers.length) out = replaceMarkers(out, markers, (m) => streamingImage(m.params));
+	}
+	if (s.inline.regexCompat && out.includes("[nai:img:")) out = out.replace(new RegExp(PLACEHOLDER_PATTERN.source, "g"), (_m, id) => compatImage(id));
+	return out;
+}
+/** Puts the current instruction in place (or clears it); called on settings and chat changes. */
+async function refreshMarkerInstruction() {
+	const c = ctx();
+	const s = settings().markers;
+	let value = "";
+	let chars = [];
+	if (s.enabled) try {
+		chars = (await sceneCandidates()).filter((cand) => !cand.isUser && (cand.passport || cand.currentLook?.trim())).map((cand) => cand.name);
+	} catch (error) {
+		log.warn("marker instruction: characters not available", error);
+	}
+	knownCharacters = chars.join(", ");
+	if (s.enabled && s.inject) value = markerInstruction(s.preset, s.template, {
+		min: s.min,
+		max: s.max,
+		captionLanguage: s.captionLanguage,
+		chars
+	});
+	c.setExtensionPrompt(PROMPT_KEY, value, IN_CHAT, Math.max(0, s.depth), false, ROLES[s.role] ?? 0, () => {
+		const now = settings().markers;
+		return now.enabled && now.inject && !NO_INSTRUCTION.has(service?.currentType ?? "");
+	});
+}
+function setupMarkers(pipeline, inline, scenes) {
+	const c = ctx();
+	const markers = new MarkerService(pipeline, inline, scenes);
+	service = markers;
+	c.messageFormatter.addHook(formatHook, { stage: "beforeRegex" });
+	try {
+		registerCharactersMacro(() => knownCharacters);
+	} catch (error) {
+		log.warn("{{nai_characters}} macro not registered", error);
+	}
+	const renderer = inlineRenderer();
+	renderer?.setMarkerHooks({
+		isRunning: (id) => markers.isRunning(id),
+		retry: (messageId, imageId) => markers.retry(messageId, imageId)
+	});
+	markers.onRunningChange((id) => renderer?.refreshImage(id));
+	const on = (name, handler) => {
+		const event = c.eventTypes[name];
+		if (event) c.eventSource.on(event, handler);
+	};
+	on("GENERATION_STARTED", async (type, _options, dryRun) => {
+		keepFirst();
+		markers.generationStarted(String(type ?? ""), Boolean(dryRun));
+		if (!dryRun) await refreshMarkerInstruction();
+	});
+	on("STREAM_TOKEN_RECEIVED", () => markers.streamProgress());
+	const received = (id, type) => {
+		markers.finalize(Number(id), typeof type === "string" ? type : void 0).catch((error) => log.warn("markers", error));
+	};
+	const receivedEvent = c.eventTypes.MESSAGE_RECEIVED;
+	if (receivedEvent && c.eventSource.makeFirst) c.eventSource.makeFirst(receivedEvent, received);
+	else on("MESSAGE_RECEIVED", received);
+	const keepFirst = () => {
+		const list = receivedEvent ? c.eventSource.events?.[receivedEvent] : void 0;
+		const at = Array.isArray(list) ? list.indexOf(received) : -1;
+		if (list && at > 0) list.unshift(...list.splice(at, 1));
+	};
+	for (const name of ["GENERATION_ENDED", "GENERATION_STOPPED"]) on(name, () => {
+		setTimeout(() => void markers.generationEnded().catch((error) => log.warn("markers", error)), 150);
+	});
+	on("CHAT_CHANGED", () => {
+		markers.chatChanged();
+		refreshMarkerInstruction();
+	});
+	refreshMarkerInstruction();
+	return markers;
+}
+/** Settings that change how messages are formatted: re-render the chat. */
+function onMarkerSettingChange(path) {
+	if (path.startsWith("markers.")) refreshMarkerInstruction();
+	if (path === "markers.enabled" || path === "markers.legacy" || path === "inline.regexCompat") {
+		const c = ctx();
+		c.chat.forEach((m, id) => {
+			if (document.querySelector(`#chat .mes[mesid="${id}"]`)) c.updateMessageBlock(id, m);
+		});
+	}
+}
 //#endregion
 //#region src/features/comic/comic-service.ts
 async function drawCover(context, base64, mime, rect) {
@@ -14200,7 +16079,7 @@ var ComicService = class {
 };
 //#endregion
 //#region package.json
-var version = "0.8.1";
+var version = "0.9.0";
 //#endregion
 //#region src/features/settings-io/settings-io.ts
 async function exportSettingsFile(includeImages) {
@@ -14210,16 +16089,16 @@ async function exportSettingsFile(includeImages) {
 		const blob = await imageStore().getItem(key);
 		if (blob) images[key] = await blobToBase64$1(blob);
 	}
-	const data = buildSettingsExport(s, 7, version, images);
+	const data = buildSettingsExport(s, 8, version, images);
 	const name = `nai-studio-settings-${data.exportedAt.slice(0, 10)}.json`;
 	downloadBlob(new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }), name);
 	return name;
 }
 async function importSettingsText(text) {
-	const check = checkSettingsImport(text, 7);
+	const check = checkSettingsImport(text, 8);
 	if (!check.ok) throw new NaiError("import-failed", "none", { reason: t(`naist.io.reason.${check.reason}`, {
 		version: check.schemaVersion ?? "",
-		current: 7
+		current: 8
 	}) });
 	try {
 		const key = await backupSettings(settings(), settings().schemaVersion);
@@ -14240,332 +16119,6 @@ async function importSettingsText(text) {
 		images
 	};
 }
-//#endregion
-//#region src/features/tools/tool-common.ts
-/** Free-only blocks every paid tool call; otherwise a paid call above the threshold is confirmed. */
-async function guardCost(cost, what, confirm) {
-	const s = settings().anlas;
-	if (cost <= 0) return;
-	if (s.freeOnly) throw new NaiError("free-only-blocked", "enable-free-only", { cost });
-	if (cost > s.confirmAbove && !await confirm(cost, what)) throw new NaiError("aborted", "none");
-}
-/** The source as a base64 PNG of exactly width x height (NovelAI wants PNG of the request size). */
-async function sourcePng(source, size) {
-	return await blobToBase64$1(await toPngBlob(await source.blob(), size ?? {
-		width: source.width,
-		height: source.height
-	}));
-}
-/** Image source for an inline image of a message. */
-async function inlineSource(inline, messageId, imageId) {
-	const entry = readEntries(ctx().chat[messageId]?.extra).find((e) => e.id === imageId);
-	const swipe = entry ? activeSwipe(entry) : void 0;
-	if (!entry || !swipe) throw new NaiError("image-not-found", "none");
-	const blob = await inline.sourceBlob(swipe);
-	const size = swipe.meta.width && swipe.meta.height ? {
-		width: swipe.meta.width,
-		height: swipe.meta.height
-	} : await imageSize(blob);
-	return {
-		target: {
-			kind: "inline",
-			messageId,
-			imageId
-		},
-		...size,
-		meta: swipe.meta,
-		blob: async () => blob
-	};
-}
-/** Image source for a media attachment of a message (generated or uploaded by the user). */
-async function mediaSource(messageId, mediaIndex) {
-	const attachment = (ctx().chat[messageId]?.extra?.media ?? [])[mediaIndex];
-	if (!attachment?.url) throw new NaiError("image-not-found", "none");
-	const response = await fetch(attachment.url);
-	if (!response.ok) throw new NaiError("image-load-failed", "none");
-	const blob = await response.blob();
-	const size = await imageSize(blob);
-	return {
-		target: {
-			kind: "media",
-			messageId,
-			mediaIndex
-		},
-		...size,
-		meta: attachment.title ? metaFromMedia(attachment, size) : void 0,
-		blob: async () => blob
-	};
-}
-function metaFromMedia(attachment, size) {
-	return {
-		scenePrompt: attachment.title ?? "",
-		prompt: attachment.nai_studio?.prompt ?? attachment.title ?? "",
-		negativePrompt: "",
-		negative: "",
-		mode: 6,
-		model: attachment.nai_studio?.model ?? settings().generation.model,
-		seed: attachment.nai_studio?.seed ?? 0,
-		width: size.width,
-		height: size.height,
-		steps: settings().generation.steps,
-		scale: settings().generation.scale,
-		cfgRescale: 0,
-		sampler: settings().generation.sampler,
-		noiseSchedule: settings().generation.noiseSchedule,
-		ucPreset: settings().generation.ucPreset,
-		qualityPreset: settings().generation.qualityPreset,
-		requestType: "txt2img",
-		characters: [],
-		transport: "",
-		cost: 0,
-		createdAt: (/* @__PURE__ */ new Date()).toISOString()
-	};
-}
-/** Images of a NovelAI ZIP answer, in file-name order (image_0, image_1, …). */
-async function unzipImages(zipBase64) {
-	await importHost("/lib/jszip.min.js");
-	const JSZip = globalThis.JSZip;
-	if (!JSZip) throw new NaiError("invalid-response", "none", { preview: "JSZip unavailable" });
-	const zip = await JSZip.loadAsync(base64ToBytes(zipBase64));
-	const files = Object.values(zip.files).filter((f) => !f.dir && /\.(png|webp|jpe?g)$/i.test(f.name)).sort((a, b) => a.name.localeCompare(b.name, void 0, { numeric: true }));
-	const images = [];
-	for (const [index, file] of files.entries()) {
-		const base64 = await file.async("base64");
-		const mime = sniffMime(base64ToBytes(base64.slice(0, 32)));
-		images.push({
-			base64,
-			mime: mime === "image/webp" ? "image/webp" : "image/png",
-			index
-		});
-	}
-	if (!images.length) throw new NaiError("invalid-response", "none", { preview: "empty ZIP" });
-	return images;
-}
-function legacyMeta(meta) {
-	return {
-		scenePrompt: meta.scenePrompt,
-		prompt: meta.prompt,
-		negative: meta.negative,
-		mode: meta.mode,
-		model: meta.model,
-		seed: meta.seed,
-		transport: meta.transport,
-		cost: meta.cost,
-		width: meta.width,
-		height: meta.height,
-		...meta.tool ? { tool: meta.tool } : {}
-	};
-}
-/** Adds tool results as new swipes of the source image (the original is kept). */
-async function deliver(source, produced, services) {
-	if (source.target.kind === "inline") {
-		await services.inline.addProducedSwipe(source.target.messageId, source.target.imageId, produced);
-		return;
-	}
-	const folder = imageFolder();
-	const saved = await saveImages(produced.images, folder);
-	await appendToMessage(source.target.messageId, saved, legacyMeta(produced.meta));
-	services.pipeline.notify(produced, {
-		target: "message",
-		paths: saved.map((s) => s.path)
-	});
-}
-/** Meta of a tool result derived from the source (Director Tools, upscale keep its prompt). */
-function toolMeta(source, patch) {
-	return {
-		...source.meta ?? metaFromMedia({ url: "" }, {
-			width: source.width,
-			height: source.height
-		}),
-		createdAt: (/* @__PURE__ */ new Date()).toISOString(),
-		...patch
-	};
-}
-/** Dimensions of a generated image (results of tools may differ from the request size). */
-async function generatedSize(image) {
-	return await imageSize(new Blob([base64ToBytes(image.base64)], { type: image.mime }));
-}
-//#endregion
-//#region src/features/sprites/sprite-service.ts
-/** Character passports of a card that can get sprites (main character first). */
-function spritePassports(characterIndex) {
-	const character = ctx().characters[characterIndex];
-	const list = cardPassports(character).filter((p) => p.kind === "character");
-	const main = primaryPassport(list, character?.name ?? "");
-	return main ? [main, ...list.filter((p) => p !== main)] : list;
-}
-function extraPassport(characterIndex, passportId) {
-	if (!passportId) return null;
-	const [main, ...rest] = spritePassports(characterIndex);
-	return main?.id === passportId ? null : rest.find((p) => p.id === passportId) ?? null;
-}
-/**
-* Folder Expressions reads for a character: its override, else the character name (RECON §2.12);
-* another character of the card gets "<folder>/<name>".
-*/
-function spriteFolder(characterIndex, passportId) {
-	const base = cardSpriteFolder(characterIndex);
-	const extra = extraPassport(characterIndex, passportId);
-	const sub = extra?.name.replace(/[\\/:*?"<>|]+/g, " ").trim();
-	return extra && sub && base ? `${base}/${sub}` : base;
-}
-function cardSpriteFolder(characterIndex) {
-	const c = ctx();
-	const character = c.characters[characterIndex];
-	const overrides = c.extensionSettings.expressionOverrides;
-	const key = avatarKey(character?.avatar);
-	if (Array.isArray(overrides)) {
-		const found = overrides.find((o) => o?.name === key && o.path);
-		if (found) return String(found.path);
-	}
-	return character?.name ?? "";
-}
-/** Appearance tags: the passport when the card has one, else the character prompt, else the name. */
-function spriteAppearance(characterIndex, passportId) {
-	const character = ctx().characters[characterIndex];
-	const extra = extraPassport(characterIndex, passportId);
-	if (extra) return passportTags(extra, { allowNsfw: false });
-	const passport = cardPassport(character);
-	if (passport) return passportTags(passport, { allowNsfw: false });
-	return readCharacterPrompt(character).positive.trim() || character?.name || "";
-}
-function spriteLabels(selected) {
-	return selected.length ? selected : [...EXPRESSION_LABELS];
-}
-async function uploadSprite(folder, label, image) {
-	const png = await toPngBlob(base64ToBlob(image.base64, image.mime));
-	const form = new FormData();
-	const file = spriteFileName(label);
-	form.append("name", folder);
-	form.append("label", label);
-	form.append("spriteName", file.replace(/\.png$/, ""));
-	form.append("avatar", new File([png], file, { type: "image/png" }));
-	const response = await fetch("/api/sprites/upload", {
-		method: "POST",
-		headers: requestHeaders(true),
-		body: form
-	});
-	if (!response.ok) throw new NaiError("image-load-failed", "none", { status: response.status });
-	return file;
-}
-var SpriteService = class {
-	pipeline;
-	constructor(pipeline) {
-		this.pipeline = pipeline;
-	}
-	async draw(appearance, label, options, seed, base) {
-		const caps = getCapabilities(isModelId(options.model) ? options.model : DEFAULT_MODEL);
-		const image = (await this.pipeline.produce({
-			initiator: "panel",
-			trigger: label,
-			scene: spritePrompt(appearance, label),
-			mode: MODE.FREE,
-			noContinuity: true,
-			signal: options.signal,
-			overrides: {
-				edit: false,
-				generation: {
-					model: options.model,
-					seed,
-					samples: 1,
-					characters: [],
-					...base ? {
-						width: base.width,
-						height: base.height
-					} : {},
-					transparentBackground: options.transparent && caps.transparency && !base
-				}
-			},
-			...base ? { requestPatch: {
-				mode: "img2img",
-				image: base.image,
-				strength: base.strength
-			} } : {}
-		}))?.images[0];
-		if (!image) throw new NaiError("aborted", "none");
-		return image;
-	}
-	async emotion(base, emotion, signal) {
-		const transport = this.pipeline.studio.state.selection?.transport;
-		if (!transport?.features.director || !transport.extras) throw new NaiError("feature-unavailable", "install-plugin", { feature: "Director Tools" });
-		const blob = base64ToBlob(base.base64, base.mime);
-		const bitmap = await createImageBitmap(blob);
-		const size = directorSize(bitmap.width, bitmap.height);
-		bitmap.close();
-		const cost = directorToolCost("emotion", size.width, size.height, this.pipeline.studio.state.account);
-		if (cost > 0) throw new NaiError("free-only-blocked", "enable-free-only", { cost });
-		const body = directorBody("emotion", await blobToBase64$1(await toPngBlob(blob, size)), size, {
-			emotion,
-			defry: 0,
-			prompt: ""
-		});
-		const [first] = await unzipImages(await transport.extras.augment(body, {
-			retryable: true,
-			signal
-		}));
-		if (!first) throw new NaiError("invalid-response", "none", { preview: "empty ZIP" });
-		return first;
-	}
-	async generate(options) {
-		const folder = spriteFolder(options.characterIndex, options.passportId);
-		if (!folder) throw new NaiError("image-not-found", "none");
-		const appearance = spriteAppearance(options.characterIndex, options.passportId);
-		const jobs = spriteLabels(options.labels).map((label) => ({
-			label,
-			status: "pending"
-		}));
-		const report = () => options.onProgress?.(jobs.map((j) => ({ ...j })));
-		const seed = settings().generation.seed >= 0 ? settings().generation.seed : randomSeed();
-		let base = null;
-		const order = options.mode === "director" ? [...jobs].sort((a, b) => Number(b.label === "neutral") - Number(a.label === "neutral")) : jobs;
-		report();
-		for (const job of order) {
-			if (options.signal?.aborted) break;
-			job.status = "running";
-			report();
-			try {
-				let image;
-				if (options.mode === "seed") {
-					image = await this.draw(appearance, job.label, options, seed);
-					job.how = "seed";
-				} else if (!base) {
-					image = await this.draw(appearance, "neutral", options, seed);
-					base = image;
-					job.how = "base";
-					if (job.label !== "neutral") image = await this.variant(base, appearance, job, options, seed);
-				} else image = await this.variant(base, appearance, job, options, seed);
-				job.file = await uploadSprite(folder, job.label, image);
-				job.status = "done";
-			} catch (error) {
-				if (options.signal?.aborted) break;
-				job.status = "failed";
-				job.error = error?.message ?? String(error);
-				log.warn("sprite failed", job.label, job.error);
-			}
-			report();
-		}
-		log.info("sprites", folder, jobs.filter((j) => j.status === "done").length, "of", jobs.length);
-		return jobs;
-	}
-	async variant(base, appearance, job, options, seed) {
-		const emotion = EXPRESSION_DIRECTOR[job.label];
-		if (emotion) {
-			job.how = "director";
-			return await this.emotion(base, emotion, options.signal);
-		}
-		job.how = "img2img";
-		const png = await toPngBlob(base64ToBlob(base.base64, base.mime));
-		const bitmap = await createImageBitmap(png);
-		const source = {
-			image: await blobToBase64$1(png),
-			width: bitmap.width,
-			height: bitmap.height,
-			strength: .6
-		};
-		bitmap.close();
-		return await this.draw(appearance, job.label, options, seed, source);
-	}
-};
 //#endregion
 //#region src/features/translate/translate-service.ts
 var memory = /* @__PURE__ */ new Map();
@@ -15167,7 +16720,7 @@ function openSprites(index = editedCharacterIndex(), passportId) {
 function openComic() {
 	if (comic) openComicDialog(comic).catch(reportGenerationError);
 }
-function registerCommands$1() {
+function registerCommands() {
 	const { SlashCommandParser: parser, SlashCommand: Command, SlashCommandArgument: Arg, ARGUMENT_TYPE: T } = ctx();
 	const text = (description) => [Arg.fromProps({
 		description,
@@ -15308,7 +16861,7 @@ function setupPhase6(pipeline, scenes) {
 	});
 	c.eventSource.on(c.eventTypes.APP_READY ?? "app_ready", () => {
 		installMenuOption();
-		registerCommands$1();
+		registerCommands();
 		fillGlossary();
 		refreshContinuity();
 		log.info("phase 6 tools ready");
@@ -16400,268 +17953,6 @@ function installCharacterCardMenu(pipeline) {
 	});
 }
 //#endregion
-//#region src/integration/command-args.ts
-/** Built-in arguments without a NovelAI meaning (SD-WebUI/ComfyUI specific). */
-var IGNORED_ARGS = [
-	"skip",
-	"vae",
-	"upscaler",
-	"hires",
-	"scale",
-	"denoise",
-	"2ndpass",
-	"faces"
-];
-var MODEL_ALIASES = {
-	v5: "nai-diffusion-5-full",
-	"v5-full": "nai-diffusion-5-full",
-	"v5-curated": "nai-diffusion-5-curated",
-	"v4.5": "nai-diffusion-4-5-full",
-	"v4.5-full": "nai-diffusion-4-5-full",
-	"v4.5-curated": "nai-diffusion-4-5-curated",
-	v4: "nai-diffusion-4-full",
-	"v4-full": "nai-diffusion-4-full",
-	"v4-curated": "nai-diffusion-4-curated-preview",
-	v3: "nai-diffusion-3",
-	"anime-v3": "nai-diffusion-3",
-	furry: "nai-diffusion-furry-3",
-	"furry-v3": "nai-diffusion-furry-3"
-};
-/** Same coercion as the built-in: anything that is not explicitly false counts as true. */
-function boolArg(value) {
-	const text = String(value).trim().toLowerCase();
-	if (["on", "true"].includes(text)) return true;
-	return !["off", "false"].includes(text);
-}
-function numberArg(value) {
-	const n = Number(value);
-	return value === void 0 || value === "" || !Number.isFinite(n) ? void 0 : n;
-}
-function resolveModel(value) {
-	const key = value.trim().toLowerCase();
-	const id = MODEL_ALIASES[key] ?? key;
-	return isModelId(id) ? id : void 0;
-}
-function parseCommandArgs(args) {
-	const has = (name) => args[name] !== void 0 && !name.startsWith("_");
-	const overrides = {};
-	const generation = {};
-	const ignored = [];
-	const invalid = [];
-	if (has("quiet")) overrides.quiet = boolArg(args.quiet);
-	if (has("gallery")) overrides.gallery = boolArg(args.gallery);
-	if (has("negative")) overrides.negative = String(args.negative);
-	if (has("extend")) overrides.extend = boolArg(args.extend);
-	if (has("edit")) overrides.edit = boolArg(args.edit);
-	if (has("multimodal")) overrides.multimodal = boolArg(args.multimodal);
-	if (has("snap")) overrides.snap = boolArg(args.snap);
-	if (has("processing")) {
-		const value = String(args.processing).toLowerCase();
-		if (value.includes("minimal")) overrides.minimalProcessing = true;
-		else if (value.includes("standard")) overrides.minimalProcessing = false;
-		else invalid.push("processing");
-	}
-	for (const [name, key] of [
-		["seed", "seed"],
-		["width", "width"],
-		["height", "height"],
-		["steps", "steps"],
-		["cfg", "scale"],
-		["cfgrescale", "cfgRescale"],
-		["samples", "samples"]
-	]) {
-		if (!has(name)) continue;
-		const value = numberArg(args[name]);
-		if (value === void 0) invalid.push(name);
-		else generation[key] = value;
-	}
-	if (has("model")) {
-		const model = resolveModel(String(args.model));
-		if (model) generation.model = model;
-		else invalid.push("model");
-	}
-	const enums = [
-		[
-			"sampler",
-			"sampler",
-			SAMPLERS
-		],
-		[
-			"scheduler",
-			"noiseSchedule",
-			NOISE_SCHEDULES
-		],
-		[
-			"uc",
-			"ucPreset",
-			UC_PRESETS
-		],
-		[
-			"quality",
-			"qualityPreset",
-			QUALITY_PRESETS
-		]
-	];
-	for (const [name, key, allowed] of enums) {
-		if (!has(name)) continue;
-		const value = String(args[name]);
-		if (allowed.includes(value)) generation[key] = value;
-		else invalid.push(name);
-	}
-	for (const [name, key] of [
-		["smea", "smea"],
-		["dyn", "smeaDyn"],
-		["variety", "varietyBoost"],
-		["decrisper", "decrisper"],
-		["transparent", "transparentBackground"]
-	]) if (has(name)) generation[key] = boolArg(args[name]);
-	if (has("smea")) generation.autoSmea = false;
-	for (const name of IGNORED_ARGS) if (has(name)) ignored.push(name);
-	if (Object.keys(generation).length > 0) overrides.generation = generation;
-	return {
-		overrides,
-		ignored,
-		invalid
-	};
-}
-//#endregion
-//#region src/integration/commands.ts
-function namedArguments() {
-	const { SlashCommandNamedArgument: Arg, ARGUMENT_TYPE: T } = ctx();
-	const named = (name, type, enumList, defaultValue) => Arg.fromProps({
-		name,
-		description: t(`naist.command.arg.${name}`),
-		typeList: [type],
-		isRequired: false,
-		...enumList ? { enumList: [...enumList] } : {},
-		...defaultValue !== void 0 ? { defaultValue } : {}
-	});
-	return [
-		named("quiet", T.BOOLEAN ?? "bool", void 0, "false"),
-		named("gallery", T.BOOLEAN ?? "bool", void 0, "true"),
-		named("negative", T.STRING ?? "string"),
-		named("extend", T.BOOLEAN ?? "bool"),
-		named("edit", T.BOOLEAN ?? "bool"),
-		named("multimodal", T.BOOLEAN ?? "bool"),
-		named("snap", T.BOOLEAN ?? "bool"),
-		named("processing", T.STRING ?? "string", ["standard", "minimal"]),
-		named("seed", T.NUMBER ?? "number"),
-		named("width", T.NUMBER ?? "number"),
-		named("height", T.NUMBER ?? "number"),
-		named("steps", T.NUMBER ?? "number"),
-		named("cfg", T.NUMBER ?? "number"),
-		named("cfgrescale", T.NUMBER ?? "number"),
-		named("samples", T.NUMBER ?? "number"),
-		named("model", T.STRING ?? "string", [...MODEL_IDS, ...Object.keys(MODEL_ALIASES)]),
-		named("sampler", T.STRING ?? "string", SAMPLERS),
-		named("scheduler", T.STRING ?? "string", NOISE_SCHEDULES),
-		named("uc", T.STRING ?? "string", UC_PRESETS),
-		named("quality", T.STRING ?? "string", QUALITY_PRESETS),
-		named("smea", T.BOOLEAN ?? "bool"),
-		named("dyn", T.BOOLEAN ?? "bool"),
-		named("variety", T.BOOLEAN ?? "bool"),
-		named("decrisper", T.BOOLEAN ?? "bool"),
-		named("transparent", T.BOOLEAN ?? "bool"),
-		...IGNORED_ARGS.map((name) => named(name, T.STRING ?? "string"))
-	];
-}
-function imagineCallback(pipeline) {
-	return async (args, value) => {
-		const parsed = parseCommandArgs(args);
-		if (parsed.ignored.length) log.info("ignored (not applicable to NovelAI):", parsed.ignored.join(", "));
-		if (parsed.invalid.length) toastr.warning(t("naist.command.invalidArgs", { args: parsed.invalid.join(", ") }));
-		const controller = new AbortController();
-		args._abortController?.addEventListener?.("abort", () => controller.abort());
-		try {
-			return (await pipeline.generatePicture({
-				initiator: "command",
-				trigger: String(value ?? ""),
-				overrides: parsed.overrides,
-				signal: controller.signal
-			}))?.path ?? "";
-		} catch (error) {
-			reportGenerationError(error);
-			return "";
-		}
-	};
-}
-function styleCallback() {
-	return async (_args, value) => {
-		const name = String(value ?? "").trim();
-		const prompts = settings().prompts;
-		if (!name) return prompts.activeStyle;
-		const style = prompts.styles.find((s) => s.name.toLowerCase() === name.toLowerCase());
-		if (!style) {
-			toastr.warning(t("naist.command.styleMissing", { name }));
-			return prompts.activeStyle;
-		}
-		prompts.activeStyle = style.name;
-		prompts.prefix = style.prefix;
-		prompts.suffix = style.suffix;
-		settings().generation.negativePrompt = style.negative;
-		saveSettings();
-		notifyExternalChange();
-		return style.name;
-	};
-}
-function registerCommands(pipeline, compat) {
-	const { SlashCommandParser: parser, SlashCommand: Command, SlashCommandArgument: Arg, ARGUMENT_TYPE: T } = ctx();
-	const triggerArg = () => Arg.fromProps({
-		description: t("naist.command.trigger"),
-		typeList: [T.STRING ?? "string"],
-		isRequired: false,
-		enumList: Object.values(TRIGGER_WORDS)
-	});
-	const imagine = (name, aliases) => Command.fromProps({
-		name,
-		aliases,
-		callback: imagineCallback(pipeline),
-		returns: t("naist.command.returns"),
-		namedArgumentList: namedArguments(),
-		unnamedArgumentList: [triggerArg()],
-		helpString: t("naist.command.help")
-	});
-	parser.addCommandObject(imagine("nai", ["nai-imagine"]));
-	const styleAliases = compat ? [
-		"sd-style",
-		"img-style",
-		"nai-style"
-	] : [];
-	parser.addCommandObject(Command.fromProps({
-		name: compat ? "imagine-style" : "nai-style",
-		aliases: styleAliases,
-		callback: styleCallback(),
-		returns: t("naist.command.styleReturns"),
-		unnamedArgumentList: [Arg.fromProps({
-			description: t("naist.command.styleName"),
-			typeList: [T.STRING ?? "string"],
-			isRequired: false
-		})],
-		helpString: t("naist.command.styleHelp")
-	}));
-	if (!compat) return;
-	parser.addCommandObject(imagine("imagine", [
-		"sd",
-		"img",
-		"image"
-	]));
-	parser.addCommandObject(Command.fromProps({
-		name: "imagine-source",
-		aliases: ["sd-source", "img-source"],
-		callback: async (_args, value) => {
-			if (String(value ?? "").trim() && String(value).trim() !== "novel") toastr.info(t("naist.command.sourceFixed"));
-			return "novel";
-		},
-		returns: t("naist.command.sourceReturns"),
-		unnamedArgumentList: [Arg.fromProps({
-			description: t("naist.command.sourceName"),
-			typeList: [T.STRING ?? "string"],
-			isRequired: false
-		})],
-		helpString: t("naist.command.sourceHelp")
-	}));
-}
-//#endregion
 //#region src/integration/interceptor.ts
 var INTERCEPTOR_NAME = "NAIST_ProcessTriggers";
 /**
@@ -16865,7 +18156,7 @@ function setupIntegrations(pipeline) {
 	installCharacterCardMenu(pipeline);
 	const c = ctx();
 	c.eventSource.on(c.eventTypes.APP_READY ?? "app_ready", () => {
-		registerCommands(pipeline, compat);
+		registerCommands$1(pipeline, compat);
 		if (compat) registerMacros();
 		syncFunctionTool(pipeline, compat);
 		log.info(compat ? "took over /sd, /imagine, macros and the GenerateImage tool" : "built-in Image Generation is active: only /nai is registered");
@@ -16971,7 +18262,7 @@ function bindSettings(root, onChange = () => {}) {
 }
 //#endregion
 //#region src/ui/templates/tab-chat.html?raw
-var tab_chat_default = "<div class=\"naist-section\">\n    <b data-i18n=\"naist.chat.visibility\"></b>\n    <div class=\"naist-hint\" data-i18n=\"naist.chat.visibilityHint\"></div>\n    <div class=\"naist-flags\">\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"chat.visibility.panel\" /><span\n                data-i18n=\"naist.initiator.panel\"\n            ></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"chat.visibility.command\" /><span\n                data-i18n=\"naist.initiator.command\"\n            ></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"chat.visibility.wand\" /><span data-i18n=\"naist.initiator.wand\"></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"chat.visibility.interactive\" /><span\n                data-i18n=\"naist.initiator.interactive\"\n            ></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"chat.visibility.tool\" /><span data-i18n=\"naist.initiator.tool\"></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"chat.visibility.auto\" /><span data-i18n=\"naist.initiator.auto\"></span\n        ></label>\n    </div>\n    <div class=\"naist-grid2\">\n        <div>\n            <label for=\"naist_author\" data-i18n=\"naist.chat.author\"></label>\n            <select id=\"naist_author\" class=\"text_pole\" data-setting=\"chat.author\">\n                <option value=\"character\" data-i18n=\"naist.chat.authorCharacter\"></option>\n                <option value=\"user\" data-i18n=\"naist.chat.authorUser\"></option>\n            </select>\n        </div>\n        <div>\n            <label for=\"naist_confirm_above\" data-i18n=\"naist.chat.confirmAbove\"></label>\n            <input id=\"naist_confirm_above\" type=\"number\" min=\"0\" class=\"text_pole\" data-setting=\"anlas.confirmAbove\" />\n        </div>\n    </div>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"chat.hidePrompt\" /><span data-i18n=\"naist.chat.hidePrompt\"></span\n    ></label>\n</div>\n\n<div class=\"naist-section\">\n    <b data-i18n=\"naist.chat.prompting\"></b>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"modes.refine\" /><span data-i18n=\"naist.chat.refine\"></span\n    ></label>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"modes.multimodal\" /><span data-i18n=\"naist.chat.multimodal\"></span\n    ></label>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"modes.freeExtend\" /><span data-i18n=\"naist.chat.freeExtend\"></span\n    ></label>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"modes.snap\" /><span data-i18n=\"naist.chat.snap\"></span\n    ></label>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"modes.minimalProcessing\" /><span\n            data-i18n=\"naist.chat.minimalProcessing\"\n        ></span\n    ></label>\n</div>\n\n<div class=\"naist-section\">\n    <b data-i18n=\"naist.chat.llm\"></b>\n    <div class=\"naist-hint\" data-i18n=\"naist.chat.llmHint\"></div>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"chat.interactive\" /><span data-i18n=\"naist.chat.interactive\"></span\n    ></label>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"chat.functionTool\" /><span data-i18n=\"naist.chat.functionTool\"></span\n    ></label>\n    <label for=\"naist_tool_cooldown\" data-i18n=\"naist.chat.toolCooldown\"></label>\n    <input id=\"naist_tool_cooldown\" type=\"number\" min=\"0\" class=\"text_pole\" data-setting=\"chat.toolCooldownSeconds\" />\n</div>\n\n<div class=\"naist-section\">\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"auto.enabled\" /><b data-i18n=\"naist.auto.enabled\"></b\n    ></label>\n    <div class=\"naist-hint\" data-i18n=\"naist.auto.guardHint\"></div>\n    <label for=\"naist_auto_mode\" data-i18n=\"naist.auto.mode\"></label>\n    <select id=\"naist_auto_mode\" class=\"text_pole\" data-setting=\"auto.mode\" data-type=\"number\"></select>\n    <div class=\"naist-grid2\">\n        <div>\n            <label for=\"naist_auto_every\" data-i18n=\"naist.auto.everyMessages\"></label>\n            <input id=\"naist_auto_every\" type=\"number\" min=\"0\" class=\"text_pole\" data-setting=\"auto.everyMessages\" />\n        </div>\n        <div>\n            <label for=\"naist_auto_cooldown_messages\" data-i18n=\"naist.auto.cooldownMessages\"></label>\n            <input\n                id=\"naist_auto_cooldown_messages\"\n                type=\"number\"\n                min=\"1\"\n                class=\"text_pole\"\n                data-setting=\"auto.cooldownMessages\"\n            />\n        </div>\n    </div>\n    <label for=\"naist_auto_keywords\" data-i18n=\"naist.auto.keywords\"></label>\n    <input id=\"naist_auto_keywords\" type=\"text\" class=\"text_pole\" data-setting=\"auto.keywords\" />\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"auto.sceneChange\" /><span data-i18n=\"naist.auto.sceneChange\"></span\n    ></label>\n    <input\n        id=\"naist_auto_markers\"\n        type=\"text\"\n        class=\"text_pole\"\n        data-setting=\"auto.sceneMarkers\"\n        data-i18n=\"[title]naist.auto.sceneMarkers\"\n    />\n    <label for=\"naist_auto_cooldown_seconds\" data-i18n=\"naist.auto.cooldownSeconds\"></label>\n    <input\n        id=\"naist_auto_cooldown_seconds\"\n        type=\"number\"\n        min=\"0\"\n        class=\"text_pole\"\n        data-setting=\"auto.cooldownSeconds\"\n    />\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" id=\"naist_auto_allow_paid\" data-setting=\"auto.allowPaid\" /><span\n            data-i18n=\"naist.auto.allowPaid\"\n        ></span\n    ></label>\n</div>\n\n<div class=\"naist-section\" id=\"naist_markers_section\">\n    <b data-i18n=\"naist.markers.title\"></b>\n    <div class=\"naist-hint\" data-i18n=\"naist.markers.hint\"></div>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"markers.enabled\" /><span data-i18n=\"naist.markers.enabled\"></span\n    ></label>\n    <div class=\"naist-markers-options\">\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"markers.inject\" /><span data-i18n=\"naist.markers.inject\"></span\n        ></label>\n        <div class=\"naist-grid2\">\n            <div>\n                <label for=\"naist_markers_preset\" data-i18n=\"naist.markers.preset\"></label>\n                <select id=\"naist_markers_preset\" class=\"text_pole\" data-setting=\"markers.preset\">\n                    <option value=\"natural\" data-i18n=\"naist.markers.presetNatural\"></option>\n                    <option value=\"tags\" data-i18n=\"naist.markers.presetTags\"></option>\n                    <option value=\"custom\" data-i18n=\"naist.markers.presetCustom\"></option>\n                </select>\n            </div>\n            <div>\n                <label for=\"naist_markers_caption_lang\" data-i18n=\"naist.markers.captionLanguage\"></label>\n                <input id=\"naist_markers_caption_lang\" class=\"text_pole\" data-setting=\"markers.captionLanguage\" />\n            </div>\n        </div>\n        <div id=\"naist_markers_custom\" class=\"naist-hidden\">\n            <label for=\"naist_markers_template\" data-i18n=\"naist.markers.template\"></label>\n            <textarea\n                id=\"naist_markers_template\"\n                class=\"text_pole textarea_compact\"\n                rows=\"8\"\n                data-setting=\"markers.template\"\n            ></textarea>\n            <div class=\"naist-hint\" data-i18n=\"naist.markers.templateHint\"></div>\n            <div\n                id=\"naist_markers_template_default\"\n                class=\"menu_button\"\n                data-i18n=\"naist.markers.templateDefault\"\n            ></div>\n        </div>\n        <div class=\"naist-grid2\">\n            <div>\n                <label for=\"naist_markers_min\" data-i18n=\"naist.markers.min\"></label>\n                <input\n                    id=\"naist_markers_min\"\n                    type=\"number\"\n                    min=\"0\"\n                    max=\"10\"\n                    class=\"text_pole\"\n                    data-setting=\"markers.min\"\n                />\n            </div>\n            <div>\n                <label for=\"naist_markers_max\" data-i18n=\"naist.markers.max\"></label>\n                <input\n                    id=\"naist_markers_max\"\n                    type=\"number\"\n                    min=\"0\"\n                    max=\"10\"\n                    class=\"text_pole\"\n                    data-setting=\"markers.max\"\n                />\n            </div>\n            <div>\n                <label for=\"naist_markers_depth\" data-i18n=\"naist.markers.depth\"></label>\n                <input\n                    id=\"naist_markers_depth\"\n                    type=\"number\"\n                    min=\"0\"\n                    max=\"100\"\n                    class=\"text_pole\"\n                    data-setting=\"markers.depth\"\n                />\n            </div>\n            <div>\n                <label for=\"naist_markers_role\" data-i18n=\"naist.markers.role\"></label>\n                <select id=\"naist_markers_role\" class=\"text_pole\" data-setting=\"markers.role\">\n                    <option value=\"system\" data-i18n=\"naist.markers.roleSystem\"></option>\n                    <option value=\"user\" data-i18n=\"naist.markers.roleUser\"></option>\n                    <option value=\"assistant\" data-i18n=\"naist.markers.roleAssistant\"></option>\n                </select>\n            </div>\n        </div>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"markers.earlyStart\" /><span\n                data-i18n=\"naist.markers.earlyStart\"\n            ></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"markers.autoFill\" /><span data-i18n=\"naist.markers.autoFill\"></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"markers.legacy\" /><span data-i18n=\"naist.markers.legacy\"></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"inline.regexCompat\" /><span\n                data-i18n=\"naist.markers.regexCompat\"\n            ></span\n        ></label>\n        <div class=\"naist-row\">\n            <label class=\"checkbox_label\"\n                ><input id=\"naist_markers_allow_paid\" type=\"checkbox\" data-setting=\"markers.allowPaid\" /><span\n                    data-i18n=\"naist.markers.allowPaid\"\n                ></span\n            ></label>\n            <input\n                id=\"naist_markers_max_cost\"\n                type=\"number\"\n                min=\"0\"\n                class=\"text_pole naist-narrow\"\n                data-setting=\"markers.maxCost\"\n                data-i18n=\"[title]naist.markers.maxCost\"\n            />\n        </div>\n        <div id=\"naist_markers_preview\" class=\"menu_button\" data-i18n=\"naist.markers.preview\"></div>\n    </div>\n</div>\n";
+var tab_chat_default = "<div class=\"naist-section\">\n    <b data-i18n=\"naist.chat.visibility\"></b>\n    <div class=\"naist-hint\" data-i18n=\"naist.chat.visibilityHint\"></div>\n    <div class=\"naist-flags\">\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"chat.visibility.panel\" /><span\n                data-i18n=\"naist.initiator.panel\"\n            ></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"chat.visibility.command\" /><span\n                data-i18n=\"naist.initiator.command\"\n            ></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"chat.visibility.wand\" /><span data-i18n=\"naist.initiator.wand\"></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"chat.visibility.interactive\" /><span\n                data-i18n=\"naist.initiator.interactive\"\n            ></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"chat.visibility.tool\" /><span data-i18n=\"naist.initiator.tool\"></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"chat.visibility.auto\" /><span data-i18n=\"naist.initiator.auto\"></span\n        ></label>\n    </div>\n    <div class=\"naist-grid2\">\n        <div>\n            <label for=\"naist_author\" data-i18n=\"naist.chat.author\"></label>\n            <select id=\"naist_author\" class=\"text_pole\" data-setting=\"chat.author\">\n                <option value=\"character\" data-i18n=\"naist.chat.authorCharacter\"></option>\n                <option value=\"user\" data-i18n=\"naist.chat.authorUser\"></option>\n            </select>\n        </div>\n        <div>\n            <label for=\"naist_confirm_above\" data-i18n=\"naist.chat.confirmAbove\"></label>\n            <input id=\"naist_confirm_above\" type=\"number\" min=\"0\" class=\"text_pole\" data-setting=\"anlas.confirmAbove\" />\n        </div>\n    </div>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"chat.hidePrompt\" /><span data-i18n=\"naist.chat.hidePrompt\"></span\n    ></label>\n</div>\n\n<div class=\"naist-section\">\n    <b data-i18n=\"naist.chat.prompting\"></b>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"modes.refine\" /><span data-i18n=\"naist.chat.refine\"></span\n    ></label>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"modes.multimodal\" /><span data-i18n=\"naist.chat.multimodal\"></span\n    ></label>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"modes.freeExtend\" /><span data-i18n=\"naist.chat.freeExtend\"></span\n    ></label>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"modes.snap\" /><span data-i18n=\"naist.chat.snap\"></span\n    ></label>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"modes.minimalProcessing\" /><span\n            data-i18n=\"naist.chat.minimalProcessing\"\n        ></span\n    ></label>\n</div>\n\n<div class=\"naist-section\">\n    <b data-i18n=\"naist.chat.llm\"></b>\n    <div class=\"naist-hint\" data-i18n=\"naist.chat.llmHint\"></div>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"chat.interactive\" /><span data-i18n=\"naist.chat.interactive\"></span\n    ></label>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"chat.functionTool\" /><span data-i18n=\"naist.chat.functionTool\"></span\n    ></label>\n    <label for=\"naist_tool_cooldown\" data-i18n=\"naist.chat.toolCooldown\"></label>\n    <input id=\"naist_tool_cooldown\" type=\"number\" min=\"0\" class=\"text_pole\" data-setting=\"chat.toolCooldownSeconds\" />\n</div>\n\n<div class=\"naist-section\">\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"auto.enabled\" /><b data-i18n=\"naist.auto.enabled\"></b\n    ></label>\n    <div class=\"naist-hint\" data-i18n=\"naist.auto.guardHint\"></div>\n    <label for=\"naist_auto_mode\" data-i18n=\"naist.auto.mode\"></label>\n    <select id=\"naist_auto_mode\" class=\"text_pole\" data-setting=\"auto.mode\" data-type=\"number\"></select>\n    <div class=\"naist-grid2\">\n        <div>\n            <label for=\"naist_auto_every\" data-i18n=\"naist.auto.everyMessages\"></label>\n            <input id=\"naist_auto_every\" type=\"number\" min=\"0\" class=\"text_pole\" data-setting=\"auto.everyMessages\" />\n        </div>\n        <div>\n            <label for=\"naist_auto_cooldown_messages\" data-i18n=\"naist.auto.cooldownMessages\"></label>\n            <input\n                id=\"naist_auto_cooldown_messages\"\n                type=\"number\"\n                min=\"1\"\n                class=\"text_pole\"\n                data-setting=\"auto.cooldownMessages\"\n            />\n        </div>\n    </div>\n    <label for=\"naist_auto_keywords\" data-i18n=\"naist.auto.keywords\"></label>\n    <input id=\"naist_auto_keywords\" type=\"text\" class=\"text_pole\" data-setting=\"auto.keywords\" />\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"auto.sceneChange\" /><span data-i18n=\"naist.auto.sceneChange\"></span\n    ></label>\n    <input\n        id=\"naist_auto_markers\"\n        type=\"text\"\n        class=\"text_pole\"\n        data-setting=\"auto.sceneMarkers\"\n        data-i18n=\"[title]naist.auto.sceneMarkers\"\n    />\n    <label for=\"naist_auto_cooldown_seconds\" data-i18n=\"naist.auto.cooldownSeconds\"></label>\n    <input\n        id=\"naist_auto_cooldown_seconds\"\n        type=\"number\"\n        min=\"0\"\n        class=\"text_pole\"\n        data-setting=\"auto.cooldownSeconds\"\n    />\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" id=\"naist_auto_allow_paid\" data-setting=\"auto.allowPaid\" /><span\n            data-i18n=\"naist.auto.allowPaid\"\n        ></span\n    ></label>\n</div>\n\n<div class=\"naist-section\" id=\"naist_markers_section\">\n    <b data-i18n=\"naist.markers.title\"></b>\n    <div class=\"naist-hint\" data-i18n=\"naist.markers.hint\"></div>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"markers.enabled\" /><span data-i18n=\"naist.markers.enabled\"></span\n    ></label>\n    <div class=\"naist-markers-options\">\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"markers.inject\" /><span data-i18n=\"naist.markers.inject\"></span\n        ></label>\n        <div class=\"naist-grid2\">\n            <div>\n                <label for=\"naist_markers_preset\" data-i18n=\"naist.markers.preset\"></label>\n                <select id=\"naist_markers_preset\" class=\"text_pole\" data-setting=\"markers.preset\">\n                    <option value=\"natural\" data-i18n=\"naist.markers.presetNatural\"></option>\n                    <option value=\"tags\" data-i18n=\"naist.markers.presetTags\"></option>\n                    <option value=\"custom\" data-i18n=\"naist.markers.presetCustom\"></option>\n                </select>\n            </div>\n            <div>\n                <label for=\"naist_markers_caption_lang\" data-i18n=\"naist.markers.captionLanguage\"></label>\n                <input id=\"naist_markers_caption_lang\" class=\"text_pole\" data-setting=\"markers.captionLanguage\" />\n            </div>\n        </div>\n        <div id=\"naist_markers_custom\" class=\"naist-hidden\">\n            <label for=\"naist_markers_template\" data-i18n=\"naist.markers.template\"></label>\n            <textarea\n                id=\"naist_markers_template\"\n                class=\"text_pole textarea_compact\"\n                rows=\"8\"\n                data-setting=\"markers.template\"\n            ></textarea>\n            <div class=\"naist-hint\" data-i18n=\"naist.markers.templateHint\"></div>\n            <div\n                id=\"naist_markers_template_default\"\n                class=\"menu_button\"\n                data-i18n=\"naist.markers.templateDefault\"\n            ></div>\n        </div>\n        <div class=\"naist-grid2\">\n            <div>\n                <label for=\"naist_markers_min\" data-i18n=\"naist.markers.min\"></label>\n                <input\n                    id=\"naist_markers_min\"\n                    type=\"number\"\n                    min=\"0\"\n                    max=\"10\"\n                    class=\"text_pole\"\n                    data-setting=\"markers.min\"\n                />\n            </div>\n            <div>\n                <label for=\"naist_markers_max\" data-i18n=\"naist.markers.max\"></label>\n                <input\n                    id=\"naist_markers_max\"\n                    type=\"number\"\n                    min=\"0\"\n                    max=\"10\"\n                    class=\"text_pole\"\n                    data-setting=\"markers.max\"\n                />\n            </div>\n            <div>\n                <label for=\"naist_markers_depth\" data-i18n=\"naist.markers.depth\"></label>\n                <input\n                    id=\"naist_markers_depth\"\n                    type=\"number\"\n                    min=\"0\"\n                    max=\"100\"\n                    class=\"text_pole\"\n                    data-setting=\"markers.depth\"\n                />\n            </div>\n            <div>\n                <label for=\"naist_markers_role\" data-i18n=\"naist.markers.role\"></label>\n                <select id=\"naist_markers_role\" class=\"text_pole\" data-setting=\"markers.role\">\n                    <option value=\"system\" data-i18n=\"naist.markers.roleSystem\"></option>\n                    <option value=\"user\" data-i18n=\"naist.markers.roleUser\"></option>\n                    <option value=\"assistant\" data-i18n=\"naist.markers.roleAssistant\"></option>\n                </select>\n            </div>\n        </div>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"markers.earlyStart\" /><span\n                data-i18n=\"naist.markers.earlyStart\"\n            ></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"markers.autoFill\" /><span data-i18n=\"naist.markers.autoFill\"></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"markers.legacy\" /><span data-i18n=\"naist.markers.legacy\"></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"inline.regexCompat\" /><span\n                data-i18n=\"naist.markers.regexCompat\"\n            ></span\n        ></label>\n        <div class=\"naist-row\">\n            <label class=\"checkbox_label\"\n                ><input id=\"naist_markers_allow_paid\" type=\"checkbox\" data-setting=\"markers.allowPaid\" /><span\n                    data-i18n=\"naist.markers.allowPaid\"\n                ></span\n            ></label>\n            <input\n                id=\"naist_markers_max_cost\"\n                type=\"number\"\n                min=\"0\"\n                class=\"text_pole naist-narrow\"\n                data-setting=\"markers.maxCost\"\n                data-i18n=\"[title]naist.markers.maxCost\"\n            />\n        </div>\n        <div id=\"naist_markers_preview\" class=\"menu_button\" data-i18n=\"naist.markers.preview\"></div>\n    </div>\n</div>\n\n<div class=\"naist-section\" id=\"naist_des_section\">\n    <b data-i18n=\"naist.des.title\"></b>\n    <div class=\"naist-hint\" data-i18n=\"naist.des.hint\"></div>\n    <div class=\"naist-muted\" id=\"naist_des_status\"></div>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"des.enabled\" /><span data-i18n=\"naist.des.enabled\"></span\n    ></label>\n    <div class=\"naist-des-options\">\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"des.sceneTags\" /><span data-i18n=\"naist.des.sceneTags\"></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"des.characters\" /><span data-i18n=\"naist.des.characters\"></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"des.autoPassports\" /><span data-i18n=\"naist.des.autoPassports\"></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"des.portraits\" /><span data-i18n=\"naist.des.portraits\"></span\n        ></label>\n        <div class=\"naist-grid2\">\n            <div>\n                <label for=\"naist_des_policy\" data-i18n=\"naist.des.policy\"></label>\n                <select id=\"naist_des_policy\" class=\"text_pole\" data-setting=\"des.portraitPolicy\">\n                    <option value=\"missing\" data-i18n=\"naist.des.policyMissing\"></option>\n                    <option value=\"state\" data-i18n=\"naist.des.policyState\"></option>\n                    <option value=\"every\" data-i18n=\"naist.des.policyEvery\"></option>\n                </select>\n            </div>\n            <div>\n                <label for=\"naist_des_framing\" data-i18n=\"naist.des.framing\"></label>\n                <input id=\"naist_des_framing\" class=\"text_pole\" data-setting=\"des.portraitTags\" />\n            </div>\n        </div>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"des.emotionsToDes\" /><span data-i18n=\"naist.des.emotionsToDes\"></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"des.menu\" /><span data-i18n=\"naist.des.menu\"></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"des.banners\" /><span data-i18n=\"naist.des.banners\"></span\n        ></label>\n        <div id=\"naist_des_passports\" class=\"menu_button\">\n            <i class=\"fa-solid fa-wand-magic-sparkles\"></i> <span data-i18n=\"naist.des.passportsButton\"></span>\n        </div>\n    </div>\n</div>\n";
 //#endregion
 //#region src/ui/panel/tab-chat.ts
 var ChatTab = class {
@@ -16993,7 +18284,26 @@ var ChatTab = class {
 			this.onChange(path);
 		});
 		this.bindMarkers();
+		this.bindDes();
 		this.applyGuards();
+	}
+	bindDes() {
+		const button = $id$1(this.root, "naist_des_passports");
+		button.addEventListener("click", () => {
+			const des = desIntegration();
+			if (!des?.active() || button.classList.contains("disabled")) return;
+			button.classList.add("disabled");
+			des.passportsForTracker().then((count) => toastr.info(t("naist.des.passportsDone", { count }), t("naist.des.title"))).catch(reportGenerationError).finally(() => button.classList.remove("disabled"));
+		});
+	}
+	desStatusText() {
+		const status = desIntegration()?.status();
+		if (!status || status.state === "searching") return t("naist.des.statusSearching");
+		if (status.state === "absent") return t("naist.des.statusAbsent");
+		return [t("naist.des.statusConnected", {
+			version: status.version ?? "?",
+			mode: status.mode
+		}), ...[status.enabled ? "" : t("naist.des.statusOff"), status.verified ? "" : t("naist.des.statusUnverified")].filter(Boolean)].join(" ");
 	}
 	bindMarkers() {
 		$id$1(this.root, "naist_markers_template_default").addEventListener("click", () => {
@@ -17034,6 +18344,9 @@ var ChatTab = class {
 			control.closest("label")?.classList.toggle("naist-disabled", control.disabled);
 		}
 		$id$1(this.root, "naist_markers_custom").classList.toggle("naist-hidden", s.markers.preset !== "custom");
+		$id$1(this.root, "naist_des_status").textContent = this.desStatusText();
+		const connected = desIntegration()?.status().state === "connected";
+		this.root.querySelector(".naist-des-options")?.classList.toggle("naist-disabled", !connected || !s.des.enabled);
 		this.root.querySelector(".naist-markers-options")?.classList.toggle("naist-disabled", !s.markers.enabled);
 	}
 };
@@ -18104,6 +19417,7 @@ function mountPanel(studio, pipeline) {
 	if (document.querySelector("#naist_panel")) return;
 	const onSettingChange = (path) => {
 		onMarkerSettingChange(path);
+		if (path.startsWith("des.")) desIntegration()?.settingsChanged();
 		if (path.startsWith("chat.functionTool") || path.startsWith("chat.toolCooldown") || path.startsWith("prompts.templates")) syncFunctionTool(pipeline, ownsCompatSurface());
 	};
 	new Panel(studio, pipeline, onSettingChange, {
@@ -18133,7 +19447,7 @@ async function onActivate() {
 	setupScenes(pipeline, scenes);
 	setupTools(pipeline, inline);
 	setupPhase6(pipeline, scenes);
-	setupMarkers(pipeline, inline, scenes);
+	setupDes(setupMarkers(pipeline, inline, scenes));
 	new AutoGenerator(studio, pipeline).attach();
 	studio.refreshTransport();
 	for (const name of [

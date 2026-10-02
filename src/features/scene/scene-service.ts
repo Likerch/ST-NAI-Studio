@@ -3,6 +3,7 @@
 // of a composed scene into a new message or inline into the last message.
 import { ctx } from '../../core/context';
 import { NaiError } from '../../core/errors';
+import { log } from '../../core/logger';
 import { settings } from '../../core/settings';
 import {
     applyPairLayout,
@@ -62,6 +63,49 @@ export function currentCaps(): ModelCapabilities {
 function aliasesOf(name: string): string[] {
     const first = name.trim().split(/\s+/)[0] ?? '';
     return first && first !== name.trim() ? [first] : [];
+}
+
+/** Which reply a scene is about: the tracker of that reply when an integration has one. */
+export interface SceneQuery {
+    messageId?: number;
+    /** Text of the reply (a tracker may sit in it before it is parsed). */
+    text?: string;
+}
+
+/** Extra people and setting from another extension (Doom's Enhancement Suite, v0.9). */
+export interface SceneProvider {
+    /** People of the scene: merged into the candidates by name (current look, aliases), new ones added. */
+    candidates(query: SceneQuery): Promise<SceneCandidate[]>;
+    /** Setting tags and the current location name. */
+    setting(query: SceneQuery): Promise<{ tags: string[]; location: string }>;
+}
+
+let provider: SceneProvider | null = null;
+
+export function setSceneProvider(next: SceneProvider | null): void {
+    provider = next;
+}
+
+const sameCandidate = (a: SceneCandidate, b: SceneCandidate): boolean =>
+    mentionIndex(a.name, [b.name, ...b.aliases]) >= 0 || mentionIndex(b.name, [a.name, ...a.aliases]) >= 0;
+
+/** Candidates of the cards and the persona, with the provider's people merged in. */
+async function withProvided(base: SceneCandidate[], query: SceneQuery): Promise<SceneCandidate[]> {
+    if (!provider) return base;
+    let extra: SceneCandidate[] = [];
+    try {
+        extra = await provider.candidates(query);
+    } catch (error) {
+        log.warn('scene provider: people not available', error);
+    }
+    for (const person of extra) {
+        const known = base.find((c) => !c.isUser && sameCandidate(c, person));
+        if (known) {
+            if (person.currentLook) known.currentLook = person.currentLook;
+            known.aliases = [...new Set([...known.aliases, ...person.aliases])];
+        } else base.push(person);
+    }
+    return base;
 }
 
 /** Separator between the card key and a passport id in candidate keys ("<avatar>#<passport>"). */
@@ -126,8 +170,13 @@ export interface SceneLocation {
     tags: string;
 }
 
-/** Setting of the chat from its cards: world and scenario tags, named locations. */
-export async function sceneSetting(): Promise<{ world: string; locations: SceneLocation[] }> {
+/**
+ * Setting of the chat: world and scenario tags and named locations of its cards, plus the setting
+ * tags and the current location of a provider (a scene tracker).
+ */
+export async function sceneSetting(
+    query: SceneQuery = {},
+): Promise<{ world: string; locations: SceneLocation[]; location: string }> {
     const world: string[] = [];
     const locations: SceneLocation[] = [];
     for (const index of chatCardIndexes()) {
@@ -137,7 +186,15 @@ export async function sceneSetting(): Promise<{ world: string; locations: SceneL
                 locations.push({ name: passport.name, aliases: passport.aliases, tags: passport.tags });
         }
     }
-    return { world: joinTags(...world), locations };
+    let tracked = { tags: [] as string[], location: '' };
+    if (provider) {
+        try {
+            tracked = await provider.setting(query);
+        } catch (error) {
+            log.warn('scene provider: setting not available', error);
+        }
+    }
+    return { world: joinTags(...world, tracked.tags.join(', ')), locations, location: tracked.location };
 }
 
 /** Tags of the locations a text names (whole-word name or alias). */
@@ -146,7 +203,7 @@ export function mentionedLocationTags(text: string, locations: readonly SceneLoc
 }
 
 /** Characters of the current chat (the 1:1 character or every group member) and the persona. */
-export async function sceneCandidates(): Promise<SceneCandidate[]> {
+export async function sceneCandidates(query: SceneQuery = {}): Promise<SceneCandidate[]> {
     const c = ctx();
     const result: SceneCandidate[] = [];
     for (const index of chatCardIndexes()) result.push(...(await characterCandidates(index)));
@@ -160,7 +217,7 @@ export async function sceneCandidates(): Promise<SceneCandidate[]> {
         fallbackNegative: '',
         isUser: true,
     });
-    return result;
+    return await withProvided(result, query);
 }
 
 function sentencesMentioning(text: string, candidate: SceneCandidate): string {
@@ -197,10 +254,10 @@ export class SceneService {
     ) {}
 
     /** An empty scene with every candidate available (the composer starts from this). */
-    async emptySpec(): Promise<{ spec: SceneSpec; candidates: SceneCandidate[] }> {
+    async emptySpec(query: SceneQuery = {}): Promise<{ spec: SceneSpec; candidates: SceneCandidate[] }> {
         const s = settings().scene;
         return {
-            candidates: await sceneCandidates(),
+            candidates: await sceneCandidates(query),
             spec: {
                 base: '',
                 framing: s.framing,
@@ -244,7 +301,11 @@ export class SceneService {
             spec.base = await this.describeLocation();
         }
         const setting = await sceneSetting();
-        spec.base = joinTags(spec.base, mentionedLocationTags(source.text, setting.locations), setting.world);
+        spec.base = joinTags(
+            spec.base,
+            mentionedLocationTags(`${setting.location} ${source.text}`, setting.locations),
+            setting.world,
+        );
         return { spec, candidates };
     }
 
@@ -253,8 +314,8 @@ export class SceneService {
      * poses from the marker, the marker prompt as the shared part. A name without a passport or a
      * character prompt adds nothing; null when no name is usable.
      */
-    async markerScene(prompt: string, chars: MarkerCharacter[]): Promise<BuiltScene | null> {
-        const { spec, candidates } = await this.emptySpec();
+    async markerScene(prompt: string, chars: MarkerCharacter[], query: SceneQuery = {}): Promise<BuiltScene | null> {
+        const { spec, candidates } = await this.emptySpec(query);
         const caps = currentCaps();
         const max = caps.maxCharacters > 0 ? caps.maxCharacters : 3;
         const picked: { candidate: SceneCandidate; ch: MarkerCharacter }[] = [];
@@ -262,7 +323,7 @@ export class SceneService {
             if (picked.length >= max) break;
             const candidate = candidates.find(
                 (c) =>
-                    (c.passport !== null || c.fallbackPrompt.trim() !== '') &&
+                    (c.passport !== null || c.fallbackPrompt.trim() !== '' || Boolean(c.currentLook?.trim())) &&
                     !picked.some((p) => p.candidate.key === c.key) &&
                     mentionIndex(ch.name, [c.name, ...c.aliases]) >= 0,
             );

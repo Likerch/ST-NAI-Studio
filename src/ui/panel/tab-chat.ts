@@ -1,9 +1,11 @@
 // "Chat" tab: result visibility, prompt generation switches, LLM integration, auto generation and
-// image markers in replies (TZ Phase 7).
+// image markers in replies (TZ Phase 7) and the Doom's Enhancement Suite integration (v0.9).
 import { ctx } from '../../core/context';
 import { localize, t } from '../../core/i18n';
 import { saveSettings, settings } from '../../core/settings';
+import { reportGenerationError } from '../../core/notify';
 import { MARKER_TEMPLATES, markerInstruction, WAND_MODES } from '../../domain';
+import { desIntegration } from '../../integration/des/des-integration';
 import { bindSettings, readFromSettings } from '../components/bind';
 import { $id, escapeHtml, fillSelect, render } from '../components/dom';
 import template from '../templates/tab-chat.html?raw';
@@ -27,7 +29,34 @@ export class ChatTab {
             this.onChange(path);
         });
         this.bindMarkers();
+        this.bindDes();
         this.applyGuards();
+    }
+
+    private bindDes(): void {
+        const button = $id(this.root, 'naist_des_passports');
+        button.addEventListener('click', () => {
+            const des = desIntegration();
+            if (!des?.active() || button.classList.contains('disabled')) return;
+            button.classList.add('disabled');
+            void des
+                .passportsForTracker()
+                .then((count) => toastr.info(t('naist.des.passportsDone', { count }), t('naist.des.title')))
+                .catch(reportGenerationError)
+                .finally(() => button.classList.remove('disabled'));
+        });
+    }
+
+    private desStatusText(): string {
+        const status = desIntegration()?.status();
+        if (!status || status.state === 'searching') return t('naist.des.statusSearching');
+        if (status.state === 'absent') return t('naist.des.statusAbsent');
+        const base = t('naist.des.statusConnected', { version: status.version ?? '?', mode: status.mode });
+        const notes = [
+            status.enabled ? '' : t('naist.des.statusOff'),
+            status.verified ? '' : t('naist.des.statusUnverified'),
+        ].filter(Boolean);
+        return [base, ...notes].join(' ');
     }
 
     private bindMarkers(): void {
@@ -69,6 +98,9 @@ export class ChatTab {
             control.closest('label')?.classList.toggle('naist-disabled', control.disabled);
         }
         $id(this.root, 'naist_markers_custom').classList.toggle('naist-hidden', s.markers.preset !== 'custom');
+        $id(this.root, 'naist_des_status').textContent = this.desStatusText();
+        const connected = desIntegration()?.status().state === 'connected';
+        this.root.querySelector('.naist-des-options')?.classList.toggle('naist-disabled', !connected || !s.des.enabled);
         this.root.querySelector('.naist-markers-options')?.classList.toggle('naist-disabled', !s.markers.enabled);
     }
 }

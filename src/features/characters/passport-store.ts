@@ -11,6 +11,13 @@ interface PersonasModule {
     user_avatar: string;
 }
 
+const savedListeners = new Set<(index: number, passports: Passport[]) => void>();
+
+/** Called after the passports of a card are saved (integrations keep their copies in sync). */
+export function onPassportsSaved(listener: (index: number, passports: Passport[]) => void): void {
+    savedListeners.add(listener);
+}
+
 function cardField(character: STCharacter | undefined): { passport?: unknown; passports?: unknown } | undefined {
     return character?.data?.extensions?.[CARD_FIELD] as { passport?: unknown; passports?: unknown } | undefined;
 }
@@ -42,6 +49,13 @@ export async function saveCardPassports(index: number, passports: Passport[]): P
     // "passport" keeps the main character readable for versions before 0.8.
     const main = primaryPassport(passports, character.name);
     await c.writeExtensionField(index, CARD_FIELD, { ...existing, passports, passport: main ?? undefined });
+    for (const listener of savedListeners) {
+        try {
+            listener(index, passports);
+        } catch {
+            // a listener's failure must not fail the save
+        }
+    }
 }
 
 /** Replaces one passport of the card by id (or adds it). */

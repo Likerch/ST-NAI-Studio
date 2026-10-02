@@ -5,7 +5,8 @@ import { t } from '../core/i18n';
 import { log } from '../core/logger';
 import { reportGenerationError } from '../core/notify';
 import { notifyExternalChange, saveSettings, settings } from '../core/settings';
-import { MODEL_IDS, NOISE_SCHEDULES, QUALITY_PRESETS, SAMPLERS, TRIGGER_WORDS, UC_PRESETS } from '../domain';
+import type { GenerationSettings } from '../core/settings-schema';
+import { MODE, MODEL_IDS, NOISE_SCHEDULES, QUALITY_PRESETS, SAMPLERS, TRIGGER_WORDS, UC_PRESETS } from '../domain';
 import type { Pipeline } from '../features/generation/pipeline';
 import { IGNORED_ARGS, MODEL_ALIASES, parseCommandArgs } from './command-args';
 
@@ -54,6 +55,20 @@ function namedArguments(): unknown[] {
     ];
 }
 
+/** A quiet /sd call another extension makes for a known picture (DES portraits, v0.9). */
+export interface PortraitPlan {
+    scene: string;
+    negative?: string;
+    generation?: Partial<GenerationSettings>;
+}
+
+let portraitHook: ((prompt: string) => Promise<PortraitPlan | null>) | null = null;
+
+/** The DES integration recognises its own portrait prompts here. */
+export function setPortraitHook(hook: ((prompt: string) => Promise<PortraitPlan | null>) | null): void {
+    portraitHook = hook;
+}
+
 function imagineCallback(pipeline: Pipeline) {
     return async (args: Record<string, unknown>, value: unknown): Promise<string> => {
         const parsed = parseCommandArgs(args);
@@ -62,12 +77,29 @@ function imagineCallback(pipeline: Pipeline) {
         const controller = new AbortController();
         (args._abortController as AbortLike | undefined)?.addEventListener?.('abort', () => controller.abort());
         try {
-            const result = await pipeline.generatePicture({
-                initiator: 'command',
-                trigger: String(value ?? ''),
-                overrides: parsed.overrides,
-                signal: controller.signal,
-            });
+            const trigger = String(value ?? '');
+            const plan = parsed.overrides.quiet && portraitHook ? await portraitHook(trigger) : null;
+            const result = plan
+                ? await pipeline.generatePicture({
+                      initiator: 'command',
+                      trigger: plan.scene,
+                      scene: plan.scene,
+                      mode: MODE.FREE,
+                      interpret: 'auto',
+                      overrides: {
+                          ...parsed.overrides,
+                          edit: false,
+                          negative: plan.negative ?? parsed.overrides.negative,
+                          generation: { ...parsed.overrides.generation, ...plan.generation },
+                      },
+                      signal: controller.signal,
+                  })
+                : await pipeline.generatePicture({
+                      initiator: 'command',
+                      trigger,
+                      overrides: parsed.overrides,
+                      signal: controller.signal,
+                  });
             return result?.path ?? '';
         } catch (error) {
             reportGenerationError(error);

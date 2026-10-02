@@ -74,7 +74,9 @@ export async function refreshMarkerInstruction(): Promise<void> {
     let chars: string[] = [];
     if (s.enabled) {
         try {
-            chars = (await sceneCandidates()).filter((cand) => cand.passport).map((cand) => cand.name);
+            chars = (await sceneCandidates())
+                .filter((cand) => !cand.isUser && (cand.passport || cand.currentLook?.trim()))
+                .map((cand) => cand.name);
         } catch (error) {
             log.warn('marker instruction: characters not available', error);
         }

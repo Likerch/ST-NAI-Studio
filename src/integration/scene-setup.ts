@@ -28,6 +28,11 @@ export function setEmotionsHandler(handler: (index: number, passportId?: string)
     emotionsHandler = handler;
 }
 
+/** Opens the sprite generator for a character passport of a card. */
+export function openEmotions(index: number, passportId?: string): void {
+    emotionsHandler(index, passportId);
+}
+
 export async function openSceneComposer(auto = true, focusKey?: string): Promise<void> {
     if (!state) return;
     try {

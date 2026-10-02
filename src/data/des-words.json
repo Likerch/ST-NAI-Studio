@@ -1,0 +1,41 @@
+{
+  "time": {
+    "dawn": ["dawn", "daybreak", "sunrise", "рассвет", "заря", "зари", "восход"],
+    "morning": ["morning", "утро", "утра", "утром", "утрен"],
+    "day": ["noon", "midday", "afternoon", "daytime", "день", "дня", "днём", "днем", "полдень", "полдня", "дневн"],
+    "sunset": ["sunset", "dusk", "twilight", "закат", "сумерк", "смеркается"],
+    "evening": ["evening", "вечер", "вечером", "вечерн"],
+    "night": ["night", "midnight", "ночь", "ночи", "ночью", "ночн", "полночь", "полуночи"]
+  },
+  "weather": {
+    "storm": ["storm", "thunder", "lightning", "гроза", "грозы", "шторм", "буря", "бури", "молни", "гром"],
+    "snow": ["snow", "blizzard", "flurr", "снег", "снеж", "метель", "вьюг", "пурга"],
+    "rain": ["rain", "drizzle", "shower", "downpour", "дожд", "ливень", "ливн", "морос"],
+    "fog": ["fog", "mist", "haze", "туман", "дымк", "мгла"],
+    "cloudy": ["cloud", "overcast", "облач", "пасмур", "тучи", "туч"],
+    "wind": ["wind", "gale", "ветер", "ветр", "ветрен"],
+    "clear": ["clear", "sunny", "ясно", "ясн", "солнеч", "безоблач"]
+  },
+  "indoors": ["indoor", "inside", "interior", "в помещении", "внутри", "помещени", "в доме", "в комнате", "в здании"],
+  "outdoors": ["outdoor", "outside", "на улице", "снаружи", "под открытым небом"],
+  "appearanceKeys": [
+    "appearance",
+    "look",
+    "outfit",
+    "cloth",
+    "attire",
+    "wear",
+    "dress",
+    "equipment",
+    "equipement",
+    "внешн",
+    "облик",
+    "одежд",
+    "наряд",
+    "экипир",
+    "vneshn",
+    "odezhd",
+    "naryad"
+  ],
+  "stateKeys": ["effect", "status", "condition", "injur", "состоян", "эффект", "ранени", "sostoyan"]
+}

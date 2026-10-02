@@ -12,6 +12,7 @@ import {
     passportGenMessages,
     passportTags,
     primaryPassport,
+    sentencesNaming,
 } from '../../src/domain';
 
 describe('passport list', () => {
@@ -120,5 +121,17 @@ describe('generated passports', () => {
         expect(mira.negative).toBe('legs');
         expect(list[1]!.tags).toBe('inn, wooden interior');
         expect(new Set(list.map((p) => p.id)).size).toBe(3);
+    });
+});
+
+describe('card context for a tracker character', () => {
+    it('keeps only the sentences that name the character', () => {
+        const card = [
+            'Lyra is an elf archer. She travels with Brom. Brom is a dwarf smith!',
+            'The inn belongs to Кай, a cheerful young man.',
+        ].join('\n');
+        expect(sentencesNaming(card, ['Brom'])).toBe('She travels with Brom. Brom is a dwarf smith!');
+        expect(sentencesNaming(card, ['Кай'])).toBe('The inn belongs to Кай, a cheerful young man.');
+        expect(sentencesNaming(card, ['Mira'])).toBe('');
     });
 });

@@ -15,6 +15,7 @@ import { InlineImages } from './features/inline/inline-service';
 import { SceneService } from './features/scene/scene-service';
 import { needsMigration, ownsCompatSurface, runMigration } from './features/takeover/takeover';
 import { inlineRenderer, openGalleryWindow, setInlineVisibility, setupInline } from './integration/inline-setup';
+import { desIntegration, setupDes } from './integration/des/des-integration';
 import { onMarkerSettingChange, setupMarkers } from './integration/markers-setup';
 import { setupScenes } from './integration/scene-setup';
 import { setupPhase6 } from './integration/phase6-setup';
@@ -41,6 +42,7 @@ function mountPanel(studio: StudioController, pipeline: Pipeline): void {
     if (document.querySelector('#naist_panel')) return;
     const onSettingChange = (path: string) => {
         onMarkerSettingChange(path);
+        if (path.startsWith('des.')) desIntegration()?.settingsChanged();
         if (
             path.startsWith('chat.functionTool') ||
             path.startsWith('chat.toolCooldown') ||
@@ -80,7 +82,8 @@ export async function onActivate(): Promise<void> {
     setupScenes(pipeline, scenes);
     setupTools(pipeline, inline);
     setupPhase6(pipeline, scenes);
-    setupMarkers(pipeline, inline, scenes);
+    const markers = setupMarkers(pipeline, inline, scenes);
+    setupDes(markers);
     new AutoGenerator(studio, pipeline).attach();
     // Network probing must not hold the 5 s activation window.
     void studio.refreshTransport();

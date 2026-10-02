@@ -14,7 +14,7 @@ const state = vi.hoisted(() => ({
     uuid: 0,
     now: 0,
     candidates: [] as Record<string, unknown>[],
-    setting: { world: '', locations: [] as { name: string; aliases: string[]; tags: string }[] },
+    setting: { world: '', location: '', locations: [] as { name: string; aliases: string[]; tags: string }[] },
 }));
 
 vi.mock('../../src/core/settings', () => ({ settings: () => state.settings }));
@@ -107,7 +107,7 @@ beforeEach(() => {
     state.candidates = [
         { key: 'alice.png', name: 'Alice', aliases: [], passport: null, fallbackPrompt: '', fallbackNegative: '' },
     ];
-    state.setting = { world: '', locations: [] };
+    state.setting = { world: '', location: '', locations: [] };
     vi.spyOn(Date, 'now').mockImplementation(() => (state.now += 1000));
 });
 
@@ -205,7 +205,10 @@ describe('MarkerService lifecycle', () => {
         await service.finalize(0, 'normal');
         await settle();
         expect(state.chat[0]!.mes).toBe('<b>Alice</b> opens the door. Snow falls.\n[nai:img:id1]');
-        expect(markerScene).toHaveBeenCalledWith('Alice opens the door. Snow falls.', [{ name: 'Alice' }]);
+        expect(markerScene).toHaveBeenCalledWith('Alice opens the door. Snow falls.', [{ name: 'Alice' }], {
+            messageId: 0,
+            text: '<b>Alice</b> opens the door. Snow falls.',
+        });
         expect(produce).toHaveBeenCalledTimes(1);
         await service.finalize(0, 'normal');
         expect(inline.addPending).toHaveBeenCalledTimes(1);
@@ -304,7 +307,7 @@ describe('MarkerService requests', () => {
             text: 'X',
             model: 'v3',
         });
-        expect(markerScene).toHaveBeenCalledWith('they talk', [{ name: 'Alice', pos: 'left' }]);
+        expect(markerScene).toHaveBeenCalledWith('they talk', [{ name: 'Alice', pos: 'left' }], {});
         const req = lastRequest(produce);
         expect(req.scene).toBe('scene: they talk');
         expect(req.overrides.generation).toMatchObject({ useCoords: true, model: 'nai-diffusion-3' });
@@ -328,10 +331,11 @@ describe('MarkerService requests', () => {
         ];
         state.setting = {
             world: 'medieval, fantasy',
+            location: '',
             locations: [{ name: 'tavern', aliases: [], tags: 'tavern, wooden interior' }],
         };
         await service.produce({ prompt: 'Mira and Bob drink in the tavern' });
-        expect(markerScene).toHaveBeenCalledWith('Mira and Bob drink in the tavern', [{ name: 'Mira' }]);
+        expect(markerScene).toHaveBeenCalledWith('Mira and Bob drink in the tavern', [{ name: 'Mira' }], {});
         expect(lastRequest(produce).scene).toBe(
             'scene: Mira and Bob drink in the tavern, tavern, wooden interior, medieval, fantasy',
         );
@@ -339,5 +343,50 @@ describe('MarkerService requests', () => {
         await service.produce({ prompt: 'an empty road', location: 'tavern' });
         expect(markerScene).not.toHaveBeenCalled();
         expect(lastRequest(produce).scene).toBe('an empty road, tavern, wooden interior, medieval, fantasy');
+    });
+
+    it('uses the tracked location and people with only a current look', async () => {
+        const { service, produce, markerScene } = setup();
+        state.candidates = [
+            {
+                key: 'des:Nia',
+                name: 'Nia',
+                aliases: [],
+                passport: null,
+                fallbackPrompt: '',
+                fallbackNegative: '',
+                currentLook: 'red scarf',
+            },
+        ];
+        state.setting = {
+            world: 'night, rain',
+            location: 'tavern',
+            locations: [{ name: 'tavern', aliases: [], tags: 'wooden interior' }],
+        };
+        await service.produce({ prompt: 'Nia waves' }, undefined, { messageId: 3, text: 'x' });
+        expect(markerScene).toHaveBeenCalledWith('Nia waves', [{ name: 'Nia' }], { messageId: 3, text: 'x' });
+        expect(lastRequest(produce).scene).toBe('scene: Nia waves, wooden interior, night, rain');
+    });
+});
+
+describe('MarkerService gate', () => {
+    it('holds early start and waits for the gate before generating', async () => {
+        const { service, produce } = setup();
+        let release!: () => void;
+        const wait = vi.fn(() => new Promise<void>((r) => (release = r)));
+        service.setGate({ holdEarlyStart: () => true, wait });
+        service.generationStarted('normal', false);
+        reply('<img data-nai="a cat">');
+        service.streamProgress();
+        await settle();
+        expect(produce).not.toHaveBeenCalled();
+        await service.finalize(0, 'normal');
+        await settle();
+        expect(wait).toHaveBeenCalledWith(0, expect.any(AbortSignal));
+        expect(produce).not.toHaveBeenCalled();
+        release();
+        await settle();
+        await settle();
+        expect(produce).toHaveBeenCalledTimes(1);
     });
 });

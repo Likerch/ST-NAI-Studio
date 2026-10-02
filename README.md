@@ -58,6 +58,17 @@ The built-in Image Generation treats NovelAI as one backend among many. NAI Stud
 - Pose library (38 poses), pair poses (hug, holding hands, carry…) using NovelAI's `source#` / `target#` / `mutual#` interaction tags, framing, camera angle, distance.
 - **Scene composer** with a position canvas; automatic scene from the last message: who is in the frame, their poses and interactions, character counts. Works in group chats.
 
+### Doom's Enhancement Suite
+
+When [Doom's Enhancement Suite](https://github.com/DangerDaza/Dooms-Enhancement-Suite) is installed, NAI Studio integrates with it (Chat tab → "Doom's Enhancement Suite"):
+
+- **Scene from the tracker** in every picture: time of day, weather, indoors / outdoors and the location (with its location passport and scene continuity). DES writes its tracker at the start of a reply, so even pictures started while the reply streams know the scene; in separate / external mode pictures wait for the tracker.
+- **Characters of the tracker** take part in pictures with their **current look** (clothes and state from the tracker over the identity of their passport) — also NPCs without a card.
+- **Passports for new characters:** a character the cards of the chat do not know gets a passport written from the tracker and saved in the card; the passport becomes its DES Workshop "Portrait prompt".
+- **Portraits by NAI Studio:** DES's own auto portraits are switched off while the integration draws them — when a portrait is missing, when the look changes, or every reply — with a stable seed per character for the same face; DES keeps them with its history ("Restore Previous Portrait" works).
+- **Emotions** of other characters of a card go to `characters/<name>`, where DES's expressions mode looks for them.
+- NAI Studio items in the DES portrait menu (passport, emotions, new portrait, picture with the character), "Illustrate" on scene banners, a passport button in the Workshop.
+
 ### Image tools (on any image in the chat)
 
 - **Director Tools:** line art, sketch, colorize, emotion (24 emotions), declutter, declutter keeping bubbles, background removal. Results become new swipes; the original is never lost.

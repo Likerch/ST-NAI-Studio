@@ -1,6 +1,7 @@
 // Passports written by an LLM from a character card or a persona description (v0.8). Pure: the
 // prompt, the JSON schema for Chat Completion and a forgiving parser of the answer.
 import { defaultPassport, joinTags, newPassportId, PASSPORT_KINDS, PASSPORT_SLOTS } from './passport';
+import { mentionIndex } from './scene-assembly';
 import type { Passport, PassportKind } from './passport';
 
 export interface PassportSource {
@@ -30,6 +31,14 @@ const SYSTEM_PERSONA = [
     "You read the description of the player's persona in a roleplay and write one visual passport for an image generator (NovelAI, Danbooru tags).",
     'Answer only with JSON: {"passports": [ one entry of kind "character" ]} with the fields name, aliases, base (count tag and what they are: "1girl, adult", "1boy, elf"), hair, eyes, body, skin, clothing, accessories, outfits ({"name","tags"}), nsfw (explicit body details only if given), negative.',
     'Rules: English Danbooru tags, lowercase, comma separated, spaces instead of underscores. Only what the text says or clearly implies, never invent; leave a field empty when unknown. No quality or art style tags.',
+].join('\n');
+
+const SYSTEM_NPC = [
+    'You read how a roleplay scene tracker describes a character right now, and the story card they come from, and write one visual passport for an image generator (NovelAI, Danbooru tags).',
+    'Answer only with JSON: {"passports": [ one entry of kind "character" ]} with the fields name, aliases, base (count tag and what they are: "1girl, elf, adult", "1boy, orc"), hair, eyes, body, skin, clothing (what they wear in the tracker), accessories, outfits, nsfw (explicit body details only if given), negative.',
+    'Permanent features (species, body, face, hair, eyes, skin) go to their fields; temporary states (wet, wounded, blushing) are left out.',
+    'The story card describes the world and other characters: take from it only what it says about this character by name, never the traits of anyone else (race, hair, clothes).',
+    'Rules: English Danbooru tags, lowercase, comma separated, spaces instead of underscores. Only what the texts say or clearly imply about this character, never invent; leave a field empty when unknown. No quality or art style tags.',
 ].join('\n');
 
 const str = { type: 'string' };
@@ -70,19 +79,24 @@ function clip(text: string | undefined, max: number): string {
     return value.length > max ? `${value.slice(0, max)}…` : value;
 }
 
-/** System and user messages for a card or a persona. */
-export function passportGenMessages(
-    source: PassportSource,
-    target: 'card' | 'persona',
-): { system: string; user: string } {
+export type PassportTarget = 'card' | 'persona' | 'npc';
+
+const SYSTEMS: Record<PassportTarget, string> = { card: SYSTEM_CARD, persona: SYSTEM_PERSONA, npc: SYSTEM_NPC };
+const LABELS: Record<PassportTarget, string> = { card: 'Card', persona: 'Persona', npc: 'Character' };
+
+/** System and user messages for a card, a persona or one character of a scene tracker. */
+export function passportGenMessages(source: PassportSource, target: PassportTarget): { system: string; user: string } {
     const parts = [
-        `${target === 'card' ? 'Card' : 'Persona'}: ${source.name}`,
-        `Description:\n${clip(source.description, LIMITS.description)}`,
+        `${LABELS[target]}: ${source.name}`,
+        `${target === 'npc' ? 'Tracker' : 'Description'}:\n${clip(source.description, LIMITS.description)}`,
     ];
     if (source.personality?.trim()) parts.push(`Personality:\n${clip(source.personality, LIMITS.personality)}`);
-    if (source.scenario?.trim()) parts.push(`Scenario:\n${clip(source.scenario, LIMITS.scenario)}`);
+    if (source.scenario?.trim())
+        parts.push(
+            `${target === 'npc' ? 'Story card' : 'Scenario'}:\n${clip(source.scenario, target === 'npc' ? LIMITS.description : LIMITS.scenario)}`,
+        );
     if (source.firstMessage?.trim()) parts.push(`First message:\n${clip(source.firstMessage, LIMITS.firstMessage)}`);
-    return { system: target === 'card' ? SYSTEM_CARD : SYSTEM_PERSONA, user: parts.join('\n\n') };
+    return { system: SYSTEMS[target], user: parts.join('\n\n') };
 }
 
 /** The first JSON value in a text (code fences, chatter around it). */
@@ -157,4 +171,13 @@ export function parseGeneratedPassports(raw: unknown, fallbackName = ''): Passpo
         if (visual) result.push(passport);
     }
     return result;
+}
+
+/** Sentences of a text that name a character (any spelling the name matcher accepts), joined. */
+export function sentencesNaming(text: string, names: readonly string[]): string {
+    return text
+        .split(/(?<=[.!?…])\s+|\n+/)
+        .filter((sentence) => sentence.trim() && mentionIndex(sentence, names) >= 0)
+        .join(' ')
+        .trim();
 }

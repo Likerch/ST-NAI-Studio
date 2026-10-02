@@ -1082,5 +1082,15 @@
   "naist.des.menuPortrait": "NAI Studio: new portrait",
   "naist.des.menuScene": "NAI Studio: picture with this character",
   "naist.des.illustrate": "Illustrate this scene (NAI Studio)",
-  "naist.des.workshopPassport": "NAI Studio passport"
+  "naist.des.workshopPassport": "NAI Studio passport",
+  "naist.multimodal.title": "Multimodal mode",
+  "naist.multimodal.fallback": "The avatar could not be described by the vision model ({reason}). The picture is made from the chat model's description instead. Set up Image Captioning (multimodal API with a key) or turn the multimodal mode off on the Chat tab.",
+  "naist.multimodal.api": "Avatar described by",
+  "naist.multimodal.model": "Vision model",
+  "naist.multimodal.apiCaptioning": "As in Image Captioning (now: {api})",
+  "naist.multimodal.keySet": "key saved",
+  "naist.multimodal.keyMissing": "no key",
+  "naist.multimodal.modelCaptioning": "from Image Captioning",
+  "naist.multimodal.hint": "Multimodal modes (\"you\", \"face\", \"me\") first describe the avatar with a vision model; the key is the one saved in SillyTavern (API Connections) for that API.",
+  "naist.multimodal.noKey": "No {api} key is saved in SillyTavern: choose an API with a key (e.g. OpenRouter) or save the key in API Connections."
 }

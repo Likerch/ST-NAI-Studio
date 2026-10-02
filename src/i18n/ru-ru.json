@@ -1082,5 +1082,15 @@
   "naist.des.menuPortrait": "NAI Studio: новый портрет",
   "naist.des.menuScene": "NAI Studio: картинка с персонажем",
   "naist.des.illustrate": "Проиллюстрировать сцену (NAI Studio)",
-  "naist.des.workshopPassport": "Паспорт NAI Studio"
+  "naist.des.workshopPassport": "Паспорт NAI Studio",
+  "naist.multimodal.title": "Мультимодальный режим",
+  "naist.multimodal.fallback": "Аватар не удалось описать vision-моделью ({reason}). Картинка сделана по описанию модели чата. Настройте Image Captioning (мультимодальный API с ключом) или выключите мультимодальный режим на вкладке «Чат».",
+  "naist.multimodal.api": "Чем описывать аватар",
+  "naist.multimodal.model": "Vision-модель",
+  "naist.multimodal.apiCaptioning": "Как в Image Captioning (сейчас: {api})",
+  "naist.multimodal.keySet": "ключ есть",
+  "naist.multimodal.keyMissing": "нет ключа",
+  "naist.multimodal.modelCaptioning": "из Image Captioning",
+  "naist.multimodal.hint": "Мультимодальные режимы («ты», «лицо», «я») сначала описывают аватар vision-моделью; ключ — тот, что сохранён в SillyTavern (API Connections) для этого API.",
+  "naist.multimodal.noKey": "Ключ {api} в SillyTavern не сохранён: выберите API с ключом (например, OpenRouter) или сохраните ключ в API Connections."
 }

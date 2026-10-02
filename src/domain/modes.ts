@@ -85,6 +85,12 @@ export function resolveMode(trigger: string, options: { multimodal: boolean; fre
     return mode;
 }
 
+/** The text mode a multimodal mode stands for (character, user, face); other modes unchanged. */
+export function textModeOf(mode: ModeId): ModeId {
+    const entry = Object.entries(MULTIMODAL).find(([, multimodal]) => multimodal === mode);
+    return entry ? (Number(entry[0]) as ModeId) : mode;
+}
+
 export function isMultimodal(mode: ModeId): boolean {
     return mode === MODE.CHARACTER_MULTIMODAL || mode === MODE.USER_MULTIMODAL || mode === MODE.FACE_MULTIMODAL;
 }

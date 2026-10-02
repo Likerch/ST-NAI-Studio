@@ -53,6 +53,17 @@
     <label class="checkbox_label"
         ><input type="checkbox" data-setting="modes.multimodal" /><span data-i18n="naist.chat.multimodal"></span
     ></label>
+    <div class="naist-grid2 naist-mm-source">
+        <div>
+            <label for="naist_mm_api" data-i18n="naist.multimodal.api"></label>
+            <select id="naist_mm_api" class="text_pole" data-setting="modes.multimodalApi"></select>
+        </div>
+        <div>
+            <label for="naist_mm_model" data-i18n="naist.multimodal.model"></label>
+            <input id="naist_mm_model" class="text_pole" data-setting="modes.multimodalModel" />
+        </div>
+    </div>
+    <div class="naist-hint" id="naist_mm_hint"></div>
     <label class="checkbox_label"
         ><input type="checkbox" data-setting="modes.freeExtend" /><span data-i18n="naist.chat.freeExtend"></span
     ></label>

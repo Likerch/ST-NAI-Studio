@@ -20,6 +20,7 @@ import {
     hasCyrillic,
     isModelId,
     isMultimodal,
+    textModeOf,
     MODE,
     modeDimensions,
     processReply,
@@ -38,6 +39,7 @@ import type {
     VibeReference,
 } from '../../domain';
 import type { GeneratedImage, StreamFrame, Transport } from '../../transport';
+import { describeImage } from './multimodal';
 import {
     avatarKey,
     currentCharacterPrompt,
@@ -189,10 +191,6 @@ export interface PipelineUi {
     progress?: ProgressUi;
 }
 
-interface MultimodalModule {
-    getMultimodalCaption(base64: string, prompt: string): Promise<string>;
-}
-
 interface PersonasModule {
     user_avatar: string;
 }
@@ -275,6 +273,7 @@ export class Pipeline {
     private readonly observers = new Set<GenerationObserver>();
     private vibes: VibeProvider | null = null;
     private interpreter: PromptInterpreter | null = null;
+    private multimodalWarned = false;
     private continuity: ContinuityProvider | null = null;
 
     constructor(
@@ -337,15 +336,28 @@ export class Pipeline {
             if (free.negative) addNegative(free.negative);
             return free.prompt;
         }
-        const quietPrompt = quietPromptFor(mode, trigger, templates());
+        let quietPrompt = quietPromptFor(mode, trigger, templates());
         if (isMultimodal(mode)) {
-            const response = await fetch(await avatarUrl(mode));
-            if (!response.ok) throw new NaiError('multimodal-failed', 'none');
-            const base64 = await blobToBase64(await response.blob());
-            const shared = await importHost<MultimodalModule>('/scripts/extensions/shared.js');
-            const caption = await shared.getMultimodalCaption(base64, quietPrompt);
-            if (!caption) throw new NaiError('multimodal-failed', 'none');
-            return caption;
+            try {
+                const response = await fetch(await avatarUrl(mode));
+                if (!response.ok) throw new NaiError('multimodal-failed', 'none');
+                const base64 = await blobToBase64(await response.blob());
+                const caption = await describeImage(base64, quietPrompt);
+                if (!caption) throw new NaiError('multimodal-failed', 'none');
+                return caption;
+            } catch (error) {
+                // Image Captioning without a usable vision API ("OpenAI API key is not set"): the
+                // picture is still made, from the chat model's description like the text mode.
+                const reason = error instanceof NaiError ? error.title : String((error as Error)?.message ?? error);
+                log.warn('multimodal captioning failed, using the text mode:', reason);
+                if (!this.multimodalWarned) {
+                    this.multimodalWarned = true;
+                    toastr.warning(t('naist.multimodal.fallback', { reason }), t('naist.multimodal.title'), {
+                        timeOut: 10000,
+                    });
+                }
+                quietPrompt = quietPromptFor(textModeOf(mode), trigger, templates());
+            }
         }
         const reply = await c.generateQuietPrompt({ quietPrompt });
         let prompt = processReply(reply, minimal);

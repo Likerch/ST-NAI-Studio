@@ -37,7 +37,7 @@ export interface CustomPoseSettings {
     name: string;
 }
 
-export const CURRENT_SCHEMA_VERSION = 8;
+export const CURRENT_SCHEMA_VERSION = 9;
 
 export type TransportMode = 'auto' | 'plugin' | 'native';
 
@@ -117,6 +117,10 @@ export interface NaiStudioSettings {
         refine: boolean;
         /** Caption avatars with the multimodal model for "you", "me", "face". */
         multimodal: boolean;
+        /** Vision API for the multimodal modes ('' = the Image Captioning settings of SillyTavern). */
+        multimodalApi: string;
+        /** Its model ('' = the API's starting model). */
+        multimodalModel: string;
         /** Let the LLM extend free prompts. */
         freeExtend: boolean;
         /** Keep the pixel count when a mode forces portrait/landscape. */
@@ -376,7 +380,15 @@ export function defaultSettings(): NaiStudioSettings {
         transport: { mode: 'auto' },
         generation: defaultGeneration(),
         prompts: { prefix: '', suffix: '', templates: {}, styles: [], activeStyle: '', characterPrompts: {} },
-        modes: { refine: false, multimodal: false, freeExtend: false, snap: false, minimalProcessing: false },
+        modes: {
+            refine: false,
+            multimodal: false,
+            multimodalApi: '',
+            multimodalModel: '',
+            freeExtend: false,
+            snap: false,
+            minimalProcessing: false,
+        },
         chat: {
             visibility: {
                 panel: false,
@@ -576,6 +588,13 @@ export const MIGRATIONS: readonly Migration[] = [
         to: 8,
         migrate(settings) {
             return { ...settings, schemaVersion: 8 };
+        },
+    },
+    {
+        // v9: vision API of the multimodal modes; defaults are filled by the merge.
+        to: 9,
+        migrate(settings) {
+            return { ...settings, schemaVersion: 9 };
         },
     },
 ];

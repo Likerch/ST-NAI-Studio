@@ -43,3 +43,4 @@ export * from './interpret';
 export * from './marker-instructions';
 export * from './passport-gen';
 export * from './des';
+export * from './vision';

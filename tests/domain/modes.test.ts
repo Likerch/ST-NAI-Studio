@@ -11,6 +11,7 @@ import {
     TRIGGER_WORDS,
     usesCharacterPrefix,
     WAND_MODES,
+    textModeOf,
 } from '../../src/domain';
 
 const plain = { multimodal: false, freeExtend: false };
@@ -152,5 +153,14 @@ describe('quietPromptFor', () => {
         expect(quietPromptFor(MODE.FREE_EXTENDED, 'a cat', {})).toContain('"a cat"');
         expect(quietPromptFor(MODE.CHARACTER, 'you', { '0': 'X {0} {0}' })).toBe('X you you');
         expect(quietPromptFor(MODE.CHARACTER, 'you', {})).toBe(DEFAULT_TEMPLATES['0']);
+    });
+});
+
+describe('textModeOf', () => {
+    it('gives the text mode of a multimodal one and leaves others alone', () => {
+        expect(textModeOf(MODE.CHARACTER_MULTIMODAL)).toBe(MODE.CHARACTER);
+        expect(textModeOf(MODE.USER_MULTIMODAL)).toBe(MODE.USER);
+        expect(textModeOf(MODE.FACE_MULTIMODAL)).toBe(MODE.FACE);
+        expect(textModeOf(MODE.FREE)).toBe(MODE.FREE);
     });
 });

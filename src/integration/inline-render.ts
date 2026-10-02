@@ -224,9 +224,13 @@ export class InlineRenderer {
         const messageId = messageIdOf(mes);
         if (messageId === null) return;
         if (text.textContent?.includes('[nai:img:')) this.replaceTextPlaceholders(text);
-        // Placeholders shown to display regexes as <img>: untouched ones get the full component.
-        text.querySelectorAll(`img[${IMG_ATTR}]`).forEach((img) => {
-            img.replaceWith(el('span', '', { [IMG_ATTR]: img.getAttribute(IMG_ATTR) ?? '' }));
+        // Placeholders shown to display regexes as <img>: one left in the text gets the full
+        // component; one a widget put into its own markup (markdown makes no <div>) keeps the
+        // widget's layout and only gets its source.
+        text.querySelectorAll<HTMLImageElement>(`img[${IMG_ATTR}]`).forEach((img) => {
+            const container = img.parentElement?.closest('div, td, section, article, figure');
+            if (container && container !== text && text.contains(container)) img.removeAttribute(IMG_ATTR);
+            else img.replaceWith(el('span', '', { [IMG_ATTR]: img.getAttribute(IMG_ATTR) ?? '' }));
         });
         const widgetImages = [...text.querySelectorAll<HTMLImageElement>(`img[src*="${WIDGET_SRC_MARK}"]`)];
         const spans = [...text.querySelectorAll<HTMLElement>(`[${IMG_ATTR}]:not([${MOUNTED_ATTR}])`)];

@@ -190,7 +190,8 @@ export class SceneService {
 
     /**
      * Characters named by an image marker (TZ Phase 7): passports by name or alias, positions and
-     * poses from the marker, the marker prompt as the shared part. Null when no name is known.
+     * poses from the marker, the marker prompt as the shared part. A name without a passport or a
+     * character prompt adds nothing; null when no name is usable.
      */
     async markerScene(prompt: string, chars: MarkerCharacter[]): Promise<BuiltScene | null> {
         const { spec, candidates } = await this.emptySpec();
@@ -201,6 +202,7 @@ export class SceneService {
             if (picked.length >= max) break;
             const candidate = candidates.find(
                 (c) =>
+                    (c.passport !== null || c.fallbackPrompt.trim() !== '') &&
                     !picked.some((p) => p.candidate.key === c.key) &&
                     mentionIndex(ch.name, [c.name, ...c.aliases]) >= 0,
             );

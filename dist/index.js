@@ -9578,7 +9578,8 @@ var SceneService = class {
 	}
 	/**
 	* Characters named by an image marker (TZ Phase 7): passports by name or alias, positions and
-	* poses from the marker, the marker prompt as the shared part. Null when no name is known.
+	* poses from the marker, the marker prompt as the shared part. A name without a passport or a
+	* character prompt adds nothing; null when no name is usable.
 	*/
 	async markerScene(prompt, chars) {
 		const { spec, candidates } = await this.emptySpec();
@@ -9587,7 +9588,7 @@ var SceneService = class {
 		const picked = [];
 		for (const ch of chars) {
 			if (picked.length >= max) break;
-			const candidate = candidates.find((c) => !picked.some((p) => p.candidate.key === c.key) && mentionIndex(ch.name, [c.name, ...c.aliases]) >= 0);
+			const candidate = candidates.find((c) => (c.passport !== null || c.fallbackPrompt.trim() !== "") && !picked.some((p) => p.candidate.key === c.key) && mentionIndex(ch.name, [c.name, ...c.aliases]) >= 0);
 			if (candidate) picked.push({
 				candidate,
 				ch
@@ -10692,7 +10693,9 @@ var InlineRenderer = class {
 		if (messageId === null) return;
 		if (text.textContent?.includes("[nai:img:")) this.replaceTextPlaceholders(text);
 		text.querySelectorAll(`img[${IMG_ATTR}]`).forEach((img) => {
-			img.replaceWith(el("span", "", { [IMG_ATTR]: img.getAttribute("data-naist-img") ?? "" }));
+			const container = img.parentElement?.closest("div, td, section, article, figure");
+			if (container && container !== text && text.contains(container)) img.removeAttribute(IMG_ATTR);
+			else img.replaceWith(el("span", "", { [IMG_ATTR]: img.getAttribute("data-naist-img") ?? "" }));
 		});
 		const widgetImages = [...text.querySelectorAll(`img[src*="${WIDGET_SRC_MARK}"]`)];
 		const spans = [...text.querySelectorAll(`[${IMG_ATTR}]:not([${MOUNTED_ATTR}])`)];
@@ -13413,7 +13416,7 @@ var ComicService = class {
 };
 //#endregion
 //#region package.json
-var version = "0.7.0";
+var version = "0.7.1";
 //#endregion
 //#region src/features/settings-io/settings-io.ts
 async function exportSettingsFile(includeImages) {

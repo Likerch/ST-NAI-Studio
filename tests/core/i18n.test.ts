@@ -8,6 +8,7 @@ import { localize, setTranslator, t } from '../../src/core/i18n';
 import type { NaiErrorCode } from '../../src/core/errors';
 import {
     CAMERA_ANGLES,
+    COMIC_LAYOUTS,
     DIRECTOR_EMOTIONS,
     DIRECTOR_TOOLS,
     DISTANCES,
@@ -123,6 +124,8 @@ describe('source code', () => {
             'image-not-found',
             'image-load-failed',
             'feature-unavailable',
+            'translation-failed',
+            'import-failed',
             'unknown',
         ];
         const drops: DropReason[] = [
@@ -213,6 +216,12 @@ describe('source code', () => {
             ...['streaming', 'estimating'].map((k) => `naist.progress.${k}`),
             ...vibeStates.flatMap((v) => [`naist.vibes.status.${v}`, `naist.vibes.notice.${v}`]),
             ...vibeSkips.map((v) => `naist.vibes.skipped.${v}`),
+            ...COMIC_LAYOUTS.map((l) => `naist.comic.layout.${l.id}`),
+            ...['not-json', 'wrong-format', 'newer-schema', 'invalid'].map((r) => `naist.io.reason.${r}`),
+            ...['base', 'director', 'img2img', 'seed'].map((h) => `naist.sprites.how.${h}`),
+            ...['done', 'cached'].map((k) => `naist.translate.${k}`),
+            ...['modeSeedHint', 'modeDirectorHint'].map((k) => `naist.sprites.${k}`),
+            ...['spritesHelp', 'comicHelp'].map((k) => `naist.command.${k}`),
             ...['gridHint', 'freeHint', 'noPositions'].map((k) => `naist.composer.${k}`),
             ...[...TEMPLATE_MODES, ...WAND_MODES].map((m) => `naist.mode.${m}`),
             ...migration.map((k) => `naist.migration.${k}`),

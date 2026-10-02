@@ -25,6 +25,7 @@ import type { Pipeline } from '../features/generation/pipeline';
 import { currentCaps, PERSONA_PREFIX } from '../features/scene/scene-service';
 import type { SceneService } from '../features/scene/scene-service';
 import { escapeHtml } from './components/dom';
+import { attachPromptAssist } from './prompt-assist';
 import { openInspector } from './panel/inspector';
 import { editPassport } from './passport-editor';
 import { poseSelectOptions } from './pose-helpers';
@@ -382,6 +383,11 @@ export async function openComposer(service: SceneService, pipeline: Pipeline, op
     });
 
     render();
+    attachPromptAssist(
+        root,
+        '.naist-c-base, .naist-slot-pose-tags, .naist-slot-negative',
+        () => settings().generation.model,
+    );
     const result = await c.callGenericPopup(root, c.POPUP_TYPE.CONFIRM, '', {
         okButton: t('naist.composer.generate'),
         cancelButton: t('naist.inspector.cancel'),

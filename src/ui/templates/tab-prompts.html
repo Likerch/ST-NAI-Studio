@@ -24,6 +24,47 @@
 </div>
 
 <div class="naist-section">
+    <b data-i18n="naist.translate.title"></b>
+    <div class="naist-hint" data-i18n="naist.translate.hint"></div>
+    <label class="checkbox_label"
+        ><input type="checkbox" data-setting="translate.auto" /><span data-i18n="naist.translate.auto"></span
+    ></label>
+    <label for="naist_glossary" data-i18n="naist.translate.glossary"></label>
+    <textarea
+        id="naist_glossary"
+        class="text_pole textarea_compact"
+        rows="4"
+        data-i18n="[placeholder]naist.translate.glossaryPlaceholder"
+    ></textarea>
+    <div class="naist-hint" data-i18n="naist.translate.glossaryHint"></div>
+</div>
+
+<div class="naist-section">
+    <b data-i18n="naist.tags.title"></b>
+    <label class="checkbox_label"
+        ><input type="checkbox" data-setting="promptTools.autocomplete" /><span
+            data-i18n="naist.tags.autocomplete"
+        ></span
+    ></label>
+    <label class="checkbox_label"
+        ><input type="checkbox" data-setting="promptTools.remoteSuggest" /><span data-i18n="naist.tags.remote"></span
+    ></label>
+    <label class="checkbox_label"
+        ><input type="checkbox" data-setting="promptTools.warnUnknown" /><span data-i18n="naist.tags.warnUnknown"></span
+    ></label>
+    <label class="checkbox_label"
+        ><input type="checkbox" data-setting="promptTools.counter" /><span data-i18n="naist.tokens.enable"></span
+    ></label>
+    <label class="checkbox_label"
+        ><input type="checkbox" data-setting="promptTools.convertWeights" /><span data-i18n="naist.weights.auto"></span
+    ></label>
+    <label class="checkbox_label"
+        ><input type="checkbox" data-setting="generation.autoText" /><span data-i18n="naist.tokens.autoText"></span
+    ></label>
+    <div class="naist-hint" data-i18n="naist.weights.hint"></div>
+</div>
+
+<div class="naist-section">
     <b data-i18n="naist.prompts.styles"></b>
     <div class="naist-row">
         <select id="naist_style" class="text_pole naist-grow"></select>
@@ -71,3 +112,16 @@
     <div class="naist-hint" data-i18n="naist.prompts.templatesHint"></div>
     <div id="naist_templates"></div>
 </details>
+
+<div class="naist-section">
+    <b data-i18n="naist.io.title"></b>
+    <div class="naist-hint" data-i18n="naist.io.hint"></div>
+    <label class="checkbox_label"
+        ><input type="checkbox" id="naist_settings_images" checked /><span data-i18n="naist.io.includeImages"></span
+    ></label>
+    <div class="naist-row">
+        <div id="naist_settings_export" class="menu_button" data-i18n="naist.io.export"></div>
+        <div id="naist_settings_import" class="menu_button" data-i18n="naist.io.import"></div>
+        <input id="naist_settings_file" type="file" accept=".json,application/json" class="naist-hidden" />
+    </div>
+</div>

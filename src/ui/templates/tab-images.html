@@ -109,3 +109,68 @@
         <input id="naist_img_import_file" type="file" accept="image/png,image/webp" class="naist-hidden" />
     </div>
 </div>
+
+<div class="naist-section">
+    <b data-i18n="naist.continuity.title"></b>
+    <div class="naist-hint" data-i18n="naist.continuity.hint"></div>
+    <label class="checkbox_label"
+        ><input type="checkbox" data-setting="continuity.enabled" /><span data-i18n="naist.continuity.enabled"></span
+    ></label>
+    <div class="naist-grid3">
+        <div>
+            <label for="naist_cont_mode" data-i18n="naist.continuity.mode"></label>
+            <select id="naist_cont_mode" class="text_pole" data-setting="continuity.mode">
+                <option value="img2img" data-i18n="naist.continuity.modeImg2img"></option>
+                <option value="vibe" data-i18n="naist.continuity.modeVibe"></option>
+            </select>
+        </div>
+        <div>
+            <label for="naist_cont_strength" data-i18n="naist.continuity.strength"></label>
+            <input
+                id="naist_cont_strength"
+                type="number"
+                min="0.1"
+                max="0.95"
+                step="0.05"
+                class="text_pole"
+                data-setting="continuity.strength"
+            />
+        </div>
+        <div>
+            <label class="checkbox_label"
+                ><input type="checkbox" data-setting="continuity.autoBind" /><span
+                    data-i18n="naist.continuity.autoBind"
+                ></span
+            ></label>
+        </div>
+    </div>
+    <label for="naist_cont_current" data-i18n="naist.continuity.current"></label>
+    <div class="naist-row">
+        <input
+            id="naist_cont_current"
+            class="text_pole naist-grow"
+            list="naist_cont_locations"
+            data-i18n="[placeholder]naist.continuity.currentPlaceholder"
+        />
+        <datalist id="naist_cont_locations"></datalist>
+        <div id="naist_cont_bind" class="menu_button" data-i18n="naist.continuity.bind"></div>
+        <div
+            id="naist_cont_forget"
+            class="menu_button fa-solid fa-trash-can"
+            data-i18n="[title]naist.continuity.forget"
+        ></div>
+    </div>
+    <div id="naist_cont_info" class="naist-muted"></div>
+</div>
+
+<div class="naist-section">
+    <b data-i18n="naist.sprites.title"></b>
+    <div class="naist-hint" data-i18n="naist.sprites.panelHint"></div>
+    <div id="naist_open_sprites" class="menu_button" data-i18n="naist.sprites.open"></div>
+</div>
+
+<div class="naist-section">
+    <b data-i18n="naist.comic.title"></b>
+    <div class="naist-hint" data-i18n="naist.comic.panelHint"></div>
+    <div id="naist_open_comic" class="menu_button" data-i18n="naist.comic.open"></div>
+</div>

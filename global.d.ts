@@ -105,6 +105,8 @@ declare global {
         extensionSettings: Record<string, unknown>;
         saveSettingsDebounced(): void;
         chatMetadata: Record<string, unknown>;
+        /** Current main API: openai (Chat Completion), textgenerationwebui, novel, kobold, koboldhorde. */
+        mainApi: string;
         saveMetadata(): Promise<void>;
         eventSource: STEventSource;
         eventTypes: Record<string, string>;

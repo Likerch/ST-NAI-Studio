@@ -3,6 +3,11 @@
 import type { LogLevel } from './logger';
 
 /** Vibe library entry (images live in IndexedDB; same shape as domain VibeItem). */
+export interface GlossarySettings {
+    from: string;
+    to: string;
+}
+
 export interface VibeItemSettings {
     id: string;
     name: string;
@@ -32,7 +37,7 @@ export interface CustomPoseSettings {
     name: string;
 }
 
-export const CURRENT_SCHEMA_VERSION = 5;
+export const CURRENT_SCHEMA_VERSION = 6;
 
 export type TransportMode = 'auto' | 'plugin' | 'native';
 
@@ -46,6 +51,8 @@ export interface CharacterSlotSettings {
 
 export interface GenerationSettings {
     model: string;
+    /** V5: quoted phrases become the in-image text block (web client autoText). */
+    autoText?: boolean;
     /** Free prompt used by the panel's Generate button. */
     prompt: string;
     /** Common undesired content for every mode. */
@@ -212,6 +219,46 @@ export interface NaiStudioSettings {
         enhanceStrength: number;
         enhanceNoise: number;
     };
+    /** RU -> EN prompt translation through the user's LLM (TZ Phase 6). */
+    translate: {
+        /** Translate Cyrillic prompts before every generation. */
+        auto: boolean;
+        glossary: GlossarySettings[];
+    };
+    /** Tag autocomplete, unknown-tag warning, token counter, weight syntax conversion (TZ Phase 6). */
+    promptTools: {
+        autocomplete: boolean;
+        /** Also ask NovelAI's tag suggestions (through the plugin). */
+        remoteSuggest: boolean;
+        warnUnknown: boolean;
+        counter: boolean;
+        /** Convert numeric weights to braces when switching to V3. */
+        convertWeights: boolean;
+    };
+    /** Expressions sprite generator (TZ Phase 6). */
+    sprites: {
+        /** director: one base sprite, emotions by Director Tools; seed: every sprite drawn with one seed. */
+        mode: 'director' | 'seed';
+        transparent: boolean;
+        /** Labels to generate; empty = the 28 default Expressions labels. */
+        labels: string[];
+    };
+    /** Comic mode for V5 (TZ Phase 6). */
+    comic: {
+        layout: string;
+        pageWidth: number;
+        pageHeight: number;
+        gutter: number;
+        style: string;
+    };
+    /** Scene continuity: last image of a location as the img2img base or a vibe (TZ Phase 6). */
+    continuity: {
+        enabled: boolean;
+        mode: 'img2img' | 'vibe';
+        strength: number;
+        /** Bind every new picture to the current location. */
+        autoBind: boolean;
+    };
     /** Scene composer (TZ Phase 4). */
     scene: {
         framing: string;
@@ -256,6 +303,7 @@ export function defaultGeneration(): GenerationSettings {
         varietyBoost: false,
         legacyUc: false,
         transparentBackground: false,
+        autoText: true,
         imageFormat: 'webp',
         useCoords: false,
         characters: [],
@@ -327,6 +375,17 @@ export function defaultSettings(): NaiStudioSettings {
             enhanceStrength: 0.45,
             enhanceNoise: 0,
         },
+        translate: { auto: false, glossary: [] },
+        promptTools: {
+            autocomplete: true,
+            remoteSuggest: true,
+            warnUnknown: true,
+            counter: true,
+            convertWeights: true,
+        },
+        sprites: { mode: 'director', transparent: true, labels: [] },
+        comic: { layout: 'grid-4', pageWidth: 1024, pageHeight: 1536, gutter: 16, style: 'comic, manga style' },
+        continuity: { enabled: false, mode: 'img2img', strength: 0.6, autoBind: true },
         scene: {
             framing: 'auto',
             camera: 'auto',
@@ -403,6 +462,13 @@ export const MIGRATIONS: readonly Migration[] = [
             return { ...settings, schemaVersion: 5 };
         },
     },
+    {
+        // v6: translation, prompt tools, sprites, comic and continuity; defaults are filled by the merge.
+        to: 6,
+        migrate(settings) {
+            return { ...settings, schemaVersion: 6 };
+        },
+    },
 ];
 
 export type DeepMerge = <T extends object>(target: T, ...sources: unknown[]) => T;
@@ -441,6 +507,10 @@ export function migrateAndFill(stored: unknown, merge: DeepMerge): LoadResult {
     const vibes = isObject(raw.vibes) ? raw.vibes : {};
     settings.vibes.items = (Array.isArray(vibes.items) ? vibes.items : []) as VibeItemSettings[];
     settings.vibes.sets = (Array.isArray(vibes.sets) ? vibes.sets : []) as VibeSetSettings[];
+    const translate = isObject(raw.translate) ? raw.translate : {};
+    settings.translate.glossary = (Array.isArray(translate.glossary) ? translate.glossary : []) as GlossarySettings[];
+    const sprites = isObject(raw.sprites) ? raw.sprites : {};
+    if (Array.isArray(sprites.labels)) settings.sprites.labels = sprites.labels as string[];
     const takeover = isObject(raw.takeover) ? raw.takeover : {};
     settings.takeover.migrationReport = (
         Array.isArray(takeover.migrationReport) ? takeover.migrationReport : []

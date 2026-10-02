@@ -8,3 +8,4 @@ LICENSE
 src/ui/templates/character-row.html
 # Human-written reports; tables are kept as authored
 docs/
+src/data/tags.json

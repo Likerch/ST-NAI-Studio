@@ -35,7 +35,7 @@ export async function openSceneComposer(auto = true, focusKey?: string): Promise
     }
 }
 
-function editedCharacterIndex(): number | null {
+export function editedCharacterIndex(): number | null {
     const c = ctx();
     if (c.characterId === undefined || c.characterId === null || c.characterId === '') return null;
     const index = Number(c.characterId);

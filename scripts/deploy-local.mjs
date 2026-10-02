@@ -63,6 +63,8 @@ if (!serverOnly) {
     copy(path.join(repo, 'manifest.json'), path.join(dest, 'manifest.json'));
     copy(path.join(repo, 'dist'), path.join(dest, 'dist'));
     copy(path.join(repo, 'src', 'i18n'), path.join(dest, 'src', 'i18n'));
+    for (const file of ['tags.json', 'tags-ru.json'])
+        copy(path.join(repo, 'src', 'data', file), path.join(dest, 'src', 'data', file));
     console.log(`extension -> ${dest} (reload the SillyTavern page)`);
 }
 

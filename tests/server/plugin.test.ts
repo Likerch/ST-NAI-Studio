@@ -153,7 +153,7 @@ const request = (input: string) => ({
 describe('NAI Studio server plugin', () => {
     it('health reports version and token source, never the token', async () => {
         const res = await call(mountPlugin(), 'GET', '/health');
-        expect(res.payload).toEqual({ ok: true, version: '0.2.0', tokenSource: 'config' });
+        expect(res.payload).toEqual({ ok: true, version: '0.3.0', tokenSource: 'config' });
         expect(JSON.stringify(res.payload)).not.toContain(TOKEN);
         expect(res.headers['Cache-Control']).toBe('no-store');
         expect(

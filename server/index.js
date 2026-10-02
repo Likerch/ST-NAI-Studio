@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { createNovelAiClient, DEFAULT_BASE_URL } from './lib/novelai.js';
 import { Queue } from './lib/queue.js';
 import { createTokenReader } from './lib/token.js';
+import { DEFAULT_STATIC_URL, FileCache } from './lib/static-files.js';
 import { VibeCache } from './lib/vibe-cache.js';
 import { registerRoutes } from './routes.js';
 
@@ -61,9 +62,20 @@ export async function init(router) {
     } catch (error) {
         console.warn(LOG_PREFIX, 'vibe cache unavailable:', error?.message ?? error);
     }
+    let tokenizerCache = null;
+    try {
+        tokenizerCache = new FileCache(fileURLToPath(new URL('./cache/tokenizers/', import.meta.url)));
+    } catch (error) {
+        console.warn(LOG_PREFIX, 'tokenizer cache unavailable:', error?.message ?? error);
+    }
+    const imageUrl = typeof config.baseUrl === 'string' ? config.baseUrl : DEFAULT_BASE_URL;
     registerRoutes(router, {
         client,
         vibeCache,
+        tokenizerCache,
+        fetch: fetchImpl,
+        staticUrl: typeof config.staticUrl === 'string' ? config.staticUrl : DEFAULT_STATIC_URL,
+        imageUrl,
         queue: new Queue(1),
         readToken: createTokenReader({ secrets, config }),
         log: (...args) => console.info(LOG_PREFIX, ...args),

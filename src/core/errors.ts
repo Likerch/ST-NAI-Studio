@@ -42,6 +42,8 @@ export type NaiErrorCode =
     | 'image-not-found'
     | 'image-load-failed'
     | 'feature-unavailable'
+    | 'translation-failed'
+    | 'import-failed'
     | 'unknown';
 
 export interface ErrorContext {

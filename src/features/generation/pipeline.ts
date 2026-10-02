@@ -14,7 +14,10 @@ import {
     combinePrefixes,
     DEFAULT_MODEL,
     DEFAULT_TEMPLATES,
+    fitArea,
+    FREE_MAX_PIXELS,
     getCapabilities,
+    hasCyrillic,
     isModelId,
     isMultimodal,
     MODE,
@@ -23,6 +26,7 @@ import {
     quietPromptFor,
     rawLastPrompt,
     resolveMode,
+    roundToStep,
     usesCharacterPrefix,
 } from '../../domain';
 import type { GenerationRequest, InlineGenerationMeta, ModelCapabilities, ModeId, VibeReference } from '../../domain';
@@ -74,6 +78,8 @@ export interface PictureRequest {
     skipCostConfirm?: boolean;
     /** Hard spending cap; a more expensive request is refused before it is sent. */
     maxCost?: number;
+    /** Sprites, comic panels: never take the location image as the img2img base. */
+    noContinuity?: boolean;
 }
 
 export interface PictureResult {
@@ -99,6 +105,24 @@ export interface Produced extends ProducedImages {
 /** Vibes applied to generations (TZ Phase 5); encoding happens before the request is built. */
 export interface VibeProvider {
     prepare(caps: ModelCapabilities, transport: Transport, signal?: AbortSignal): Promise<VibeReference[]>;
+}
+
+/** RU -> EN translation before a generation (TZ Phase 6); null when nothing was translated. */
+export interface PromptTranslator {
+    enabled(): boolean;
+    translate(text: string, signal?: AbortSignal): Promise<string | null>;
+    /** Russian original of a text translated by hand in a prompt field, if any. */
+    original?(text: string): string | undefined;
+}
+
+/** Scene continuity (TZ Phase 6): the img2img base for a plain generation, or null. */
+export interface ContinuityProvider {
+    prepare(input: {
+        text: string;
+        size: { width: number; height: number };
+        caps: ModelCapabilities;
+        signal?: AbortSignal;
+    }): Promise<{ image: string; strength: number } | null>;
 }
 
 /** Progress display: step previews on the plugin, an estimate elsewhere. */
@@ -181,7 +205,7 @@ async function avatarUrl(mode: ModeId): Promise<string> {
 /** Full parameter record of a prepared request (lightbox, gallery, PNG metadata, "repeat"). */
 export function metaFromPrepared(
     prepared: Prepared,
-    extra: { scenePrompt: string; negative: string; mode: number; tool?: string },
+    extra: { scenePrompt: string; negative: string; mode: number; tool?: string; sourcePrompt?: string },
 ): InlineGenerationMeta {
     const r = prepared.request;
     const meta: InlineGenerationMeta = {
@@ -210,12 +234,15 @@ export function metaFromPrepared(
         createdAt: new Date().toISOString(),
     };
     if (extra.tool) meta.tool = extra.tool;
+    if (extra.sourcePrompt) meta.sourcePrompt = extra.sourcePrompt;
     return meta;
 }
 
 export class Pipeline {
     private readonly observers = new Set<GenerationObserver>();
     private vibes: VibeProvider | null = null;
+    private translator: PromptTranslator | null = null;
+    private continuity: ContinuityProvider | null = null;
 
     constructor(
         private readonly controller: StudioController,
@@ -228,6 +255,14 @@ export class Pipeline {
 
     setVibeProvider(provider: VibeProvider): void {
         this.vibes = provider;
+    }
+
+    setTranslator(translator: PromptTranslator): void {
+        this.translator = translator;
+    }
+
+    setContinuityProvider(provider: ContinuityProvider): void {
+        this.continuity = provider;
     }
 
     notify(produced: ProducedImages, outcome: GenerationOutcome): void {
@@ -433,6 +468,17 @@ export class Pipeline {
         await c.eventSource.emit(c.eventTypes.SD_PROMPT_PROCESSING ?? 'sd_prompt_processing', eventData);
         scene = eventData.prompt;
 
+        // RU -> EN (TZ Phase 6): the original stays in the generation metadata.
+        const translator = this.translator?.enabled() ? this.translator : null;
+        let sourcePrompt: string | undefined = this.translator?.original?.(scene);
+        if (translator) {
+            const english = await translator.translate(scene, req.signal);
+            if (english !== null && english !== scene) {
+                sourcePrompt = scene;
+                scene = english;
+            }
+        }
+
         // A stored scene prompt is already final: free-mode "char" expansion must not run twice,
         // and it keeps the character-prefix rule of its mode (not the media-swipe rule).
         const assembled = this.assemble(
@@ -445,6 +491,18 @@ export class Pipeline {
         );
         // An image swipe with a fixed seed gets a random one, like the built-in.
         if (isSwipe && assembled.overrides.seed === undefined && s.generation.seed >= 0) assembled.overrides.seed = -1;
+        if (translator) {
+            const characters = assembled.overrides.characters ?? s.generation.characters;
+            if (characters.some((ch) => hasCyrillic(ch.prompt) || hasCyrillic(ch.negative))) {
+                assembled.overrides.characters = await Promise.all(
+                    characters.map(async (ch) => ({
+                        ...ch,
+                        prompt: (await translator.translate(ch.prompt, req.signal)) ?? ch.prompt,
+                        negative: (await translator.translate(ch.negative, req.signal)) ?? ch.negative,
+                    })),
+                );
+            }
+        }
         const patch: Partial<GenerationRequest> = { ...req.requestPatch };
         const transport = this.controller.state.selection?.transport;
         const model = String(assembled.overrides.model ?? s.generation.model);
@@ -452,6 +510,27 @@ export class Pipeline {
         if (patch.vibes === undefined && this.vibes && transport && patch.mode !== 'inpaint') {
             const vibes = await this.vibes.prepare(caps, transport, req.signal);
             if (vibes.length) patch.vibes = vibes;
+        }
+        // Scene continuity (TZ Phase 6): the last image of the location as the img2img base.
+        if (this.continuity && !req.noContinuity && !isSwipe && patch.mode === undefined && patch.image === undefined) {
+            const wanted = {
+                width: roundToStep(Number(assembled.overrides.width ?? s.generation.width)),
+                height: roundToStep(Number(assembled.overrides.height ?? s.generation.height)),
+            };
+            const size = s.anlas.freeOnly ? fitArea(wanted.width, wanted.height, FREE_MAX_PIXELS) : wanted;
+            const base = await this.continuity.prepare({
+                text: `${trigger}\n${scene}\n${req.message ?? ''}`,
+                size,
+                caps,
+                signal: req.signal,
+            });
+            if (base) {
+                assembled.overrides.width = size.width;
+                assembled.overrides.height = size.height;
+                patch.mode = 'img2img';
+                patch.image = base.image;
+                patch.strength = base.strength;
+            }
         }
         // Step previews on the plugin for V4+ (TZ Phase 5); a spinner with an estimate elsewhere.
         const streaming = s.stream.enabled && transport?.features.stream === true && caps.family !== 'v3';
@@ -509,7 +588,9 @@ export class Pipeline {
                 scenePrompt: assembled.sceneText,
                 negative: assembled.negativeExtra,
                 mode,
+                ...(sourcePrompt ? { sourcePrompt } : {}),
             });
+            if (sourcePrompt) legacy.sourcePrompt = sourcePrompt;
             log.info('picture', req.initiator, `mode ${mode}`, prepared.body.model, `cost ${prepared.cost.total}`);
             return { images: result.images, meta, legacy, prepared, mode, chatId };
         } catch (error) {

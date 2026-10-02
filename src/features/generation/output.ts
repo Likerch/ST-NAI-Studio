@@ -20,6 +20,8 @@ export interface GenerationMeta {
     correlationId?: string;
     /** Tool that produced the image (lineart, inpaint, upscale, ...); absent for plain generations. */
     tool?: string;
+    /** Original prompt before RU -> EN translation (TZ Phase 6). */
+    sourcePrompt?: string;
     /** Saved when the size was forced for this image (slash command width/height). */
     width?: number;
     height?: number;
@@ -41,6 +43,7 @@ export interface MediaAttachmentData extends STMediaAttachment {
         cost: number;
         correlationId?: string;
         tool?: string;
+        sourcePrompt?: string;
     };
 }
 
@@ -120,6 +123,7 @@ export function toAttachments(saved: SavedImage[], meta: GenerationMeta): MediaA
             cost: meta.cost,
             correlationId: meta.correlationId,
             ...(meta.tool ? { tool: meta.tool } : {}),
+            ...(meta.sourcePrompt ? { sourcePrompt: meta.sourcePrompt } : {}),
         },
     }));
 }

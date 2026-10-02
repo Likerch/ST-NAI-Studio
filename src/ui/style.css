@@ -895,3 +895,186 @@ body.naist-inline-reading .naist-inline-group {
     align-self: flex-end;
     margin: 0;
 }
+
+/* Phase 6: token counter, tag suggestions, prompt helpers, sprites, comic */
+.naist-tokens {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin: 4px 0;
+    font-size: 0.85em;
+}
+
+.naist-tokens-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.naist-tokens-label {
+    min-width: 7em;
+    opacity: 0.8;
+}
+
+.naist-tokens-bar {
+    flex: 1;
+    height: 4px;
+    overflow: hidden;
+    border-radius: 2px;
+    background: var(--black30a, rgba(0, 0, 0, 0.3));
+}
+
+.naist-tokens-bar span {
+    display: block;
+    height: 100%;
+    background: var(--SmartThemeQuoteColor, #6a6);
+}
+
+.naist-tokens-near .naist-tokens-bar span {
+    background: var(--warning, #d4a017);
+}
+
+.naist-tokens-over .naist-tokens-bar span,
+.naist-tokens-over .naist-tokens-count {
+    background: var(--fullred, #c33);
+}
+
+.naist-tokens-over .naist-tokens-count {
+    padding: 0 4px;
+    border-radius: 3px;
+    color: #fff;
+}
+
+.naist-tokens-count {
+    min-width: 6em;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.naist-ac {
+    position: fixed;
+    z-index: 10050;
+    max-height: 260px;
+    overflow-y: auto;
+    border: 1px solid var(--SmartThemeBorderColor, #555);
+    border-radius: 6px;
+    background: var(--SmartThemeBlurTintColor, rgba(20, 20, 20, 0.97));
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
+    font-size: 0.9em;
+}
+
+.naist-ac.naist-hidden {
+    display: none;
+}
+
+.naist-ac-item {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 3px 8px;
+    cursor: pointer;
+}
+
+.naist-ac-item:hover,
+.naist-ac-active {
+    background: var(--white20a, rgba(255, 255, 255, 0.12));
+}
+
+.naist-ac-cat-1 > span:first-child {
+    color: #e88;
+}
+
+.naist-ac-cat-3 > span:first-child {
+    color: #c8e;
+}
+
+.naist-ac-cat-4 > span:first-child {
+    color: #8c8;
+}
+
+.naist-ac-cat-5 > span:first-child {
+    color: #ec8;
+}
+
+.naist-assist {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    margin: 2px 0 4px;
+    font-size: 0.85em;
+}
+
+.naist-assist.naist-hidden {
+    display: none;
+}
+
+.naist-assist .menu_button {
+    width: fit-content;
+    margin: 0;
+    padding: 2px 8px;
+    white-space: nowrap;
+}
+
+.naist-sprite-labels {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 2px 8px;
+    margin: 6px 0;
+}
+
+.naist-sprite-progress {
+    max-height: 40vh;
+    overflow-y: auto;
+    font-size: 0.9em;
+}
+
+.naist-sprite-failed {
+    color: var(--warning, #d4a017);
+}
+
+.naist-sprite-done i {
+    color: var(--SmartThemeQuoteColor, #6a6);
+}
+
+.naist-sprites .menu_button,
+.naist-comic .menu_button {
+    width: fit-content;
+    white-space: nowrap;
+}
+
+.naist-comic-layouts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 6px 0;
+}
+
+.naist-comic-layout {
+    padding: 3px;
+    border: 1px solid var(--SmartThemeBorderColor, #555);
+    border-radius: 4px;
+    cursor: pointer;
+    opacity: 0.7;
+}
+
+.naist-comic-layout input {
+    display: none;
+}
+
+.naist-comic-layout.naist-tab-active {
+    border-color: var(--SmartThemeQuoteColor, #e6a);
+    opacity: 1;
+}
+
+.naist-comic-thumb {
+    display: block;
+    width: 32px;
+    height: 48px;
+}
+
+.naist-comic-thumb rect {
+    fill: var(--white30a, rgba(255, 255, 255, 0.3));
+    stroke: currentColor;
+    stroke-width: 0.6;
+}

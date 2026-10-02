@@ -84,6 +84,8 @@ export interface GenerationRequest {
     varietyBoost: boolean;
     legacyUc: boolean;
     transparentBackground: boolean;
+    /** V5: quoted phrases become an in-image text block when no prompt has `text:` (web client autoText). */
+    autoText?: boolean;
     imageFormat: ImageFormat;
     stream: StreamMode;
     /** img2img / inpaint source, base64 PNG already sized to width x height. */

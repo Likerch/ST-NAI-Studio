@@ -6,7 +6,7 @@ import { localize, t } from '../../core/i18n';
 import { log } from '../../core/logger';
 import { onExternalChange, saveSettings, settings } from '../../core/settings';
 import type { CharacterSlotSettings, TransportMode } from '../../core/settings-schema';
-import { defaultCenter, getCapabilities, isModelId, MODE, MODELS, NOISE_SCHEDULES } from '../../domain';
+import { convertWeights, defaultCenter, getCapabilities, isModelId, MODE, MODELS, NOISE_SCHEDULES } from '../../domain';
 import type { ModelCapabilities } from '../../domain';
 import type { StudioController, StudioState } from '../../features/generation/controller';
 import type { Pipeline } from '../../features/generation/pipeline';
@@ -15,6 +15,9 @@ import type { Prepared } from '../../features/generation/service';
 import type { TransportFeatures } from '../../transport';
 import characterRowTemplate from '../templates/character-row.html?raw';
 import panelTemplate from '../templates/panel.html?raw';
+import { attachPromptAssist } from '../prompt-assist';
+import { createTokenMeter } from '../token-meter';
+import type { TokenMeter } from '../token-meter';
 import { openInspector } from './inspector';
 import { ChatTab } from './tab-chat';
 import { ImagesTab, importPngFile } from './tab-images';
@@ -54,6 +57,7 @@ export class Panel {
     private chatTab: ChatTab | null = null;
     private imagesTab: ImagesTab | null = null;
     private takeoverTab: TakeoverTab | null = null;
+    private tokens: TokenMeter | null = null;
 
     constructor(
         private readonly controller: StudioController,
@@ -97,6 +101,7 @@ export class Panel {
         container.append(this.root);
         localize(this.root);
         this.bind();
+        this.mountPromptTools();
         this.syncFromSettings();
         this.mountTabs();
         this.controller.subscribe((state) => this.onState(state));
@@ -341,6 +346,7 @@ export class Panel {
 
         $id<HTMLSelectElement>(r, 'naist_model').addEventListener('change', (e) => {
             g().model = (e.target as HTMLSelectElement).value;
+            this.convertWeightsFor(g().model);
             this.applyModel();
             this.renderCharacters();
             changed();
@@ -490,6 +496,48 @@ export class Panel {
         });
     }
 
+    /** Token counter under the prompt fields, tag helpers on every prompt field (TZ Phase 6). */
+    private mountPromptTools(): void {
+        const negative = $id<HTMLTextAreaElement>(this.root, 'naist_negative');
+        this.tokens = createTokenMeter();
+        negative.after(this.tokens.element);
+        attachPromptAssist(
+            this.root,
+            '#naist_prompt, #naist_negative, .naist-char-prompt, .naist-char-negative, #naist_prefix, #naist_suffix',
+            () => settings().generation.model,
+        );
+    }
+
+    /** Numeric weights cannot go to V3: convert them to braces when the model changes. */
+    private convertWeightsFor(model: string): void {
+        if (!settings().promptTools.convertWeights) return;
+        const caps = getCapabilities(isModelId(model) ? model : 'nai-diffusion-4-5-full');
+        if (caps.v4Prompt) return;
+        const g = settings().generation;
+        const lossy: string[] = [];
+        let changed = false;
+        const convert = (text: string) => {
+            const result = convertWeights(text, false);
+            lossy.push(...result.lossy);
+            changed ||= result.changed;
+            return result.text;
+        };
+        g.prompt = convert(g.prompt);
+        g.negativePrompt = convert(g.negativePrompt);
+        for (const slot of g.characters) {
+            slot.prompt = convert(slot.prompt);
+            slot.negative = convert(slot.negative);
+        }
+        if (!changed) return;
+        this.syncFromSettings();
+        toastr.info(
+            lossy.length
+                ? t('naist.weights.convertedLossy', { dropped: lossy.join(', ') })
+                : t('naist.weights.converted'),
+            t('naist.weights.title'),
+        );
+    }
+
     private scheduleRefresh(): void {
         if (this.refreshTimer) clearTimeout(this.refreshTimer);
         this.refreshTimer = setTimeout(() => this.refreshPreview(), 250);
@@ -502,6 +550,18 @@ export class Panel {
         try {
             const prepared = this.pipeline.previewFree(settings().generation.prompt);
             this.lastPrepared = prepared;
+            if (settings().promptTools.counter) {
+                const g = settings().generation;
+                const v4 = prepared.body.parameters.v4_prompt;
+                this.tokens?.update({
+                    model: prepared.request.model,
+                    prompt: prepared.body.input,
+                    characters: v4 ? v4.caption.char_captions.map((c) => c.char_caption) : [],
+                    negative: String(prepared.body.parameters.negative_prompt ?? ''),
+                    raw: [g.prompt, g.negativePrompt, ...g.characters.map((c) => c.prompt)].join('\n'),
+                });
+            }
+            this.tokens?.element.classList.toggle('naist-hidden', !settings().promptTools.counter);
             const parts: string[] = [];
             if (prepared.cost.total === 0) {
                 parts.push(t('naist.cost.free'));

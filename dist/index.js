@@ -10,6 +10,13 @@ function requestHeaders(omitContentType = false) {
 	return ctx().getRequestHeaders(omitContentType ? { omitContentType: true } : void 0);
 }
 /**
+* Folder of this extension under /scripts/extensions/third-party/, derived from the bundle URL
+* (works for global and per-user installs because both use the same URL; RECON §2.14).
+*/
+function extensionFolder(moduleUrl = import.meta.url) {
+	return moduleUrl.match(/\/scripts\/extensions\/third-party\/([^/]+)\//)?.[1] ?? "SillyTavern-NAI-Studio";
+}
+/**
 * Imports a SillyTavern module by URL for the few APIs missing from getContext() (TZ rule 3 allows
 * direct imports only then). The URL is kept opaque to the bundler.
 */
@@ -18,6 +25,9 @@ async function importHost(path) {
 		/* @vite-ignore */
 		new URL(path, window.location.origin).href
 );
+}
+function extensionBaseUrl(moduleUrl) {
+	return `/scripts/extensions/third-party/${extensionFolder(moduleUrl)}`;
 }
 //#endregion
 //#region src/core/i18n.ts
@@ -867,7 +877,122 @@ var EN = {
 	"naist.vibes.skipped.free-only": "{count} vibe(s) skipped: encoding is paid and \"free only\" is on.",
 	"naist.vibes.skipped.declined": "{count} vibe(s) skipped: encoding was declined.",
 	"naist.vibes.skipped.no-plugin": "{count} vibe(s) skipped: encoding needs the server plugin.",
-	"naist.outpaint.freeSize": "(free only: sent as {width}×{height})"
+	"naist.outpaint.freeSize": "(free only: sent as {width}×{height})",
+	"naist.card.sprites": "NAI Studio: Expressions sprites",
+	"naist.command.translateHelp": "Translates a Russian prompt to English tags with your current LLM (glossary and cache applied).",
+	"naist.command.translateReturns": "the English prompt",
+	"naist.command.arg.translateText": "text to translate",
+	"naist.command.locationHelp": "Sets the current location for scene continuity; without a name returns the current one.",
+	"naist.command.locationReturns": "the current location",
+	"naist.command.arg.locationName": "location name",
+	"naist.command.spritesHelp": "Opens the Expressions sprite generator for the current character.",
+	"naist.command.comicHelp": "Opens the comic page builder (V5).",
+	"naist.error.translation-failed.title": "Translation failed",
+	"naist.error.translation-failed.text": "The LLM did not return a usable English prompt: {message}",
+	"naist.error.import-failed.title": "Import failed",
+	"naist.error.import-failed.text": "{reason}",
+	"naist.translate.title": "RU → EN translation",
+	"naist.translate.hint": "NovelAI reads English tags. Russian prompts are translated by your current LLM; on Chat Completion with structured output. Results are cached, the original stays in the image metadata.",
+	"naist.translate.auto": "Translate Russian prompts before every generation",
+	"naist.translate.glossary": "Glossary",
+	"naist.translate.glossaryPlaceholder": "one per line: russian = english",
+	"naist.translate.glossaryHint": "Glossary terms are replaced before the LLM sees the text and are always translated the same way.",
+	"naist.translate.button": "RU → EN",
+	"naist.translate.buttonHint": "Translate this field to English tags",
+	"naist.translate.done": "Translated.",
+	"naist.translate.cached": "Translated (from the cache).",
+	"naist.tags.title": "Prompt helpers",
+	"naist.tags.autocomplete": "Tag suggestions while typing",
+	"naist.tags.remote": "Also ask NovelAI's tag suggestions (plugin)",
+	"naist.tags.warnUnknown": "Warn about unknown tags",
+	"naist.tags.unknown": "Unknown tags: {tags}",
+	"naist.tokens.enable": "Token counter",
+	"naist.tokens.prompt": "Prompt",
+	"naist.tokens.negative": "Undesired",
+	"naist.tokens.text": "Text in the image: {count} tokens (part of the prompt)",
+	"naist.tokens.over": "Longer than {limit} tokens: NovelAI will cut the rest off.",
+	"naist.tokens.t5Unicode": "V4/V4.5 (T5) cannot read these characters: {chars}",
+	"naist.tokens.approximate": "Approximate: the tokenizer file needs the plugin 0.3.0 or the CORS proxy.",
+	"naist.tokens.autoText": "V5: quoted phrases become text in the image (as on the NovelAI site)",
+	"naist.weights.title": "Weights",
+	"naist.weights.auto": "Convert numeric weights to braces when switching to V3",
+	"naist.weights.hint": "Ctrl+↑ / Ctrl+↓ in a prompt field changes the weight of the tag under the cursor: 1.05::tag:: on V4+, curly or square brackets on V3.",
+	"naist.weights.converted": "Numeric weights were converted to braces for V3.",
+	"naist.weights.convertedLossy": "Weights converted for V3; V3 cannot express these and they were removed: {dropped}",
+	"naist.continuity.title": "Scene continuity",
+	"naist.continuity.hint": "The last picture of a location becomes the base (img2img) or a vibe of the next one there, so the place stays the same. Locations are stored in the chat.",
+	"naist.continuity.enabled": "Use the location image",
+	"naist.continuity.mode": "As",
+	"naist.continuity.modeImg2img": "img2img base (free)",
+	"naist.continuity.modeVibe": "vibe (V4/V4.5 encoding costs 2 Anlas once)",
+	"naist.continuity.strength": "img2img strength",
+	"naist.continuity.autoBind": "New pictures update the location",
+	"naist.continuity.current": "Current location",
+	"naist.continuity.currentPlaceholder": "e.g. tavern",
+	"naist.continuity.bind": "Bind the last image",
+	"naist.continuity.forget": "Forget the location",
+	"naist.continuity.bound": "\"{name}\" now uses the last image of the chat.",
+	"naist.continuity.boundTo": "Reference: {path}",
+	"naist.continuity.unbound": "No image bound yet",
+	"naist.continuity.known": "Locations: {names}",
+	"naist.continuity.needName": "Type the location name first.",
+	"naist.continuity.noImage": "There is no image in this chat yet.",
+	"naist.sprites.title": "Expressions sprites",
+	"naist.sprites.panelHint": "A full emotion set for the built-in Expressions extension: files named as it expects, uploaded to the character folder.",
+	"naist.sprites.open": "Sprite generator…",
+	"naist.sprites.noCharacter": "Open a chat with one character first.",
+	"naist.sprites.target": "Character: {name} · folder: {folder}",
+	"naist.sprites.appearance": "Appearance: {tags}",
+	"naist.sprites.modeDirector": "One base + Director emotions",
+	"naist.sprites.modeSeed": "Every sprite with one seed",
+	"naist.sprites.modeDirectorHint": "The most consistent: a neutral sprite first, then Director \"emotion\" on it where an emotion matches and img2img from it for the rest. Free on Opus.",
+	"naist.sprites.modeSeedHint": "Each sprite is drawn from the appearance with the same seed; on V5 it can have a transparent background.",
+	"naist.sprites.transparent": "Transparent background (V5, one-seed mode)",
+	"naist.sprites.labels": "Emotions",
+	"naist.sprites.all": "All",
+	"naist.sprites.none": "None",
+	"naist.sprites.count": "{count} selected",
+	"naist.sprites.run": "Generate and upload",
+	"naist.sprites.close": "Close",
+	"naist.sprites.finished": "{done} of {total} sprites uploaded to \"{folder}\".",
+	"naist.sprites.how.base": "base sprite",
+	"naist.sprites.how.director": "Director emotion",
+	"naist.sprites.how.img2img": "img2img from the base",
+	"naist.sprites.how.seed": "same seed",
+	"naist.comic.title": "Comic page (V5)",
+	"naist.comic.panelHint": "Panels with their own prompts and speech, drawn one by one and assembled into a page.",
+	"naist.comic.open": "Comic builder…",
+	"naist.comic.hint": "NovelAI has no multi-panel mode: every panel is its own generation (free at about 1 MP) at the panel shape. Text lines go to the V5 text block and are counted separately.",
+	"naist.comic.pageWidth": "Page width",
+	"naist.comic.pageHeight": "Page height",
+	"naist.comic.gutter": "Gutter",
+	"naist.comic.style": "Page style",
+	"naist.comic.panel": "Panel {n}",
+	"naist.comic.promptPlaceholder": "what is in the panel: characters, action, place",
+	"naist.comic.textPlaceholder": "text in the image, one line each (speech, captions, sounds)",
+	"naist.comic.tokens": "text: {text} tokens · panel: {total} / {limit}",
+	"naist.comic.run": "Draw the page",
+	"naist.comic.progress": "Panel {done} of {total}",
+	"naist.comic.done": "Comic page with {count} panels posted.",
+	"naist.comic.layout.single": "One panel",
+	"naist.comic.layout.two-rows": "Two rows",
+	"naist.comic.layout.two-columns": "Two columns",
+	"naist.comic.layout.four-koma": "4-koma",
+	"naist.comic.layout.grid-4": "2 × 2",
+	"naist.comic.layout.hero-top": "Large panel on top",
+	"naist.comic.layout.grid-6": "2 × 3",
+	"naist.io.title": "Export and import",
+	"naist.io.hint": "All settings, presets, styles, poses, the glossary and vibe sets in one JSON file with the schema version.",
+	"naist.io.includeImages": "Include vibe images",
+	"naist.io.export": "Export settings",
+	"naist.io.import": "Import settings…",
+	"naist.io.exported": "Saved {file}.",
+	"naist.io.confirmImport": "Replace all NAI Studio settings with {file}? The current ones are backed up first.",
+	"naist.io.imported": "Settings imported (schema {version}, {images} image(s)).",
+	"naist.io.reason.not-json": "The file is not JSON.",
+	"naist.io.reason.wrong-format": "This is not a NAI Studio settings file.",
+	"naist.io.reason.newer-schema": "The file is from a newer NAI Studio (schema {version}, this one knows {current}). Update the extension first.",
+	"naist.io.reason.invalid": "The file is damaged: no settings or schema version."
 };
 var translator = (text) => text;
 /** Wires the host translator (SillyTavern's translate). Called once on activation. */
@@ -961,6 +1086,7 @@ function defaultGeneration() {
 		varietyBoost: false,
 		legacyUc: false,
 		transparentBackground: false,
+		autoText: true,
 		imageFormat: "webp",
 		useCoords: false,
 		characters: []
@@ -968,7 +1094,7 @@ function defaultGeneration() {
 }
 function defaultSettings() {
 	return {
-		schemaVersion: 5,
+		schemaVersion: 6,
 		transport: { mode: "auto" },
 		generation: defaultGeneration(),
 		prompts: {
@@ -1063,6 +1189,35 @@ function defaultSettings() {
 			enhanceStrength: .45,
 			enhanceNoise: 0
 		},
+		translate: {
+			auto: false,
+			glossary: []
+		},
+		promptTools: {
+			autocomplete: true,
+			remoteSuggest: true,
+			warnUnknown: true,
+			counter: true,
+			convertWeights: true
+		},
+		sprites: {
+			mode: "director",
+			transparent: true,
+			labels: []
+		},
+		comic: {
+			layout: "grid-4",
+			pageWidth: 1024,
+			pageHeight: 1536,
+			gutter: 16,
+			style: "comic, manga style"
+		},
+		continuity: {
+			enabled: false,
+			mode: "img2img",
+			strength: .6,
+			autoBind: true
+		},
 		scene: {
 			framing: "auto",
 			camera: "auto",
@@ -1081,7 +1236,7 @@ function defaultSettings() {
 		log: { level: "info" }
 	};
 }
-function isObject$1(value) {
+function isObject$2(value) {
 	return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 /**
@@ -1107,12 +1262,12 @@ var MIGRATIONS = [
 				...rest,
 				schemaVersion: 2
 			};
-			if (isObject$1(output) && output.hiddenFromPrompt === false) {
-				const chat = isObject$1(rest.chat) ? rest.chat : {};
+			if (isObject$2(output) && output.hiddenFromPrompt === false) {
+				const chat = isObject$2(rest.chat) ? rest.chat : {};
 				next.chat = {
 					...chat,
 					visibility: {
-						...isObject$1(chat.visibility) ? chat.visibility : {},
+						...isObject$2(chat.visibility) ? chat.visibility : {},
 						panel: true
 					}
 				};
@@ -1146,36 +1301,49 @@ var MIGRATIONS = [
 				schemaVersion: 5
 			};
 		}
+	},
+	{
+		to: 6,
+		migrate(settings) {
+			return {
+				...settings,
+				schemaVersion: 6
+			};
+		}
 	}
 ];
 /** Applies pending migrations, then fills missing keys from defaults (lodash.merge in the host). */
 function migrateAndFill(stored, merge) {
-	let raw = isObject$1(stored) ? structuredClone(stored) : {};
+	let raw = isObject$2(stored) ? structuredClone(stored) : {};
 	const fromVersion = typeof raw.schemaVersion === "number" ? raw.schemaVersion : 0;
-	if (fromVersion > 5) return {
+	if (fromVersion > 6) return {
 		settings: merge(defaultSettings(), raw),
 		fromVersion,
 		migrated: false
 	};
 	for (const migration of MIGRATIONS) if (migration.to > fromVersion) raw = migration.migrate(raw);
 	const settings = merge(defaultSettings(), raw);
-	const generation = isObject$1(raw.generation) ? raw.generation : {};
+	const generation = isObject$2(raw.generation) ? raw.generation : {};
 	settings.generation.characters = Array.isArray(generation.characters) ? generation.characters : [];
-	const prompts = isObject$1(raw.prompts) ? raw.prompts : {};
+	const prompts = isObject$2(raw.prompts) ? raw.prompts : {};
 	settings.prompts.styles = Array.isArray(prompts.styles) ? prompts.styles : [];
-	const poses = isObject$1(raw.poses) ? raw.poses : {};
+	const poses = isObject$2(raw.poses) ? raw.poses : {};
 	settings.poses.custom = Array.isArray(poses.custom) ? poses.custom : [];
 	settings.poses.favorites = Array.isArray(poses.favorites) ? poses.favorites : [];
-	const vibes = isObject$1(raw.vibes) ? raw.vibes : {};
+	const vibes = isObject$2(raw.vibes) ? raw.vibes : {};
 	settings.vibes.items = Array.isArray(vibes.items) ? vibes.items : [];
 	settings.vibes.sets = Array.isArray(vibes.sets) ? vibes.sets : [];
-	const takeover = isObject$1(raw.takeover) ? raw.takeover : {};
+	const translate = isObject$2(raw.translate) ? raw.translate : {};
+	settings.translate.glossary = Array.isArray(translate.glossary) ? translate.glossary : [];
+	const sprites = isObject$2(raw.sprites) ? raw.sprites : {};
+	if (Array.isArray(sprites.labels)) settings.sprites.labels = sprites.labels;
+	const takeover = isObject$2(raw.takeover) ? raw.takeover : {};
 	settings.takeover.migrationReport = Array.isArray(takeover.migrationReport) ? takeover.migrationReport : [];
-	settings.schemaVersion = 5;
+	settings.schemaVersion = 6;
 	return {
 		settings,
 		fromVersion,
-		migrated: fromVersion !== 5
+		migrated: fromVersion !== 6
 	};
 }
 //#endregion
@@ -1896,7 +2064,7 @@ function getQualityText(model, preset) {
 var JOINER = ", ";
 var SEGMENT_SEPARATOR = "|";
 /** Start of an in-image text block (bundle:_app module 46278, regex `c`). */
-var TEXT_BLOCK = /(?:^|\s|[,.:[\]{}、。])text:(?!:)/i;
+var TEXT_BLOCK$1 = /(?:^|\s|[,.:[\]{}、。])text:(?!:)/i;
 var TRANSPARENT_SUFFIX = "transparent background";
 function joinSuffix(text, suffix) {
 	if (!suffix) return text;
@@ -1911,8 +2079,8 @@ function applyQualityTags(prompt, caps, preset, transparentBackground) {
 	const [first = "", ...rest] = prompt.split(SEGMENT_SEPARATOR);
 	let head;
 	if (caps.textInImage) {
-		const match = first.match(TEXT_BLOCK);
-		const parts = first.split(TEXT_BLOCK);
+		const match = first.match(TEXT_BLOCK$1);
+		const parts = first.split(TEXT_BLOCK$1);
 		head = match ? [joinSuffix(parts[0] ?? "", suffix), ...parts.slice(1)].join(match[0]) : joinSuffix(first, suffix);
 	} else head = joinSuffix(first, suffix);
 	return [head, ...rest].join(SEGMENT_SEPARATOR);
@@ -2237,6 +2405,103 @@ function defaultRequest(model) {
 		normalizeVibeStrength: true,
 		characterReferences: []
 	};
+}
+//#endregion
+//#region src/domain/text-block.ts
+var SEGMENT = "|";
+var RANDOM = "||";
+var TEXT_BLOCK = /(?:^|\s|[,.:[\]{}、。])text:(?!:)/i;
+var AUTO_TEXT = "teXt:";
+var QUOTES = {
+	"\"": "\"",
+	"“": "”",
+	"「": "」",
+	"'": "'",
+	"‘": "’"
+};
+var CJK = /[\u3000-\u303F\u3040-\u309F\u30A0-\u30FF\uFF00-\uFF9F\u4E00-\u9FAF\u3400-\u4DBF]/gu;
+/** `|` segments, keeping `||a|b||` random choices intact; at most six (the rest stays in the last). */
+function promptSegments(prompt) {
+	const RANDOM_MARK = "𐎹";
+	const PIPE_MARK = "𒄷";
+	const parts = prompt.split(RANDOM).map((part, i) => i % 2 === 1 ? part.split(SEGMENT).join(RANDOM_MARK) : part).join(PIPE_MARK).split(SEGMENT);
+	const segments = parts.slice(0, 5);
+	if (parts.length > 5) segments.push(parts.slice(5).join(SEGMENT));
+	return segments.map((s) => s.replaceAll(RANDOM_MARK, SEGMENT).replaceAll(PIPE_MARK, RANDOM));
+}
+var isWordChar = (c) => c !== void 0 && /[\p{L}\p{N}]/u.test(c);
+var isBoundary = (c) => c === void 0 || /[\s,.]/.test(c);
+/** Phrases in quotes; an apostrophe opens a quote only after a space, comma, period or the start. */
+function quotedPhrases(text) {
+	const found = [];
+	let i = 0;
+	while (i < text.length) {
+		const close = QUOTES[text[i]];
+		if (close === void 0 || text[i] === "'" && !isBoundary(text[i - 1])) {
+			i++;
+			continue;
+		}
+		const apostrophe = close === "'" || close === "’";
+		let j = i + 1;
+		while (j < text.length && (text[j] !== close || apostrophe && isWordChar(text[j + 1]))) j++;
+		if (j >= text.length) {
+			i++;
+			continue;
+		}
+		const phrase = text.slice(i + 1, j).trim();
+		if (phrase) found.push(phrase);
+		i = j + 1;
+	}
+	return found;
+}
+/** Reading order of positioned characters: rows split at the largest vertical gaps, then x. */
+function readingOrder(characters) {
+	const rows = (list) => {
+		if (list.length <= 1) return [list];
+		const spread = list.at(-1).center.y - list[0].center.y;
+		let at = 1;
+		let gap = -1;
+		for (let i = 1; i < list.length; i++) {
+			const d = list[i].center.y - list[i - 1].center.y;
+			if (d > gap) {
+				gap = d;
+				at = i;
+			}
+		}
+		return spread <= .15 && gap <= .1 ? [list] : [...rows(list.slice(0, at)), ...rows(list.slice(at))];
+	};
+	return rows([...characters].sort((a, b) => a.center.y - b.center.y)).flatMap((row) => row.sort((a, b) => a.center.x - b.center.x));
+}
+function phrasesOf(base, characters, useCoords) {
+	const active = characters.filter((c) => (c.enabled ?? true) && c.prompt.length > 0);
+	const ordered = useCoords ? readingOrder(active) : active;
+	const lists = [quotedPhrases(base), ...ordered.map((c) => quotedPhrases(c.prompt))];
+	const all = lists.flat().join("");
+	const cjk = all.match(CJK)?.length ?? 0;
+	if (cjk && cjk / all.length > .3) lists.forEach((l) => l.reverse());
+	return lists.flat();
+}
+function hasTextBlock(text) {
+	return TEXT_BLOCK.test(text);
+}
+/** Adds the automatic text block (unchanged when any prompt already has `text:` or nothing is quoted). */
+function applyAutoText(prompt, characters, useCoords) {
+	const active = characters.filter((c) => (c.enabled ?? true) && c.prompt.length > 0);
+	if (hasTextBlock(prompt) || active.some((c) => hasTextBlock(c.prompt))) return prompt;
+	const segments = promptSegments(prompt);
+	const phrases = phrasesOf(segments[0] ?? "", active, useCoords);
+	if (!phrases.length) return prompt;
+	const block = `${AUTO_TEXT} ${phrases.join("\n\n")}`;
+	const head = (segments[0] ?? "").replace(/[\s,]+$/, "");
+	segments[0] = head ? `${head}, ${block}` : block;
+	return segments.join(SEGMENT);
+}
+/** The in-image text of a prompt (after the first `text:` of the first segment), or null. */
+function textBlockOf(prompt) {
+	const first = promptSegments(prompt)[0] ?? "";
+	const match = first.match(TEXT_BLOCK);
+	if (match?.index === void 0) return null;
+	return first.slice(match.index + match[0].length).trim();
 }
 //#endregion
 //#region src/domain/payload/context.ts
@@ -2621,7 +2886,7 @@ function composePrompts(req, caps) {
 	const withQuality = applyQualityTags(req.prompt, caps, req.qualityPreset, req.transparentBackground);
 	const negative = applyUcPreset(req.negativePrompt, caps, req.ucPreset, withQuality);
 	return {
-		prompt: applyDatasetPrefix(withQuality, caps, req.dataset),
+		prompt: applyDatasetPrefix(caps.family === "v5" && req.autoText !== false ? applyAutoText(withQuality, req.characters, req.useCoords) : withQuality, caps, req.dataset),
 		negative
 	};
 }
@@ -2937,18 +3202,18 @@ function assemblePrompt(input) {
 }
 //#endregion
 //#region src/domain/autogen.ts
-function list(text) {
+function list$1(text) {
 	return text.split(",").map((s) => s.trim()).filter(Boolean);
 }
-function escapeRegExp$1(text) {
+function escapeRegExp$4(text) {
 	return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 function matchesKeyword(message, keywords) {
-	return list(keywords).some((word) => new RegExp(`(^|[^\\p{L}\\p{N}])${escapeRegExp$1(word)}($|[^\\p{L}\\p{N}])`, "iu").test(message));
+	return list$1(keywords).some((word) => new RegExp(`(^|[^\\p{L}\\p{N}])${escapeRegExp$4(word)}($|[^\\p{L}\\p{N}])`, "iu").test(message));
 }
 function isSceneChange(message, markers) {
-	return list(markers).some((marker) => {
-		return (/^[\p{L}\p{N}]/u.test(marker) ? new RegExp(`(^|\\n)\\s*${escapeRegExp$1(marker)}\\b`, "iu") : new RegExp(escapeRegExp$1(marker))).test(message);
+	return list$1(markers).some((marker) => {
+		return (/^[\p{L}\p{N}]/u.test(marker) ? new RegExp(`(^|\\n)\\s*${escapeRegExp$4(marker)}\\b`, "iu") : new RegExp(escapeRegExp$4(marker))).test(message);
 	});
 }
 /** Called for every new AI message. Returns the decision and the updated counters. */
@@ -4468,7 +4733,7 @@ function optionTags(options, id) {
 }
 //#endregion
 //#region src/domain/scene-assembly.ts
-function escapeRegExp(text) {
+function escapeRegExp$3(text) {
 	return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 /** Earliest whole-word mention of a name or alias (Unicode letters), -1 when absent. */
@@ -4477,7 +4742,7 @@ function mentionIndex(text, names) {
 	for (const name of names) {
 		const trimmed = name.trim();
 		if (trimmed.length < 2) continue;
-		const match = new RegExp(`(^|[^\\p{L}\\p{N}])${escapeRegExp(trimmed)}(?=$|[^\\p{L}\\p{N}])`, "iu").exec(text);
+		const match = new RegExp(`(^|[^\\p{L}\\p{N}])${escapeRegExp$3(trimmed)}(?=$|[^\\p{L}\\p{N}])`, "iu").exec(text);
 		if (match && (best < 0 || match.index < best)) best = match.index;
 	}
 	return best;
@@ -4900,6 +5165,964 @@ function vibeAvailability(caps, transportSupportsVibes) {
 function encodingCacheKey(imageHash, model, informationExtracted) {
 	return `vibeenc:${imageHash}:${model}:${(Math.round(informationExtracted * 100) / 100).toFixed(2)}`;
 }
+//#endregion
+//#region src/domain/token-count.ts
+function tokenizerKind(model) {
+	const family = getCapabilities(model).family;
+	if (family === "v5") return "qwen";
+	if (family === "v4" || family === "v4_5") return "t5";
+	return "clip";
+}
+var TOKENIZER_FILES = {
+	qwen: "qwen35_tokenizer.def",
+	t5: "t5_tokenizer.def",
+	clip: "clip_tokenizer.def"
+};
+function tokenLimit(model) {
+	if (model === "nai-diffusion-5-full") return 1471;
+	if (model === "nai-diffusion-5-curated") return 703;
+	return tokenizerKind(model) === "t5" ? 512 : 225;
+}
+function countPromptTokens(counter, model, prompt, characters = []) {
+	const caps = getCapabilities(model);
+	const limit = tokenLimit(model);
+	const segments = promptSegments(prompt).map((s) => counter.count(s));
+	if (!caps.v4Prompt) {
+		const total = segments.length ? Math.max(...segments) : 0;
+		return {
+			total,
+			limit,
+			base: total,
+			characters: [],
+			segments,
+			text: null,
+			over: total > limit
+		};
+	}
+	const base = segments.reduce((sum, n) => sum + n, 0);
+	const chars = characters.filter((c) => c.trim()).map((c) => counter.count(c));
+	const total = base + chars.reduce((sum, n) => sum + n, 0);
+	const block = caps.family === "v5" ? textBlockOf(prompt) : null;
+	return {
+		total,
+		limit,
+		base,
+		characters: chars,
+		segments: [],
+		text: block === null ? null : counter.count(block),
+		over: total > limit
+	};
+}
+/** Characters T5 cannot represent (V4.x): Cyrillic, CJK, emoji and other non-Latin scripts. */
+function t5UnsupportedChars(text) {
+	const found = /* @__PURE__ */ new Set();
+	for (const ch of text) if (/\p{Extended_Pictographic}/u.test(ch) || /[^\p{Script=Latin}\p{Script=Common}\p{Script=Inherited}]/u.test(ch)) found.add(ch);
+	return [...found];
+}
+/** Rough count when the tokenizer file is not available (no plugin, no proxy): ~4 characters a token. */
+function approximateTokens(text) {
+	return text.trim() ? Math.ceil(text.trim().length / 4) : 0;
+}
+//#endregion
+//#region src/domain/weights.ts
+var BRACE_FACTOR = 1.05;
+var NUMERIC = /(-?\d*\.?\d+)::([\s\S]*?)(?:::|(?=\|)|$)/g;
+function hasNumericWeights(prompt) {
+	NUMERIC.lastIndex = 0;
+	return NUMERIC.test(prompt);
+}
+/** Nearest number of brace levels for a weight: positive = `{}`, negative = `[]`. */
+function braceLevels(weight) {
+	return Math.round(Math.log(weight) / Math.log(BRACE_FACTOR));
+}
+function numericToBraces(prompt) {
+	const lossy = [];
+	let changed = false;
+	const text = prompt.replace(NUMERIC, (_whole, weightText, content) => {
+		changed = true;
+		const weight = Number(weightText);
+		const body = content.trim();
+		if (!(weight > 0)) {
+			if (body) lossy.push(`${weightText}::${body}`);
+			return "";
+		}
+		const levels = braceLevels(weight);
+		if (levels === 0) return body;
+		return levels > 0 ? `${"{".repeat(levels)}${body}${"}".repeat(levels)}` : `${"[".repeat(-levels)}${body}${"]".repeat(-levels)}`;
+	});
+	return {
+		text: changed ? text.replace(/,(\s*,)+/g, ",").replace(/^\s*,\s*|\s*,\s*$/g, "") : prompt,
+		lossy,
+		changed
+	};
+}
+/** Converts a prompt for the target model family (only V4+ → V3 needs it). */
+function convertWeights(prompt, targetSupportsNumeric) {
+	if (targetSupportsNumeric || !hasNumericWeights(prompt)) return {
+		text: prompt,
+		lossy: [],
+		changed: false
+	};
+	return numericToBraces(prompt);
+}
+var round2 = (n) => Math.round(n * 100) / 100;
+/** The tag around the cursor: text between the nearest commas, `|` or line breaks, trimmed. */
+function tagRange(text, start, end) {
+	if (end > start) {
+		let s = start;
+		let e = end;
+		while (s < e && /\s/.test(text[s])) s++;
+		while (e > s && /\s/.test(text[e - 1])) e--;
+		return {
+			start: s,
+			end: e
+		};
+	}
+	const isStop = (c) => c === void 0 || c === "," || c === "|" || c === "\n";
+	let s = start;
+	while (!isStop(text[s - 1])) s--;
+	let e = start;
+	while (!isStop(text[e])) e++;
+	while (s < e && /\s/.test(text[s])) s++;
+	while (e > s && /\s/.test(text[e - 1])) e--;
+	return {
+		start: s,
+		end: e
+	};
+}
+/**
+* Raises or lowers the weight of the selection (or the tag under the cursor). Numeric syntax on
+* V4+ (steps of 0.05, the wrapper disappears at 1.0), braces on V3 (one level per step).
+*/
+function adjustWeight(text, start, end, step, numeric) {
+	let { start: s, end: e } = tagRange(text, start, end);
+	if (s >= e) return {
+		text,
+		start,
+		end
+	};
+	let inner = text.slice(s, e);
+	const wrapped = inner.match(/^(-?\d*\.?\d+)::([\s\S]*)::$/);
+	if (numeric && wrapped) {
+		s += wrapped[1].length + 2;
+		e -= 2;
+		inner = wrapped[2];
+	}
+	if (numeric) {
+		const before = text.slice(0, s).match(/(-?\d*\.?\d+)::$/);
+		const closes = text.slice(e).startsWith("::");
+		if (before && closes) {
+			const weight = round2(Number(before[1]) + step * .05);
+			const head = text.slice(0, s - before[0].length);
+			const tail = text.slice(e + 2);
+			if (weight === 1) return {
+				text: head + inner + tail,
+				start: head.length,
+				end: head.length + inner.length
+			};
+			const prefix = `${weight}::`;
+			return {
+				text: `${head}${prefix}${inner}::${tail}`,
+				start: head.length + prefix.length,
+				end: head.length + prefix.length + inner.length
+			};
+		}
+		const prefix = `${round2(1 + step * .05)}::`;
+		return {
+			text: `${text.slice(0, s)}${prefix}${inner}::${text.slice(e)}`,
+			start: s + prefix.length,
+			end: s + prefix.length + inner.length
+		};
+	}
+	const open = step > 0 ? "{" : "[";
+	const opposite = step > 0 ? ["[", "]"] : ["{", "}"];
+	if (text[s - 1] === opposite[0] && text[e] === opposite[1]) return {
+		text: text.slice(0, s - 1) + inner + text.slice(e + 1),
+		start: s - 1,
+		end: e - 1
+	};
+	if (inner.startsWith(opposite[0]) && inner.endsWith(opposite[1])) {
+		const unwrapped = inner.slice(1, -1);
+		return {
+			text: text.slice(0, s) + unwrapped + text.slice(e),
+			start: s,
+			end: s + unwrapped.length
+		};
+	}
+	const close = step > 0 ? "}" : "]";
+	return {
+		text: `${text.slice(0, s)}${open}${inner}${close}${text.slice(e)}`,
+		start: s + 1,
+		end: e + 1
+	};
+}
+//#endregion
+//#region src/domain/tags.ts
+var TAG_CATEGORIES = {
+	0: "general",
+	1: "artist",
+	3: "copyright",
+	4: "character",
+	5: "meta"
+};
+/** NovelAI's own quality, aesthetic and dataset tags (not Danbooru tags, but known to the models). */
+var NOVELAI_TAGS = [
+	"masterpiece",
+	"best quality",
+	"amazing quality",
+	"great quality",
+	"good quality",
+	"normal quality",
+	"bad quality",
+	"worst quality",
+	"very aesthetic",
+	"aesthetic",
+	"displeasing",
+	"very displeasing",
+	"no text",
+	"detailed",
+	"detailed background",
+	"location",
+	"fur dataset",
+	"background dataset",
+	"artistic error",
+	"jpeg artifacts",
+	"lowres",
+	"bad anatomy",
+	"bad hands",
+	"white haze",
+	"sepia"
+];
+var EMOTICON = /^[^a-z0-9]*[a-z0-9]?_[a-z0-9]?[^a-z0-9]*$/i;
+function tagName(raw) {
+	const lower = raw.trim().toLowerCase();
+	return lower.length <= 4 && EMOTICON.test(lower) ? lower : lower.replace(/_/g, " ");
+}
+var key = (text) => tagName(text).replace(/\s+/g, " ");
+function buildTagIndex(rows, russian = {}, known = NOVELAI_TAGS) {
+	const entries = rows.map(([name, category, count, aliases]) => ({
+		name: tagName(name),
+		category,
+		count,
+		aliases: aliases ? aliases.split(",").map((a) => a.trim()).filter(Boolean) : []
+	}));
+	const byName = new Map(entries.map((e) => [e.name, e]));
+	const ensure = (name) => {
+		const k = key(name);
+		let entry = byName.get(k);
+		if (!entry) {
+			entry = {
+				name: k,
+				category: 0,
+				count: 0,
+				aliases: []
+			};
+			byName.set(k, entry);
+		}
+		return entry;
+	};
+	known.forEach(ensure);
+	const byAlias = /* @__PURE__ */ new Map();
+	for (const entry of entries) for (const alias of entry.aliases) {
+		const k = key(alias.replace(/^\//, ""));
+		if (k && !byName.has(k) && !byAlias.has(k)) byAlias.set(k, entry);
+	}
+	const ru = [];
+	for (const [word, target] of Object.entries(russian)) {
+		const entry = ensure(target);
+		ru.push({
+			word: word.toLowerCase(),
+			entry
+		});
+		byAlias.set(word.toLowerCase(), entry);
+	}
+	return {
+		entries,
+		byName,
+		byAlias,
+		russian: ru
+	};
+}
+/** Prefix matches by post count: names first, then aliases and Russian words. */
+function suggestTags(index, query, limit = 8) {
+	const q = key(query);
+	if (q.length < 2) return [];
+	const out = [];
+	const seen = /* @__PURE__ */ new Set();
+	const add = (entry, via) => {
+		if (seen.has(entry.name) || out.length >= limit) return;
+		seen.add(entry.name);
+		out.push(via ? {
+			entry,
+			via
+		} : { entry });
+	};
+	for (const entry of index.entries) {
+		if (entry.name.startsWith(q)) add(entry);
+		if (out.length >= limit) return out;
+	}
+	for (const r of index.russian) if (r.word.startsWith(q)) add(r.entry, r.word);
+	for (const entry of index.entries) {
+		if (out.length >= limit) break;
+		const alias = entry.aliases.find((a) => key(a.replace(/^\//, "")).startsWith(q));
+		if (alias) add(entry, alias);
+	}
+	if (out.length < limit && q.length >= 3) for (const entry of index.entries) {
+		if (out.length >= limit) break;
+		if (entry.name.includes(q)) add(entry);
+	}
+	return out;
+}
+/** The word being typed at the cursor (from the last comma, `|`, newline or brace). */
+function currentFragment(text, cursor) {
+	let start = cursor;
+	const stop = (i) => /[,|\n{}[\]]/.test(text[i]) || text[i] === ":" && text[i - 1] === ":";
+	while (start > 0 && !stop(start - 1)) start--;
+	const raw = text.slice(start, cursor);
+	const lead = raw.length - raw.trimStart().length;
+	return {
+		start: start + lead,
+		fragment: raw.trimStart()
+	};
+}
+/** Plain tags of a prompt: weights, braces, `text:` blocks and quoted phrases removed. */
+function tagsOfPrompt(prompt) {
+	return prompt.replace(/(?:^|[\s,])te?xt:[\s\S]*$/i, "").split(/[,|\n]/).map((t) => t.replace(/-?\d*\.?\d+::/g, "").replace(/::/g, "").replace(/[{}[\]]/g, "").replace(/"[^"]*"/g, "").trim()).filter(Boolean);
+}
+/** Tags that are neither in the list nor aliases; sentences and `artist:`-style prefixes are skipped. */
+function unknownTags(index, prompt) {
+	const unknown = /* @__PURE__ */ new Set();
+	for (const tag of tagsOfPrompt(prompt)) {
+		const k = key(tag);
+		if (k.split(" ").length > 4) continue;
+		if (/^[a-z]+:/.test(k)) continue;
+		if (/^\d+(girl|boy|other)s?$/.test(k) || /^year \d{4}$/.test(k)) continue;
+		if (index.byName.has(k) || index.byAlias.has(k)) continue;
+		unknown.add(tag);
+	}
+	return [...unknown];
+}
+/** Replaces the fragment at the cursor with a tag and a separator; returns the new text and cursor. */
+function insertTag(text, start, cursor, tag) {
+	const after = text.slice(cursor);
+	const insert = /^\s*[,|]/.test(after) ? tag : `${tag}, `;
+	return {
+		text: text.slice(0, start) + insert + after.replace(/^[^\s,|{}[\]:]*/, ""),
+		cursor: start + insert.length
+	};
+}
+//#endregion
+//#region src/data/translate-examples.json
+var translate_examples_default = [
+	{
+		"ru": "рыжая девушка, улыбка, смотрит на зрителя",
+		"en": "1girl, red hair, smile, looking at viewer"
+	},
+	{
+		"ru": "рыцарь в доспехах верхом на коне, закат, горы",
+		"en": "knight, armor, horseback riding, sunset, mountains"
+	},
+	{
+		"ru": "две девушки держатся за руки в парке, 1.2::цветущая сакура::, text: Привет",
+		"en": "2girls, holding hands, park, 1.2::cherry blossoms::, text: Привет"
+	}
+];
+//#endregion
+//#region src/domain/translate.ts
+var CYRILLIC = /[\u0400-\u04FF]/;
+function hasCyrillic(text) {
+	return CYRILLIC.test(text);
+}
+/** The prompt without its `text:` blocks (in-image text is kept in the language it was typed in). */
+function withoutTextBlocks(text) {
+	return text.split("|").map((segment) => segment.replace(/(^|[\s,.])te?xt:[\s\S]*$/i, "$1")).join("|");
+}
+/** True when the prompt has Russian outside its in-image text. */
+function needsTranslation(text) {
+	return hasCyrillic(withoutTextBlocks(text));
+}
+var TRANSLATION_EXAMPLES = translate_examples_default;
+var escapeRegExp$2 = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+/** Whole-word, case-insensitive replacement; longer phrases first so they win over their parts. */
+function applyGlossary(text, glossary) {
+	const entries = glossary.filter((g) => g.from.trim() && g.to.trim()).sort((a, b) => b.from.length - a.from.length);
+	let result = text;
+	for (const { from, to } of entries) {
+		const pattern = new RegExp(`(^|[^\\p{L}\\p{N}_])${escapeRegExp$2(from.trim())}(?=$|[^\\p{L}\\p{N}_])`, "giu");
+		result = result.replace(pattern, (_m, lead) => `${lead}${to.trim()}`);
+	}
+	return result;
+}
+var TRANSLATION_SCHEMA = {
+	name: "nai_prompt_translation",
+	description: "English image prompt translated from the user text",
+	strict: true,
+	value: {
+		type: "object",
+		properties: { prompt: {
+			type: "string",
+			description: "The translated prompt"
+		} },
+		required: ["prompt"],
+		additionalProperties: false
+	}
+};
+function translationPrompt(text, glossary) {
+	const used = glossary.filter((g) => g.from.trim() && g.to.trim() && text.toLowerCase().includes(g.from.trim().toLowerCase()));
+	return {
+		system: "You translate prompts for the NovelAI image generator from Russian to English. Output comma-separated English Danbooru-style tags and short phrases. Keep English words, numbers, names, weight syntax ({ }, [ ], 1.2::...::), \"|\" and \"text:\" blocks unchanged. Do not add anything that is not in the input. Answer only with JSON: {\"prompt\": \"...\"}." + (used.length ? `\nAlways use these translations:\n${used.map((g) => `- ${g.from} => ${g.to}`).join("\n")}` : ""),
+		prompt: `Translate this prompt:\n${text}`
+	};
+}
+/**
+* Few-shot continuation for text completion models. Sent as a system message (no user name
+* prefix) with "English:" as the prefill; the instruction sits in `{ }` so NovelAI's instruction
+* wrapping leaves the examples as they are.
+*/
+function completionPrompt(text, glossary) {
+	const used = glossary.filter((g) => g.from.trim() && g.to.trim() && text.toLowerCase().includes(g.from.trim().toLowerCase()));
+	const pair = (ru, en) => `Russian: ${ru}\nEnglish: ${en}`;
+	return [
+		"{ Translate Russian image prompts into English Danbooru tags for NovelAI. Keep weights, \"|\" and text: blocks as they are. }",
+		...TRANSLATION_EXAMPLES.map((e) => pair(e.ru, e.en)),
+		...used.map((g) => pair(g.from.trim(), g.to.trim())),
+		`Russian: ${text.replace(/\s*\n\s*/g, " ").trim()}`
+	].join("\n");
+}
+var COMPLETION_PREFILL = "English:";
+/** An answer that talks about the task instead of doing it ("I would like to translate..."). */
+function looksLikeChatter(result, source) {
+	const talk = /\b(translat\w*|russian|english|sure|here is|i would|i will|i can)\b/i;
+	return talk.test(result) && !talk.test(source);
+}
+/** Takes `{"prompt": ...}` from a model answer; tolerates code fences and text around the JSON. */
+function parseTranslation(raw) {
+	if (raw && typeof raw === "object" && typeof raw.prompt === "string") return raw.prompt.trim() || null;
+	if (typeof raw !== "string") return null;
+	const text = raw.trim();
+	const candidates = [
+		text,
+		text.replace(/^```(?:json)?\s*|\s*```$/g, ""),
+		text.match(/\{[\s\S]*\}/)?.[0] ?? ""
+	];
+	for (const candidate of candidates) try {
+		const value = JSON.parse(candidate);
+		if (typeof value.prompt === "string" && value.prompt.trim()) return value.prompt.trim();
+	} catch {}
+	const loose = text.match(/"prompt"\s*:\s*"((?:[^"\\]|\\.)*)"/);
+	if (loose?.[1]) return loose[1].replace(/\\"/g, "\"").replace(/\\n/g, "\n").trim();
+	return null;
+}
+/** The continuation answer: the first non-empty line, without a repeated "English:" label or quotes. */
+function parseCompletion(raw) {
+	if (typeof raw !== "string") return null;
+	const json = raw.includes("\"prompt\"") ? parseTranslation(raw) : null;
+	if (json) return json;
+	const line = raw.split("\n").map((l) => l.trim()).find(Boolean);
+	if (!line) return null;
+	return line.replace(/^english\s*:\s*/i, "").replace(/^["'\u201c]|["'\u201d]$/g, "").trim() || null;
+}
+/** Cache key material: the text and the glossary (a changed glossary must not reuse old results). */
+function translationKeySource(text, glossary) {
+	const terms = glossary.filter((g) => g.from.trim() && g.to.trim()).map((g) => `${g.from.trim().toLowerCase()}=${g.to.trim()}`).sort().join(";");
+	return `${text.trim()}\u0000${terms}`;
+}
+//#endregion
+//#region src/domain/sprites.ts
+/** Default Expressions labels in its own order (expressions/index.js:46-75). */
+var EXPRESSION_LABELS = [
+	"admiration",
+	"amusement",
+	"anger",
+	"annoyance",
+	"approval",
+	"caring",
+	"confusion",
+	"curiosity",
+	"desire",
+	"disappointment",
+	"disapproval",
+	"disgust",
+	"embarrassment",
+	"excitement",
+	"fear",
+	"gratitude",
+	"grief",
+	"joy",
+	"love",
+	"nervousness",
+	"optimism",
+	"pride",
+	"realization",
+	"relief",
+	"remorse",
+	"sadness",
+	"surprise",
+	"neutral"
+];
+var EXPRESSION_TAGS = {
+	admiration: "admiration, sparkling eyes, smile, blush",
+	amusement: "amused, laughing, closed eyes, open mouth, smile",
+	anger: "angry, frown, clenched teeth, v-shaped eyebrows",
+	annoyance: "annoyed, frown, pout, half-closed eyes",
+	approval: "smile, closed mouth, nodding, thumbs up",
+	caring: "gentle smile, soft expression, kind eyes",
+	confusion: "confused, head tilt, raised eyebrow",
+	curiosity: "curious, head tilt, wide eyes, leaning forward",
+	desire: "longing, half-closed eyes, blush, parted lips",
+	disappointment: "disappointed, frown, looking down, sigh",
+	disapproval: "disapproving, frown, crossed arms, narrowed eyes",
+	disgust: "disgust, grimace, wrinkled nose",
+	embarrassment: "embarrassed, blush, looking away, nervous smile",
+	excitement: "excited, wide smile, sparkling eyes, open mouth",
+	fear: "scared, wide eyes, trembling, sweat",
+	gratitude: "grateful, warm smile, closed eyes, hand on own chest",
+	grief: "crying, tears, sad, closed eyes",
+	joy: "happy, smile, open mouth, closed eyes",
+	love: "in love, heart-shaped pupils, blush, smile",
+	nervousness: "nervous, sweatdrop, nervous smile",
+	optimism: "optimistic, confident smile, looking up",
+	pride: "smug, proud, hand on own hip, smile",
+	realization: "surprised, raised eyebrows, open mouth, light bulb",
+	relief: "relieved, sigh, smile, closed eyes",
+	remorse: "remorseful, sad, looking down",
+	sadness: "sad, frown, teary eyes",
+	surprise: "surprised, wide eyes, open mouth",
+	neutral: "expressionless, closed mouth"
+};
+/** Labels with a matching Director emotion (the rest is drawn from the emotion tags). */
+var EXPRESSION_DIRECTOR = {
+	amusement: "laughing",
+	anger: "angry",
+	annoyance: "irritated",
+	confusion: "confused",
+	disgust: "disgusted",
+	embarrassment: "embarrassed",
+	excitement: "excited",
+	fear: "scared",
+	grief: "hurt",
+	joy: "happy",
+	love: "love",
+	nervousness: "nervous",
+	pride: "smug",
+	remorse: "worried",
+	sadness: "sad",
+	surprise: "surprised",
+	neutral: "neutral"
+};
+/** Expressions takes the label from the file name up to the first `-` or `.`. */
+function spriteFileName(label) {
+	return `${label.toLowerCase().replace(/[^a-z0-9_]/g, "")}.png`;
+}
+var SPRITE_FRAMING = "solo, upper body, looking at viewer, simple background";
+/** Sprite prompt: appearance + emotion + framing (custom labels use the label itself as the tag). */
+function spritePrompt(appearance, label) {
+	const emotion = EXPRESSION_TAGS[label] ?? label.replace(/[-_]/g, " ");
+	return [
+		appearance.trim().replace(/[\s,]+$/, ""),
+		emotion,
+		SPRITE_FRAMING
+	].filter(Boolean).join(", ");
+}
+//#endregion
+//#region src/domain/comic.ts
+var row = (y, h, cols) => Array.from({ length: cols }, (_, i) => ({
+	x: i / cols,
+	y,
+	w: 1 / cols,
+	h
+}));
+var COMIC_LAYOUTS = [
+	{
+		id: "single",
+		panels: [{
+			x: 0,
+			y: 0,
+			w: 1,
+			h: 1
+		}]
+	},
+	{
+		id: "two-rows",
+		panels: [...row(0, .5, 1), ...row(.5, .5, 1)]
+	},
+	{
+		id: "two-columns",
+		panels: row(0, 1, 2)
+	},
+	{
+		id: "four-koma",
+		panels: [
+			0,
+			1,
+			2,
+			3
+		].flatMap((i) => row(i / 4, 1 / 4, 1))
+	},
+	{
+		id: "grid-4",
+		panels: [...row(0, .5, 2), ...row(.5, .5, 2)]
+	},
+	{
+		id: "hero-top",
+		panels: [...row(0, .55, 1), ...row(.55, .45, 2)]
+	},
+	{
+		id: "grid-6",
+		panels: [
+			...row(0, 1 / 3, 2),
+			...row(1 / 3, 1 / 3, 2),
+			...row(2 / 3, 1 / 3, 2)
+		]
+	}
+];
+function comicLayout(id) {
+	return COMIC_LAYOUTS.find((l) => l.id === id) ?? COMIC_LAYOUTS[4];
+}
+/** Panel rectangles on the page in pixels, with `gutter` px between panels and around the page. */
+function panelPixels(layout, page, gutter) {
+	return layout.panels.map((p) => {
+		const x0 = Math.round(p.x * page.width + gutter * (p.x === 0 ? 1 : .5));
+		const y0 = Math.round(p.y * page.height + gutter * (p.y === 0 ? 1 : .5));
+		const x1 = Math.round((p.x + p.w) * page.width - gutter * (p.x + p.w >= .999 ? 1 : .5));
+		const y1 = Math.round((p.y + p.h) * page.height - gutter * (p.y + p.h >= .999 ? 1 : .5));
+		return {
+			x: x0,
+			y: y0,
+			width: Math.max(1, x1 - x0),
+			height: Math.max(1, y1 - y0)
+		};
+	});
+}
+/** Request size of a panel: its aspect ratio, multiples of 64, as large as `maxPixels` allows. */
+function panelRequestSize(panel, maxPixels = FREE_MAX_PIXELS) {
+	const aspect = panel.width / panel.height;
+	const height = Math.sqrt(maxPixels / aspect) * 1.5;
+	const big = {
+		width: Math.round(height * aspect / 64) * 64,
+		height: Math.round(height / 64) * 64
+	};
+	const fitted = fitArea(Math.max(64, big.width), Math.max(64, big.height), maxPixels);
+	return {
+		width: Math.max(64, fitted.width),
+		height: Math.max(64, fitted.height)
+	};
+}
+function panelTextBlock(panel) {
+	return panel.text.map((t) => t.trim()).filter(Boolean).join("\n\n");
+}
+/** Panel prompt: page style, panel content, then the `text:` block (which must stay last). */
+function panelPrompt(style, panel) {
+	const body = [style, panel.prompt].map((p) => p.trim().replace(/[\s,]+$/, "")).filter(Boolean).join(", ");
+	const text = panelTextBlock(panel);
+	return text ? `${body}${body ? ", " : ""}text: ${text}` : body;
+}
+//#endregion
+//#region src/domain/continuity.ts
+function locationKey(name) {
+	return name.trim().toLowerCase().replace(/\s+/g, " ");
+}
+var escapeRegExp$1 = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+/** The known location named in the text (whole words, case-insensitive; the longest name wins). */
+function detectLocation(text, names) {
+	const sorted = [...names].filter((n) => n.trim()).sort((a, b) => b.length - a.length);
+	for (const name of sorted) if (new RegExp(`(^|[^\\p{L}\\p{N}])${escapeRegExp$1(name.trim())}($|[^\\p{L}\\p{N}])`, "iu").test(text)) return name;
+	return null;
+}
+/** Strength for img2img continuity: low keeps the place, high follows the new prompt. */
+function clampContinuityStrength(value) {
+	return Number.isFinite(value) ? Math.min(.95, Math.max(.1, value)) : .6;
+}
+//#endregion
+//#region src/domain/settings-io.ts
+var SETTINGS_FORMAT = "nai-studio-settings";
+function buildSettingsExport(settings, schemaVersion, appVersion, images = {}, now = /* @__PURE__ */ new Date()) {
+	return {
+		format: SETTINGS_FORMAT,
+		schemaVersion,
+		appVersion,
+		exportedAt: now.toISOString(),
+		settings: JSON.parse(JSON.stringify(settings)),
+		...Object.keys(images).length ? { images } : {}
+	};
+}
+var isObject$1 = (v) => typeof v === "object" && v !== null && !Array.isArray(v);
+function checkSettingsImport(text, currentSchema) {
+	let data;
+	try {
+		data = JSON.parse(text);
+	} catch {
+		return {
+			ok: false,
+			reason: "not-json"
+		};
+	}
+	if (!isObject$1(data) || data.format !== "nai-studio-settings") return {
+		ok: false,
+		reason: "wrong-format"
+	};
+	const schemaVersion = Number(data.schemaVersion);
+	if (!Number.isInteger(schemaVersion) || schemaVersion < 1 || !isObject$1(data.settings)) return {
+		ok: false,
+		reason: "invalid"
+	};
+	if (schemaVersion > currentSchema) return {
+		ok: false,
+		reason: "newer-schema",
+		schemaVersion
+	};
+	const images = {};
+	if (isObject$1(data.images)) {
+		for (const [key, value] of Object.entries(data.images)) if (typeof value === "string" && /^vibe(thumb)?:/.test(key)) images[key] = value;
+	}
+	return {
+		ok: true,
+		schemaVersion,
+		settings: {
+			...data.settings,
+			schemaVersion
+		},
+		images
+	};
+}
+//#endregion
+//#region src/domain/tokenizers/bpe.ts
+/** GPT-2 `bytes_to_unicode`: printable stand-ins for every byte value. */
+function byteToCharTable() {
+	const printable = [];
+	const push = (from, to) => {
+		for (let b = from; b <= to; b++) printable.push(b);
+	};
+	push(33, 126);
+	push(161, 172);
+	push(174, 255);
+	const table = new Array(256);
+	let extra = 0;
+	for (let b = 0; b < 256; b++) table[b] = printable.includes(b) ? String.fromCodePoint(b) : String.fromCodePoint(256 + extra++);
+	return table;
+}
+var escapeRegExp = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+var ByteBpeTokenizer = class {
+	ranks = /* @__PURE__ */ new Map();
+	vocab;
+	byteToChar = byteToCharTable();
+	encoder = new TextEncoder();
+	cache = /* @__PURE__ */ new Map();
+	special;
+	split;
+	normalization;
+	ignoreMerges;
+	constructor(data) {
+		this.vocab = data.vocab;
+		data.merges.forEach(([left, right], rank) => this.ranks.set(`${left}\u0000${right}`, rank));
+		const specials = [...data.specialTokens].sort((a, b) => b.length - a.length);
+		this.special = specials.length ? new RegExp(`(${specials.map(escapeRegExp).join("|")})`) : null;
+		this.split = new RegExp(data.config?.splitRegex ?? "'s|'t|'re|'ve|'m|'ll|'d| ?\\p{L}+| ?\\p{N}+| ?[^\\s\\p{L}\\p{N}]+|\\s+", "gu");
+		this.normalization = data.config?.normalization;
+		this.ignoreMerges = data.config?.ignoreMerges === true;
+	}
+	wordTokens(word) {
+		const cached = this.cache.get(word);
+		if (cached !== void 0) return cached;
+		const mapped = [...this.encoder.encode(word)].map((b) => this.byteToChar[b]).join("");
+		let count;
+		if (this.ignoreMerges && this.vocab[mapped] !== void 0) count = 1;
+		else {
+			let parts = [...mapped];
+			for (;;) {
+				let best = Infinity;
+				let at = -1;
+				for (let i = 0; i < parts.length - 1; i++) {
+					const rank = this.ranks.get(`${parts[i]}\u0000${parts[i + 1]}`);
+					if (rank !== void 0 && rank < best) {
+						best = rank;
+						at = i;
+					}
+				}
+				if (at < 0) break;
+				const left = parts[at];
+				const right = parts[at + 1];
+				const merged = [];
+				for (let i = 0; i < parts.length; i++) if (parts[i] === left && parts[i + 1] === right) {
+					merged.push(left + right);
+					i++;
+				} else merged.push(parts[i]);
+				parts = merged;
+				if (parts.length === 1) break;
+			}
+			count = parts.filter((p) => this.vocab[p] !== void 0).length;
+		}
+		this.cache.set(word, count);
+		return count;
+	}
+	count(text) {
+		const normalized = this.normalization ? text.normalize(this.normalization) : text;
+		const chunks = this.special ? normalized.split(this.special) : [normalized];
+		let total = 0;
+		chunks.forEach((chunk, i) => {
+			if (!chunk) return;
+			if (this.special && i % 2 === 1) {
+				total += 1;
+				return;
+			}
+			for (const match of chunk.matchAll(this.split)) total += this.wordTokens(match[0]);
+		});
+		return total;
+	}
+};
+//#endregion
+//#region src/domain/tokenizers/clip.ts
+var WORD = /<\|startoftext\|>|<\|endoftext\|>|'s|'t|'re|'ve|'m|'ll|'d|[\p{L}]+|[\p{N}]|[^\s\p{L}\p{N}]+/giu;
+var NAMED_ENTITIES = {
+	amp: "&",
+	lt: "<",
+	gt: ">",
+	quot: "\"",
+	apos: "'",
+	nbsp: "\xA0"
+};
+/** The few HTML entities a prompt can realistically contain (the web client uses a full decoder). */
+function decodeEntities(text) {
+	return text.replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (whole, body) => {
+		if (body[0] === "#") {
+			const code = body[1] === "x" || body[1] === "X" ? parseInt(body.slice(2), 16) : parseInt(body.slice(1), 10);
+			return Number.isFinite(code) && code <= 1114111 ? String.fromCodePoint(code) : whole;
+		}
+		return NAMED_ENTITIES[body.toLowerCase()] ?? whole;
+	});
+}
+var ClipTokenizer = class {
+	ranks = /* @__PURE__ */ new Map();
+	byteToChar = byteToCharTable();
+	encoder = new TextEncoder();
+	cache = /* @__PURE__ */ new Map();
+	/** `mergesText` is the `text` field of the .def file: a version line, then one merge per line. */
+	constructor(mergesText) {
+		mergesText.split("\n").slice(1, 48895).forEach((line, rank) => {
+			const [left, right] = line.split(" ");
+			if (left !== void 0 && right !== void 0) this.ranks.set(`${left}\u0000${right}`, rank);
+		});
+	}
+	wordTokens(word) {
+		const cached = this.cache.get(word);
+		if (cached !== void 0) return cached;
+		const chars = [...word];
+		let parts = [...chars.slice(0, -1), `${chars.at(-1) ?? ""}</w>`];
+		while (parts.length > 1) {
+			let best = Infinity;
+			let at = -1;
+			for (let i = 0; i < parts.length - 1; i++) {
+				const rank = this.ranks.get(`${parts[i]}\u0000${parts[i + 1]}`);
+				if (rank !== void 0 && rank < best) {
+					best = rank;
+					at = i;
+				}
+			}
+			if (at < 0) break;
+			const left = parts[at];
+			const right = parts[at + 1];
+			const merged = [];
+			for (let i = 0; i < parts.length; i++) if (parts[i] === left && parts[i + 1] === right) {
+				merged.push(left + right);
+				i++;
+			} else merged.push(parts[i]);
+			parts = merged;
+		}
+		this.cache.set(word, parts.length);
+		return parts.length;
+	}
+	count(text) {
+		const cleaned = decodeEntities(decodeEntities(text.replace(/[[\]{}]/g, " ").trim()).trim()).replace(/\s+/g, " ").trim().toLowerCase();
+		let total = 0;
+		for (const match of cleaned.matchAll(WORD)) {
+			const word = [...this.encoder.encode(match[0])].map((b) => this.byteToChar[b]).join("");
+			total += this.wordTokens(word);
+		}
+		return total;
+	}
+};
+//#endregion
+//#region src/domain/tokenizers/t5.ts
+var METASPACE = "▁";
+var T5Tokenizer = class {
+	root = {
+		end: -1,
+		children: /* @__PURE__ */ new Map()
+	};
+	scores;
+	unkScore;
+	cache = /* @__PURE__ */ new Map();
+	constructor(data) {
+		const vocab = data.model.vocab;
+		this.scores = vocab.map(([, score]) => score);
+		const min = vocab.reduce((m, [, score]) => Math.min(m, score), 1e6);
+		this.unkScore = min - 10;
+		this.scores[data.model.unk_id] = this.unkScore;
+		vocab.forEach(([piece], id) => {
+			if (/[\uD800-\uDFFF]/.test(piece)) return;
+			let node = this.root;
+			for (const unit of piece) {
+				let next = node.children.get(unit);
+				if (!next) {
+					next = {
+						end: -1,
+						children: /* @__PURE__ */ new Map()
+					};
+					node.children.set(unit, next);
+				}
+				node = next;
+			}
+			node.end = id;
+		});
+	}
+	/** Number of pieces on the best (Viterbi) segmentation of one pre-tokenized word. */
+	wordTokens(word) {
+		const cached = this.cache.get(word);
+		if (cached !== void 0) return cached;
+		const n = word.length;
+		const best = new Array(n + 1).fill(-Infinity);
+		const pieces = new Array(n + 1).fill(0);
+		best[0] = 0;
+		for (let pos = 0; pos < n; pos++) {
+			const base = best[pos];
+			if (base === -Infinity) continue;
+			let node = this.root;
+			let singleChar = false;
+			for (let end = pos; end < n && node; end++) {
+				node = node.children.get(word[end]);
+				if (!node) break;
+				if (node.end >= 0) {
+					if (end - pos + 1 === 1) singleChar = true;
+					const score = base + this.scores[node.end];
+					if (score > best[end + 1]) {
+						best[end + 1] = score;
+						pieces[end + 1] = pieces[pos] + 1;
+					}
+				}
+			}
+			if (!singleChar) {
+				const score = base + this.unkScore;
+				if (score > best[pos + 1]) {
+					best[pos + 1] = score;
+					pieces[pos + 1] = pieces[pos] + 1;
+				}
+			}
+		}
+		const count = pieces[n];
+		this.cache.set(word, count);
+		return count;
+	}
+	count(text) {
+		if (!text) return 1;
+		const cleaned = text.replace(/[[\]{}]/g, "").replace(/-?\d*\.?\d*::/g, "");
+		let total = 0;
+		for (const word of cleaned.split(/\s+/)) {
+			const piece = word.startsWith(METASPACE) ? word : METASPACE + word;
+			total += this.wordTokens(piece);
+		}
+		return total + 1;
+	}
+};
 //#endregion
 //#region src/features/auto/auto-generation.ts
 var SKIPPED_TYPES = /* @__PURE__ */ new Set([
@@ -5658,6 +6881,45 @@ function createPluginTransport(env, version = null) {
 	};
 }
 //#endregion
+//#region src/transport/public-files.ts
+var TOKENIZER_STATIC_URL = "https://novelai.net/tokenizer/compressed";
+/** Raw-deflate tokenizer JSON as NovelAI serves it, or null when no route can deliver it. */
+async function fetchTokenizerDefinition(env, file, signal) {
+	const urls = [`${PLUGIN_BASE}/tokenizer/${encodeURIComponent(file)}`, `/proxy/${encodeURIComponent(`${TOKENIZER_STATIC_URL}/${file}?v=2&static=true`)}`];
+	for (const url of urls) try {
+		const response = await env.fetch(url, {
+			method: "GET",
+			headers: env.headers(),
+			signal
+		});
+		const type = response.headers.get("Content-Type") ?? "";
+		if (response.ok && !type.includes("text/html") && !type.includes("application/json")) return await response.arrayBuffer();
+	} catch (error) {
+		if (signal?.aborted) throw error;
+	}
+	return null;
+}
+/** NovelAI's own suggestions for the fragment being typed; empty when the plugin cannot ask. */
+async function fetchTagSuggestions(env, model, prompt, signal) {
+	try {
+		const query = new URLSearchParams({
+			model,
+			prompt,
+			lang: "en"
+		});
+		const response = await env.fetch(`${PLUGIN_BASE}/suggest-tags?${query}`, {
+			method: "GET",
+			headers: env.headers(),
+			signal
+		});
+		if (!response.ok) return [];
+		const body = await response.json();
+		return Array.isArray(body.tags) ? body.tags : [];
+	} catch {
+		return [];
+	}
+}
+//#endregion
 //#region src/transport/index.ts
 async function selectTransport(preference, env, signal) {
 	const health = await probePlugin(env, signal);
@@ -5750,6 +7012,7 @@ function requestFromSettings(g, seed) {
 		varietyBoost: g.varietyBoost === true,
 		legacyUc: g.legacyUc === true,
 		transparentBackground: g.transparentBackground === true,
+		autoText: g.autoText !== false,
 		imageFormat: g.imageFormat === "png" ? "png" : "webp",
 		useCoords: g.useCoords === true,
 		characters: (Array.isArray(g.characters) ? g.characters : []).map((c) => ({
@@ -6172,7 +7435,8 @@ function toAttachments(saved, meta) {
 			transport: meta.transport,
 			cost: meta.cost,
 			correlationId: meta.correlationId,
-			...meta.tool ? { tool: meta.tool } : {}
+			...meta.tool ? { tool: meta.tool } : {},
+			...meta.sourcePrompt ? { sourcePrompt: meta.sourcePrompt } : {}
 		}
 	}));
 }
@@ -6304,6 +7568,7 @@ function metaFromPrepared(prepared, extra) {
 		createdAt: (/* @__PURE__ */ new Date()).toISOString()
 	};
 	if (extra.tool) meta.tool = extra.tool;
+	if (extra.sourcePrompt) meta.sourcePrompt = extra.sourcePrompt;
 	return meta;
 }
 var Pipeline = class {
@@ -6311,6 +7576,8 @@ var Pipeline = class {
 	ui;
 	observers = /* @__PURE__ */ new Set();
 	vibes = null;
+	translator = null;
+	continuity = null;
 	constructor(controller, ui) {
 		this.controller = controller;
 		this.ui = ui;
@@ -6320,6 +7587,12 @@ var Pipeline = class {
 	}
 	setVibeProvider(provider) {
 		this.vibes = provider;
+	}
+	setTranslator(translator) {
+		this.translator = translator;
+	}
+	setContinuityProvider(provider) {
+		this.continuity = provider;
 	}
 	notify(produced, outcome) {
 		for (const observer of this.observers) try {
@@ -6493,11 +7766,28 @@ var Pipeline = class {
 		};
 		await c.eventSource.emit(c.eventTypes.SD_PROMPT_PROCESSING ?? "sd_prompt_processing", eventData);
 		scene = eventData.prompt;
+		const translator = this.translator?.enabled() ? this.translator : null;
+		let sourcePrompt = this.translator?.original?.(scene);
+		if (translator) {
+			const english = await translator.translate(scene, req.signal);
+			if (english !== null && english !== scene) {
+				sourcePrompt = scene;
+				scene = english;
+			}
+		}
 		const assembled = this.assemble(mode, scene, additionalNegative, {
 			isSwipe,
 			expanded: req.scene !== void 0
 		}, o, forcedSize);
 		if (isSwipe && assembled.overrides.seed === void 0 && s.generation.seed >= 0) assembled.overrides.seed = -1;
+		if (translator) {
+			const characters = assembled.overrides.characters ?? s.generation.characters;
+			if (characters.some((ch) => hasCyrillic(ch.prompt) || hasCyrillic(ch.negative))) assembled.overrides.characters = await Promise.all(characters.map(async (ch) => ({
+				...ch,
+				prompt: await translator.translate(ch.prompt, req.signal) ?? ch.prompt,
+				negative: await translator.translate(ch.negative, req.signal) ?? ch.negative
+			})));
+		}
 		const patch = { ...req.requestPatch };
 		const transport = this.controller.state.selection?.transport;
 		const model = String(assembled.overrides.model ?? s.generation.model);
@@ -6505,6 +7795,26 @@ var Pipeline = class {
 		if (patch.vibes === void 0 && this.vibes && transport && patch.mode !== "inpaint") {
 			const vibes = await this.vibes.prepare(caps, transport, req.signal);
 			if (vibes.length) patch.vibes = vibes;
+		}
+		if (this.continuity && !req.noContinuity && !isSwipe && patch.mode === void 0 && patch.image === void 0) {
+			const wanted = {
+				width: roundToStep(Number(assembled.overrides.width ?? s.generation.width)),
+				height: roundToStep(Number(assembled.overrides.height ?? s.generation.height))
+			};
+			const size = s.anlas.freeOnly ? fitArea(wanted.width, wanted.height, FREE_MAX_PIXELS) : wanted;
+			const base = await this.continuity.prepare({
+				text: `${trigger}\n${scene}\n${req.message ?? ""}`,
+				size,
+				caps,
+				signal: req.signal
+			});
+			if (base) {
+				assembled.overrides.width = size.width;
+				assembled.overrides.height = size.height;
+				patch.mode = "img2img";
+				patch.image = base.image;
+				patch.strength = base.strength;
+			}
 		}
 		if (s.stream.enabled && transport?.features.stream === true && caps.family !== "v3" && patch.stream === void 0) patch.stream = "sse";
 		const prepared = this.controller.prepare(assembled.overrides, patch);
@@ -6548,8 +7858,10 @@ var Pipeline = class {
 			const meta = metaFromPrepared(prepared, {
 				scenePrompt: assembled.sceneText,
 				negative: assembled.negativeExtra,
-				mode
+				mode,
+				...sourcePrompt ? { sourcePrompt } : {}
 			});
+			if (sourcePrompt) legacy.sourcePrompt = sourcePrompt;
 			log.info("picture", req.initiator, `mode ${mode}`, prepared.body.model, `cost ${prepared.cost.total}`);
 			return {
 				images: result.images,
@@ -7551,7 +8863,7 @@ async function enableBuiltIn() {
 //#endregion
 //#region src/ui/components/dom.ts
 /** Handlebars template -> sanitized HTML (SillyTavern's own Handlebars and DOMPurify). */
-function render$1(template, data = {}) {
+function render$2(template, data = {}) {
 	const html = libs().Handlebars.compile(template)(data);
 	return libs().DOMPurify.sanitize(html);
 }
@@ -8829,6 +10141,513 @@ function registerInlineCommands(pipeline, service) {
 	log.info("inline image commands registered");
 }
 //#endregion
+//#region src/features/prompt-tools/tag-db.ts
+var index = null;
+var loaded = null;
+var remoteCache = /* @__PURE__ */ new Map();
+async function fetchJson(path) {
+	const response = await fetch(`${extensionBaseUrl()}/${path}`);
+	if (!response.ok) throw new Error(`${path}: HTTP ${response.status}`);
+	return await response.json();
+}
+function tagIndex() {
+	if (!index) index = Promise.all([fetchJson("src/data/tags.json"), fetchJson("src/data/tags-ru.json")]).then(([rows, ru]) => {
+		loaded = buildTagIndex(rows, ru);
+		log.info("tag list ready:", rows.length, "tags");
+		return loaded;
+	}).catch((error) => {
+		log.warn("tag list unavailable:", error);
+		index = null;
+		return null;
+	});
+	return index;
+}
+function readyTagIndex() {
+	return loaded;
+}
+/** NovelAI suggestions for a fragment (cached per model and fragment). */
+async function remoteTagSuggestions(model, fragment, signal) {
+	const key = `${model}\u0000${fragment.toLowerCase()}`;
+	const cached = remoteCache.get(key);
+	if (cached) return cached;
+	const tags = await fetchTagSuggestions({
+		fetch: (input, init) => fetch(input, init),
+		headers: () => requestHeaders()
+	}, model, fragment, signal);
+	if (remoteCache.size > 500) remoteCache.clear();
+	remoteCache.set(key, tags);
+	return tags;
+}
+async function sha256Hex(text) {
+	const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+	return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+function vibeItems() {
+	return settings().vibes.items;
+}
+async function addVibe(file, name) {
+	const png = await toPngBlob(file);
+	const base64 = await blobToBase64$1(png);
+	const id = ctx().uuidv4();
+	const item = {
+		id,
+		name: name.trim() || `vibe-${id.slice(0, 4)}`,
+		imageHash: await sha256Hex(base64),
+		imageKey: `vibe:${id}`,
+		thumbKey: `vibethumb:${id}`,
+		createdAt: (/* @__PURE__ */ new Date()).toISOString()
+	};
+	await imageStore().setItem(item.imageKey, png);
+	await imageStore().setItem(item.thumbKey, await thumbnail(png, 160));
+	settings().vibes.items.push(item);
+	saveSettings();
+	return item;
+}
+async function removeVibe(id) {
+	const s = settings().vibes;
+	const item = s.items.find((i) => i.id === id);
+	if (!item) return;
+	s.items = s.items.filter((i) => i.id !== id);
+	for (const set of s.sets) set.entries = set.entries.filter((e) => e.vibeId !== id);
+	saveSettings();
+	await imageStore().removeItem(item.imageKey);
+	await imageStore().removeItem(item.thumbKey);
+	const keys = (await store().keys()).filter((k) => k.startsWith(`vibeenc:${item.imageHash}:`));
+	await Promise.all(keys.map((k) => store().removeItem(k)));
+}
+async function vibeImage(item) {
+	return await imageStore().getItem(item.imageKey);
+}
+async function vibeThumb(item) {
+	return await imageStore().getItem(item.thumbKey);
+}
+/** Characters, chat and style the vibe bindings are matched against. */
+function vibeContext() {
+	const c = ctx();
+	const characters = [];
+	if (c.groupId) for (const avatar of c.groups.find((g) => g.id === c.groupId)?.members ?? []) characters.push(avatarKey(avatar));
+	else if (c.characterId !== void 0 && c.characterId !== null && c.characterId !== "") characters.push(avatarKey(c.characters[Number(c.characterId)]?.avatar));
+	return {
+		characters,
+		chatId: c.getCurrentChatId() ?? "",
+		style: settings().prompts.activeStyle
+	};
+}
+var extraVibes = () => [];
+/** Vibes added by other features (scene continuity in vibe mode). */
+function setExtraVibes(source) {
+	extraVibes = source;
+}
+function activeVibes() {
+	const planned = planVibes(settings().vibes.sets, settings().vibes.items, vibeContext());
+	const extra = extraVibes().filter((e) => !planned.some((p) => p.item.id === e.item.id));
+	return [...planned, ...extra];
+}
+/** Pipeline vibe provider: plans the active vibes and makes sure each has an encoding. */
+var VibeLibraryProvider = class {
+	confirm;
+	notify;
+	noticed = /* @__PURE__ */ new Set();
+	constructor(confirm, notify) {
+		this.confirm = confirm;
+		this.notify = notify;
+	}
+	notifyOnce(key, notice) {
+		if (this.noticed.has(key)) return;
+		this.noticed.add(key);
+		this.notify(notice);
+	}
+	async prepare(caps, transport, signal) {
+		const planned = activeVibes();
+		if (!planned.length) return [];
+		const availability = vibeAvailability(caps, transport.features.vibes);
+		if (availability !== "ok") {
+			this.notifyOnce(`${availability}:${caps.model}`, {
+				kind: "unavailable",
+				reason: availability,
+				count: planned.length
+			});
+			return [];
+		}
+		if (caps.vibeKind === "raw") return await this.raw(planned);
+		return await this.encoded(planned, caps.model, transport, signal);
+	}
+	/** V3: the reference image itself, 448x448 PNG (RECON §3.4). */
+	async raw(planned) {
+		const refs = [];
+		for (const p of planned) {
+			const blob = await vibeImage(p.item);
+			if (!blob) {
+				this.notify({
+					kind: "missing-image",
+					name: p.item.name
+				});
+				continue;
+			}
+			refs.push({
+				data: await blobToBase64$1(await toPngBlob(blob, {
+					width: 448,
+					height: 448
+				})),
+				strength: p.strength,
+				informationExtracted: p.informationExtracted
+			});
+		}
+		return refs;
+	}
+	async encoded(planned, model, transport, signal) {
+		const extras = transport.extras;
+		const encodings = /* @__PURE__ */ new Map();
+		const keyOf = (p) => encodingCacheKey(p.item.imageHash, model, p.informationExtracted);
+		for (const p of planned) {
+			const local = await store().getItem(keyOf(p));
+			if (local) encodings.set(keyOf(p), local);
+		}
+		let missing = planned.filter((p) => !encodings.has(keyOf(p)));
+		if (missing.length && extras) {
+			const found = await extras.lookupVibes(missing.map((p) => ({
+				imageHash: p.item.imageHash,
+				model,
+				informationExtracted: p.informationExtracted
+			})), signal);
+			for (const [i, encoding] of found.entries()) {
+				const p = missing[i];
+				if (p && encoding) {
+					encodings.set(keyOf(p), encoding);
+					await store().setItem(keyOf(p), encoding);
+				}
+			}
+			missing = missing.filter((p) => !encodings.has(keyOf(p)));
+		}
+		if (missing.length) {
+			const cost = missing.length * 2;
+			const reason = settings().anlas.freeOnly ? "free-only" : !extras ? "no-plugin" : settings().vibes.confirmEncoding && !await this.confirm(cost, "vibes") ? "declined" : null;
+			if (reason) this.notify({
+				kind: "skipped",
+				count: missing.length,
+				reason
+			});
+			else {
+				let paid = 0;
+				for (const p of missing) {
+					const blob = await vibeImage(p.item);
+					if (!blob) {
+						this.notify({
+							kind: "missing-image",
+							name: p.item.name
+						});
+						continue;
+					}
+					const image = await blobToBase64$1(blob);
+					const result = await extras.encodeVibe({
+						image,
+						model,
+						informationExtracted: p.informationExtracted
+					}, signal);
+					if (!result.cached) paid++;
+					encodings.set(keyOf(p), result.encoding);
+					await store().setItem(keyOf(p), result.encoding);
+				}
+				if (paid) this.notify({
+					kind: "encoded",
+					count: paid,
+					cost: paid * 2
+				});
+				log.info(`encoded ${paid} vibe(s) for ${model}`);
+			}
+		}
+		return planned.filter((p) => encodings.has(keyOf(p))).map((p) => ({
+			data: encodings.get(keyOf(p)) ?? "",
+			strength: p.strength,
+			informationExtracted: p.informationExtracted
+		}));
+	}
+};
+//#endregion
+//#region src/features/translate/translate-service.ts
+var memory = /* @__PURE__ */ new Map();
+/** English text -> Russian original, for prompts translated by hand (kept for the session). */
+var originals = /* @__PURE__ */ new Map();
+function rememberOriginal(english, original) {
+	if (originals.size > 200) originals.clear();
+	originals.set(english.trim(), original);
+}
+async function translatePrompt(text) {
+	if (!needsTranslation(text)) return {
+		text,
+		cached: false
+	};
+	const glossary = settings().translate.glossary;
+	const prepared = applyGlossary(text, glossary);
+	if (!needsTranslation(prepared)) return {
+		text: prepared,
+		cached: false
+	};
+	const key = `tr:${await sha256Hex(translationKeySource(prepared, glossary))}`;
+	const hit = memory.get(key) ?? await store().getItem(key);
+	if (hit && !needsTranslation(hit) && !looksLikeChatter(hit, prepared)) {
+		memory.set(key, hit);
+		return {
+			text: hit,
+			cached: true
+		};
+	}
+	if (hit) {
+		memory.delete(key);
+		await store().removeItem(key);
+	}
+	const c = ctx();
+	const structured = c.mainApi === "openai";
+	let raw;
+	try {
+		if (structured) {
+			const { system, prompt } = translationPrompt(prepared, glossary);
+			raw = await c.generateRaw({
+				prompt,
+				systemPrompt: system,
+				responseLength: 400,
+				jsonSchema: TRANSLATION_SCHEMA
+			});
+		} else raw = await c.generateRaw({
+			prompt: [{
+				role: "system",
+				content: completionPrompt(prepared, glossary)
+			}],
+			prefill: COMPLETION_PREFILL,
+			responseLength: 150
+		});
+	} catch (error) {
+		throw new NaiError("translation-failed", "none", { message: String(error?.message ?? error) });
+	}
+	const result = structured ? parseTranslation(raw) : parseCompletion(raw);
+	if (!result || needsTranslation(result) || looksLikeChatter(result, prepared)) {
+		log.warn("translation answer not usable:", String(raw).slice(0, 200));
+		throw new NaiError("translation-failed", "none", { message: String(raw).slice(0, 120) });
+	}
+	memory.set(key, result);
+	await store().setItem(key, result);
+	log.info("prompt translated", structured ? "(structured output)" : "(few-shot)");
+	return {
+		text: result,
+		cached: false
+	};
+}
+/** Pipeline hook: translates Cyrillic prompts before every generation when auto mode is on. */
+var autoTranslator = {
+	enabled: () => settings().translate.auto,
+	async translate(text) {
+		return needsTranslation(text) ? (await translatePrompt(text)).text : null;
+	},
+	original(text) {
+		const trimmed = text.trim();
+		for (const [english, original] of originals) if (english && trimmed.includes(english)) return original;
+	}
+};
+//#endregion
+//#region src/ui/prompt-assist.ts
+var dropdown = null;
+var items = [];
+var active = 0;
+var target = null;
+var remoteTimer = null;
+var formatCount = (n) => n >= 1e6 ? `${(n / 1e6).toFixed(1)}M` : n >= 1e3 ? `${Math.round(n / 1e3)}k` : String(n);
+function list() {
+	if (!dropdown) {
+		dropdown = document.createElement("div");
+		dropdown.className = "naist-ac naist-hidden";
+		dropdown.setAttribute("role", "listbox");
+		dropdown.addEventListener("mousedown", (event) => {
+			const row = event.target.closest("[data-index]");
+			if (!row) return;
+			event.preventDefault();
+			accept(Number(row.dataset.index));
+		});
+		document.body.append(dropdown);
+	}
+	return dropdown;
+}
+function hide() {
+	dropdown?.classList.add("naist-hidden");
+	items = [];
+	target = null;
+}
+function render$1() {
+	const el = list();
+	if (!target || !items.length) {
+		hide();
+		return;
+	}
+	el.innerHTML = items.map((item, i) => `<div class="naist-ac-item${i === active ? " naist-ac-active" : ""} naist-ac-cat-${item.category}" data-index="${i}" role="option">
+                <span>${escapeHtml$2(item.name)}</span><span class="naist-muted">${escapeHtml$2(item.hint)}</span></div>`).join("");
+	const rect = target.field.getBoundingClientRect();
+	el.style.left = `${Math.round(rect.left)}px`;
+	el.style.top = `${Math.round(rect.bottom + 2)}px`;
+	el.style.width = `${Math.round(Math.max(220, Math.min(rect.width, 420)))}px`;
+	el.classList.remove("naist-hidden");
+}
+function fromLocal(suggestions) {
+	return suggestions.map((s) => ({
+		name: s.entry.name,
+		hint: [
+			s.via ? `← ${s.via}` : "",
+			s.entry.count ? formatCount(s.entry.count) : "",
+			TAG_CATEGORIES[s.entry.category] ?? ""
+		].filter(Boolean).join(" · "),
+		category: s.entry.category
+	}));
+}
+function accept(index) {
+	const item = items[index];
+	if (!item || !target) return;
+	const { field, start } = target;
+	const cursor = field.selectionStart ?? field.value.length;
+	const result = insertTag(field.value, start, cursor, item.name);
+	field.value = result.text;
+	field.setSelectionRange(result.cursor, result.cursor);
+	field.dispatchEvent(new Event("input", { bubbles: true }));
+	hide();
+}
+function modelOf(field, model) {
+	return field.dataset.naistModel || model();
+}
+function suggest(field, model) {
+	if (!settings().promptTools.autocomplete) return;
+	const cursor = field.selectionStart ?? field.value.length;
+	const { start, fragment } = currentFragment(field.value, cursor);
+	if (fragment.length < 2 || /^\d*\.?\d*$/.test(fragment)) {
+		hide();
+		return;
+	}
+	const index = readyTagIndex();
+	if (!index) {
+		tagIndex().then((loaded) => loaded && suggest(field, model));
+		return;
+	}
+	target = {
+		field,
+		start
+	};
+	items = fromLocal(suggestTags(index, fragment, 8));
+	active = 0;
+	render$1();
+	if (remoteTimer) clearTimeout(remoteTimer);
+	if (!settings().promptTools.remoteSuggest || items.length >= 8 || hasCyrillic(fragment)) return;
+	remoteTimer = setTimeout(() => {
+		remoteTagSuggestions(modelOf(field, model), fragment).then((remote) => {
+			if (target?.field !== field) return;
+			const known = new Set(items.map((i) => i.name));
+			for (const r of remote) {
+				if (items.length >= 10) break;
+				if (known.has(r.tag)) continue;
+				items.push({
+					name: r.tag,
+					hint: `NovelAI · ${formatCount(r.count)}`,
+					category: 0
+				});
+			}
+			render$1();
+		});
+	}, 300);
+}
+/** Line under the field: unknown tags and the translate button. */
+function line(field) {
+	const next = field.nextElementSibling;
+	if (next instanceof HTMLElement && next.classList.contains("naist-assist")) return next;
+	const el = document.createElement("div");
+	el.className = "naist-assist";
+	field.after(el);
+	return el;
+}
+function refreshLine(field) {
+	const el = line(field);
+	const parts = [];
+	if (hasCyrillic(field.value)) parts.push(`<span class="menu_button naist-assist-translate" title="${escapeHtml$2(t("naist.translate.buttonHint"))}">${escapeHtml$2(t("naist.translate.button"))}</span>`);
+	const index = readyTagIndex();
+	if (index && settings().promptTools.warnUnknown && !hasCyrillic(field.value)) {
+		const unknown = unknownTags(index, field.value).slice(0, 8);
+		if (unknown.length) parts.push(`<span class="naist-muted">${escapeHtml$2(t("naist.tags.unknown", { tags: unknown.join(", ") }))}</span>`);
+	}
+	el.innerHTML = parts.join(" ");
+	el.classList.toggle("naist-hidden", parts.length === 0);
+}
+async function translateField(field, button) {
+	button.classList.add("disabled");
+	try {
+		const original = field.value;
+		const result = await translatePrompt(original);
+		rememberOriginal(result.text, original);
+		field.value = result.text;
+		field.dispatchEvent(new Event("input", { bubbles: true }));
+		toastr.info(t(result.cached ? "naist.translate.cached" : "naist.translate.done"), t("naist.translate.title"));
+	} catch (error) {
+		reportGenerationError(error);
+	} finally {
+		button.classList.remove("disabled");
+		refreshLine(field);
+	}
+}
+/**
+* Attaches the helpers to fields inside `root` that match `selector`. `model` gives the model the
+* field is for (a field can override it with data-naist-model).
+*/
+function attachPromptAssist(root, selector, model) {
+	const fieldOf = (el) => {
+		const node = el;
+		return node?.matches?.(selector) ? node : null;
+	};
+	let lineTimer = null;
+	root.addEventListener("input", (event) => {
+		const field = fieldOf(event.target);
+		if (!field) return;
+		suggest(field, model);
+		if (lineTimer) clearTimeout(lineTimer);
+		lineTimer = setTimeout(() => refreshLine(field), 400);
+	});
+	root.addEventListener("focusin", (event) => {
+		const field = fieldOf(event.target);
+		if (field) {
+			tagIndex();
+			refreshLine(field);
+		}
+	});
+	root.addEventListener("focusout", (event) => {
+		if (fieldOf(event.target)) setTimeout(hide, 150);
+	});
+	root.addEventListener("click", (event) => {
+		const button = event.target.closest(".naist-assist-translate");
+		const field = button?.parentElement?.previousElementSibling;
+		if (button && field && fieldOf(field)) translateField(field, button);
+	});
+	root.addEventListener("keydown", (event) => {
+		const field = fieldOf(event.target);
+		if (!field) return;
+		const e = event;
+		if ((e.ctrlKey || e.metaKey) && (e.key === "ArrowUp" || e.key === "ArrowDown")) {
+			e.preventDefault();
+			const id = modelOf(field, model);
+			const numeric = getCapabilities(isModelId(id) ? id : DEFAULT_MODEL).v4Prompt;
+			const edit = adjustWeight(field.value, field.selectionStart ?? 0, field.selectionEnd ?? 0, e.key === "ArrowUp" ? 1 : -1, numeric);
+			field.value = edit.text;
+			field.setSelectionRange(edit.start, edit.end);
+			field.dispatchEvent(new Event("input", { bubbles: true }));
+			hide();
+			return;
+		}
+		if (!target || target.field !== field || !items.length) return;
+		if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+			e.preventDefault();
+			active = (active + (e.key === "ArrowDown" ? 1 : items.length - 1)) % items.length;
+			render$1();
+		} else if (e.key === "Enter" || e.key === "Tab") {
+			e.preventDefault();
+			accept(active);
+		} else if (e.key === "Escape") {
+			e.preventDefault();
+			hide();
+		}
+	});
+}
+//#endregion
 //#region src/ui/components/json-view.ts
 var BASE64_MIN = 256;
 function escapeHtml$1(text) {
@@ -9062,6 +10881,7 @@ async function editPassport(name, initial) {
 		fillActive();
 	});
 	localize(root);
+	attachPromptAssist(root, ".naist-slot-input, .naist-nsfw-tags, .naist-negative", () => settings().generation.model);
 	if (await c.callGenericPopup(root, c.POPUP_TYPE.CONFIRM, "", {
 		okButton: t("naist.passport.save"),
 		cancelButton: t("naist.inspector.cancel"),
@@ -9392,6 +11212,7 @@ async function openComposer(service, pipeline, opts) {
 		document.addEventListener("pointerup", up);
 	});
 	render();
+	attachPromptAssist(root, ".naist-c-base, .naist-slot-pose-tags, .naist-slot-negative", () => settings().generation.model);
 	const result = await c.callGenericPopup(root, c.POPUP_TYPE.CONFIRM, "", {
 		okButton: t("naist.composer.generate"),
 		cancelButton: t("naist.inspector.cancel"),
@@ -9628,6 +11449,275 @@ function setupScenes(pipeline, service) {
 	});
 }
 //#endregion
+//#region src/features/comic/comic-service.ts
+async function drawCover(context, base64, mime, rect) {
+	const bitmap = await createImageBitmap(base64ToBlob(base64, mime));
+	const scale = Math.max(rect.width / bitmap.width, rect.height / bitmap.height);
+	const w = bitmap.width * scale;
+	const h = bitmap.height * scale;
+	context.save();
+	context.beginPath();
+	context.rect(rect.x, rect.y, rect.width, rect.height);
+	context.clip();
+	context.drawImage(bitmap, rect.x + (rect.width - w) / 2, rect.y + (rect.height - h) / 2, w, h);
+	context.restore();
+	context.lineWidth = 3;
+	context.strokeStyle = "#111";
+	context.strokeRect(rect.x, rect.y, rect.width, rect.height);
+	bitmap.close();
+}
+var ComicService = class {
+	pipeline;
+	constructor(pipeline) {
+		this.pipeline = pipeline;
+	}
+	async generate(req) {
+		const layout = comicLayout(req.layout);
+		const rects = panelPixels(layout, req.page, req.gutter);
+		const panels = layout.panels.map((_, i) => req.panels[i] ?? {
+			prompt: "",
+			text: []
+		});
+		if (panels.every((p) => !p.prompt.trim())) throw new NaiError("no-usable-message", "none");
+		const seed = settings().generation.seed >= 0 ? settings().generation.seed : randomSeed();
+		const chatId = ctx().getCurrentChatId();
+		const canvas = document.createElement("canvas");
+		canvas.width = req.page.width;
+		canvas.height = req.page.height;
+		const context = canvas.getContext("2d");
+		context.fillStyle = "#fff";
+		context.fillRect(0, 0, canvas.width, canvas.height);
+		let done = 0;
+		let cost = 0;
+		req.onProgress?.(0, panels.length);
+		for (const [i, panel] of panels.entries()) {
+			const rect = rects[i];
+			if (!rect || !panel.prompt.trim()) continue;
+			const size = panelRequestSize(rect);
+			const produced = await this.pipeline.produce({
+				initiator: "panel",
+				trigger: panel.prompt,
+				scene: panelPrompt(req.style, panel),
+				mode: MODE.FREE,
+				noContinuity: true,
+				signal: req.signal,
+				overrides: {
+					edit: false,
+					generation: {
+						model: req.model,
+						seed: seed + i,
+						width: size.width,
+						height: size.height,
+						samples: 1,
+						characters: []
+					}
+				}
+			});
+			const image = produced?.images[0];
+			if (!image) return null;
+			cost += produced.prepared.cost.total;
+			await drawCover(context, image.base64, image.mime, rect);
+			req.onProgress?.(++done, panels.length);
+		}
+		const saved = await saveImages([{
+			base64: await blobToBase64$1(await new Promise((resolve, reject) => canvas.toBlob((b) => b ? resolve(b) : reject(/* @__PURE__ */ new Error("canvas export failed")), "image/png"))),
+			mime: "image/png",
+			index: 0,
+			seed
+		}], imageFolder());
+		const first = saved[0];
+		if (!first) throw new NaiError("invalid-response", "none", { preview: "" });
+		const summary = panels.map((p, i) => `${i + 1}. ${p.prompt.trim()}`).filter((line) => !/^\d+\. $/.test(line)).join("\n");
+		const meta = {
+			scenePrompt: summary,
+			prompt: summary,
+			negative: "",
+			mode: MODE.FREE,
+			model: req.model,
+			seed,
+			transport: this.pipeline.studio.state.selection?.transport.id ?? "",
+			cost,
+			width: req.page.width,
+			height: req.page.height,
+			tool: "comic"
+		};
+		if (ctx().getCurrentChatId() !== chatId) return {
+			path: first.path,
+			messageId: null,
+			panels: done
+		};
+		const s = settings();
+		const messageId = await postToChat(saved, meta, {
+			visible: s.chat.visibility.panel === true,
+			author: s.chat.author,
+			hidePrompt: true,
+			text: summary
+		});
+		log.info("comic", `${done} panel(s)`, `cost ${cost}`);
+		return {
+			path: first.path,
+			messageId,
+			panels: done
+		};
+	}
+};
+//#endregion
+//#region src/features/continuity/continuity-service.ts
+var META_KEY = "nai_studio";
+function data() {
+	const meta = ctx().chatMetadata;
+	const root = meta[META_KEY] ??= {};
+	const value = root.continuity;
+	if (!value || typeof value !== "object") root.continuity = {
+		current: "",
+		locations: {}
+	};
+	else {
+		value.current ??= "";
+		value.locations ??= {};
+	}
+	return root.continuity;
+}
+function continuityData() {
+	return structuredClone(data());
+}
+async function setCurrentLocation(name) {
+	data().current = name.trim();
+	await ctx().saveMetadata();
+}
+async function forgetLocation(name) {
+	const d = data();
+	const key = locationKey(name);
+	const old = d.locations[key];
+	delete d.locations[key];
+	if (locationKey(d.current) === key) d.current = "";
+	await ctx().saveMetadata();
+	if (old?.vibeId) await removeVibe(old.vibeId);
+}
+/** Makes the image the reference of the location; in vibe mode also a vibe library item. */
+async function bindLocation(name, ref) {
+	const d = data();
+	const key = locationKey(name);
+	if (!key) return;
+	const previous = d.locations[key];
+	const stored = {
+		...ref,
+		name: name.trim(),
+		updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+	};
+	if (settings().continuity.mode === "vibe") try {
+		const response = await fetch(ref.filePath);
+		if (response.ok) stored.vibeId = (await addVibe(await response.blob(), `@${name.trim()}`)).id;
+	} catch (error) {
+		log.warn("continuity vibe not created:", error);
+	}
+	d.locations[key] = stored;
+	d.current ||= name.trim();
+	await ctx().saveMetadata();
+	if (previous?.vibeId && previous.vibeId !== stored.vibeId) await removeVibe(previous.vibeId);
+}
+var ContinuityService = class {
+	follow(text) {
+		const d = data();
+		const detected = detectLocation(text, Object.values(d.locations).map((l) => l.name));
+		if (detected && locationKey(detected) !== locationKey(d.current)) {
+			d.current = detected;
+			ctx().saveMetadata();
+			log.info("continuity: location", detected);
+		}
+		return d;
+	}
+	async prepare(input) {
+		const s = settings().continuity;
+		if (!s.enabled) return null;
+		const d = this.follow(input.text);
+		if (s.mode !== "img2img" || !d.current) return null;
+		const ref = d.locations[locationKey(d.current)];
+		if (!ref?.filePath) return null;
+		const response = await fetch(ref.filePath, { signal: input.signal });
+		if (!response.ok) return null;
+		const png = await toPngBlob(await response.blob(), input.size);
+		log.info("continuity: img2img from", ref.name);
+		return {
+			image: await blobToBase64$1(png),
+			strength: clampContinuityStrength(s.strength)
+		};
+	}
+	/** Vibe mode: the reference of the current location as an extra vibe. */
+	vibes() {
+		const s = settings().continuity;
+		if (!s.enabled || s.mode !== "vibe" || !ctx().getCurrentChatId()) return [];
+		const d = data();
+		const vibeId = d.locations[locationKey(d.current)]?.vibeId;
+		const item = vibeId ? settings().vibes.items.find((i) => i.id === vibeId) : void 0;
+		return item ? [{
+			item,
+			strength: .6,
+			informationExtracted: 1
+		}] : [];
+	}
+	/** Auto-bind: plain generations (not tool results) become the reference of the current location. */
+	observe = (produced, outcome) => {
+		const s = settings().continuity;
+		if (!s.enabled || !s.autoBind || produced.meta.tool) return;
+		if (produced.meta.requestType !== "txt2img" && produced.meta.requestType !== "img2img") return;
+		if (produced.chatId !== ctx().getCurrentChatId()) return;
+		const d = data();
+		const path = outcome.paths[0];
+		if (!d.current || !path) return;
+		bindLocation(d.current, {
+			filePath: path,
+			width: produced.meta.width,
+			height: produced.meta.height,
+			model: produced.meta.model,
+			seed: produced.meta.seed,
+			prompt: produced.meta.scenePrompt
+		}).catch((error) => log.warn("continuity bind failed:", error));
+	};
+};
+//#endregion
+//#region package.json
+var version = "0.6.0";
+//#endregion
+//#region src/features/settings-io/settings-io.ts
+async function exportSettingsFile(includeImages) {
+	const s = settings();
+	const images = {};
+	if (includeImages) for (const item of s.vibes.items) for (const key of [item.imageKey, item.thumbKey]) {
+		const blob = await imageStore().getItem(key);
+		if (blob) images[key] = await blobToBase64$1(blob);
+	}
+	const data = buildSettingsExport(s, 6, version, images);
+	const name = `nai-studio-settings-${data.exportedAt.slice(0, 10)}.json`;
+	downloadBlob(new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }), name);
+	return name;
+}
+async function importSettingsText(text) {
+	const check = checkSettingsImport(text, 6);
+	if (!check.ok) throw new NaiError("import-failed", "none", { reason: t(`naist.io.reason.${check.reason}`, {
+		version: check.schemaVersion ?? "",
+		current: 6
+	}) });
+	try {
+		const key = await backupSettings(settings(), settings().schemaVersion);
+		log.info("settings backed up before import", key);
+	} catch (error) {
+		log.warn("settings backup before import failed", error);
+	}
+	const { settings: next } = migrateAndFill(check.settings, libs().lodash.merge);
+	let images = 0;
+	for (const [key, value] of Object.entries(check.images)) {
+		await imageStore().setItem(key, base64ToBlob(value, "image/png"));
+		images++;
+	}
+	replaceSettings(next);
+	log.info("settings imported from schema", check.schemaVersion, `${images} image(s)`);
+	return {
+		fromVersion: check.schemaVersion,
+		images
+	};
+}
+//#endregion
 //#region src/features/tools/tool-common.ts
 /** Free-only blocks every paid tool call; otherwise a paid call above the threshold is confirmed. */
 async function guardCost(cost, what, confirm) {
@@ -9771,6 +11861,812 @@ function toolMeta(source, patch) {
 /** Dimensions of a generated image (results of tools may differ from the request size). */
 async function generatedSize(image) {
 	return await imageSize(new Blob([base64ToBytes(image.base64)], { type: image.mime }));
+}
+//#endregion
+//#region src/features/sprites/sprite-service.ts
+/** Folder Expressions reads for a character: its override, else the character name (RECON §2.12). */
+function spriteFolder(characterIndex) {
+	const c = ctx();
+	const character = c.characters[characterIndex];
+	const overrides = c.extensionSettings.expressionOverrides;
+	const key = avatarKey(character?.avatar);
+	if (Array.isArray(overrides)) {
+		const found = overrides.find((o) => o?.name === key && o.path);
+		if (found) return String(found.path);
+	}
+	return character?.name ?? "";
+}
+/** Appearance tags: the passport when the card has one, else the character prompt, else the name. */
+function spriteAppearance(characterIndex) {
+	const character = ctx().characters[characterIndex];
+	const passport = cardPassport(character);
+	if (passport) return passportTags(passport, { allowNsfw: false });
+	return readCharacterPrompt(character).positive.trim() || character?.name || "";
+}
+function spriteLabels(selected) {
+	return selected.length ? selected : [...EXPRESSION_LABELS];
+}
+async function uploadSprite(folder, label, image) {
+	const png = await toPngBlob(base64ToBlob(image.base64, image.mime));
+	const form = new FormData();
+	const file = spriteFileName(label);
+	form.append("name", folder);
+	form.append("label", label);
+	form.append("spriteName", file.replace(/\.png$/, ""));
+	form.append("avatar", new File([png], file, { type: "image/png" }));
+	const response = await fetch("/api/sprites/upload", {
+		method: "POST",
+		headers: requestHeaders(true),
+		body: form
+	});
+	if (!response.ok) throw new NaiError("image-load-failed", "none", { status: response.status });
+	return file;
+}
+var SpriteService = class {
+	pipeline;
+	constructor(pipeline) {
+		this.pipeline = pipeline;
+	}
+	async draw(appearance, label, options, seed, base) {
+		const caps = getCapabilities(isModelId(options.model) ? options.model : DEFAULT_MODEL);
+		const image = (await this.pipeline.produce({
+			initiator: "panel",
+			trigger: label,
+			scene: spritePrompt(appearance, label),
+			mode: MODE.FREE,
+			noContinuity: true,
+			signal: options.signal,
+			overrides: {
+				edit: false,
+				generation: {
+					model: options.model,
+					seed,
+					samples: 1,
+					characters: [],
+					...base ? {
+						width: base.width,
+						height: base.height
+					} : {},
+					transparentBackground: options.transparent && caps.transparency && !base
+				}
+			},
+			...base ? { requestPatch: {
+				mode: "img2img",
+				image: base.image,
+				strength: base.strength
+			} } : {}
+		}))?.images[0];
+		if (!image) throw new NaiError("aborted", "none");
+		return image;
+	}
+	async emotion(base, emotion, signal) {
+		const transport = this.pipeline.studio.state.selection?.transport;
+		if (!transport?.features.director || !transport.extras) throw new NaiError("feature-unavailable", "install-plugin", { feature: "Director Tools" });
+		const blob = base64ToBlob(base.base64, base.mime);
+		const bitmap = await createImageBitmap(blob);
+		const size = directorSize(bitmap.width, bitmap.height);
+		bitmap.close();
+		const cost = directorToolCost("emotion", size.width, size.height, this.pipeline.studio.state.account);
+		if (cost > 0) throw new NaiError("free-only-blocked", "enable-free-only", { cost });
+		const body = directorBody("emotion", await blobToBase64$1(await toPngBlob(blob, size)), size, {
+			emotion,
+			defry: 0,
+			prompt: ""
+		});
+		const [first] = await unzipImages(await transport.extras.augment(body, {
+			retryable: true,
+			signal
+		}));
+		if (!first) throw new NaiError("invalid-response", "none", { preview: "empty ZIP" });
+		return first;
+	}
+	async generate(options) {
+		const folder = spriteFolder(options.characterIndex);
+		if (!folder) throw new NaiError("image-not-found", "none");
+		const appearance = spriteAppearance(options.characterIndex);
+		const jobs = spriteLabels(options.labels).map((label) => ({
+			label,
+			status: "pending"
+		}));
+		const report = () => options.onProgress?.(jobs.map((j) => ({ ...j })));
+		const seed = settings().generation.seed >= 0 ? settings().generation.seed : randomSeed();
+		let base = null;
+		const order = options.mode === "director" ? [...jobs].sort((a, b) => Number(b.label === "neutral") - Number(a.label === "neutral")) : jobs;
+		report();
+		for (const job of order) {
+			if (options.signal?.aborted) break;
+			job.status = "running";
+			report();
+			try {
+				let image;
+				if (options.mode === "seed") {
+					image = await this.draw(appearance, job.label, options, seed);
+					job.how = "seed";
+				} else if (!base) {
+					image = await this.draw(appearance, "neutral", options, seed);
+					base = image;
+					job.how = "base";
+					if (job.label !== "neutral") image = await this.variant(base, appearance, job, options, seed);
+				} else image = await this.variant(base, appearance, job, options, seed);
+				job.file = await uploadSprite(folder, job.label, image);
+				job.status = "done";
+			} catch (error) {
+				if (options.signal?.aborted) break;
+				job.status = "failed";
+				job.error = error?.message ?? String(error);
+				log.warn("sprite failed", job.label, job.error);
+			}
+			report();
+		}
+		log.info("sprites", folder, jobs.filter((j) => j.status === "done").length, "of", jobs.length);
+		return jobs;
+	}
+	async variant(base, appearance, job, options, seed) {
+		const emotion = EXPRESSION_DIRECTOR[job.label];
+		if (emotion) {
+			job.how = "director";
+			return await this.emotion(base, emotion, options.signal);
+		}
+		job.how = "img2img";
+		const png = await toPngBlob(base64ToBlob(base.base64, base.mime));
+		const bitmap = await createImageBitmap(png);
+		const source = {
+			image: await blobToBase64$1(png),
+			width: bitmap.width,
+			height: bitmap.height,
+			strength: .6
+		};
+		bitmap.close();
+		return await this.draw(appearance, job.label, options, seed, source);
+	}
+};
+//#endregion
+//#region src/features/prompt-tools/tokenizers.ts
+var env = {
+	fetch: (input, init) => fetch(input, init),
+	headers: () => requestHeaders()
+};
+var loading = /* @__PURE__ */ new Map();
+var ready = /* @__PURE__ */ new Map();
+var APPROXIMATE = { count: approximateTokens };
+async function inflateRaw(data) {
+	const stream = new Blob([data]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
+	return await new Response(stream).text();
+}
+function build(kind, json) {
+	if (kind === "clip") return new ClipTokenizer(json.text);
+	if (kind === "t5") return new T5Tokenizer(json);
+	return new ByteBpeTokenizer(json);
+}
+async function load(kind) {
+	const file = TOKENIZER_FILES[kind];
+	const key = `tokdef:${file}`;
+	let data = await store().getItem(key);
+	if (!data) {
+		data = await fetchTokenizerDefinition(env, file);
+		if (!data) {
+			log.warn("tokenizer unavailable, counting approximately:", file);
+			return null;
+		}
+		await store().setItem(key, data);
+	}
+	const counter = build(kind, JSON.parse(await inflateRaw(data)));
+	ready.set(kind, counter);
+	log.info("tokenizer ready:", file);
+	return counter;
+}
+/** Starts loading (once) and resolves with the tokenizer, or null when it cannot be had. */
+function loadTokenizer(kind) {
+	let promise = loading.get(kind);
+	if (!promise) {
+		promise = load(kind).catch((error) => {
+			log.warn("tokenizer failed to load:", error);
+			loading.delete(kind);
+			return null;
+		});
+		loading.set(kind, promise);
+	}
+	return promise;
+}
+/** The tokenizer if it is already built (synchronous, for typing). */
+function readyTokenizer(kind) {
+	return ready.get(kind) ?? null;
+}
+//#endregion
+//#region src/ui/comic-dialog.ts
+var V5_MODELS = MODELS.filter((m) => m.id.startsWith("nai-diffusion-5"));
+function layoutPreview(id) {
+	return `<svg viewBox="0 0 40 60" class="naist-comic-thumb">${comicLayout(id).panels.map((p) => `<rect x="${p.x * 40 + 1}" y="${p.y * 60 + 1}" width="${p.w * 40 - 2}" height="${p.h * 60 - 2}" rx="1"></rect>`).join("")}</svg>`;
+}
+async function openComicDialog(service) {
+	const c = ctx();
+	const s = settings().comic;
+	const current = settings().generation.model;
+	const model = V5_MODELS.some((m) => m.id === current) ? current : "nai-diffusion-5-full";
+	let panels = [];
+	const root = document.createElement("div");
+	root.className = "naist-dialog naist-comic";
+	root.innerHTML = `
+        <h3>${escapeHtml$2(t("naist.comic.title"))}</h3>
+        <div class="naist-hint">${escapeHtml$2(t("naist.comic.hint"))}</div>
+        <div class="naist-comic-layouts">${COMIC_LAYOUTS.map((l) => `<label class="naist-comic-layout${l.id === s.layout ? " naist-tab-active" : ""}" title="${escapeHtml$2(t(`naist.comic.layout.${l.id}`))}">
+                <input type="radio" name="naist_comic_layout" value="${l.id}"${l.id === s.layout ? " checked" : ""}>${layoutPreview(l.id)}</label>`).join("")}</div>
+        <div class="naist-grid3">
+            <div><label>${escapeHtml$2(t("naist.comic.pageWidth"))}</label><input type="number" min="256" max="4096" step="16" class="text_pole naist-comic-w" value="${s.pageWidth}"></div>
+            <div><label>${escapeHtml$2(t("naist.comic.pageHeight"))}</label><input type="number" min="256" max="4096" step="16" class="text_pole naist-comic-h" value="${s.pageHeight}"></div>
+            <div><label>${escapeHtml$2(t("naist.comic.gutter"))}</label><input type="number" min="0" max="128" class="text_pole naist-comic-gutter" value="${s.gutter}"></div>
+        </div>
+        <div class="naist-grid2">
+            <div><label>${escapeHtml$2(t("naist.comic.style"))}</label><input class="text_pole naist-comic-style" value="${escapeHtml$2(s.style)}"></div>
+            <div><label>${escapeHtml$2(t("naist.panel.model"))}</label><select class="text_pole naist-comic-model">${V5_MODELS.map((m) => `<option value="${m.id}"${m.id === model ? " selected" : ""}>${escapeHtml$2(t(m.nameKey))}</option>`).join("")}</select></div>
+        </div>
+        <div class="naist-comic-panels"></div>
+        <div class="naist-row">
+            <div class="menu_button naist-comic-run">${escapeHtml$2(t("naist.comic.run"))}</div>
+            <span class="naist-muted naist-comic-status"></span>
+        </div>`;
+	const layoutId = () => root.querySelector("input[name=\"naist_comic_layout\"]:checked")?.value ?? s.layout;
+	const modelId = () => root.querySelector(".naist-comic-model").value;
+	const counter = () => readyTokenizer("qwen") ?? APPROXIMATE;
+	const readPanels = () => {
+		panels = [...root.querySelectorAll(".naist-comic-panel")].map((el) => ({
+			prompt: el.querySelector(".naist-comic-prompt").value,
+			text: el.querySelector(".naist-comic-text").value.split("\n")
+		}));
+	};
+	const updateCounts = () => {
+		readPanels();
+		const limit = tokenLimit(modelId());
+		const approx = !readyTokenizer("qwen");
+		root.querySelectorAll(".naist-comic-panel").forEach((el, i) => {
+			const panel = panels[i];
+			const info = el.querySelector(".naist-comic-count");
+			if (!panel || !info) return;
+			const style = root.querySelector(".naist-comic-style").value;
+			const total = counter().count(`${style}, ${panel.prompt}`) + counter().count(panelTextBlock(panel));
+			info.textContent = t("naist.comic.tokens", {
+				text: `${approx ? "≈" : ""}${counter().count(panelTextBlock(panel))}`,
+				total: `${approx ? "≈" : ""}${total}`,
+				limit
+			});
+			info.classList.toggle("naist-warning", total > limit);
+		});
+	};
+	const renderPanels = () => {
+		const count = comicLayout(layoutId()).panels.length;
+		const box = root.querySelector(".naist-comic-panels");
+		box.innerHTML = Array.from({ length: count }, (_, i) => {
+			const p = panels[i] ?? {
+				prompt: "",
+				text: []
+			};
+			return `<div class="naist-section naist-comic-panel">
+                <b>${escapeHtml$2(t("naist.comic.panel", { n: i + 1 }))}</b>
+                <textarea class="text_pole textarea_compact naist-comic-prompt" rows="2" placeholder="${escapeHtml$2(t("naist.comic.promptPlaceholder"))}">${escapeHtml$2(p.prompt)}</textarea>
+                <textarea class="text_pole textarea_compact naist-comic-text" rows="2" placeholder="${escapeHtml$2(t("naist.comic.textPlaceholder"))}">${escapeHtml$2(p.text.join("\n"))}</textarea>
+                <div class="naist-muted naist-comic-count"></div>
+            </div>`;
+		}).join("");
+		updateCounts();
+	};
+	const abort = new AbortController();
+	let running = false;
+	root.addEventListener("change", (event) => {
+		const el = event.target;
+		if (el.matches("input[name=\"naist_comic_layout\"]")) {
+			readPanels();
+			root.querySelectorAll(".naist-comic-layout").forEach((l) => l.classList.toggle("naist-tab-active", l.contains(el)));
+			renderPanels();
+		}
+	});
+	root.addEventListener("input", () => updateCounts());
+	root.addEventListener("click", (event) => {
+		const el = event.target;
+		if (!el.classList.contains("naist-comic-run") || running) return;
+		readPanels();
+		const status = root.querySelector(".naist-comic-status");
+		s.layout = layoutId();
+		s.pageWidth = Number(root.querySelector(".naist-comic-w").value) || s.pageWidth;
+		s.pageHeight = Number(root.querySelector(".naist-comic-h").value) || s.pageHeight;
+		s.gutter = Math.max(0, Number(root.querySelector(".naist-comic-gutter").value) || 0);
+		s.style = root.querySelector(".naist-comic-style").value;
+		saveSettings();
+		running = true;
+		el.classList.add("disabled");
+		service.generate({
+			layout: s.layout,
+			page: {
+				width: s.pageWidth,
+				height: s.pageHeight
+			},
+			gutter: s.gutter,
+			style: s.style,
+			model: modelId(),
+			panels,
+			signal: abort.signal,
+			onProgress: (done, total) => status.textContent = t("naist.comic.progress", {
+				done,
+				total
+			})
+		}).then((result) => {
+			if (result) toastr.success(t("naist.comic.done", { count: result.panels }), t("naist.comic.title"));
+		}).catch(reportGenerationError).finally(() => {
+			running = false;
+			el.classList.remove("disabled");
+		});
+	});
+	loadTokenizer("qwen").then(() => updateCounts());
+	renderPanels();
+	localize(root);
+	await c.callGenericPopup(root, c.POPUP_TYPE.TEXT, "", {
+		wide: true,
+		large: true,
+		allowVerticalScrolling: true,
+		okButton: t("naist.sprites.close")
+	});
+	abort.abort();
+}
+//#endregion
+//#region src/ui/sprites-dialog.ts
+var STATUS_ICON = {
+	pending: "fa-regular fa-clock",
+	running: "fa-solid fa-spinner fa-spin",
+	done: "fa-solid fa-check",
+	failed: "fa-solid fa-triangle-exclamation"
+};
+function customLabels() {
+	const expressions = ctx().extensionSettings.expressions;
+	return Array.isArray(expressions?.custom) ? expressions.custom.filter((l) => typeof l === "string") : [];
+}
+async function openSpritesDialog(service, characterIndex) {
+	const c = ctx();
+	const s = settings().sprites;
+	const character = c.characters[characterIndex];
+	if (!character) {
+		toastr.warning(t("naist.sprites.noCharacter"));
+		return;
+	}
+	const all = [...EXPRESSION_LABELS, ...customLabels().filter((l) => !EXPRESSION_LABELS.includes(l))];
+	const selected = new Set(spriteLabels(s.labels));
+	const model = settings().generation.model;
+	const root = document.createElement("div");
+	root.className = "naist-dialog naist-sprites";
+	root.innerHTML = `
+        <h3>${escapeHtml$2(t("naist.sprites.title"))}</h3>
+        <div class="naist-hint">${escapeHtml$2(t("naist.sprites.target", {
+		name: character.name,
+		folder: spriteFolder(characterIndex)
+	}))}</div>
+        <div class="naist-muted naist-sprites-appearance">${escapeHtml$2(t("naist.sprites.appearance", { tags: spriteAppearance(characterIndex) || "—" }))}</div>
+        <div class="naist-row">
+            <label class="checkbox_label"><input type="radio" name="naist_sprite_mode" value="director"${s.mode === "director" ? " checked" : ""}><span>${escapeHtml$2(t("naist.sprites.modeDirector"))}</span></label>
+            <label class="checkbox_label"><input type="radio" name="naist_sprite_mode" value="seed"${s.mode === "seed" ? " checked" : ""}><span>${escapeHtml$2(t("naist.sprites.modeSeed"))}</span></label>
+        </div>
+        <div class="naist-hint naist-sprites-mode-hint"></div>
+        <div class="naist-grid2">
+            <div><label>${escapeHtml$2(t("naist.panel.model"))}</label>
+            <select class="text_pole naist-sprite-model">${MODELS.map((m) => `<option value="${m.id}"${m.id === model ? " selected" : ""}>${escapeHtml$2(t(m.nameKey))}</option>`).join("")}</select></div>
+            <div><label class="checkbox_label"><input type="checkbox" class="naist-sprite-transparent"${s.transparent ? " checked" : ""}><span>${escapeHtml$2(t("naist.sprites.transparent"))}</span></label></div>
+        </div>
+        <div class="naist-row">
+            <b class="naist-grow">${escapeHtml$2(t("naist.sprites.labels"))}</b>
+            <div class="menu_button naist-sprite-all">${escapeHtml$2(t("naist.sprites.all"))}</div>
+            <div class="menu_button naist-sprite-none">${escapeHtml$2(t("naist.sprites.none"))}</div>
+        </div>
+        <div class="naist-sprite-labels">${all.map((label) => `<label class="checkbox_label"><input type="checkbox" value="${escapeHtml$2(label)}"${selected.has(label) ? " checked" : ""}><span>${escapeHtml$2(label)}</span></label>`).join("")}</div>
+        <div class="naist-row">
+            <div class="menu_button naist-sprite-run">${escapeHtml$2(t("naist.sprites.run"))}</div>
+            <span class="naist-muted naist-sprite-summary"></span>
+        </div>
+        <div class="naist-sprite-progress"></div>`;
+	const modelSelect = root.querySelector(".naist-sprite-model");
+	const transparent = root.querySelector(".naist-sprite-transparent");
+	const mode = () => root.querySelector("input[name=\"naist_sprite_mode\"]:checked")?.value === "seed" ? "seed" : "director";
+	const updateMode = () => {
+		const id = modelSelect.value;
+		const caps = getCapabilities(isModelId(id) ? id : DEFAULT_MODEL);
+		transparent.disabled = !caps.transparency || mode() !== "seed";
+		const hint = root.querySelector(".naist-sprites-mode-hint");
+		if (hint) hint.textContent = t(mode() === "seed" ? "naist.sprites.modeSeedHint" : "naist.sprites.modeDirectorHint");
+	};
+	const labels = () => [...root.querySelectorAll(".naist-sprite-labels input:checked")].map((i) => i.value);
+	const summary = () => {
+		const el = root.querySelector(".naist-sprite-summary");
+		if (el) el.textContent = t("naist.sprites.count", { count: labels().length });
+	};
+	const renderJobs = (jobs) => {
+		const el = root.querySelector(".naist-sprite-progress");
+		if (!el) return;
+		el.innerHTML = jobs.map((j) => `<div class="naist-sprite-job naist-sprite-${j.status}"><i class="${STATUS_ICON[j.status]}"></i> <b>${escapeHtml$2(j.label)}</b>
+                <span class="naist-muted">${escapeHtml$2(j.how ? t(`naist.sprites.how.${j.how}`) : "")}${j.file ? ` → ${escapeHtml$2(j.file)}` : ""}${j.error ? ` — ${escapeHtml$2(j.error)}` : ""}</span></div>`).join("");
+	};
+	const abort = new AbortController();
+	let running = false;
+	root.addEventListener("change", () => {
+		updateMode();
+		summary();
+	});
+	root.addEventListener("click", (event) => {
+		const el = event.target;
+		if (el.classList.contains("naist-sprite-all") || el.classList.contains("naist-sprite-none")) {
+			const on = el.classList.contains("naist-sprite-all");
+			root.querySelectorAll(".naist-sprite-labels input").forEach((i) => i.checked = on);
+			summary();
+		} else if (el.classList.contains("naist-sprite-run") && !running) {
+			const chosen = labels();
+			if (!chosen.length) return;
+			running = true;
+			el.classList.add("disabled");
+			s.mode = mode();
+			s.transparent = transparent.checked;
+			s.labels = chosen.length === EXPRESSION_LABELS.length && chosen.every((l, i) => l === EXPRESSION_LABELS[i]) ? [] : chosen;
+			saveSettings();
+			service.generate({
+				characterIndex,
+				labels: chosen,
+				mode: s.mode,
+				transparent: s.transparent,
+				model: modelSelect.value,
+				signal: abort.signal,
+				onProgress: renderJobs
+			}).then((jobs) => {
+				const done = jobs.filter((j) => j.status === "done").length;
+				toastr.success(t("naist.sprites.finished", {
+					done,
+					total: jobs.length,
+					folder: spriteFolder(characterIndex)
+				}), t("naist.sprites.title"));
+			}).catch(reportGenerationError).finally(() => {
+				running = false;
+				el.classList.remove("disabled");
+			});
+		}
+	});
+	updateMode();
+	summary();
+	localize(root);
+	await c.callGenericPopup(root, c.POPUP_TYPE.TEXT, "", {
+		wide: true,
+		large: true,
+		allowVerticalScrolling: true,
+		okButton: t("naist.sprites.close")
+	});
+	abort.abort();
+}
+//#endregion
+//#region src/integration/tools.ts
+var TOOL_NAME = "GenerateImage";
+var SHOTS = {
+	portrait: { framing: "portrait" },
+	"upper body": { framing: "upper_body" },
+	"cowboy shot": { framing: "cowboy_shot" },
+	"full body": { framing: "full_body" },
+	"close-up": { distance: "close_up" },
+	"wide shot": { distance: "wide_shot" }
+};
+var lastCall = 0;
+var scenes = null;
+/** Phase 4 scene assembly for calls that name characters (set once the scene feature is up). */
+function setToolScenes(service) {
+	scenes = service;
+}
+var text = (value) => typeof value === "string" ? value.trim() : "";
+/** Flat prompt from the structured arguments (used when no character is named). */
+function toolPrompt(args) {
+	return [
+		text(args.prompt),
+		text(args.action),
+		text(args.mood),
+		text(args.location),
+		text(args.shot)
+	].filter(Boolean).join(", ");
+}
+async function generate(pipeline, args) {
+	const names = Array.isArray(args.characters) ? args.characters.map(text).filter(Boolean) : [];
+	if (names.length && scenes) {
+		const action = text(args.action) || text(args.prompt);
+		const { spec } = await scenes.autoSpec(`${names.join(", ")}. ${action}`);
+		if (spec.participants.length) {
+			spec.base = [
+				text(args.location),
+				action,
+				text(args.mood)
+			].filter(Boolean).join(", ");
+			const shot = SHOTS[text(args.shot).toLowerCase()];
+			if (shot?.framing) spec.framing = shot.framing;
+			if (shot?.distance) spec.distance = shot.distance;
+			const result = await scenes.generate(spec, "message");
+			return result && typeof result === "object" ? encodeURI(result.path) : "";
+		}
+	}
+	const prompt = toolPrompt(args);
+	if (!prompt) throw new Error("Missing prompt");
+	const result = await pipeline.generatePicture({
+		initiator: "tool",
+		trigger: prompt
+	});
+	return result ? encodeURI(result.path) : "";
+}
+function syncFunctionTool(pipeline, compat) {
+	const c = ctx();
+	const s = settings();
+	if (!compat || !s.chat.functionTool) {
+		c.unregisterFunctionTool(TOOL_NAME);
+		return;
+	}
+	const description = s.prompts.templates[String(MODE.TOOL)] ?? DEFAULT_TEMPLATES[String(MODE.TOOL)] ?? "";
+	c.registerFunctionTool({
+		name: TOOL_NAME,
+		displayName: t("naist.tool.displayName"),
+		description: "Generate an image. Use when a user asks to generate an image, imagine a concept or an item, send a picture of a scene, a selfie, etc. Name the characters in the frame and describe what happens; or give a free prompt.",
+		parameters: {
+			$schema: "http://json-schema.org/draft-04/schema#",
+			type: "object",
+			properties: {
+				prompt: {
+					type: "string",
+					description
+				},
+				characters: {
+					type: "array",
+					items: { type: "string" },
+					description: "Names of the characters in the frame"
+				},
+				action: {
+					type: "string",
+					description: "What is happening, as short English tags"
+				},
+				mood: {
+					type: "string",
+					description: "Mood and atmosphere, as short English tags"
+				},
+				shot: {
+					type: "string",
+					enum: Object.keys(SHOTS),
+					description: "Framing of the picture"
+				},
+				location: {
+					type: "string",
+					description: "Where it takes place, as short English tags"
+				}
+			},
+			required: []
+		},
+		formatMessage: () => t("naist.tool.running"),
+		action: async (args) => {
+			const cooldown = settings().chat.toolCooldownSeconds * 1e3;
+			if (Date.now() - lastCall < cooldown) throw new Error(`Image generation is on cooldown, try again in ${Math.ceil((cooldown - (Date.now() - lastCall)) / 1e3)} s.`);
+			lastCall = Date.now();
+			return await generate(pipeline, args ?? {});
+		}
+	});
+}
+//#endregion
+//#region src/integration/phase6-setup.ts
+var SPRITES_OPTION = "naist_char_sprites";
+var sprites = null;
+var comic = null;
+function glossaryText() {
+	return settings().translate.glossary.map((g) => `${g.from} = ${g.to}`).join("\n");
+}
+function parseGlossary(text) {
+	return text.split("\n").map((line) => line.split("=")).filter((parts) => parts.length >= 2).map(([from, ...rest]) => ({
+		from: (from ?? "").trim(),
+		to: rest.join("=").trim()
+	})).filter((g) => g.from && g.to);
+}
+function fillGlossary() {
+	const field = document.getElementById("naist_glossary");
+	if (field && document.activeElement !== field) field.value = glossaryText();
+}
+/** The newest image of the chat: message media or the active variant of an inline image. */
+function lastChatImage() {
+	const chat = ctx().chat;
+	for (let i = chat.length - 1; i >= 0; i--) {
+		const extra = chat[i]?.extra;
+		const swipe = readEntries(extra).map(activeSwipe).filter((s) => s?.filePath).at(-1);
+		if (swipe) return {
+			filePath: swipe.filePath,
+			width: swipe.meta.width,
+			height: swipe.meta.height,
+			model: swipe.meta.model,
+			seed: swipe.meta.seed,
+			prompt: swipe.meta.scenePrompt
+		};
+		const media = Array.isArray(extra?.media) ? extra.media : [];
+		const item = media[typeof extra?.media_index === "number" ? extra.media_index : media.length - 1] ?? media.at(-1);
+		if (item && typeof item.url === "string") {
+			const naist = item.nai_studio ?? {};
+			return {
+				filePath: item.url,
+				width: Number(item.width) || 0,
+				height: Number(item.height) || 0,
+				model: naist.model ?? "",
+				seed: naist.seed ?? 0,
+				prompt: typeof item.title === "string" ? item.title : naist.prompt ?? ""
+			};
+		}
+	}
+	return null;
+}
+function refreshContinuity() {
+	const input = document.getElementById("naist_cont_current");
+	if (!input) return;
+	const data = ctx().getCurrentChatId() ? continuityData() : {
+		current: "",
+		locations: {}
+	};
+	if (document.activeElement !== input) input.value = data.current;
+	const list = document.getElementById("naist_cont_locations");
+	if (list) {
+		list.innerHTML = "";
+		for (const location of Object.values(data.locations)) {
+			const option = document.createElement("option");
+			option.value = location.name;
+			list.append(option);
+		}
+	}
+	const info = document.getElementById("naist_cont_info");
+	if (info) {
+		const ref = data.locations[locationKey(data.current)];
+		const names = Object.values(data.locations).map((l) => l.name);
+		info.textContent = [ref ? t("naist.continuity.boundTo", { path: ref.filePath }) : data.current ? t("naist.continuity.unbound") : "", names.length ? t("naist.continuity.known", { names: names.join(", ") }) : ""].filter(Boolean).join(" · ");
+	}
+}
+async function bindCurrent() {
+	const name = document.getElementById("naist_cont_current")?.value.trim() || continuityData().current;
+	if (!name) {
+		toastr.info(t("naist.continuity.needName"));
+		return;
+	}
+	const image = lastChatImage();
+	if (!image) {
+		toastr.info(t("naist.continuity.noImage"));
+		return;
+	}
+	await bindLocation(name, image);
+	await setCurrentLocation(name);
+	toastr.success(t("naist.continuity.bound", { name }), t("naist.continuity.title"));
+	refreshContinuity();
+}
+function openSprites(index = editedCharacterIndex()) {
+	if (!sprites) return;
+	if (index === null || ctx().groupId) {
+		toastr.info(t("naist.sprites.noCharacter"));
+		return;
+	}
+	openSpritesDialog(sprites, index).catch(reportGenerationError);
+}
+function openComic() {
+	if (comic) openComicDialog(comic).catch(reportGenerationError);
+}
+function registerCommands$1() {
+	const { SlashCommandParser: parser, SlashCommand: Command, SlashCommandArgument: Arg, ARGUMENT_TYPE: T } = ctx();
+	const text = (description) => [Arg.fromProps({
+		description,
+		typeList: [T.STRING ?? "string"],
+		isRequired: false
+	})];
+	parser.addCommandObject(Command.fromProps({
+		name: "nai-translate",
+		returns: t("naist.command.translateReturns"),
+		helpString: t("naist.command.translateHelp"),
+		unnamedArgumentList: text(t("naist.command.arg.translateText")),
+		callback: async (_args, value) => {
+			try {
+				return (await translatePrompt(String(value ?? ""))).text;
+			} catch (error) {
+				reportGenerationError(error);
+				return "";
+			}
+		}
+	}));
+	parser.addCommandObject(Command.fromProps({
+		name: "nai-location",
+		returns: t("naist.command.locationReturns"),
+		helpString: t("naist.command.locationHelp"),
+		unnamedArgumentList: text(t("naist.command.arg.locationName")),
+		callback: async (_args, value) => {
+			const name = String(value ?? "").trim();
+			if (name) {
+				await setCurrentLocation(name);
+				refreshContinuity();
+			}
+			return continuityData().current;
+		}
+	}));
+	for (const [name, help, open] of [[
+		"nai-sprites",
+		"naist.command.spritesHelp",
+		() => openSprites()
+	], [
+		"nai-comic",
+		"naist.command.comicHelp",
+		() => openComic()
+	]]) parser.addCommandObject(Command.fromProps({
+		name,
+		returns: "",
+		helpString: t(help),
+		callback: async () => {
+			open();
+			return "";
+		}
+	}));
+}
+function installMenuOption() {
+	const select = document.querySelector("#char-management-dropdown");
+	if (select && !select.querySelector(`#${SPRITES_OPTION}`)) {
+		const option = document.createElement("option");
+		option.id = SPRITES_OPTION;
+		option.setAttribute("data-i18n", "naist.card.sprites");
+		option.textContent = t("naist.card.sprites");
+		select.append(option);
+	}
+}
+function setupPhase6(pipeline, scenes) {
+	pipeline.setTranslator(autoTranslator);
+	const continuity = new ContinuityService();
+	pipeline.setContinuityProvider(continuity);
+	pipeline.onGenerated(continuity.observe);
+	setExtraVibes(() => continuity.vibes());
+	setToolScenes(scenes);
+	sprites = new SpriteService(pipeline);
+	comic = new ComicService(pipeline);
+	document.addEventListener("click", (event) => {
+		const target = event.target;
+		if (target.closest("#naist_open_sprites")) openSprites();
+		else if (target.closest("#naist_open_comic")) openComic();
+		else if (target.closest("#naist_cont_bind")) bindCurrent().catch(reportGenerationError);
+		else if (target.closest("#naist_cont_forget")) {
+			const name = document.getElementById("naist_cont_current")?.value.trim();
+			if (name) forgetLocation(name).then(refreshContinuity).catch(reportGenerationError);
+		} else if (target.closest("#naist_settings_export")) exportSettingsFile(document.getElementById("naist_settings_images")?.checked !== false).then((file) => toastr.success(t("naist.io.exported", { file }), t("naist.io.title"))).catch(reportGenerationError);
+		else if (target.closest("#naist_settings_import")) document.getElementById("naist_settings_file")?.click();
+	});
+	document.addEventListener("change", (event) => {
+		const target = event.target;
+		if (target.id === "naist_cont_current") setCurrentLocation(target.value).then(refreshContinuity);
+		else if (target.id === "naist_settings_file") {
+			const input = target;
+			const file = input.files?.[0];
+			input.value = "";
+			if (!file) return;
+			(async () => {
+				const c = ctx();
+				if (await c.callGenericPopup(t("naist.io.confirmImport", { file: file.name }), c.POPUP_TYPE.CONFIRM) !== c.POPUP_RESULT.AFFIRMATIVE) return;
+				const result = await importSettingsText(await file.text());
+				toastr.success(t("naist.io.imported", {
+					version: result.fromVersion,
+					images: result.images
+				}), t("naist.io.title"));
+			})().catch(reportGenerationError);
+		}
+	});
+	document.addEventListener("input", (event) => {
+		const target = event.target;
+		if (target.id !== "naist_glossary") return;
+		settings().translate.glossary = parseGlossary(target.value);
+		saveSettings();
+	});
+	document.addEventListener("focusin", (event) => {
+		if (event.target.id === "naist_cont_current") refreshContinuity();
+	});
+	onExternalChange(() => {
+		fillGlossary();
+		refreshContinuity();
+	});
+	const c = ctx();
+	c.eventSource.on(c.eventTypes.CHAT_CHANGED ?? "chat_id_changed", () => refreshContinuity());
+	c.eventSource.on(c.eventTypes.CHARACTER_MANAGEMENT_DROPDOWN ?? "charManagementDropdown", (target) => {
+		if (target === SPRITES_OPTION) openSprites();
+	});
+	c.eventSource.on(c.eventTypes.APP_READY ?? "app_ready", () => {
+		installMenuOption();
+		registerCommands$1();
+		fillGlossary();
+		refreshContinuity();
+		log.info("phase 6 tools ready");
+	});
 }
 //#endregion
 //#region src/features/tools/tools-service.ts
@@ -10063,184 +12959,6 @@ var ToolsService = class {
 			});
 		}
 		return size;
-	}
-};
-async function sha256Hex(text) {
-	const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
-	return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
-}
-function vibeItems() {
-	return settings().vibes.items;
-}
-async function addVibe(file, name) {
-	const png = await toPngBlob(file);
-	const base64 = await blobToBase64$1(png);
-	const id = ctx().uuidv4();
-	const item = {
-		id,
-		name: name.trim() || `vibe-${id.slice(0, 4)}`,
-		imageHash: await sha256Hex(base64),
-		imageKey: `vibe:${id}`,
-		thumbKey: `vibethumb:${id}`,
-		createdAt: (/* @__PURE__ */ new Date()).toISOString()
-	};
-	await imageStore().setItem(item.imageKey, png);
-	await imageStore().setItem(item.thumbKey, await thumbnail(png, 160));
-	settings().vibes.items.push(item);
-	saveSettings();
-	return item;
-}
-async function removeVibe(id) {
-	const s = settings().vibes;
-	const item = s.items.find((i) => i.id === id);
-	if (!item) return;
-	s.items = s.items.filter((i) => i.id !== id);
-	for (const set of s.sets) set.entries = set.entries.filter((e) => e.vibeId !== id);
-	saveSettings();
-	await imageStore().removeItem(item.imageKey);
-	await imageStore().removeItem(item.thumbKey);
-	const keys = (await store().keys()).filter((k) => k.startsWith(`vibeenc:${item.imageHash}:`));
-	await Promise.all(keys.map((k) => store().removeItem(k)));
-}
-async function vibeImage(item) {
-	return await imageStore().getItem(item.imageKey);
-}
-async function vibeThumb(item) {
-	return await imageStore().getItem(item.thumbKey);
-}
-/** Characters, chat and style the vibe bindings are matched against. */
-function vibeContext() {
-	const c = ctx();
-	const characters = [];
-	if (c.groupId) for (const avatar of c.groups.find((g) => g.id === c.groupId)?.members ?? []) characters.push(avatarKey(avatar));
-	else if (c.characterId !== void 0 && c.characterId !== null && c.characterId !== "") characters.push(avatarKey(c.characters[Number(c.characterId)]?.avatar));
-	return {
-		characters,
-		chatId: c.getCurrentChatId() ?? "",
-		style: settings().prompts.activeStyle
-	};
-}
-function activeVibes() {
-	return planVibes(settings().vibes.sets, settings().vibes.items, vibeContext());
-}
-/** Pipeline vibe provider: plans the active vibes and makes sure each has an encoding. */
-var VibeLibraryProvider = class {
-	confirm;
-	notify;
-	noticed = /* @__PURE__ */ new Set();
-	constructor(confirm, notify) {
-		this.confirm = confirm;
-		this.notify = notify;
-	}
-	notifyOnce(key, notice) {
-		if (this.noticed.has(key)) return;
-		this.noticed.add(key);
-		this.notify(notice);
-	}
-	async prepare(caps, transport, signal) {
-		const planned = activeVibes();
-		if (!planned.length) return [];
-		const availability = vibeAvailability(caps, transport.features.vibes);
-		if (availability !== "ok") {
-			this.notifyOnce(`${availability}:${caps.model}`, {
-				kind: "unavailable",
-				reason: availability,
-				count: planned.length
-			});
-			return [];
-		}
-		if (caps.vibeKind === "raw") return await this.raw(planned);
-		return await this.encoded(planned, caps.model, transport, signal);
-	}
-	/** V3: the reference image itself, 448x448 PNG (RECON §3.4). */
-	async raw(planned) {
-		const refs = [];
-		for (const p of planned) {
-			const blob = await vibeImage(p.item);
-			if (!blob) {
-				this.notify({
-					kind: "missing-image",
-					name: p.item.name
-				});
-				continue;
-			}
-			refs.push({
-				data: await blobToBase64$1(await toPngBlob(blob, {
-					width: 448,
-					height: 448
-				})),
-				strength: p.strength,
-				informationExtracted: p.informationExtracted
-			});
-		}
-		return refs;
-	}
-	async encoded(planned, model, transport, signal) {
-		const extras = transport.extras;
-		const encodings = /* @__PURE__ */ new Map();
-		const keyOf = (p) => encodingCacheKey(p.item.imageHash, model, p.informationExtracted);
-		for (const p of planned) {
-			const local = await store().getItem(keyOf(p));
-			if (local) encodings.set(keyOf(p), local);
-		}
-		let missing = planned.filter((p) => !encodings.has(keyOf(p)));
-		if (missing.length && extras) {
-			const found = await extras.lookupVibes(missing.map((p) => ({
-				imageHash: p.item.imageHash,
-				model,
-				informationExtracted: p.informationExtracted
-			})), signal);
-			for (const [i, encoding] of found.entries()) {
-				const p = missing[i];
-				if (p && encoding) {
-					encodings.set(keyOf(p), encoding);
-					await store().setItem(keyOf(p), encoding);
-				}
-			}
-			missing = missing.filter((p) => !encodings.has(keyOf(p)));
-		}
-		if (missing.length) {
-			const cost = missing.length * 2;
-			const reason = settings().anlas.freeOnly ? "free-only" : !extras ? "no-plugin" : settings().vibes.confirmEncoding && !await this.confirm(cost, "vibes") ? "declined" : null;
-			if (reason) this.notify({
-				kind: "skipped",
-				count: missing.length,
-				reason
-			});
-			else {
-				let paid = 0;
-				for (const p of missing) {
-					const blob = await vibeImage(p.item);
-					if (!blob) {
-						this.notify({
-							kind: "missing-image",
-							name: p.item.name
-						});
-						continue;
-					}
-					const image = await blobToBase64$1(blob);
-					const result = await extras.encodeVibe({
-						image,
-						model,
-						informationExtracted: p.informationExtracted
-					}, signal);
-					if (!result.cached) paid++;
-					encodings.set(keyOf(p), result.encoding);
-					await store().setItem(keyOf(p), result.encoding);
-				}
-				if (paid) this.notify({
-					kind: "encoded",
-					count: paid,
-					cost: paid * 2
-				});
-				log.info(`encoded ${paid} vibe(s) for ${model}`);
-			}
-		}
-		return planned.filter((p) => encodings.has(keyOf(p))).map((p) => ({
-			data: encodings.get(keyOf(p)) ?? "",
-			strength: p.strength,
-			informationExtracted: p.informationExtracted
-		}));
 	}
 };
 //#endregion
@@ -11421,46 +14139,6 @@ function installMessageButtons(pipeline) {
 	});
 }
 //#endregion
-//#region src/integration/tools.ts
-var TOOL_NAME = "GenerateImage";
-var lastCall = 0;
-function syncFunctionTool(pipeline, compat) {
-	const c = ctx();
-	const s = settings();
-	if (!compat || !s.chat.functionTool) {
-		c.unregisterFunctionTool(TOOL_NAME);
-		return;
-	}
-	const description = s.prompts.templates[String(MODE.TOOL)] ?? DEFAULT_TEMPLATES[String(MODE.TOOL)] ?? "";
-	c.registerFunctionTool({
-		name: TOOL_NAME,
-		displayName: t("naist.tool.displayName"),
-		description: "Generate an image from a given text prompt. Use when a user asks to generate an image, imagine a concept or an item, send a picture of a scene, a selfie, etc.",
-		parameters: {
-			$schema: "http://json-schema.org/draft-04/schema#",
-			type: "object",
-			properties: { prompt: {
-				type: "string",
-				description
-			} },
-			required: ["prompt"]
-		},
-		formatMessage: () => t("naist.tool.running"),
-		action: async (args) => {
-			const prompt = typeof args?.prompt === "string" ? args.prompt : "";
-			if (!prompt) throw new Error("Missing prompt");
-			const cooldown = settings().chat.toolCooldownSeconds * 1e3;
-			if (Date.now() - lastCall < cooldown) throw new Error(`Image generation is on cooldown, try again in ${Math.ceil((cooldown - (Date.now() - lastCall)) / 1e3)} s.`);
-			lastCall = Date.now();
-			const result = await pipeline.generatePicture({
-				initiator: "tool",
-				trigger: prompt
-			});
-			return result ? encodeURI(result.path) : "";
-		}
-	});
-}
-//#endregion
 //#region src/integration/wand.ts
 function installWandMenu(pipeline) {
 	const menu = document.querySelector("#extensionsMenu");
@@ -11564,6 +14242,50 @@ var character_row_default = "<div class=\"naist-character\" data-index=\"{{index
 //#region src/ui/templates/panel.html?raw
 var panel_default = "<div class=\"naist-panel\" id=\"naist_panel\">\n    <div class=\"inline-drawer\">\n        <div class=\"inline-drawer-toggle inline-drawer-header\">\n            <b data-i18n=\"naist.panel.title\"></b>\n            <div class=\"inline-drawer-icon fa-solid fa-circle-chevron-down down\"></div>\n        </div>\n        <div class=\"inline-drawer-content\">\n            <div class=\"naist-content\">\n                <div class=\"naist-row naist-status\">\n                    <label for=\"naist_transport_mode\" data-i18n=\"naist.panel.transport\"></label>\n                    <select id=\"naist_transport_mode\" class=\"text_pole naist-grow\">\n                        <option value=\"auto\" data-i18n=\"naist.transport.auto\"></option>\n                        <option value=\"plugin\" data-i18n=\"naist.transport.plugin\"></option>\n                        <option value=\"native\" data-i18n=\"naist.transport.native\"></option>\n                    </select>\n                    <div\n                        id=\"naist_refresh\"\n                        class=\"menu_button fa-solid fa-rotate\"\n                        data-i18n=\"[title]naist.panel.refresh\"\n                    ></div>\n                </div>\n                <div id=\"naist_transport_badge\" class=\"naist-badge\"></div>\n                <div id=\"naist_account\" class=\"naist-account\"></div>\n\n                <div id=\"naist_takeover_banner\" class=\"naist-banner naist-hidden\">\n                    <span data-i18n=\"naist.takeover.banner\"></span>\n                    <div id=\"naist_banner_open\" class=\"menu_button\" data-i18n=\"naist.takeover.bannerAction\"></div>\n                </div>\n\n                <div class=\"naist-tabs\" role=\"tablist\">\n                    <div\n                        class=\"naist-tab menu_button\"\n                        role=\"tab\"\n                        data-tab=\"generate\"\n                        data-i18n=\"naist.tab.generate\"\n                    ></div>\n                    <div\n                        class=\"naist-tab menu_button\"\n                        role=\"tab\"\n                        data-tab=\"prompts\"\n                        data-i18n=\"naist.tab.prompts\"\n                    ></div>\n                    <div class=\"naist-tab menu_button\" role=\"tab\" data-tab=\"chat\" data-i18n=\"naist.tab.chat\"></div>\n                    <div class=\"naist-tab menu_button\" role=\"tab\" data-tab=\"images\" data-i18n=\"naist.tab.images\"></div>\n                    <div\n                        class=\"naist-tab menu_button\"\n                        role=\"tab\"\n                        data-tab=\"takeover\"\n                        data-i18n=\"naist.tab.takeover\"\n                    ></div>\n                </div>\n\n                <div class=\"naist-tabpanel\" data-tabpanel=\"generate\">\n                    <label for=\"naist_model\" data-i18n=\"naist.panel.model\"></label>\n                    <select id=\"naist_model\" class=\"text_pole\">\n                        {{#each models}}\n                        <option value=\"{{id}}\" data-i18n=\"{{nameKey}}\"></option>\n                        {{/each}}\n                    </select>\n\n                    <label for=\"naist_prompt\" data-i18n=\"naist.panel.prompt\"></label>\n                    <textarea\n                        id=\"naist_prompt\"\n                        class=\"text_pole textarea_compact\"\n                        rows=\"4\"\n                        data-i18n=\"[placeholder]naist.panel.promptPlaceholder\"\n                    ></textarea>\n\n                    <label for=\"naist_negative\" data-i18n=\"naist.panel.negative\"></label>\n                    <textarea id=\"naist_negative\" class=\"text_pole textarea_compact\" rows=\"2\"></textarea>\n\n                    <div class=\"naist-grid2\">\n                        <div>\n                            <label for=\"naist_uc_preset\" data-i18n=\"naist.panel.ucPreset\"></label>\n                            <select id=\"naist_uc_preset\" class=\"text_pole\"></select>\n                        </div>\n                        <div>\n                            <label for=\"naist_quality\" data-i18n=\"naist.panel.quality\"></label>\n                            <select id=\"naist_quality\" class=\"text_pole\"></select>\n                        </div>\n                    </div>\n\n                    <div\n                        id=\"naist_characters_block\"\n                        class=\"naist-block\"\n                        data-cap=\"characters\"\n                        data-feature=\"characters\"\n                    >\n                        <div class=\"naist-row\">\n                            <b data-i18n=\"naist.panel.characters\"></b>\n                            <span id=\"naist_characters_count\" class=\"naist-muted\"></span>\n                            <div\n                                id=\"naist_add_character\"\n                                class=\"menu_button fa-solid fa-user-plus\"\n                                data-i18n=\"[title]naist.panel.addCharacter\"\n                            ></div>\n                        </div>\n                        <label class=\"checkbox_label\"\n                            ><input type=\"checkbox\" id=\"naist_use_coords\" /><span\n                                data-i18n=\"naist.panel.useCoords\"\n                            ></span\n                        ></label>\n                        <div id=\"naist_characters\"></div>\n                        <div class=\"naist-feature-hint\" data-hint-for=\"characters\"></div>\n                    </div>\n\n                    <label for=\"naist_size_preset\" data-i18n=\"naist.panel.size\"></label>\n                    <div class=\"naist-grid3\">\n                        <select id=\"naist_size_preset\" class=\"text_pole\"></select>\n                        <input\n                            id=\"naist_width\"\n                            type=\"number\"\n                            class=\"text_pole\"\n                            step=\"64\"\n                            min=\"64\"\n                            data-i18n=\"[title]naist.panel.width\"\n                        />\n                        <input\n                            id=\"naist_height\"\n                            type=\"number\"\n                            class=\"text_pole\"\n                            step=\"64\"\n                            min=\"64\"\n                            data-i18n=\"[title]naist.panel.height\"\n                        />\n                    </div>\n\n                    <div class=\"naist-grid2\">\n                        <div>\n                            <label for=\"naist_sampler\" data-i18n=\"naist.panel.sampler\"></label>\n                            <select id=\"naist_sampler\" class=\"text_pole\"></select>\n                        </div>\n                        <div data-cap=\"noiseSchedule\">\n                            <label for=\"naist_schedule\" data-i18n=\"naist.panel.schedule\"></label>\n                            <select id=\"naist_schedule\" class=\"text_pole\"></select>\n                        </div>\n                    </div>\n                    <div class=\"naist-grid3\">\n                        <div>\n                            <label for=\"naist_steps\" data-i18n=\"naist.panel.steps\"></label>\n                            <input id=\"naist_steps\" type=\"number\" min=\"1\" max=\"50\" class=\"text_pole\" />\n                        </div>\n                        <div>\n                            <label for=\"naist_scale\" data-i18n=\"naist.panel.scale\"></label>\n                            <input id=\"naist_scale\" type=\"number\" step=\"0.1\" min=\"0\" max=\"10\" class=\"text_pole\" />\n                        </div>\n                        <div data-feature=\"cfgRescale\">\n                            <label for=\"naist_cfg_rescale\" data-i18n=\"naist.panel.cfgRescale\"></label>\n                            <input id=\"naist_cfg_rescale\" type=\"number\" step=\"0.02\" min=\"0\" max=\"1\" class=\"text_pole\" />\n                        </div>\n                    </div>\n                    <div class=\"naist-grid2\">\n                        <div>\n                            <label for=\"naist_seed\" data-i18n=\"naist.panel.seed\"></label>\n                            <input\n                                id=\"naist_seed\"\n                                type=\"number\"\n                                min=\"-1\"\n                                class=\"text_pole\"\n                                data-i18n=\"[title]naist.panel.seedHint\"\n                            />\n                        </div>\n                        <div data-feature=\"multipleSamples\">\n                            <label for=\"naist_samples\" data-i18n=\"naist.panel.samples\"></label>\n                            <input id=\"naist_samples\" type=\"number\" min=\"1\" max=\"8\" class=\"text_pole\" />\n                        </div>\n                    </div>\n                    <div class=\"naist-feature-hint\" data-hint-for=\"multipleSamples\"></div>\n\n                    <div class=\"naist-flags\">\n                        <label class=\"checkbox_label\" data-cap=\"smea\"\n                            ><input type=\"checkbox\" id=\"naist_smea\" /><span data-i18n=\"naist.panel.smea\"></span\n                        ></label>\n                        <label class=\"checkbox_label\" data-cap=\"smeaDyn\"\n                            ><input type=\"checkbox\" id=\"naist_smea_dyn\" /><span data-i18n=\"naist.panel.smeaDyn\"></span\n                        ></label>\n                        <label class=\"checkbox_label\" data-cap=\"autoSmea\"\n                            ><input type=\"checkbox\" id=\"naist_auto_smea\" /><span data-i18n=\"naist.panel.autoSmea\"></span\n                        ></label>\n                        <label class=\"checkbox_label\" data-cap=\"decrisper\"\n                            ><input type=\"checkbox\" id=\"naist_decrisper\" /><span\n                                data-i18n=\"naist.panel.decrisper\"\n                            ></span\n                        ></label>\n                        <label class=\"checkbox_label\" data-cap=\"varietyBoost\"\n                            ><input type=\"checkbox\" id=\"naist_variety\" /><span data-i18n=\"naist.panel.variety\"></span\n                        ></label>\n                        <label class=\"checkbox_label\" data-cap=\"transparency\" data-feature=\"transparency\"\n                            ><input type=\"checkbox\" id=\"naist_transparent\" /><span\n                                data-i18n=\"naist.panel.transparent\"\n                            ></span\n                        ></label>\n                        <label class=\"checkbox_label\" data-cap=\"legacyUc\"\n                            ><input type=\"checkbox\" id=\"naist_legacy_uc\" /><span data-i18n=\"naist.panel.legacyUc\"></span\n                        ></label>\n                    </div>\n                    <div class=\"naist-feature-hint\" data-hint-for=\"transparency\"></div>\n\n                    <hr />\n                    <label class=\"checkbox_label\"\n                        ><input type=\"checkbox\" id=\"naist_free_only\" /><span data-i18n=\"naist.panel.freeOnly\"></span\n                    ></label>\n                    <div id=\"naist_cost\" class=\"naist-cost\"></div>\n                    <div id=\"naist_lost\" class=\"naist-hint\"></div>\n\n                    <details class=\"naist-override\">\n                        <summary data-i18n=\"naist.panel.override\"></summary>\n                        <div class=\"naist-warning\" data-i18n=\"naist.panel.overrideWarning\"></div>\n                        <label class=\"checkbox_label\"\n                            ><input type=\"checkbox\" id=\"naist_override_enabled\" /><span\n                                data-i18n=\"naist.panel.overrideEnable\"\n                            ></span\n                        ></label>\n                        <textarea\n                            id=\"naist_override_json\"\n                            class=\"text_pole textarea_compact monospace\"\n                            rows=\"4\"\n                        ></textarea>\n                    </details>\n                </div>\n                <div class=\"naist-tabpanel naist-hidden\" data-tabpanel=\"prompts\"></div>\n                <div class=\"naist-tabpanel naist-hidden\" data-tabpanel=\"chat\"></div>\n                <div class=\"naist-tabpanel naist-hidden\" data-tabpanel=\"images\"></div>\n                <div class=\"naist-tabpanel naist-hidden\" data-tabpanel=\"takeover\"></div>\n\n                <label class=\"checkbox_label\"\n                    ><input type=\"checkbox\" id=\"naist_inspect_before\" /><span\n                        data-i18n=\"naist.panel.inspectBeforeSend\"\n                    ></span\n                ></label>\n                <div class=\"naist-row naist-actions\">\n                    <div id=\"naist_inspect\" class=\"menu_button menu_button_icon\">\n                        <i class=\"fa-solid fa-magnifying-glass\"></i><span data-i18n=\"naist.panel.inspect\"></span>\n                    </div>\n                    <div id=\"naist_generate\" class=\"menu_button menu_button_icon\">\n                        <i class=\"fa-solid fa-paintbrush\"></i><span data-i18n=\"naist.panel.generate\"></span>\n                    </div>\n                    <div id=\"naist_cancel\" class=\"menu_button menu_button_icon naist-hidden\">\n                        <i class=\"fa-solid fa-stop\"></i><span data-i18n=\"naist.panel.cancel\"></span>\n                    </div>\n                </div>\n                <div id=\"naist_message\" class=\"naist-message\"></div>\n            </div>\n        </div>\n    </div>\n</div>\n";
 //#endregion
+//#region src/ui/token-meter.ts
+function bar(label, used, limit, approx) {
+	const ratio = Math.min(1, used / limit);
+	return `<div class="naist-tokens-row${used > limit ? " naist-tokens-over" : ratio > .9 ? " naist-tokens-near" : ""}">
+        <span class="naist-tokens-label">${escapeHtml$2(label)}</span>
+        <span class="naist-tokens-bar"><span style="width:${Math.round(ratio * 100)}%"></span></span>
+        <span class="naist-tokens-count">${approx ? "≈" : ""}${used} / ${limit}</span>
+    </div>`;
+}
+function createTokenMeter() {
+	const element = document.createElement("div");
+	element.className = "naist-tokens";
+	let last = null;
+	const render = (input) => {
+		const model = isModelId(input.model) ? input.model : DEFAULT_MODEL;
+		const kind = tokenizerKind(model);
+		let counter = readyTokenizer(kind);
+		if (!counter) loadTokenizer(kind).then((loaded) => {
+			if (loaded && last) render(last);
+		});
+		const approx = !counter;
+		counter ??= APPROXIMATE;
+		const prompt = countPromptTokens(counter, model, input.prompt, input.characters);
+		const negative = countPromptTokens(counter, model, input.negative, []);
+		const parts = [bar(t("naist.tokens.prompt"), prompt.total, prompt.limit, approx)];
+		if (prompt.text !== null) parts.push(`<div class="naist-hint">${escapeHtml$2(t("naist.tokens.text", { count: prompt.text }))}</div>`);
+		parts.push(bar(t("naist.tokens.negative"), negative.total, tokenLimit(model), approx));
+		if (prompt.over) parts.push(`<div class="naist-warning">${escapeHtml$2(t("naist.tokens.over", { limit: prompt.limit }))}</div>`);
+		if (kind === "t5") {
+			const bad = t5UnsupportedChars(input.raw);
+			if (bad.length) parts.push(`<div class="naist-warning">${escapeHtml$2(t("naist.tokens.t5Unicode", { chars: bad.slice(0, 12).join(" ") }))}</div>`);
+		}
+		if (approx) parts.push(`<div class="naist-hint">${escapeHtml$2(t("naist.tokens.approximate"))}</div>`);
+		element.innerHTML = parts.join("");
+	};
+	return {
+		element,
+		update(input) {
+			last = input;
+			render(input);
+		}
+	};
+}
+//#endregion
 //#region src/ui/components/bind.ts
 function resolve(path) {
 	const parts = path.split(".");
@@ -11623,7 +14345,7 @@ var ChatTab = class {
 		this.onChange = onChange;
 	}
 	mount(container) {
-		container.innerHTML = render$1(tab_chat_default);
+		container.innerHTML = render$2(tab_chat_default);
 		this.root = container;
 		fillSelect$1($id$1(container, "naist_auto_mode"), WAND_MODES.map((mode) => ({
 			value: String(mode),
@@ -11650,7 +14372,7 @@ var ChatTab = class {
 };
 //#endregion
 //#region src/ui/templates/tab-images.html?raw
-var tab_images_default = "<div class=\"naist-section\">\n    <b data-i18n=\"naist.images.inline\"></b>\n    <div class=\"naist-hint\" data-i18n=\"naist.images.inlineHint\"></div>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"inline.saveToServer\" /><span data-i18n=\"naist.images.saveToServer\"></span\n    ></label>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"inline.keepBrowserCopy\" /><span\n            data-i18n=\"naist.images.keepBrowserCopy\"\n        ></span\n    ></label>\n    <div class=\"naist-grid3\">\n        <div>\n            <label for=\"naist_img_width\" data-i18n=\"naist.inline.width\"></label>\n            <input id=\"naist_img_width\" type=\"number\" min=\"5\" class=\"text_pole\" data-setting=\"inline.defaultWidth\" />\n        </div>\n        <div>\n            <label for=\"naist_img_unit\" data-i18n=\"naist.inline.unit\"></label>\n            <select id=\"naist_img_unit\" class=\"text_pole\" data-setting=\"inline.defaultWidthUnit\">\n                <option value=\"%\">%</option>\n                <option value=\"px\">px</option>\n            </select>\n        </div>\n        <div>\n            <label for=\"naist_img_align\" data-i18n=\"naist.inline.align\"></label>\n            <select id=\"naist_img_align\" class=\"text_pole\" data-setting=\"inline.defaultAlign\">\n                <option value=\"center\" data-i18n=\"naist.inline.alignCenter\"></option>\n                <option value=\"left\" data-i18n=\"naist.inline.alignLeft\"></option>\n                <option value=\"right\" data-i18n=\"naist.inline.alignRight\"></option>\n            </select>\n        </div>\n        <div>\n            <label for=\"naist_img_radius\" data-i18n=\"naist.inline.radius\"></label>\n            <input id=\"naist_img_radius\" type=\"number\" min=\"0\" class=\"text_pole\" data-setting=\"inline.defaultRadius\" />\n        </div>\n        <div>\n            <label for=\"naist_img_layout\" data-i18n=\"naist.inline.layout\"></label>\n            <select id=\"naist_img_layout\" class=\"text_pole\" data-setting=\"inline.defaultLayout\">\n                <option value=\"grid\" data-i18n=\"naist.inline.layoutGrid\"></option>\n                <option value=\"carousel\" data-i18n=\"naist.inline.layoutCarousel\"></option>\n                <option value=\"list\" data-i18n=\"naist.inline.layoutList\"></option>\n            </select>\n        </div>\n        <div>\n            <label for=\"naist_img_llm\" data-i18n=\"naist.images.llmText\"></label>\n            <select id=\"naist_img_llm\" class=\"text_pole\" data-setting=\"inline.llmText\">\n                <option value=\"describe\" data-i18n=\"naist.images.llmDescribe\"></option>\n                <option value=\"remove\" data-i18n=\"naist.images.llmRemove\"></option>\n            </select>\n        </div>\n        <div>\n            <label for=\"naist_img_vstrength\" data-i18n=\"naist.images.variationStrength\"></label>\n            <input\n                id=\"naist_img_vstrength\"\n                type=\"number\"\n                min=\"0.01\"\n                max=\"0.99\"\n                step=\"0.01\"\n                class=\"text_pole\"\n                data-setting=\"inline.variationStrength\"\n            />\n        </div>\n        <div>\n            <label for=\"naist_img_vnoise\" data-i18n=\"naist.images.variationNoise\"></label>\n            <input\n                id=\"naist_img_vnoise\"\n                type=\"number\"\n                min=\"0\"\n                max=\"0.99\"\n                step=\"0.01\"\n                class=\"text_pole\"\n                data-setting=\"inline.variationNoise\"\n            />\n        </div>\n    </div>\n    <div class=\"naist-row\">\n        <div id=\"naist_img_toggle_chat\" class=\"menu_button\"></div>\n        <label class=\"checkbox_label\"\n            ><input id=\"naist_img_reading\" type=\"checkbox\" /><span data-i18n=\"naist.images.readingMode\"></span\n        ></label>\n    </div>\n</div>\n\n<div class=\"naist-section\">\n    <b data-i18n=\"naist.vibes.title\"></b>\n    <div class=\"naist-hint\" data-i18n=\"naist.vibes.panelHint\"></div>\n    <div id=\"naist_open_vibes\" class=\"menu_button\" data-i18n=\"naist.vibes.open\"></div>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"stream.enabled\" /><span data-i18n=\"naist.progress.enable\"></span\n    ></label>\n</div>\n\n<div class=\"naist-section\">\n    <b data-i18n=\"naist.images.gallery\"></b>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"gallery.enabled\" /><span data-i18n=\"naist.images.galleryEnabled\"></span\n    ></label>\n    <div id=\"naist_img_open_gallery\" class=\"menu_button\" data-i18n=\"naist.images.openGallery\"></div>\n</div>\n\n<div class=\"naist-section\">\n    <b data-i18n=\"naist.images.png\"></b>\n    <div class=\"naist-hint\" data-i18n=\"naist.images.pngHint\"></div>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"png.stripMetadata\" /><span data-i18n=\"naist.images.stripMetadata\"></span\n    ></label>\n    <div class=\"naist-row\">\n        <div id=\"naist_img_import\" class=\"menu_button\" data-i18n=\"naist.images.importPng\"></div>\n        <input id=\"naist_img_import_file\" type=\"file\" accept=\"image/png,image/webp\" class=\"naist-hidden\" />\n    </div>\n</div>\n";
+var tab_images_default = "<div class=\"naist-section\">\n    <b data-i18n=\"naist.images.inline\"></b>\n    <div class=\"naist-hint\" data-i18n=\"naist.images.inlineHint\"></div>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"inline.saveToServer\" /><span data-i18n=\"naist.images.saveToServer\"></span\n    ></label>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"inline.keepBrowserCopy\" /><span\n            data-i18n=\"naist.images.keepBrowserCopy\"\n        ></span\n    ></label>\n    <div class=\"naist-grid3\">\n        <div>\n            <label for=\"naist_img_width\" data-i18n=\"naist.inline.width\"></label>\n            <input id=\"naist_img_width\" type=\"number\" min=\"5\" class=\"text_pole\" data-setting=\"inline.defaultWidth\" />\n        </div>\n        <div>\n            <label for=\"naist_img_unit\" data-i18n=\"naist.inline.unit\"></label>\n            <select id=\"naist_img_unit\" class=\"text_pole\" data-setting=\"inline.defaultWidthUnit\">\n                <option value=\"%\">%</option>\n                <option value=\"px\">px</option>\n            </select>\n        </div>\n        <div>\n            <label for=\"naist_img_align\" data-i18n=\"naist.inline.align\"></label>\n            <select id=\"naist_img_align\" class=\"text_pole\" data-setting=\"inline.defaultAlign\">\n                <option value=\"center\" data-i18n=\"naist.inline.alignCenter\"></option>\n                <option value=\"left\" data-i18n=\"naist.inline.alignLeft\"></option>\n                <option value=\"right\" data-i18n=\"naist.inline.alignRight\"></option>\n            </select>\n        </div>\n        <div>\n            <label for=\"naist_img_radius\" data-i18n=\"naist.inline.radius\"></label>\n            <input id=\"naist_img_radius\" type=\"number\" min=\"0\" class=\"text_pole\" data-setting=\"inline.defaultRadius\" />\n        </div>\n        <div>\n            <label for=\"naist_img_layout\" data-i18n=\"naist.inline.layout\"></label>\n            <select id=\"naist_img_layout\" class=\"text_pole\" data-setting=\"inline.defaultLayout\">\n                <option value=\"grid\" data-i18n=\"naist.inline.layoutGrid\"></option>\n                <option value=\"carousel\" data-i18n=\"naist.inline.layoutCarousel\"></option>\n                <option value=\"list\" data-i18n=\"naist.inline.layoutList\"></option>\n            </select>\n        </div>\n        <div>\n            <label for=\"naist_img_llm\" data-i18n=\"naist.images.llmText\"></label>\n            <select id=\"naist_img_llm\" class=\"text_pole\" data-setting=\"inline.llmText\">\n                <option value=\"describe\" data-i18n=\"naist.images.llmDescribe\"></option>\n                <option value=\"remove\" data-i18n=\"naist.images.llmRemove\"></option>\n            </select>\n        </div>\n        <div>\n            <label for=\"naist_img_vstrength\" data-i18n=\"naist.images.variationStrength\"></label>\n            <input\n                id=\"naist_img_vstrength\"\n                type=\"number\"\n                min=\"0.01\"\n                max=\"0.99\"\n                step=\"0.01\"\n                class=\"text_pole\"\n                data-setting=\"inline.variationStrength\"\n            />\n        </div>\n        <div>\n            <label for=\"naist_img_vnoise\" data-i18n=\"naist.images.variationNoise\"></label>\n            <input\n                id=\"naist_img_vnoise\"\n                type=\"number\"\n                min=\"0\"\n                max=\"0.99\"\n                step=\"0.01\"\n                class=\"text_pole\"\n                data-setting=\"inline.variationNoise\"\n            />\n        </div>\n    </div>\n    <div class=\"naist-row\">\n        <div id=\"naist_img_toggle_chat\" class=\"menu_button\"></div>\n        <label class=\"checkbox_label\"\n            ><input id=\"naist_img_reading\" type=\"checkbox\" /><span data-i18n=\"naist.images.readingMode\"></span\n        ></label>\n    </div>\n</div>\n\n<div class=\"naist-section\">\n    <b data-i18n=\"naist.vibes.title\"></b>\n    <div class=\"naist-hint\" data-i18n=\"naist.vibes.panelHint\"></div>\n    <div id=\"naist_open_vibes\" class=\"menu_button\" data-i18n=\"naist.vibes.open\"></div>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"stream.enabled\" /><span data-i18n=\"naist.progress.enable\"></span\n    ></label>\n</div>\n\n<div class=\"naist-section\">\n    <b data-i18n=\"naist.images.gallery\"></b>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"gallery.enabled\" /><span data-i18n=\"naist.images.galleryEnabled\"></span\n    ></label>\n    <div id=\"naist_img_open_gallery\" class=\"menu_button\" data-i18n=\"naist.images.openGallery\"></div>\n</div>\n\n<div class=\"naist-section\">\n    <b data-i18n=\"naist.images.png\"></b>\n    <div class=\"naist-hint\" data-i18n=\"naist.images.pngHint\"></div>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"png.stripMetadata\" /><span data-i18n=\"naist.images.stripMetadata\"></span\n    ></label>\n    <div class=\"naist-row\">\n        <div id=\"naist_img_import\" class=\"menu_button\" data-i18n=\"naist.images.importPng\"></div>\n        <input id=\"naist_img_import_file\" type=\"file\" accept=\"image/png,image/webp\" class=\"naist-hidden\" />\n    </div>\n</div>\n\n<div class=\"naist-section\">\n    <b data-i18n=\"naist.continuity.title\"></b>\n    <div class=\"naist-hint\" data-i18n=\"naist.continuity.hint\"></div>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"continuity.enabled\" /><span data-i18n=\"naist.continuity.enabled\"></span\n    ></label>\n    <div class=\"naist-grid3\">\n        <div>\n            <label for=\"naist_cont_mode\" data-i18n=\"naist.continuity.mode\"></label>\n            <select id=\"naist_cont_mode\" class=\"text_pole\" data-setting=\"continuity.mode\">\n                <option value=\"img2img\" data-i18n=\"naist.continuity.modeImg2img\"></option>\n                <option value=\"vibe\" data-i18n=\"naist.continuity.modeVibe\"></option>\n            </select>\n        </div>\n        <div>\n            <label for=\"naist_cont_strength\" data-i18n=\"naist.continuity.strength\"></label>\n            <input\n                id=\"naist_cont_strength\"\n                type=\"number\"\n                min=\"0.1\"\n                max=\"0.95\"\n                step=\"0.05\"\n                class=\"text_pole\"\n                data-setting=\"continuity.strength\"\n            />\n        </div>\n        <div>\n            <label class=\"checkbox_label\"\n                ><input type=\"checkbox\" data-setting=\"continuity.autoBind\" /><span\n                    data-i18n=\"naist.continuity.autoBind\"\n                ></span\n            ></label>\n        </div>\n    </div>\n    <label for=\"naist_cont_current\" data-i18n=\"naist.continuity.current\"></label>\n    <div class=\"naist-row\">\n        <input\n            id=\"naist_cont_current\"\n            class=\"text_pole naist-grow\"\n            list=\"naist_cont_locations\"\n            data-i18n=\"[placeholder]naist.continuity.currentPlaceholder\"\n        />\n        <datalist id=\"naist_cont_locations\"></datalist>\n        <div id=\"naist_cont_bind\" class=\"menu_button\" data-i18n=\"naist.continuity.bind\"></div>\n        <div\n            id=\"naist_cont_forget\"\n            class=\"menu_button fa-solid fa-trash-can\"\n            data-i18n=\"[title]naist.continuity.forget\"\n        ></div>\n    </div>\n    <div id=\"naist_cont_info\" class=\"naist-muted\"></div>\n</div>\n\n<div class=\"naist-section\">\n    <b data-i18n=\"naist.sprites.title\"></b>\n    <div class=\"naist-hint\" data-i18n=\"naist.sprites.panelHint\"></div>\n    <div id=\"naist_open_sprites\" class=\"menu_button\" data-i18n=\"naist.sprites.open\"></div>\n</div>\n\n<div class=\"naist-section\">\n    <b data-i18n=\"naist.comic.title\"></b>\n    <div class=\"naist-hint\" data-i18n=\"naist.comic.panelHint\"></div>\n    <div id=\"naist_open_comic\" class=\"menu_button\" data-i18n=\"naist.comic.open\"></div>\n</div>\n";
 //#endregion
 //#region src/ui/panel/tab-images.ts
 /** Reads NovelAI parameters from a dropped or chosen file and fills the panel. */
@@ -11677,7 +14399,7 @@ var ImagesTab = class {
 		this.actions = actions;
 	}
 	mount(container) {
-		container.innerHTML = render$1(tab_images_default);
+		container.innerHTML = render$2(tab_images_default);
 		this.root = container;
 		localize(container);
 		bindSettings(container);
@@ -11707,7 +14429,7 @@ var ImagesTab = class {
 };
 //#endregion
 //#region src/ui/templates/tab-prompts.html?raw
-var tab_prompts_default = "<div class=\"naist-section\">\n    <b data-i18n=\"naist.scene.title\"></b>\n    <div class=\"naist-hint\" data-i18n=\"naist.scene.hint\"></div>\n    <div class=\"naist-row\">\n        <div id=\"naist_open_composer\" class=\"menu_button\" data-i18n=\"naist.scene.openComposer\"></div>\n        <div id=\"naist_edit_char_passport\" class=\"menu_button\" data-i18n=\"naist.scene.charPassport\"></div>\n        <div id=\"naist_edit_persona_passport\" class=\"menu_button\" data-i18n=\"naist.scene.personaPassport\"></div>\n        <div id=\"naist_open_pose_library\" class=\"menu_button\" data-i18n=\"naist.scene.poseLibrary\"></div>\n    </div>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"scene.allowNsfw\" /><span data-i18n=\"naist.composer.allowNsfw\"></span\n    ></label>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"scene.llmBase\" /><span data-i18n=\"naist.scene.llmBase\"></span\n    ></label>\n</div>\n\n<div class=\"naist-section\">\n    <label for=\"naist_prefix\" data-i18n=\"naist.prompts.prefix\"></label>\n    <textarea id=\"naist_prefix\" class=\"text_pole textarea_compact\" rows=\"2\" data-setting=\"prompts.prefix\"></textarea>\n    <label for=\"naist_suffix\" data-i18n=\"naist.prompts.suffix\"></label>\n    <textarea id=\"naist_suffix\" class=\"text_pole textarea_compact\" rows=\"2\" data-setting=\"prompts.suffix\"></textarea>\n    <div class=\"naist-hint\" data-i18n=\"naist.prompts.prefixHint\"></div>\n</div>\n\n<div class=\"naist-section\">\n    <b data-i18n=\"naist.prompts.styles\"></b>\n    <div class=\"naist-row\">\n        <select id=\"naist_style\" class=\"text_pole naist-grow\"></select>\n        <div\n            id=\"naist_style_save\"\n            class=\"menu_button fa-solid fa-floppy-disk\"\n            data-i18n=\"[title]naist.prompts.styleSave\"\n        ></div>\n        <div\n            id=\"naist_style_rename\"\n            class=\"menu_button fa-solid fa-pencil\"\n            data-i18n=\"[title]naist.prompts.styleRename\"\n        ></div>\n        <div\n            id=\"naist_style_delete\"\n            class=\"menu_button fa-solid fa-trash-can\"\n            data-i18n=\"[title]naist.prompts.styleDelete\"\n        ></div>\n    </div>\n    <div class=\"naist-hint\" data-i18n=\"naist.prompts.stylesHint\"></div>\n</div>\n\n<div id=\"naist_char_prompt_block\" class=\"naist-section\">\n    <b data-i18n=\"naist.prompts.characterPrompt\"></b> <span id=\"naist_char_prompt_name\" class=\"naist-muted\"></span>\n    <textarea\n        id=\"naist_char_positive\"\n        class=\"text_pole textarea_compact\"\n        rows=\"2\"\n        data-i18n=\"[placeholder]naist.prompts.characterPositive\"\n    ></textarea>\n    <textarea\n        id=\"naist_char_negative\"\n        class=\"text_pole textarea_compact\"\n        rows=\"2\"\n        data-i18n=\"[placeholder]naist.prompts.characterNegative\"\n    ></textarea>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" id=\"naist_char_share\" /><span data-i18n=\"naist.prompts.characterShare\"></span\n    ></label>\n</div>\n<div id=\"naist_char_prompt_none\" class=\"naist-hint naist-hidden\" data-i18n=\"naist.prompts.characterNone\"></div>\n\n<details class=\"naist-section\">\n    <summary data-i18n=\"naist.prompts.templates\"></summary>\n    <div class=\"naist-hint\" data-i18n=\"naist.prompts.templatesHint\"></div>\n    <div id=\"naist_templates\"></div>\n</details>\n";
+var tab_prompts_default = "<div class=\"naist-section\">\n    <b data-i18n=\"naist.scene.title\"></b>\n    <div class=\"naist-hint\" data-i18n=\"naist.scene.hint\"></div>\n    <div class=\"naist-row\">\n        <div id=\"naist_open_composer\" class=\"menu_button\" data-i18n=\"naist.scene.openComposer\"></div>\n        <div id=\"naist_edit_char_passport\" class=\"menu_button\" data-i18n=\"naist.scene.charPassport\"></div>\n        <div id=\"naist_edit_persona_passport\" class=\"menu_button\" data-i18n=\"naist.scene.personaPassport\"></div>\n        <div id=\"naist_open_pose_library\" class=\"menu_button\" data-i18n=\"naist.scene.poseLibrary\"></div>\n    </div>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"scene.allowNsfw\" /><span data-i18n=\"naist.composer.allowNsfw\"></span\n    ></label>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"scene.llmBase\" /><span data-i18n=\"naist.scene.llmBase\"></span\n    ></label>\n</div>\n\n<div class=\"naist-section\">\n    <label for=\"naist_prefix\" data-i18n=\"naist.prompts.prefix\"></label>\n    <textarea id=\"naist_prefix\" class=\"text_pole textarea_compact\" rows=\"2\" data-setting=\"prompts.prefix\"></textarea>\n    <label for=\"naist_suffix\" data-i18n=\"naist.prompts.suffix\"></label>\n    <textarea id=\"naist_suffix\" class=\"text_pole textarea_compact\" rows=\"2\" data-setting=\"prompts.suffix\"></textarea>\n    <div class=\"naist-hint\" data-i18n=\"naist.prompts.prefixHint\"></div>\n</div>\n\n<div class=\"naist-section\">\n    <b data-i18n=\"naist.translate.title\"></b>\n    <div class=\"naist-hint\" data-i18n=\"naist.translate.hint\"></div>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"translate.auto\" /><span data-i18n=\"naist.translate.auto\"></span\n    ></label>\n    <label for=\"naist_glossary\" data-i18n=\"naist.translate.glossary\"></label>\n    <textarea\n        id=\"naist_glossary\"\n        class=\"text_pole textarea_compact\"\n        rows=\"4\"\n        data-i18n=\"[placeholder]naist.translate.glossaryPlaceholder\"\n    ></textarea>\n    <div class=\"naist-hint\" data-i18n=\"naist.translate.glossaryHint\"></div>\n</div>\n\n<div class=\"naist-section\">\n    <b data-i18n=\"naist.tags.title\"></b>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"promptTools.autocomplete\" /><span\n            data-i18n=\"naist.tags.autocomplete\"\n        ></span\n    ></label>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"promptTools.remoteSuggest\" /><span data-i18n=\"naist.tags.remote\"></span\n    ></label>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"promptTools.warnUnknown\" /><span data-i18n=\"naist.tags.warnUnknown\"></span\n    ></label>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"promptTools.counter\" /><span data-i18n=\"naist.tokens.enable\"></span\n    ></label>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"promptTools.convertWeights\" /><span data-i18n=\"naist.weights.auto\"></span\n    ></label>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"generation.autoText\" /><span data-i18n=\"naist.tokens.autoText\"></span\n    ></label>\n    <div class=\"naist-hint\" data-i18n=\"naist.weights.hint\"></div>\n</div>\n\n<div class=\"naist-section\">\n    <b data-i18n=\"naist.prompts.styles\"></b>\n    <div class=\"naist-row\">\n        <select id=\"naist_style\" class=\"text_pole naist-grow\"></select>\n        <div\n            id=\"naist_style_save\"\n            class=\"menu_button fa-solid fa-floppy-disk\"\n            data-i18n=\"[title]naist.prompts.styleSave\"\n        ></div>\n        <div\n            id=\"naist_style_rename\"\n            class=\"menu_button fa-solid fa-pencil\"\n            data-i18n=\"[title]naist.prompts.styleRename\"\n        ></div>\n        <div\n            id=\"naist_style_delete\"\n            class=\"menu_button fa-solid fa-trash-can\"\n            data-i18n=\"[title]naist.prompts.styleDelete\"\n        ></div>\n    </div>\n    <div class=\"naist-hint\" data-i18n=\"naist.prompts.stylesHint\"></div>\n</div>\n\n<div id=\"naist_char_prompt_block\" class=\"naist-section\">\n    <b data-i18n=\"naist.prompts.characterPrompt\"></b> <span id=\"naist_char_prompt_name\" class=\"naist-muted\"></span>\n    <textarea\n        id=\"naist_char_positive\"\n        class=\"text_pole textarea_compact\"\n        rows=\"2\"\n        data-i18n=\"[placeholder]naist.prompts.characterPositive\"\n    ></textarea>\n    <textarea\n        id=\"naist_char_negative\"\n        class=\"text_pole textarea_compact\"\n        rows=\"2\"\n        data-i18n=\"[placeholder]naist.prompts.characterNegative\"\n    ></textarea>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" id=\"naist_char_share\" /><span data-i18n=\"naist.prompts.characterShare\"></span\n    ></label>\n</div>\n<div id=\"naist_char_prompt_none\" class=\"naist-hint naist-hidden\" data-i18n=\"naist.prompts.characterNone\"></div>\n\n<details class=\"naist-section\">\n    <summary data-i18n=\"naist.prompts.templates\"></summary>\n    <div class=\"naist-hint\" data-i18n=\"naist.prompts.templatesHint\"></div>\n    <div id=\"naist_templates\"></div>\n</details>\n\n<div class=\"naist-section\">\n    <b data-i18n=\"naist.io.title\"></b>\n    <div class=\"naist-hint\" data-i18n=\"naist.io.hint\"></div>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" id=\"naist_settings_images\" checked /><span data-i18n=\"naist.io.includeImages\"></span\n    ></label>\n    <div class=\"naist-row\">\n        <div id=\"naist_settings_export\" class=\"menu_button\" data-i18n=\"naist.io.export\"></div>\n        <div id=\"naist_settings_import\" class=\"menu_button\" data-i18n=\"naist.io.import\"></div>\n        <input id=\"naist_settings_file\" type=\"file\" accept=\".json,application/json\" class=\"naist-hidden\" />\n    </div>\n</div>\n";
 //#endregion
 //#region src/ui/panel/tab-prompts.ts
 var PromptsTab = class {
@@ -11717,7 +14439,7 @@ var PromptsTab = class {
 		this.onChange = onChange;
 	}
 	mount(container) {
-		container.innerHTML = render$1(tab_prompts_default);
+		container.innerHTML = render$2(tab_prompts_default);
 		this.root = container;
 		localize(container);
 		bindSettings(container, () => this.onChange());
@@ -11887,7 +14609,7 @@ var TakeoverTab = class {
 		this.onMigrated = onMigrated;
 	}
 	mount(container) {
-		container.innerHTML = render$1(tab_takeover_default);
+		container.innerHTML = render$2(tab_takeover_default);
 		this.root = container;
 		localize(container);
 		$id$1(container, "naist_takeover_disable").addEventListener("click", () => void this.disable());
@@ -11979,6 +14701,7 @@ var Panel = class {
 	chatTab = null;
 	imagesTab = null;
 	takeoverTab = null;
+	tokens = null;
 	constructor(controller, pipeline, onSettingChange = () => {}, imageActions = {
 		openGallery: () => {},
 		setVisibility: () => {},
@@ -12018,6 +14741,7 @@ var Panel = class {
 		container.append(this.root);
 		localize(this.root);
 		this.bind();
+		this.mountPromptTools();
 		this.syncFromSettings();
 		this.mountTabs();
 		this.controller.subscribe((state) => this.onState(state));
@@ -12230,6 +14954,7 @@ var Panel = class {
 		flag("naist_use_coords", "useCoords");
 		$id(r, "naist_model").addEventListener("change", (e) => {
 			g().model = e.target.value;
+			this.convertWeightsFor(g().model);
 			this.applyModel();
 			this.renderCharacters();
 			changed();
@@ -12353,6 +15078,36 @@ var Panel = class {
 			el.textContent = features[el.dataset.hintFor] === false ? t("naist.transport.featureNeedsPlugin") : "";
 		});
 	}
+	/** Token counter under the prompt fields, tag helpers on every prompt field (TZ Phase 6). */
+	mountPromptTools() {
+		const negative = $id(this.root, "naist_negative");
+		this.tokens = createTokenMeter();
+		negative.after(this.tokens.element);
+		attachPromptAssist(this.root, "#naist_prompt, #naist_negative, .naist-char-prompt, .naist-char-negative, #naist_prefix, #naist_suffix", () => settings().generation.model);
+	}
+	/** Numeric weights cannot go to V3: convert them to braces when the model changes. */
+	convertWeightsFor(model) {
+		if (!settings().promptTools.convertWeights) return;
+		if (getCapabilities(isModelId(model) ? model : "nai-diffusion-4-5-full").v4Prompt) return;
+		const g = settings().generation;
+		const lossy = [];
+		let changed = false;
+		const convert = (text) => {
+			const result = convertWeights(text, false);
+			lossy.push(...result.lossy);
+			changed ||= result.changed;
+			return result.text;
+		};
+		g.prompt = convert(g.prompt);
+		g.negativePrompt = convert(g.negativePrompt);
+		for (const slot of g.characters) {
+			slot.prompt = convert(slot.prompt);
+			slot.negative = convert(slot.negative);
+		}
+		if (!changed) return;
+		this.syncFromSettings();
+		toastr.info(lossy.length ? t("naist.weights.convertedLossy", { dropped: lossy.join(", ") }) : t("naist.weights.converted"), t("naist.weights.title"));
+	}
 	scheduleRefresh() {
 		if (this.refreshTimer) clearTimeout(this.refreshTimer);
 		this.refreshTimer = setTimeout(() => this.refreshPreview(), 250);
@@ -12364,6 +15119,22 @@ var Panel = class {
 		try {
 			const prepared = this.pipeline.previewFree(settings().generation.prompt);
 			this.lastPrepared = prepared;
+			if (settings().promptTools.counter) {
+				const g = settings().generation;
+				const v4 = prepared.body.parameters.v4_prompt;
+				this.tokens?.update({
+					model: prepared.request.model,
+					prompt: prepared.body.input,
+					characters: v4 ? v4.caption.char_captions.map((c) => c.char_caption) : [],
+					negative: String(prepared.body.parameters.negative_prompt ?? ""),
+					raw: [
+						g.prompt,
+						g.negativePrompt,
+						...g.characters.map((c) => c.prompt)
+					].join("\n")
+				});
+			}
+			this.tokens?.element.classList.toggle("naist-hidden", !settings().promptTools.counter);
 			const parts = [];
 			if (prepared.cost.total === 0) parts.push(t("naist.cost.free"));
 			else {
@@ -12632,8 +15403,10 @@ async function onActivate() {
 	setupIntegrations(pipeline);
 	const inline = new InlineImages(pipeline);
 	setupInline(pipeline, inline);
-	setupScenes(pipeline, new SceneService(pipeline, inline));
+	const scenes = new SceneService(pipeline, inline);
+	setupScenes(pipeline, scenes);
 	setupTools(pipeline, inline);
+	setupPhase6(pipeline, scenes);
 	new AutoGenerator(studio, pipeline).attach();
 	studio.refreshTransport();
 	for (const name of [

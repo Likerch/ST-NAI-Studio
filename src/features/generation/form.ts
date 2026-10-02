@@ -65,6 +65,7 @@ export function requestFromSettings(g: GenerationSettings, seed: number): Genera
         varietyBoost: g.varietyBoost === true,
         legacyUc: g.legacyUc === true,
         transparentBackground: g.transparentBackground === true,
+        autoText: g.autoText !== false,
         imageFormat: g.imageFormat === 'png' ? 'png' : 'webp',
         useCoords: g.useCoords === true,
         characters: (Array.isArray(g.characters) ? g.characters : []).map((c) => ({

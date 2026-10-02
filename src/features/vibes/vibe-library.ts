@@ -85,8 +85,17 @@ export function vibeContext(): VibeContext {
     return { characters, chatId: c.getCurrentChatId() ?? '', style: settings().prompts.activeStyle };
 }
 
+let extraVibes: () => PlannedVibe[] = () => [];
+
+/** Vibes added by other features (scene continuity in vibe mode). */
+export function setExtraVibes(source: () => PlannedVibe[]): void {
+    extraVibes = source;
+}
+
 export function activeVibes(): PlannedVibe[] {
-    return planVibes(settings().vibes.sets, settings().vibes.items, vibeContext());
+    const planned = planVibes(settings().vibes.sets, settings().vibes.items, vibeContext());
+    const extra = extraVibes().filter((e) => !planned.some((p) => p.item.id === e.item.id));
+    return [...planned, ...extra];
 }
 
 export type VibeNotice =

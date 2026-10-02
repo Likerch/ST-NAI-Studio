@@ -3,6 +3,7 @@
 // Upstream failures are answered with 502 (never 401, which would reset the browser's Basic auth
 // on servers with basicAuthMode) and the real NovelAI status inside the JSON body.
 import { UpstreamError, redact } from './lib/novelai.js';
+import { loadTokenizer, suggestTags } from './lib/static-files.js';
 import { sha256Hex, vibeKey } from './lib/vibe-cache.js';
 import { PLUGIN_VERSION } from './lib/version.js';
 
@@ -48,7 +49,7 @@ function clientAbortSignal(req, res) {
 
 /**
  * @param {{get: Function, post: Function}} router
- * @param {{client: ReturnType<import('./lib/novelai.js').createNovelAiClient>, queue: import('./lib/queue.js').Queue, readToken: Function, vibeCache?: import('./lib/vibe-cache.js').VibeCache | null, log?: Function}} deps
+ * @param {{client: ReturnType<import('./lib/novelai.js').createNovelAiClient>, queue: import('./lib/queue.js').Queue, readToken: Function, vibeCache?: import('./lib/vibe-cache.js').VibeCache | null, log?: Function, fetch?: Function, staticUrl?: string, imageUrl?: string, tokenizerCache?: import('./lib/static-files.js').FileCache | null}} deps
  */
 export function registerRoutes(router, deps) {
     const { client, queue, readToken } = deps;
@@ -240,6 +241,42 @@ export function registerRoutes(router, deps) {
             res.end();
         }),
     );
+
+    /** Tokenizer definition for the token counter: public file from novelai.net, kept on disk. */
+    router.get('/tokenizer/:name', async (req, res) => {
+        try {
+            const { data, cached } = await loadTokenizer({
+                name: String(req.params?.name ?? ''),
+                cache: deps.tokenizerCache ?? null,
+                fetchImpl: deps.fetch ?? globalThis.fetch,
+                baseUrl: deps.staticUrl,
+                signal: clientAbortSignal(req, res),
+            });
+            if (!cached) log('tokenizer downloaded', req.params?.name, `${data.length} bytes`);
+            res.set('Content-Type', 'application/octet-stream');
+            res.set('Cache-Control', 'private, max-age=86400');
+            res.status(200).send(data);
+        } catch (error) {
+            send(res, error?.status === 404 ? 404 : 502, { error: errorBody(error) });
+        }
+    });
+
+    /** NovelAI tag suggestions for the autocomplete (no token needed). */
+    router.get('/suggest-tags', async (req, res) => {
+        try {
+            const tags = await suggestTags({
+                model: req.query?.model ?? '',
+                prompt: req.query?.prompt ?? '',
+                lang: req.query?.lang,
+                fetchImpl: deps.fetch ?? globalThis.fetch,
+                baseUrl: deps.imageUrl ?? 'https://image.novelai.net',
+                signal: clientAbortSignal(req, res),
+            });
+            send(res, 200, { tags });
+        } catch (error) {
+            send(res, 502, { error: errorBody(error) });
+        }
+    });
 
     router.get('/subscription', async (req, res) => {
         let token = null;

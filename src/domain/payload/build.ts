@@ -3,6 +3,7 @@ import type { NaiAction, NaiImageRequest } from '../../shared/nai-wire';
 import { getInpaintCapabilities } from '../capabilities';
 import type { ModelCapabilities } from '../capabilities';
 import { applyDatasetPrefix, applyQualityTags, applyUcPreset } from '../prompt';
+import { applyAutoText } from '../text-block';
 import type { DroppedField, GenerationMode, GenerationRequest, Warning } from '../types';
 import { BuildContext } from './context';
 import { normalizeRequest } from './normalize';
@@ -30,7 +31,12 @@ const ACTIONS: Record<GenerationMode, NaiAction> = {
 export function composePrompts(req: GenerationRequest, caps: ModelCapabilities): { prompt: string; negative: string } {
     const withQuality = applyQualityTags(req.prompt, caps, req.qualityPreset, req.transparentBackground);
     const negative = applyUcPreset(req.negativePrompt, caps, req.ucPreset, withQuality);
-    const prompt = applyDatasetPrefix(withQuality, caps, req.dataset);
+    // V5 autoText after the quality tags, so the text block stays the last part (RECON P-50).
+    const withText =
+        caps.family === 'v5' && req.autoText !== false
+            ? applyAutoText(withQuality, req.characters, req.useCoords)
+            : withQuality;
+    const prompt = applyDatasetPrefix(withText, caps, req.dataset);
     return { prompt, negative };
 }
 

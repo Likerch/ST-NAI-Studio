@@ -2,9 +2,11 @@
 // default pose and canvas position. Character passports go to the card, persona ones to settings.
 import { ctx } from '../core/context';
 import { localize, t } from '../core/i18n';
+import { settings } from '../core/settings';
 import { defaultPassport, PASSPORT_SLOTS, STATE_PRESETS } from '../domain';
 import type { Outfit, Passport, PassportState } from '../domain';
 import { escapeHtml } from './components/dom';
+import { attachPromptAssist } from './prompt-assist';
 import { poseSelectOptions } from './pose-helpers';
 
 function stateLabel(state: PassportState): string {
@@ -135,6 +137,7 @@ export async function editPassport(name: string, initial: Passport | null): Prom
     });
 
     localize(root);
+    attachPromptAssist(root, '.naist-slot-input, .naist-nsfw-tags, .naist-negative', () => settings().generation.model);
     const result = await c.callGenericPopup(root, c.POPUP_TYPE.CONFIRM, '', {
         okButton: t('naist.passport.save'),
         cancelButton: t('naist.inspector.cancel'),

@@ -4972,6 +4972,12 @@ function resolveOverlaps(spec, caps, fixed = /* @__PURE__ */ new Set()) {
 /** Largest request area NovelAI accepts (RECON §3.4). */
 var MAX_REQUEST_PIXELS = 3145728;
 var ceilToStep = (value) => Math.ceil(value / 64) * 64;
+/** Named outputs of a tool's ZIP, in order (web client bundle:_app module 36882). */
+var DIRECTOR_OUTPUTS = { "bg-removal": [
+	"masked",
+	"generated",
+	"blend"
+] };
 var DIRECTOR_TOOLS = [
 	"lineart",
 	"sketch",
@@ -12759,7 +12765,7 @@ var ToolsService = class {
 				retryable: cost === 0,
 				signal
 			}));
-			await deliver(source, {
+			const produced = {
 				images: images.map((img) => ({
 					...img,
 					seed: source.meta?.seed
@@ -12774,7 +12780,20 @@ var ToolsService = class {
 				}),
 				mode: source.meta?.mode ?? MODE.FREE,
 				chatId: this.chatId()
+			};
+			const names = DIRECTOR_OUTPUTS[tool];
+			if (names && names.length === produced.images.length) for (const [i, img] of produced.images.entries()) await deliver(source, {
+				...produced,
+				images: [img],
+				meta: {
+					...produced.meta,
+					tool: `${tool}:${names[i]}`
+				}
 			}, {
+				inline: this.inline,
+				pipeline: this.pipeline
+			});
+			else await deliver(source, produced, {
 				inline: this.inline,
 				pipeline: this.pipeline
 			});

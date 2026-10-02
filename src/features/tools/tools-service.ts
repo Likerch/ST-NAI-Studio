@@ -8,6 +8,7 @@ import { settings } from '../../core/settings';
 import {
     canUpscale,
     DEFAULT_MODEL,
+    DIRECTOR_OUTPUTS,
     directorBody,
     directorSize,
     directorToolCost,
@@ -145,7 +146,20 @@ export class ToolsService {
                 mode: (source.meta?.mode ?? MODE.FREE) as ModeId,
                 chatId: this.chatId(),
             };
-            await deliver(source, produced, { inline: this.inline, pipeline: this.pipeline });
+            // Background removal answers three variants (masked, generated, blend): one labelled swipe each.
+            const names = DIRECTOR_OUTPUTS[tool];
+            if (names && names.length === produced.images.length) {
+                for (const [i, img] of produced.images.entries()) {
+                    const part = {
+                        ...produced,
+                        images: [img],
+                        meta: { ...produced.meta, tool: `${tool}:${names[i]}` },
+                    };
+                    await deliver(source, part, { inline: this.inline, pipeline: this.pipeline });
+                }
+            } else {
+                await deliver(source, produced, { inline: this.inline, pipeline: this.pipeline });
+            }
             log.info('director', tool, `${images.length} image(s)`, `cost ${cost}`);
         });
     }

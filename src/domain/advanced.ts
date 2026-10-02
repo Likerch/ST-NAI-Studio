@@ -8,6 +8,11 @@ export const MAX_REQUEST_PIXELS = 3145728;
 
 const ceilToStep = (value: number) => Math.ceil(value / SIZE_STEP) * SIZE_STEP;
 
+/** Named outputs of a tool's ZIP, in order (web client bundle:_app module 36882). */
+export const DIRECTOR_OUTPUTS: Partial<Record<DirectorTool, readonly string[]>> = {
+    'bg-removal': ['masked', 'generated', 'blend'],
+};
+
 export const DIRECTOR_TOOLS: readonly DirectorTool[] = [
     'lineart',
     'sketch',

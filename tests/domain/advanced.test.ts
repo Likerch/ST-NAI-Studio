@@ -3,6 +3,7 @@ import {
     canUpscale,
     defaultVibeEntry,
     DIRECTOR_EMOTIONS,
+    DIRECTOR_OUTPUTS,
     DIRECTOR_TOOLS,
     directorBody,
     directorSize,
@@ -23,6 +24,11 @@ import type { VibeItem, VibeSet } from '../../src/domain';
 const opus = { tier: 3, active: true, anlas: 100, usageNegative: false };
 
 describe('Director Tools', () => {
+    it('names the three background-removal outputs like the web client', () => {
+        expect(DIRECTOR_OUTPUTS['bg-removal']).toEqual(['masked', 'generated', 'blend']);
+        expect(DIRECTOR_OUTPUTS.lineart).toBeUndefined();
+    });
+
     it('knows seven tools and 24 emotions', () => {
         expect(DIRECTOR_TOOLS).toHaveLength(7);
         expect(DIRECTOR_EMOTIONS).toHaveLength(24);

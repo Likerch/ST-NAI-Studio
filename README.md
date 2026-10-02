@@ -1,69 +1,149 @@
 # NAI Studio
 
-Расширение SillyTavern для генерации изображений в NovelAI: специализированный клиент NovelAI вместо встроенного Image Generation.
+**English** · [Русский](README.ru.md)
 
-**Статус:** все 6 фаз ТЗ. Работают:
+A NovelAI image studio for [SillyTavern](https://github.com/SillyTavern/SillyTavern). It replaces the built-in Image Generation with a client built specifically for NovelAI: every model from V3 to V5, multi-character scenes with positions, Director Tools, inpainting, vibes, live previews, an Anlas guard — and it keeps working with the commands, scripts and habits you already have.
 
-- панель генерации;
-- модели V5, V4.5, V4 и V3;
-- мультиперсонажные промпты;
-- калькулятор Anlas и режим «только бесплатные»;
-- инспектор payload и raw-override;
-- два транспорта: серверный плагин и встроенный эндпоинт ST;
-- все режимы встроенного Image Generation (персонаж, лицо, пользователь, сцена, последнее сообщение, фон, свободный и мультимодальные);
-- шаблоны промптов, общий префикс и суффикс, стили, промпты персонажей;
-- `/nai` и, после замены встроенного, `/sd`, `/imagine`, `/img`, `/image` со всеми аргументами;
-- меню-палочка, кнопка генерации у сообщения, пункты в меню карточки персонажа;
-- интерактивный режим, инструмент `GenerateImage` для LLM, макросы `{{charPrefix}}`;
-- автогенерация по правилам (в режиме «только бесплатные» Anlas не тратит никогда);
-- перенос настроек встроенного Image Generation и его отключение с вкладки «Замена встроенного»;
-- картинки внутри текста сообщений: вставка по курсору, варианты, вариации, перетаскивание, подписи и спойлеры, сетка и карусель;
-- лайтбокс со всеми параметрами, фон чата и аватар персонажа из картинки, сохранение PNG с метаданными NovelAI;
-- галерея всех генераций с поиском, фильтрами, избранным и сравнением;
-- импорт параметров из PNG/WebP NovelAI перетаскиванием на панель;
-- паспорт внешности персонажа в карточке (слоты, наряды, состояния, личный UC);
-- библиотека поз, парные позы, кадрирование и ракурс;
-- композер сцены с холстом позиций и автосборкой по последнему сообщению (кто в кадре, позы, взаимодействие), до 32 персонажей на V5;
-- инструменты на любой картинке чата: Director Tools (лайнарт, скетч, раскраска, эмоция, очистка, удаление фона), инпейнт и аутпейнт в редакторе маски, апскейл ×2, Enhance — результат новым вариантом;
-- библиотека вайбов с наборами по персонажу, чату и стилю; повторное использование вайба не тратит Anlas;
-- живое превью шагов генерации на серверном плагине;
-- перевод русских промптов в английские теги текущим LLM (глоссарий, кэш, оригинал в метаданных);
-- подсказки тегов (20 000 тегов Danbooru, русские алиасы, подсказки NovelAI), предупреждение о неизвестных тегах, веса по Ctrl+↑/↓ с конвертацией под модель;
-- счётчик токенов по токенайзерам веб-клиента NovelAI (Qwen, T5, CLIP), отдельно текст в кадре V5;
-- инструмент для LLM со структурированными аргументами (кто в кадре, действие, настроение, план, место);
-- генератор полного набора спрайтов для Expressions;
-- страница комикса для V5;
-- непрерывность сцены (картинка локации как основа или вайб);
-- экспорт и импорт всех настроек одним файлом.
+|                      |                                            |
+| -------------------- | ------------------------------------------ |
+| SillyTavern          | 1.19.0 or newer                            |
+| NovelAI subscription | any; free generations are tracked for Opus |
+| Interface            | English, Russian                           |
+| Server plugin        | optional, recommended (0.3.0)              |
+| License              | AGPL-3.0                                   |
 
-Таблица соответствия со встроенным — [docs/PARITY.md](docs/PARITY.md).
+## Why
 
-|                  |                                                   |
-| ---------------- | ------------------------------------------------- |
-| SillyTavern      | 1.19.0+                                           |
-| Подписка NovelAI | любая; бесплатные генерации считаются для Opus    |
-| Языки UI         | русский, английский                               |
-| Лицензия         | AGPL-3.0                                          |
-| Список тегов     | a1111-sd-webui-tagcomplete (MIT), данные Danbooru |
+The built-in Image Generation treats NovelAI as one backend among many. NAI Studio is built around what NovelAI actually offers:
 
-## Установка
+- **The real request.** Payloads are assembled exactly like the NovelAI website does it (quality tags, undesired-content presets, `v4_prompt`, character captions), and nothing the model does not support is ever sent. A payload inspector shows the final JSON before anything leaves.
+- **Your Anlas stay yours.** The price is computed before every request, the "free generations only" mode is on by default and makes it impossible to spend Anlas by accident, paid tools always ask first.
+- **Your token stays on the server.** The NovelAI key lives in SillyTavern's secrets (or the plugin config) and never reaches the browser.
 
-Подробно — [docs/DEPLOY.md](docs/DEPLOY.md). Коротко:
+## Features
 
-1. Extensions → Install extension → `https://github.com/Likerch/ST-NAI-Studio`.
-2. Токен NovelAI задаётся в SillyTavern: API Connections → NovelAI.
-3. Для полного функционала (стрим, Director Tools, апскейл, вайбы V4/V4.5, счётчик токенов, подсказки NovelAI) — серверный плагин 0.3.0: `install-server.ps1` / `install-server.sh`, затем `enableServerPlugins: true` и перезапуск ST.
+### Generation
 
-## Разработка
+- Models: V5 Full / Curated, V4.5 Full / Curated, V4 Full / Curated, Anime V3, Furry V3 — each with its own capability matrix (sizes, samplers, schedules, SMEA, Variety+, transparency, character limits).
+- Multi-character prompts: per-character prompt and undesired content, positions on a 5 × 5 grid (V4.x) or free coordinates (V5, up to 32 characters).
+- Sampler, scheduler, guidance, rescale, seed, steps, size presets, quality and UC presets.
+- **Live previews** of denoising steps while the image is being drawn (plugin); a progress estimate otherwise. Cancelling really aborts the request.
+- Payload inspector and raw JSON override for experiments.
+
+### In the chat
+
+- Every mode of the built-in extension (character, face, user, scene, last message, background, free, multimodal), prompt templates, common prefix/suffix, styles, per-character prompts.
+- `/nai`, and after the takeover also `/sd`, `/imagine`, `/img`, `/image` with all their arguments; wand menu item, message button, character menu items, interactive mode, `{{charPrefix}}` macros.
+- **Images inside messages:** insert at the cursor, regenerate, variations, drag between messages, captions and spoilers, grid and carousel layouts, reading mode.
+- Lightbox with all parameters; set as chat background or character avatar; save as PNG with NovelAI metadata.
+- Gallery of everything generated, with search, filters, favourites and side-by-side comparison.
+- Drop a NovelAI PNG/WebP on the panel to load its parameters.
+- Auto-generation rules (every N messages, keywords, scene change) with a mandatory cooldown — never spends Anlas in free-only mode.
+- `GenerateImage` tool for the LLM with structured arguments: who is in the frame, action, mood, framing, location.
+
+### Characters and scenes
+
+- **Appearance passport** stored in the character card: base, hair, eyes, body, outfits, states, personal undesired content, default pose and position.
+- Pose library (38 poses), pair poses (hug, holding hands, carry…) using NovelAI's `source#` / `target#` / `mutual#` interaction tags, framing, camera angle, distance.
+- **Scene composer** with a position canvas; automatic scene from the last message: who is in the frame, their poses and interactions, character counts. Works in group chats.
+
+### Image tools (on any image in the chat)
+
+- **Director Tools:** line art, sketch, colorize, emotion (24 emotions), declutter, declutter keeping bubbles, background removal. Results become new swipes; the original is never lost.
+- **Inpaint / outpaint** editor: brush, eraser, invert, keep-original compositing; V5 Curated honestly falls back to the V4.5 Curated inpainting model.
+- **Upscale ×2** and **Enhance** (upscale + img2img with strength and noise).
+- **Vibe library:** reference images, named sets bound to a character, chat or style, per-vibe strength and information. Encodings are cached in the browser and on the plugin's disk — reusing a vibe never costs Anlas twice.
+
+### Prompt helpers
+
+- **RU → EN translation** with your own LLM (structured output on Chat Completion, few-shot elsewhere), glossary, cache; the original prompt is kept in the image metadata.
+- **Tag suggestions** while typing: 20 000 most used Danbooru tags with counts and aliases, ~400 Russian aliases, NovelAI's own suggestions; a hint about unknown tags.
+- **Weights** with Ctrl + ↑ / Ctrl + ↓ in the syntax of the model (`1.05::tag::` on V4+, `{tag}` / `[tag]` on V3); numeric weights are converted when you switch to V3.
+- **Token counter** using NovelAI's own tokenizers (Qwen for V5, T5 for V4.x, CLIP for V3) with the website's limits; in-image text of V5 is shown separately; a warning about characters T5 cannot read.
+
+### Extras
+
+- **Expressions sprite generator:** a full emotion set (28 labels) for the built-in Expressions extension, consistent character, named and uploaded where Expressions looks for them.
+- **Comic pages** for V5: layouts, a prompt and speech lines per panel, the page is assembled automatically.
+- **Scene continuity:** the last picture of a location becomes the base (img2img) or a vibe of the next one there.
+- Export and import of all settings in one JSON file.
+
+## Installation
+
+1. **Extension:** SillyTavern → Extensions → Install extension → `https://github.com/Likerch/ST-NAI-Studio`.
+2. **NovelAI token:** API Connections → NovelAI → paste your persistent API token (`pst-…`). The plugin reads it from SillyTavern's secrets.
+3. **Server plugin (recommended):**
+   - copy the plugin with `install-server.ps1 -SillyTavern "C:\path\to\SillyTavern"` (Windows) or `./install-server.sh /path/to/SillyTavern` (Linux, macOS, Docker host);
+   - enable plugins: `enableServerPlugins: true` in `config.yaml` (or env `SILLYTAVERN_ENABLESERVERPLUGINS=true`);
+   - restart SillyTavern. The panel shows "Server plugin 0.3.0".
+
+Details, Docker notes and uninstalling — [docs/DEPLOY.md](docs/DEPLOY.md).
+
+### With and without the plugin
+
+| Feature                                                                       | Plugin | Without the plugin (SillyTavern's NovelAI endpoint) |
+| ----------------------------------------------------------------------------- | ------ | --------------------------------------------------- |
+| txt2img, all models                                                           | ✅     | ✅ one image per request                            |
+| Several images, characters with positions                                     | ✅     | —                                                   |
+| img2img, inpaint, outpaint, Enhance                                           | ✅     | —                                                   |
+| Director Tools, upscale, vibes (V4/V4.5)                                      | ✅     | —                                                   |
+| Live step previews                                                            | ✅     | progress estimate                                   |
+| Exact token counter, NovelAI tag suggestions                                  | ✅     | estimate; local tags only                           |
+| Inline images, gallery, passports, composer, translation, sprites (seed mode) | ✅     | ✅                                                  |
+
+Features that need the plugin stay visible in the interface with the reason they are unavailable.
+
+## Getting started
+
+1. Open **Extensions → NAI Studio**. "Free generations only" is on: nothing will spend Anlas.
+2. Pick a model, write a prompt (tags or plain English), press **Generate** — the image is posted to the chat.
+3. Try `/nai a cat on a windowsill, sunlight` in the chat, or the wand menu → NAI Studio.
+4. On the **Images** tab you will find the vibe library, sprites, comics and scene continuity; on **Prompts** — styles, translation and the prompt helpers.
+5. When you are ready to drop the built-in extension: **Replace built-in** tab → migrate the settings (done automatically on first start) → "Disable built-in and reload". It can be turned back on at any time.
+
+## Slash commands
+
+| Command                                                   | What it does                                                                       |
+| --------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `/nai [prompt]` (`/nai-imagine`)                          | Generate an image; accepts the built-in `/sd` arguments plus NovelAI-specific ones |
+| `/imagine`, `/sd`, `/img`, `/image`                       | The same, after the takeover of the built-in extension                             |
+| `/nai-style [name]` (`/imagine-style` after takeover)     | Select a style or return the active one                                            |
+| `/nai-insert message=<id> [at=<pos>] [prompt]`            | Generate and insert an image inside a message                                      |
+| `/nai-images`                                             | Show or hide inline images of the chat; reading mode                               |
+| `/nai-gallery`                                            | Open the gallery                                                                   |
+| `/nai-scene [edit=false] [target=message\|inline] [text]` | Assemble a scene from the last message (or text)                                   |
+| `/nai-vibes`                                              | Open the vibe library                                                              |
+| `/nai-translate [text]`                                   | Translate a Russian prompt to English tags                                         |
+| `/nai-sprites`                                            | Open the Expressions sprite generator                                              |
+| `/nai-comic`                                              | Open the comic page builder (V5)                                                   |
+| `/nai-location [name]`                                    | Set or return the current location for scene continuity                            |
+
+## Privacy and safety
+
+- The NovelAI token never reaches the browser and is never stored in the extension settings.
+- Network traffic goes only to NovelAI (and to your SillyTavern server). The tag list ships with the extension; tokenizer files are fetched from novelai.net once and cached.
+- Paid actions (vibe encoding, upscale, background removal, anything above the free limits) always show the price and ask for confirmation; free-only mode blocks them entirely.
+- Translation uses the LLM you already have configured in SillyTavern; nothing is sent anywhere else.
+
+## Development
 
 ```bash
 npm ci
-npm run build        # dist/index.js + dist/style.css (dist коммитится)
+npm run build        # dist/index.js + dist/style.css (dist is committed)
 npm test             # vitest
-npm run coverage     # покрытие слоя domain, порог 90%
-npm run lint         # ESLint, включая границы слоёв
+npm run coverage     # domain layer coverage, threshold 90%
+npm run lint         # ESLint, including layer boundaries
 npm run format:check # Prettier
-npm run deploy:local # копия в локальный SillyTavern
+npm run deploy:local # copy into a local SillyTavern
 ```
 
-Архитектура и все сведения об API — в [docs/RECON.md](docs/RECON.md). Слои: `ui` / `integration` → `features` → `domain` / `transport` / `core` → `shared`. Слой `domain` чистый и тестируется без DOM, сети и SillyTavern.
+Layers: `ui` / `integration` → `features` → `domain` / `transport` / `core` → `shared`. The `domain` layer is pure and tested without DOM, network or SillyTavern. Everything known about the SillyTavern and NovelAI APIs, with sources, is in [docs/RECON.md](docs/RECON.md); parity with the built-in extension — [docs/PARITY.md](docs/PARITY.md); phase reports — [docs/reports/](docs/reports/); history — [CHANGELOG.md](CHANGELOG.md). Project documentation is in Russian.
+
+## Credits
+
+- Tag list: [a1111-sd-webui-tagcomplete](https://github.com/DominikDoom/a1111-sd-webui-tagcomplete) (MIT), data from Danbooru.
+- NovelAI is a product of Anlatan. This project is not affiliated with Anlatan or the SillyTavern team.
+
+## License
+
+[AGPL-3.0](LICENSE)

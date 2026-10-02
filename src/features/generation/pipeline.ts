@@ -14,6 +14,7 @@ import {
     combinePrefixes,
     DEFAULT_MODEL,
     DEFAULT_TEMPLATES,
+    explicitScene,
     fitArea,
     FREE_MAX_PIXELS,
     getCapabilities,
@@ -532,6 +533,20 @@ export class Pipeline {
         if (interpreter && hasCyrillic(additionalNegative)) {
             const result = await interpreter.interpret(additionalNegative, { ...interpretContext, negative: true });
             if (result) additionalNegative = result.prompt;
+        }
+
+        // Explicit scenes (v0.9.8): "nsfw" in the prompt keeps NovelAI's UC preset from putting it into
+        // the undesired content; childlike looks stay out.
+        if (s.scene.allowNsfw) {
+            const characters = (o.generation?.characters ?? s.generation.characters).filter((ch) => ch.enabled);
+            const explicit = explicitScene(
+                scene,
+                characters.map((ch) => ch.prompt),
+            );
+            if (explicit) {
+                scene = explicit.scene;
+                additionalNegative = combinePrefixes(additionalNegative, explicit.negative);
+            }
         }
 
         // A stored scene prompt is already final: free-mode "char" expansion must not run twice,

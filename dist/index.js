@@ -4378,6 +4378,29 @@ function splitTags(text) {
 function joinTags(...parts) {
 	return splitTags(parts.filter(Boolean).join(", ")).join(", ");
 }
+/** Explicit anatomy (v0.9.8): it belongs to the NSFW layer and stays out of other scenes. */
+var EXPLICIT_ANATOMY = /(^|\s)(futanari|futa|dickgirl|penis|testicles?|erection|flaccid|foreskin|pussy|vagina|clitoris|nipples?|areolae?|pubic hair)(\s|$)/i;
+function isExplicitAnatomy(tag) {
+	return EXPLICIT_ANATOMY.test(tag);
+}
+/** A futanari: the tag in the NSFW layer or in any slot. */
+function isFutanari(passport) {
+	return splitTags([passport.nsfw.tags, ...PASSPORT_SLOTS.map((slot) => passport.slots[slot])].join(", ")).some((tag) => /^(futanari|futa|dickgirl)$/i.test(tag));
+}
+/** Moves explicit anatomy from the slots and outfits into the NSFW layer. */
+function moveExplicitAnatomy(passport) {
+	const moved = [];
+	const keep = (text) => splitTags(text).filter((tag) => isExplicitAnatomy(tag) ? (moved.push(tag), false) : true).join(", ");
+	for (const slot of PASSPORT_SLOTS) if (slot !== "style") passport.slots[slot] = keep(passport.slots[slot]);
+	passport.outfits = passport.outfits.map((o) => ({
+		...o,
+		tags: keep(o.tags)
+	}));
+	if (moved.length) passport.nsfw = {
+		...passport.nsfw,
+		tags: joinTags(passport.nsfw.tags, ...moved)
+	};
+}
 /** Tags of the clothing slot or the chosen outfit. */
 function clothingTags(passport, outfit) {
 	const name = outfit ?? passport.activeOutfit;
@@ -4391,8 +4414,10 @@ function clothingTags(passport, outfit) {
 function passportTags(passport, options) {
 	if (passport.kind !== "character") return joinTags(passport.tags);
 	const states = passport.states.filter((s) => s.enabled || options.states?.includes(s.id)).map((s) => s.tags);
-	const nsfw = options.allowNsfw && passport.nsfw.enabled ? passport.nsfw.tags : "";
-	return joinTags(passport.slots.base, passport.slots.hair, passport.slots.eyes, passport.slots.body, passport.slots.skin, options.withoutClothing ? "" : clothingTags(passport, options.outfit), passport.slots.accessories, ...states, nsfw, passport.slots.style);
+	const layer = options.allowNsfw && passport.nsfw.enabled;
+	const nsfw = layer ? passport.nsfw.tags : "";
+	const tags = joinTags(passport.slots.base, passport.slots.hair, passport.slots.eyes, passport.slots.body, passport.slots.skin, options.withoutClothing ? "" : clothingTags(passport, options.outfit), passport.slots.accessories, ...states, nsfw, passport.slots.style);
+	return layer ? tags : splitTags(tags).filter((tag) => !isExplicitAnatomy(tag)).join(", ");
 }
 function isPassportEmpty(passport) {
 	if (!passport) return true;
@@ -5253,6 +5278,26 @@ function countTags(tagsPerParticipant) {
 	if (counts.other) parts.push(counts.other === 1 ? "1other" : `${Math.min(counts.other, 6)}others`);
 	return parts.join(", ");
 }
+/**
+* "futa with female / male / futa" for an explicit scene with a futanari (NSFW layer on) and a
+* partner: the composition tag of Danbooru, by the partner's base tags.
+*/
+function futaPairing(participants) {
+	const futa = (p) => Boolean(p.passport && p.passport.nsfw.enabled && isFutanari(p.passport));
+	const futas = participants.filter(futa);
+	if (!futas.length || participants.length < 2) return "";
+	const tags = /* @__PURE__ */ new Set();
+	for (const other of participants) {
+		if (futas.length === 1 && other === futas[0]) continue;
+		if (futa(other) && futas.length > 1) tags.add("futa with futa");
+		else if (!futa(other)) {
+			const gender = genderOf(other.passport ? other.passport.slots.base : other.fallbackPrompt);
+			if (gender === "girl") tags.add("futa with female");
+			else if (gender === "boy") tags.add("futa with male");
+		}
+	}
+	return [...tags].join(", ");
+}
 /** Turns the composer state into the base prompt and character slots for the request. */
 function buildScene(spec, caps, options) {
 	const active = spec.participants.filter((p) => p.enabled);
@@ -5263,12 +5308,13 @@ function buildScene(spec, caps, options) {
 	const pairTags = pair ? pairPoseTags(pair, caps.v4Prompt && capacity > 0) : null;
 	const characterTags = kept.map((p) => {
 		const look = p.outfit ? "" : p.currentLook ?? "";
+		const bulge = p.passport && !options.allowNsfw && isFutanari(p.passport) ? "bulge" : "";
 		const identity = p.passport ? joinTags(passportTags(p.passport, {
 			outfit: p.outfit || void 0,
 			states: p.states,
 			allowNsfw: options.allowNsfw,
 			withoutClothing: Boolean(look)
-		}), look) : joinTags(p.fallbackPrompt, look);
+		}), look, bulge) : joinTags(p.fallbackPrompt, look);
 		const pose = p.pose ? findPose(p.pose, options.customPoses)?.tags ?? "" : "";
 		const index = spec.participants.indexOf(p);
 		const pairTag = pairTags && spec.pair ? index === spec.pair.a ? pairTags[0] : index === spec.pair.b ? pairTags[1] : "" : "";
@@ -5279,9 +5325,10 @@ function buildScene(spec, caps, options) {
 		};
 	});
 	const counts = options.counts === false ? "" : countTags(kept.map((p) => p.passport ? p.passport.slots.base : p.fallbackPrompt));
+	const pairing = options.allowNsfw ? futaPairing(kept) : "";
 	const framing = joinTags(optionTags(FRAMINGS, spec.framing), optionTags(CAMERA_ANGLES, spec.camera), optionTags(DISTANCES, spec.distance));
 	if (capacity === 0) return {
-		prompt: joinTags(counts, spec.base, ...characterTags.map((c) => c.prompt), framing),
+		prompt: joinTags(counts, pairing, spec.base, ...characterTags.map((c) => c.prompt), framing),
 		characters: [],
 		useCoords: false,
 		withoutPassport: kept.filter((p) => !p.passport).map((p) => p.name),
@@ -5289,7 +5336,7 @@ function buildScene(spec, caps, options) {
 	};
 	const canPosition = caps.positioning !== "none" && (kept.length > 1 || caps.canPositionSingleCharacter) && spec.useCoords;
 	return {
-		prompt: joinTags(counts, spec.base, framing),
+		prompt: joinTags(counts, pairing, spec.base, framing),
 		characters: characterTags.map(({ p, prompt, negative }) => {
 			const point = placeOnCanvas(p.position, caps);
 			return {
@@ -7552,19 +7599,19 @@ var SYSTEM_CARD = [
 	"- kind \"location\": a recurring named place, how it looks, in \"tags\".",
 	"- kind \"scenario\": only when the card is a scenario or a narrator rather than one character; the visual tags of the situation in \"tags\".",
 	"- kind \"object\": an important item or vehicle, how it looks, in \"tags\".",
-	"Rules: English Danbooru tags, lowercase, comma separated, spaces instead of underscores. Only what the text says or clearly implies, never invent (a species or race only when the text names it, never from a name, a title or the setting); leave a field empty when unknown. Keep names as written in the card. No quality, art style or colour palette tags (pastel colors, vibrant colors, muted colors, monochrome). clothing is ONE default outfit (what they wear most): one item per body part, one colour per item, never alternatives (\"blue or grey coat\"); every other outfit of the text goes to \"outfits\"."
+	"Rules: English Danbooru tags, lowercase, comma separated, spaces instead of underscores. Only what the text says or clearly implies, never invent (a species or race only when the text names it, never from a name, a title or the setting); leave a field empty when unknown. Explicit anatomy (genitals, nipples, the penis of a futanari) goes only to \"nsfw\"; a futanari is \"1girl\" in base and \"futanari, penis\" in nsfw. Keep names as written in the card. No quality, art style or colour palette tags (pastel colors, vibrant colors, muted colors, monochrome). clothing is ONE default outfit (what they wear most): one item per body part, one colour per item, never alternatives (\"blue or grey coat\"); every other outfit of the text goes to \"outfits\"."
 ].join("\n");
 var SYSTEM_PERSONA = [
 	"You read the description of the player's persona in a roleplay and write one visual passport for an image generator (NovelAI, Danbooru tags).",
 	"Answer only with JSON: {\"passports\": [ one entry of kind \"character\" ]} with the fields name, aliases, base (count tag and what they are: \"1girl, adult\", \"1boy, elf\"), hair, eyes, body, skin, clothing, accessories, outfits ({\"name\",\"tags\"}), nsfw (explicit body details only if given), negative.",
-	"Rules: English Danbooru tags, lowercase, comma separated, spaces instead of underscores. Only what the text says or clearly implies, never invent (a species or race only when the text names it, never from a name, a title or the setting); leave a field empty when unknown. No quality, art style or colour palette tags (pastel colors, vibrant colors, muted colors, monochrome). clothing is ONE default outfit (what they wear most): one item per body part, one colour per item, never alternatives (\"blue or grey coat\"); every other outfit of the text goes to \"outfits\"."
+	"Rules: English Danbooru tags, lowercase, comma separated, spaces instead of underscores. Only what the text says or clearly implies, never invent (a species or race only when the text names it, never from a name, a title or the setting); leave a field empty when unknown. Explicit anatomy (genitals, nipples, the penis of a futanari) goes only to \"nsfw\"; a futanari is \"1girl\" in base and \"futanari, penis\" in nsfw. No quality, art style or colour palette tags (pastel colors, vibrant colors, muted colors, monochrome). clothing is ONE default outfit (what they wear most): one item per body part, one colour per item, never alternatives (\"blue or grey coat\"); every other outfit of the text goes to \"outfits\"."
 ].join("\n");
 var SYSTEM_NPC = [
 	"You read how a roleplay scene tracker describes a character right now, and the story card they come from, and write one visual passport for an image generator (NovelAI, Danbooru tags).",
 	"Answer only with JSON: {\"passports\": [ one entry of kind \"character\" ]} with the fields name, aliases, base (count tag and what they are: \"1girl, elf, adult\", \"1boy, orc\"), hair, eyes, body, skin, clothing (what they wear in the tracker), accessories, outfits, nsfw (explicit body details only if given), negative.",
 	"Permanent features (species, body, face, hair, eyes, skin) go to their fields; temporary states (wet, wounded, blushing) are left out.",
 	"The story card describes the world and other characters: take from it only what it says about this character by name, never the traits of anyone else (race, hair, clothes).",
-	"Rules: English Danbooru tags, lowercase, comma separated, spaces instead of underscores. Only what the texts say or clearly imply about this character, never invent (a species or race only when the text names it, never from a name, a title or the setting); leave a field empty when unknown. No quality, art style or colour palette tags (pastel colors, vibrant colors, muted colors, monochrome). clothing is ONE default outfit (what they wear most): one item per body part, one colour per item, never alternatives (\"blue or grey coat\"); every other outfit of the text goes to \"outfits\"."
+	"Rules: English Danbooru tags, lowercase, comma separated, spaces instead of underscores. Only what the texts say or clearly imply about this character, never invent (a species or race only when the text names it, never from a name, a title or the setting); leave a field empty when unknown. Explicit anatomy (genitals, nipples, the penis of a futanari) goes only to \"nsfw\"; a futanari is \"1girl\" in base and \"futanari, penis\" in nsfw. No quality, art style or colour palette tags (pastel colors, vibrant colors, muted colors, monochrome). clothing is ONE default outfit (what they wear most): one item per body part, one colour per item, never alternatives (\"blue or grey coat\"); every other outfit of the text goes to \"outfits\"."
 ].join("\n");
 var str$1 = { type: "string" };
 var PASSPORT_GEN_SCHEMA = {
@@ -7681,6 +7728,8 @@ function parseGeneratedPassports(raw, fallbackName = "") {
 				enabled: false,
 				tags: tags$1(o.nsfw)
 			};
+			moveExplicitAnatomy(passport);
+			if (isFutanari(passport)) passport.nsfw.enabled = true;
 			if (!passport.slots.clothing && passport.outfits[0]) passport.activeOutfit = passport.outfits[0].name;
 		} else passport.tags = tags$1(o.tags);
 		passport.negative = tags$1(o.negative);
@@ -8264,6 +8313,19 @@ var STEMS = new RegExp(`(^|[^\\p{L}\\p{N}])(${explicit_words_default.stems.map(e
 function isExplicitScene(text) {
 	const normalized = text.replace(/_/g, " ");
 	return WHOLE.test(normalized) || STEMS.test(normalized);
+}
+/** Undesired content of every explicit scene: no childlike looks. */
+var EXPLICIT_NEGATIVE = "child, loli, shota, underage";
+/**
+* An explicit scene (v0.9.8) gets "nsfw" in its prompt, so NovelAI's UC preset leaves it out of the
+* undesired content as the website does, and EXPLICIT_NEGATIVE. Null for other scenes.
+*/
+function explicitScene(scene, characterPrompts) {
+	if (!isExplicitScene([scene, ...characterPrompts].join(", "))) return null;
+	return {
+		scene: /(^|[^a-z])nsfw([^a-z]|$)/i.test(scene) ? scene : scene.trim() ? `nsfw, ${scene}` : "nsfw",
+		negative: EXPLICIT_NEGATIVE
+	};
 }
 //#endregion
 //#region src/features/auto/auto-generation.ts
@@ -9998,6 +10060,14 @@ var Pipeline = class {
 				negative: true
 			});
 			if (result) additionalNegative = result.prompt;
+		}
+		if (s.scene.allowNsfw) {
+			const characters = (o.generation?.characters ?? s.generation.characters).filter((ch) => ch.enabled);
+			const explicit = explicitScene(scene, characters.map((ch) => ch.prompt));
+			if (explicit) {
+				scene = explicit.scene;
+				additionalNegative = combinePrefixes(additionalNegative, explicit.negative);
+			}
 		}
 		const assembled = this.assemble(mode, scene, additionalNegative, {
 			isSwipe,
@@ -16736,7 +16806,7 @@ var ComicService = class {
 };
 //#endregion
 //#region package.json
-var version = "0.9.7";
+var version = "0.9.8";
 //#endregion
 //#region src/features/settings-io/settings-io.ts
 async function exportSettingsFile(includeImages) {

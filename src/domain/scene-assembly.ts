@@ -2,7 +2,7 @@
 // participant's passport, pose, position and personal UC, framing and camera, pair poses, and the
 // resulting base prompt + character prompts. Pure; the composer shows the result for editing.
 import type { ModelCapabilities } from './capabilities';
-import { joinTags, passportTags, splitTags } from './passport';
+import { joinTags, passportTags, splitTags, isFutanari } from './passport';
 import type { Passport } from './passport';
 import {
     CAMERA_ANGLES,
@@ -286,6 +286,27 @@ export function countTags(tagsPerParticipant: readonly string[]): string {
     return parts.join(', ');
 }
 
+/**
+ * "futa with female / male / futa" for an explicit scene with a futanari (NSFW layer on) and a
+ * partner: the composition tag of Danbooru, by the partner's base tags.
+ */
+function futaPairing(participants: readonly SceneParticipant[]): string {
+    const futa = (p: SceneParticipant) => Boolean(p.passport && p.passport.nsfw.enabled && isFutanari(p.passport));
+    const futas = participants.filter(futa);
+    if (!futas.length || participants.length < 2) return '';
+    const tags = new Set<string>();
+    for (const other of participants) {
+        if (futas.length === 1 && other === futas[0]) continue;
+        if (futa(other) && futas.length > 1) tags.add('futa with futa');
+        else if (!futa(other)) {
+            const gender = genderOf(other.passport ? other.passport.slots.base : other.fallbackPrompt);
+            if (gender === 'girl') tags.add('futa with female');
+            else if (gender === 'boy') tags.add('futa with male');
+        }
+    }
+    return [...tags].join(', ');
+}
+
 export interface BuiltScene {
     /** Base prompt (count tags, scene, framing). */
     prompt: string;
@@ -318,6 +339,8 @@ export function buildScene(
     const characterTags = kept.map((p) => {
         // A current look (scene tracker) replaces the clothing of the passport, unless an outfit is chosen.
         const look = p.outfit ? '' : (p.currentLook ?? '');
+        // A futanari shows a bulge under clothes in ordinary scenes; explicit ones get the NSFW layer.
+        const bulge = p.passport && !options.allowNsfw && isFutanari(p.passport) ? 'bulge' : '';
         const identity = p.passport
             ? joinTags(
                   passportTags(p.passport, {
@@ -327,6 +350,7 @@ export function buildScene(
                       withoutClothing: Boolean(look),
                   }),
                   look,
+                  bulge,
               )
             : joinTags(p.fallbackPrompt, look);
         const pose = p.pose ? (findPose(p.pose, options.customPoses)?.tags ?? '') : '';
@@ -350,6 +374,7 @@ export function buildScene(
         options.counts === false
             ? ''
             : countTags(kept.map((p) => (p.passport ? p.passport.slots.base : p.fallbackPrompt)));
+    const pairing = options.allowNsfw ? futaPairing(kept) : '';
     const framing = joinTags(
         optionTags(FRAMINGS, spec.framing),
         optionTags(CAMERA_ANGLES, spec.camera),
@@ -359,7 +384,7 @@ export function buildScene(
     if (capacity === 0) {
         // V3: no character prompts; everything goes into one prompt.
         return {
-            prompt: joinTags(counts, spec.base, ...characterTags.map((c) => c.prompt), framing),
+            prompt: joinTags(counts, pairing, spec.base, ...characterTags.map((c) => c.prompt), framing),
             characters: [],
             useCoords: false,
             withoutPassport: kept.filter((p) => !p.passport).map((p) => p.name),
@@ -370,7 +395,7 @@ export function buildScene(
     const canPosition =
         caps.positioning !== 'none' && (kept.length > 1 || caps.canPositionSingleCharacter) && spec.useCoords;
     return {
-        prompt: joinTags(counts, spec.base, framing),
+        prompt: joinTags(counts, pairing, spec.base, framing),
         characters: characterTags.map(({ p, prompt, negative }) => {
             const point = placeOnCanvas(p.position, caps);
             return { prompt, negative, x: point.x, y: point.y, enabled: true };

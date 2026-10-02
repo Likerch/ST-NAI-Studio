@@ -200,6 +200,32 @@ export interface PassportOptions {
     withoutClothing?: boolean;
 }
 
+/** Explicit anatomy (v0.9.8): it belongs to the NSFW layer and stays out of other scenes. */
+const EXPLICIT_ANATOMY =
+    /(^|\s)(futanari|futa|dickgirl|penis|testicles?|erection|flaccid|foreskin|pussy|vagina|clitoris|nipples?|areolae?|pubic hair)(\s|$)/i;
+
+export function isExplicitAnatomy(tag: string): boolean {
+    return EXPLICIT_ANATOMY.test(tag);
+}
+
+/** A futanari: the tag in the NSFW layer or in any slot. */
+export function isFutanari(passport: Passport): boolean {
+    const all = [passport.nsfw.tags, ...PASSPORT_SLOTS.map((slot) => passport.slots[slot])].join(', ');
+    return splitTags(all).some((tag) => /^(futanari|futa|dickgirl)$/i.test(tag));
+}
+
+/** Moves explicit anatomy from the slots and outfits into the NSFW layer. */
+export function moveExplicitAnatomy(passport: Passport): void {
+    const moved: string[] = [];
+    const keep = (text: string) =>
+        splitTags(text)
+            .filter((tag) => (isExplicitAnatomy(tag) ? (moved.push(tag), false) : true))
+            .join(', ');
+    for (const slot of PASSPORT_SLOTS) if (slot !== 'style') passport.slots[slot] = keep(passport.slots[slot]);
+    passport.outfits = passport.outfits.map((o) => ({ ...o, tags: keep(o.tags) }));
+    if (moved.length) passport.nsfw = { ...passport.nsfw, tags: joinTags(passport.nsfw.tags, ...moved) };
+}
+
 /** Tags of the clothing slot or the chosen outfit. */
 export function clothingTags(passport: Passport, outfit?: string): string {
     const name = outfit ?? passport.activeOutfit;
@@ -214,8 +240,9 @@ export function clothingTags(passport: Passport, outfit?: string): string {
 export function passportTags(passport: Passport, options: PassportOptions): string {
     if (passport.kind !== 'character') return joinTags(passport.tags);
     const states = passport.states.filter((s) => s.enabled || options.states?.includes(s.id)).map((s) => s.tags);
-    const nsfw = options.allowNsfw && passport.nsfw.enabled ? passport.nsfw.tags : '';
-    return joinTags(
+    const layer = options.allowNsfw && passport.nsfw.enabled;
+    const nsfw = layer ? passport.nsfw.tags : '';
+    const tags = joinTags(
         passport.slots.base,
         passport.slots.hair,
         passport.slots.eyes,
@@ -227,6 +254,12 @@ export function passportTags(passport: Passport, options: PassportOptions): stri
         nsfw,
         passport.slots.style,
     );
+    // Without the NSFW layer explicit anatomy stays out, wherever it was written.
+    return layer
+        ? tags
+        : splitTags(tags)
+              .filter((tag) => !isExplicitAnatomy(tag))
+              .join(', ');
 }
 
 export function isPassportEmpty(passport: Passport | null): boolean {

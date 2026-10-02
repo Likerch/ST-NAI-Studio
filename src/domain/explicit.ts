@@ -12,3 +12,19 @@ export function isExplicitScene(text: string): boolean {
     const normalized = text.replace(/_/g, ' ');
     return WHOLE.test(normalized) || STEMS.test(normalized);
 }
+
+/** Undesired content of every explicit scene: no childlike looks. */
+export const EXPLICIT_NEGATIVE = 'child, loli, shota, underage';
+
+/**
+ * An explicit scene (v0.9.8) gets "nsfw" in its prompt, so NovelAI's UC preset leaves it out of the
+ * undesired content as the website does, and EXPLICIT_NEGATIVE. Null for other scenes.
+ */
+export function explicitScene(
+    scene: string,
+    characterPrompts: readonly string[],
+): { scene: string; negative: string } | null {
+    if (!isExplicitScene([scene, ...characterPrompts].join(', '))) return null;
+    const hasTag = /(^|[^a-z])nsfw([^a-z]|$)/i.test(scene);
+    return { scene: hasTag ? scene : scene.trim() ? `nsfw, ${scene}` : 'nsfw', negative: EXPLICIT_NEGATIVE };
+}

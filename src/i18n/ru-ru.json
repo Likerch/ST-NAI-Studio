@@ -1100,5 +1100,7 @@
   "naist.personaAvatar.heading": "Новый аватар для {name}",
   "naist.personaAvatar.set": "Поставить аватаром",
   "naist.personaAvatar.again": "Ещё вариант",
-  "naist.personaAvatar.done": "Аватар {name} обновлён."
+  "naist.personaAvatar.done": "Аватар {name} обновлён.",
+  "naist.scene.explicitNegative": "Нежелательное во взрослых сценах",
+  "naist.scene.explicitNegativeHint": "Добавляется к нежелательному только в откровенных сценах (когда NSFW разрешён; в промпт тогда же добавляется «nsfw»). Теги, которые в нежелательном уже есть, не повторяются."
 }

@@ -1100,5 +1100,7 @@
   "naist.personaAvatar.heading": "New avatar for {name}",
   "naist.personaAvatar.set": "Set as avatar",
   "naist.personaAvatar.again": "Another one",
-  "naist.personaAvatar.done": "Avatar of {name} updated."
+  "naist.personaAvatar.done": "Avatar of {name} updated.",
+  "naist.scene.explicitNegative": "Undesired content of explicit scenes",
+  "naist.scene.explicitNegativeHint": "Added to the undesired content only in explicit scenes (when NSFW is allowed, the prompt also gets \"nsfw\"). Tags the undesired content already has are not repeated."
 }

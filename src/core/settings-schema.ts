@@ -37,7 +37,7 @@ export interface CustomPoseSettings {
     name: string;
 }
 
-export const CURRENT_SCHEMA_VERSION = 9;
+export const CURRENT_SCHEMA_VERSION = 10;
 
 export type TransportMode = 'auto' | 'plugin' | 'native';
 
@@ -332,6 +332,8 @@ export interface NaiStudioSettings {
         distance: string;
         /** The NSFW layer of passports is used only with this switch on. */
         allowNsfw: boolean;
+        /** Added to the undesired content of explicit scenes only (v0.9.9). */
+        explicitNegative: string;
         /** Let the LLM describe the location for the base prompt of an automatic scene. */
         llmBase: boolean;
         useCoords: boolean;
@@ -496,6 +498,7 @@ export function defaultSettings(): NaiStudioSettings {
             camera: 'auto',
             distance: 'auto',
             allowNsfw: false,
+            explicitNegative: 'child, loli, shota, underage',
             llmBase: false,
             useCoords: true,
             target: 'message',
@@ -597,6 +600,13 @@ export const MIGRATIONS: readonly Migration[] = [
         to: 9,
         migrate(settings) {
             return { ...settings, schemaVersion: 9 };
+        },
+    },
+    {
+        // v10: undesired content of explicit scenes; the default is filled by the merge.
+        to: 10,
+        migrate(settings) {
+            return { ...settings, schemaVersion: 10 };
         },
     },
 ];

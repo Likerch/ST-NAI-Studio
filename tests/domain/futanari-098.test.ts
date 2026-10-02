@@ -1,14 +1,7 @@
 // v0.9.8: explicit scenes get "nsfw" in the prompt; a futanari's anatomy lives in the NSFW layer,
 // a bulge shows in ordinary scenes, explicit ones get a composition hint.
 import { describe, expect, it } from 'vitest';
-import {
-    buildScene,
-    defaultPassport,
-    EXPLICIT_NEGATIVE,
-    explicitScene,
-    parseGeneratedPassports,
-    passportTags,
-} from '../../src/domain';
+import { buildScene, defaultPassport, explicitScene, parseGeneratedPassports, passportTags } from '../../src/domain';
 import type { Passport, SceneParticipant, SceneSpec } from '../../src/domain';
 
 const caps = { maxCharacters: 6, positioning: 'grid', canPositionSingleCharacter: true, v4Prompt: true } as const;
@@ -55,10 +48,18 @@ const spec = (base: string): SceneSpec => ({
 });
 
 describe('explicitScene', () => {
-    it('puts nsfw into the prompt of an explicit scene and keeps childlike looks out', () => {
-        expect(explicitScene('bedroom, sex', [])).toEqual({ scene: 'nsfw, bedroom, sex', negative: EXPLICIT_NEGATIVE });
+    it('puts nsfw into the prompt of an explicit scene with the undesired content of explicit scenes', () => {
+        expect(explicitScene('bedroom, sex', [], 'child, loli')).toEqual({
+            scene: 'nsfw, bedroom, sex',
+            negative: 'child, loli',
+        });
         expect(explicitScene('nsfw, bedroom', ['1girl, nude'])?.scene).toBe('nsfw, bedroom');
-        expect(explicitScene('a walk in the park', ['1girl, smile'])).toBeNull();
+        expect(explicitScene('a walk in the park', ['1girl, smile'], 'child')).toBeNull();
+    });
+
+    it('does not repeat tags the undesired content already has', () => {
+        expect(explicitScene('sex', [], 'child, Loli, shota, child', 'lowres, loli')?.negative).toBe('child, shota');
+        expect(explicitScene('sex', [], 'child', 'child, lowres')?.negative).toBe('');
     });
 });
 

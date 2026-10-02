@@ -536,16 +536,18 @@ export class Pipeline {
         }
 
         // Explicit scenes (v0.9.8): "nsfw" in the prompt keeps NovelAI's UC preset from putting it into
-        // the undesired content; childlike looks stay out.
+        // the undesired content; the undesired content of explicit scenes (setting) joins it.
         if (s.scene.allowNsfw) {
             const characters = (o.generation?.characters ?? s.generation.characters).filter((ch) => ch.enabled);
             const explicit = explicitScene(
                 scene,
                 characters.map((ch) => ch.prompt),
+                s.scene.explicitNegative,
+                `${additionalNegative}, ${o.generation?.negativePrompt ?? s.generation.negativePrompt}`,
             );
             if (explicit) {
                 scene = explicit.scene;
-                additionalNegative = combinePrefixes(additionalNegative, explicit.negative);
+                if (explicit.negative) additionalNegative = combinePrefixes(additionalNegative, explicit.negative);
             }
         }
 

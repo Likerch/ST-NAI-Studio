@@ -1133,7 +1133,9 @@ var EN = {
 	"naist.personaAvatar.heading": "New avatar for {name}",
 	"naist.personaAvatar.set": "Set as avatar",
 	"naist.personaAvatar.again": "Another one",
-	"naist.personaAvatar.done": "Avatar of {name} updated."
+	"naist.personaAvatar.done": "Avatar of {name} updated.",
+	"naist.scene.explicitNegative": "Undesired content of explicit scenes",
+	"naist.scene.explicitNegativeHint": "Added to the undesired content only in explicit scenes (when NSFW is allowed, the prompt also gets \"nsfw\"). Tags the undesired content already has are not repeated."
 };
 var translator = (text) => text;
 /** Wires the host translator (SillyTavern's translate). Called once on activation. */
@@ -1235,7 +1237,7 @@ function defaultGeneration() {
 }
 function defaultSettings() {
 	return {
-		schemaVersion: 9,
+		schemaVersion: 10,
 		transport: { mode: "auto" },
 		generation: defaultGeneration(),
 		prompts: {
@@ -1403,6 +1405,7 @@ function defaultSettings() {
 			camera: "auto",
 			distance: "auto",
 			allowNsfw: false,
+			explicitNegative: "child, loli, shota, underage",
 			llmBase: false,
 			useCoords: true,
 			target: "message",
@@ -1524,13 +1527,22 @@ var MIGRATIONS = [
 				schemaVersion: 9
 			};
 		}
+	},
+	{
+		to: 10,
+		migrate(settings) {
+			return {
+				...settings,
+				schemaVersion: 10
+			};
+		}
 	}
 ];
 /** Applies pending migrations, then fills missing keys from defaults (lodash.merge in the host). */
 function migrateAndFill(stored, merge) {
 	let raw = isObject$3(stored) ? structuredClone(stored) : {};
 	const fromVersion = typeof raw.schemaVersion === "number" ? raw.schemaVersion : 0;
-	if (fromVersion > 9) return {
+	if (fromVersion > 10) return {
 		settings: merge(defaultSettings(), raw),
 		fromVersion,
 		migrated: false
@@ -1553,11 +1565,11 @@ function migrateAndFill(stored, merge) {
 	if (Array.isArray(sprites.labels)) settings.sprites.labels = sprites.labels;
 	const takeover = isObject$3(raw.takeover) ? raw.takeover : {};
 	settings.takeover.migrationReport = Array.isArray(takeover.migrationReport) ? takeover.migrationReport : [];
-	settings.schemaVersion = 9;
+	settings.schemaVersion = 10;
 	return {
 		settings,
 		fromVersion,
-		migrated: fromVersion !== 9
+		migrated: fromVersion !== 10
 	};
 }
 //#endregion
@@ -8314,17 +8326,25 @@ function isExplicitScene(text) {
 	const normalized = text.replace(/_/g, " ");
 	return WHOLE.test(normalized) || STEMS.test(normalized);
 }
-/** Undesired content of every explicit scene: no childlike looks. */
-var EXPLICIT_NEGATIVE = "child, loli, shota, underage";
 /**
 * An explicit scene (v0.9.8) gets "nsfw" in its prompt, so NovelAI's UC preset leaves it out of the
-* undesired content as the website does, and EXPLICIT_NEGATIVE. Null for other scenes.
+* undesired content as the website does. `extraNegative` (the setting for explicit scenes, v0.9.9)
+* joins the undesired content without the tags `undesired` already has. Null for other scenes.
 */
-function explicitScene(scene, characterPrompts) {
+function explicitScene(scene, characterPrompts, extraNegative = "", undesired = "") {
 	if (!isExplicitScene([scene, ...characterPrompts].join(", "))) return null;
+	const hasTag = /(^|[^a-z])nsfw([^a-z]|$)/i.test(scene);
+	const tagsOf = (text) => text.split(/[,\n]/).map((tag) => tag.trim()).filter(Boolean);
+	const present = new Set(tagsOf(undesired).map((tag) => tag.toLowerCase()));
+	const negative = tagsOf(extraNegative).filter((tag) => {
+		const key = tag.toLowerCase();
+		if (present.has(key)) return false;
+		present.add(key);
+		return true;
+	});
 	return {
-		scene: /(^|[^a-z])nsfw([^a-z]|$)/i.test(scene) ? scene : scene.trim() ? `nsfw, ${scene}` : "nsfw",
-		negative: EXPLICIT_NEGATIVE
+		scene: hasTag ? scene : scene.trim() ? `nsfw, ${scene}` : "nsfw",
+		negative: negative.join(", ")
 	};
 }
 //#endregion
@@ -10063,10 +10083,10 @@ var Pipeline = class {
 		}
 		if (s.scene.allowNsfw) {
 			const characters = (o.generation?.characters ?? s.generation.characters).filter((ch) => ch.enabled);
-			const explicit = explicitScene(scene, characters.map((ch) => ch.prompt));
+			const explicit = explicitScene(scene, characters.map((ch) => ch.prompt), s.scene.explicitNegative, `${additionalNegative}, ${o.generation?.negativePrompt ?? s.generation.negativePrompt}`);
 			if (explicit) {
 				scene = explicit.scene;
-				additionalNegative = combinePrefixes(additionalNegative, explicit.negative);
+				if (explicit.negative) additionalNegative = combinePrefixes(additionalNegative, explicit.negative);
 			}
 		}
 		const assembled = this.assemble(mode, scene, additionalNegative, {
@@ -16806,7 +16826,7 @@ var ComicService = class {
 };
 //#endregion
 //#region package.json
-var version = "0.9.8";
+var version = "0.9.9";
 //#endregion
 //#region src/features/settings-io/settings-io.ts
 async function exportSettingsFile(includeImages) {
@@ -16816,16 +16836,16 @@ async function exportSettingsFile(includeImages) {
 		const blob = await imageStore().getItem(key);
 		if (blob) images[key] = await blobToBase64$1(blob);
 	}
-	const data = buildSettingsExport(s, 9, version, images);
+	const data = buildSettingsExport(s, 10, version, images);
 	const name = `nai-studio-settings-${data.exportedAt.slice(0, 10)}.json`;
 	downloadBlob(new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }), name);
 	return name;
 }
 async function importSettingsText(text) {
-	const check = checkSettingsImport(text, 9);
+	const check = checkSettingsImport(text, 10);
 	if (!check.ok) throw new NaiError("import-failed", "none", { reason: t(`naist.io.reason.${check.reason}`, {
 		version: check.schemaVersion ?? "",
-		current: 9
+		current: 10
 	}) });
 	try {
 		const key = await backupSettings(settings(), settings().schemaVersion);
@@ -19166,7 +19186,7 @@ var ImagesTab = class {
 };
 //#endregion
 //#region src/ui/templates/tab-prompts.html?raw
-var tab_prompts_default = "<div class=\"naist-section\">\n    <b data-i18n=\"naist.scene.title\"></b>\n    <div class=\"naist-hint\" data-i18n=\"naist.scene.hint\"></div>\n    <div class=\"naist-row\">\n        <div id=\"naist_open_composer\" class=\"menu_button\" data-i18n=\"naist.scene.openComposer\"></div>\n        <div id=\"naist_edit_char_passport\" class=\"menu_button\" data-i18n=\"naist.scene.charPassport\"></div>\n        <div id=\"naist_edit_persona_passport\" class=\"menu_button\" data-i18n=\"naist.scene.personaPassport\"></div>\n        <div id=\"naist_open_pose_library\" class=\"menu_button\" data-i18n=\"naist.scene.poseLibrary\"></div>\n    </div>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"scene.allowNsfw\" /><span data-i18n=\"naist.composer.allowNsfw\"></span\n    ></label>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"scene.llmBase\" /><span data-i18n=\"naist.scene.llmBase\"></span\n    ></label>\n</div>\n\n<div class=\"naist-section\">\n    <label for=\"naist_prefix\" data-i18n=\"naist.prompts.prefix\"></label>\n    <textarea id=\"naist_prefix\" class=\"text_pole textarea_compact\" rows=\"2\" data-setting=\"prompts.prefix\"></textarea>\n    <label for=\"naist_suffix\" data-i18n=\"naist.prompts.suffix\"></label>\n    <textarea id=\"naist_suffix\" class=\"text_pole textarea_compact\" rows=\"2\" data-setting=\"prompts.suffix\"></textarea>\n    <div class=\"naist-hint\" data-i18n=\"naist.prompts.prefixHint\"></div>\n</div>\n\n<div class=\"naist-section\">\n    <b data-i18n=\"naist.language.title\"></b>\n    <div class=\"naist-hint\" data-i18n=\"naist.language.hint\"></div>\n    <div class=\"naist-grid2\">\n        <div>\n            <label for=\"naist_language_mode\" data-i18n=\"naist.language.mode\"></label>\n            <select id=\"naist_language_mode\" class=\"text_pole\" data-setting=\"language.mode\">\n                <option value=\"auto\" data-i18n=\"naist.language.modeAuto\"></option>\n                <option value=\"always\" data-i18n=\"naist.language.modeAlways\"></option>\n                <option value=\"off\" data-i18n=\"naist.language.modeOff\"></option>\n            </select>\n        </div>\n        <div>\n            <label for=\"naist_language_backend\" data-i18n=\"naist.language.backend\"></label>\n            <select id=\"naist_language_backend\" class=\"text_pole\" data-setting=\"language.backend\">\n                <option value=\"main\" data-i18n=\"naist.language.backendMain\"></option>\n                <option value=\"profile\" data-i18n=\"naist.language.backendProfile\"></option>\n                <option value=\"novelai\" data-i18n=\"naist.language.backendNovelai\"></option>\n            </select>\n        </div>\n    </div>\n    <div id=\"naist_language_profile_row\" class=\"naist-hidden\">\n        <label for=\"naist_language_profile\" data-i18n=\"naist.language.profile\"></label>\n        <select id=\"naist_language_profile\" class=\"text_pole\" data-setting=\"language.profileId\"></select>\n        <div class=\"naist-hint\" data-i18n=\"naist.language.profileHint\"></div>\n    </div>\n    <div id=\"naist_language_novelai_row\" class=\"naist-hidden\">\n        <label for=\"naist_language_novelai_model\" data-i18n=\"naist.language.novelaiModel\"></label>\n        <select id=\"naist_language_novelai_model\" class=\"text_pole\" data-setting=\"language.novelaiModel\">\n            <option value=\"glm-4-6\">GLM-4.6</option>\n            <option value=\"xialong-v1\">Xialong (Opus)</option>\n        </select>\n        <div class=\"naist-hint\" data-i18n=\"naist.language.novelaiHint\"></div>\n    </div>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"language.russianOnV5\" /><span\n            data-i18n=\"naist.language.russianOnV5\"\n        ></span\n    ></label>\n    <label for=\"naist_language_test\" data-i18n=\"naist.language.test\"></label>\n    <textarea\n        id=\"naist_language_test\"\n        class=\"text_pole textarea_compact\"\n        rows=\"2\"\n        data-i18n=\"[placeholder]naist.language.testPlaceholder\"\n    ></textarea>\n    <div class=\"naist-row\">\n        <div id=\"naist_language_test_run\" class=\"menu_button\" data-i18n=\"naist.language.testRun\"></div>\n    </div>\n    <pre id=\"naist_language_test_result\" class=\"naist-pre naist-hidden\"></pre>\n    <label for=\"naist_glossary\" data-i18n=\"naist.translate.glossary\"></label>\n    <textarea\n        id=\"naist_glossary\"\n        class=\"text_pole textarea_compact\"\n        rows=\"4\"\n        data-i18n=\"[placeholder]naist.translate.glossaryPlaceholder\"\n    ></textarea>\n    <div class=\"naist-hint\" data-i18n=\"naist.translate.glossaryHint\"></div>\n</div>\n\n<div class=\"naist-section\">\n    <b data-i18n=\"naist.tags.title\"></b>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"promptTools.autocomplete\" /><span\n            data-i18n=\"naist.tags.autocomplete\"\n        ></span\n    ></label>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"promptTools.remoteSuggest\" /><span data-i18n=\"naist.tags.remote\"></span\n    ></label>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"promptTools.warnUnknown\" /><span data-i18n=\"naist.tags.warnUnknown\"></span\n    ></label>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"promptTools.counter\" /><span data-i18n=\"naist.tokens.enable\"></span\n    ></label>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"promptTools.convertWeights\" /><span data-i18n=\"naist.weights.auto\"></span\n    ></label>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"generation.autoText\" /><span data-i18n=\"naist.tokens.autoText\"></span\n    ></label>\n    <div class=\"naist-hint\" data-i18n=\"naist.weights.hint\"></div>\n</div>\n\n<div class=\"naist-section\">\n    <b data-i18n=\"naist.prompts.styles\"></b>\n    <div class=\"naist-row\">\n        <select id=\"naist_style\" class=\"text_pole naist-grow\"></select>\n        <div\n            id=\"naist_style_save\"\n            class=\"menu_button fa-solid fa-floppy-disk\"\n            data-i18n=\"[title]naist.prompts.styleSave\"\n        ></div>\n        <div\n            id=\"naist_style_rename\"\n            class=\"menu_button fa-solid fa-pencil\"\n            data-i18n=\"[title]naist.prompts.styleRename\"\n        ></div>\n        <div\n            id=\"naist_style_delete\"\n            class=\"menu_button fa-solid fa-trash-can\"\n            data-i18n=\"[title]naist.prompts.styleDelete\"\n        ></div>\n    </div>\n    <div class=\"naist-hint\" data-i18n=\"naist.prompts.stylesHint\"></div>\n</div>\n\n<div id=\"naist_char_prompt_block\" class=\"naist-section\">\n    <b data-i18n=\"naist.prompts.characterPrompt\"></b> <span id=\"naist_char_prompt_name\" class=\"naist-muted\"></span>\n    <textarea\n        id=\"naist_char_positive\"\n        class=\"text_pole textarea_compact\"\n        rows=\"2\"\n        data-i18n=\"[placeholder]naist.prompts.characterPositive\"\n    ></textarea>\n    <textarea\n        id=\"naist_char_negative\"\n        class=\"text_pole textarea_compact\"\n        rows=\"2\"\n        data-i18n=\"[placeholder]naist.prompts.characterNegative\"\n    ></textarea>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" id=\"naist_char_share\" /><span data-i18n=\"naist.prompts.characterShare\"></span\n    ></label>\n</div>\n<div id=\"naist_char_prompt_none\" class=\"naist-hint naist-hidden\" data-i18n=\"naist.prompts.characterNone\"></div>\n\n<details class=\"naist-section\">\n    <summary data-i18n=\"naist.prompts.templates\"></summary>\n    <div class=\"naist-hint\" data-i18n=\"naist.prompts.templatesHint\"></div>\n    <div id=\"naist_templates\"></div>\n</details>\n\n<div class=\"naist-section\">\n    <b data-i18n=\"naist.io.title\"></b>\n    <div class=\"naist-hint\" data-i18n=\"naist.io.hint\"></div>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" id=\"naist_settings_images\" checked /><span data-i18n=\"naist.io.includeImages\"></span\n    ></label>\n    <div class=\"naist-row\">\n        <div id=\"naist_settings_export\" class=\"menu_button\" data-i18n=\"naist.io.export\"></div>\n        <div id=\"naist_settings_import\" class=\"menu_button\" data-i18n=\"naist.io.import\"></div>\n        <input id=\"naist_settings_file\" type=\"file\" accept=\".json,application/json\" class=\"naist-hidden\" />\n    </div>\n</div>\n";
+var tab_prompts_default = "<div class=\"naist-section\">\n    <b data-i18n=\"naist.scene.title\"></b>\n    <div class=\"naist-hint\" data-i18n=\"naist.scene.hint\"></div>\n    <div class=\"naist-row\">\n        <div id=\"naist_open_composer\" class=\"menu_button\" data-i18n=\"naist.scene.openComposer\"></div>\n        <div id=\"naist_edit_char_passport\" class=\"menu_button\" data-i18n=\"naist.scene.charPassport\"></div>\n        <div id=\"naist_edit_persona_passport\" class=\"menu_button\" data-i18n=\"naist.scene.personaPassport\"></div>\n        <div id=\"naist_open_pose_library\" class=\"menu_button\" data-i18n=\"naist.scene.poseLibrary\"></div>\n    </div>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"scene.allowNsfw\" /><span data-i18n=\"naist.composer.allowNsfw\"></span\n    ></label>\n    <label for=\"naist_explicit_negative\" data-i18n=\"naist.scene.explicitNegative\"></label>\n    <textarea\n        id=\"naist_explicit_negative\"\n        class=\"text_pole textarea_compact\"\n        rows=\"2\"\n        data-setting=\"scene.explicitNegative\"\n    ></textarea>\n    <div class=\"naist-hint\" data-i18n=\"naist.scene.explicitNegativeHint\"></div>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"scene.llmBase\" /><span data-i18n=\"naist.scene.llmBase\"></span\n    ></label>\n</div>\n\n<div class=\"naist-section\">\n    <label for=\"naist_prefix\" data-i18n=\"naist.prompts.prefix\"></label>\n    <textarea id=\"naist_prefix\" class=\"text_pole textarea_compact\" rows=\"2\" data-setting=\"prompts.prefix\"></textarea>\n    <label for=\"naist_suffix\" data-i18n=\"naist.prompts.suffix\"></label>\n    <textarea id=\"naist_suffix\" class=\"text_pole textarea_compact\" rows=\"2\" data-setting=\"prompts.suffix\"></textarea>\n    <div class=\"naist-hint\" data-i18n=\"naist.prompts.prefixHint\"></div>\n</div>\n\n<div class=\"naist-section\">\n    <b data-i18n=\"naist.language.title\"></b>\n    <div class=\"naist-hint\" data-i18n=\"naist.language.hint\"></div>\n    <div class=\"naist-grid2\">\n        <div>\n            <label for=\"naist_language_mode\" data-i18n=\"naist.language.mode\"></label>\n            <select id=\"naist_language_mode\" class=\"text_pole\" data-setting=\"language.mode\">\n                <option value=\"auto\" data-i18n=\"naist.language.modeAuto\"></option>\n                <option value=\"always\" data-i18n=\"naist.language.modeAlways\"></option>\n                <option value=\"off\" data-i18n=\"naist.language.modeOff\"></option>\n            </select>\n        </div>\n        <div>\n            <label for=\"naist_language_backend\" data-i18n=\"naist.language.backend\"></label>\n            <select id=\"naist_language_backend\" class=\"text_pole\" data-setting=\"language.backend\">\n                <option value=\"main\" data-i18n=\"naist.language.backendMain\"></option>\n                <option value=\"profile\" data-i18n=\"naist.language.backendProfile\"></option>\n                <option value=\"novelai\" data-i18n=\"naist.language.backendNovelai\"></option>\n            </select>\n        </div>\n    </div>\n    <div id=\"naist_language_profile_row\" class=\"naist-hidden\">\n        <label for=\"naist_language_profile\" data-i18n=\"naist.language.profile\"></label>\n        <select id=\"naist_language_profile\" class=\"text_pole\" data-setting=\"language.profileId\"></select>\n        <div class=\"naist-hint\" data-i18n=\"naist.language.profileHint\"></div>\n    </div>\n    <div id=\"naist_language_novelai_row\" class=\"naist-hidden\">\n        <label for=\"naist_language_novelai_model\" data-i18n=\"naist.language.novelaiModel\"></label>\n        <select id=\"naist_language_novelai_model\" class=\"text_pole\" data-setting=\"language.novelaiModel\">\n            <option value=\"glm-4-6\">GLM-4.6</option>\n            <option value=\"xialong-v1\">Xialong (Opus)</option>\n        </select>\n        <div class=\"naist-hint\" data-i18n=\"naist.language.novelaiHint\"></div>\n    </div>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"language.russianOnV5\" /><span\n            data-i18n=\"naist.language.russianOnV5\"\n        ></span\n    ></label>\n    <label for=\"naist_language_test\" data-i18n=\"naist.language.test\"></label>\n    <textarea\n        id=\"naist_language_test\"\n        class=\"text_pole textarea_compact\"\n        rows=\"2\"\n        data-i18n=\"[placeholder]naist.language.testPlaceholder\"\n    ></textarea>\n    <div class=\"naist-row\">\n        <div id=\"naist_language_test_run\" class=\"menu_button\" data-i18n=\"naist.language.testRun\"></div>\n    </div>\n    <pre id=\"naist_language_test_result\" class=\"naist-pre naist-hidden\"></pre>\n    <label for=\"naist_glossary\" data-i18n=\"naist.translate.glossary\"></label>\n    <textarea\n        id=\"naist_glossary\"\n        class=\"text_pole textarea_compact\"\n        rows=\"4\"\n        data-i18n=\"[placeholder]naist.translate.glossaryPlaceholder\"\n    ></textarea>\n    <div class=\"naist-hint\" data-i18n=\"naist.translate.glossaryHint\"></div>\n</div>\n\n<div class=\"naist-section\">\n    <b data-i18n=\"naist.tags.title\"></b>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"promptTools.autocomplete\" /><span\n            data-i18n=\"naist.tags.autocomplete\"\n        ></span\n    ></label>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"promptTools.remoteSuggest\" /><span data-i18n=\"naist.tags.remote\"></span\n    ></label>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"promptTools.warnUnknown\" /><span data-i18n=\"naist.tags.warnUnknown\"></span\n    ></label>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"promptTools.counter\" /><span data-i18n=\"naist.tokens.enable\"></span\n    ></label>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"promptTools.convertWeights\" /><span data-i18n=\"naist.weights.auto\"></span\n    ></label>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"generation.autoText\" /><span data-i18n=\"naist.tokens.autoText\"></span\n    ></label>\n    <div class=\"naist-hint\" data-i18n=\"naist.weights.hint\"></div>\n</div>\n\n<div class=\"naist-section\">\n    <b data-i18n=\"naist.prompts.styles\"></b>\n    <div class=\"naist-row\">\n        <select id=\"naist_style\" class=\"text_pole naist-grow\"></select>\n        <div\n            id=\"naist_style_save\"\n            class=\"menu_button fa-solid fa-floppy-disk\"\n            data-i18n=\"[title]naist.prompts.styleSave\"\n        ></div>\n        <div\n            id=\"naist_style_rename\"\n            class=\"menu_button fa-solid fa-pencil\"\n            data-i18n=\"[title]naist.prompts.styleRename\"\n        ></div>\n        <div\n            id=\"naist_style_delete\"\n            class=\"menu_button fa-solid fa-trash-can\"\n            data-i18n=\"[title]naist.prompts.styleDelete\"\n        ></div>\n    </div>\n    <div class=\"naist-hint\" data-i18n=\"naist.prompts.stylesHint\"></div>\n</div>\n\n<div id=\"naist_char_prompt_block\" class=\"naist-section\">\n    <b data-i18n=\"naist.prompts.characterPrompt\"></b> <span id=\"naist_char_prompt_name\" class=\"naist-muted\"></span>\n    <textarea\n        id=\"naist_char_positive\"\n        class=\"text_pole textarea_compact\"\n        rows=\"2\"\n        data-i18n=\"[placeholder]naist.prompts.characterPositive\"\n    ></textarea>\n    <textarea\n        id=\"naist_char_negative\"\n        class=\"text_pole textarea_compact\"\n        rows=\"2\"\n        data-i18n=\"[placeholder]naist.prompts.characterNegative\"\n    ></textarea>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" id=\"naist_char_share\" /><span data-i18n=\"naist.prompts.characterShare\"></span\n    ></label>\n</div>\n<div id=\"naist_char_prompt_none\" class=\"naist-hint naist-hidden\" data-i18n=\"naist.prompts.characterNone\"></div>\n\n<details class=\"naist-section\">\n    <summary data-i18n=\"naist.prompts.templates\"></summary>\n    <div class=\"naist-hint\" data-i18n=\"naist.prompts.templatesHint\"></div>\n    <div id=\"naist_templates\"></div>\n</details>\n\n<div class=\"naist-section\">\n    <b data-i18n=\"naist.io.title\"></b>\n    <div class=\"naist-hint\" data-i18n=\"naist.io.hint\"></div>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" id=\"naist_settings_images\" checked /><span data-i18n=\"naist.io.includeImages\"></span\n    ></label>\n    <div class=\"naist-row\">\n        <div id=\"naist_settings_export\" class=\"menu_button\" data-i18n=\"naist.io.export\"></div>\n        <div id=\"naist_settings_import\" class=\"menu_button\" data-i18n=\"naist.io.import\"></div>\n        <input id=\"naist_settings_file\" type=\"file\" accept=\".json,application/json\" class=\"naist-hidden\" />\n    </div>\n</div>\n";
 //#endregion
 //#region src/ui/panel/tab-prompts.ts
 var PromptsTab = class {

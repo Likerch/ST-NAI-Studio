@@ -27,6 +27,18 @@ describe('settings schema', () => {
         expect(settings.anlas.confirmAbove).toBe(0);
     });
 
+    it('v10 gives existing settings the undesired content of explicit scenes, a user value stays', () => {
+        const old = migrateAndFill({ schemaVersion: 9, scene: { allowNsfw: true } }, merge).settings;
+        expect(old.schemaVersion).toBe(10);
+        expect(old.scene.allowNsfw).toBe(true);
+        expect(old.scene.explicitNegative).toBe('child, loli, shota, underage');
+        const own = migrateAndFill(
+            { schemaVersion: 10, scene: { explicitNegative: 'loli, shota, flat chest' } },
+            merge,
+        );
+        expect(own.settings.scene.explicitNegative).toBe('loli, shota, flat chest');
+    });
+
     it('keeps the stored characters array as is (no index-wise merge)', () => {
         const chars = [{ prompt: 'a', negative: '', x: 0.3, y: 0.5, enabled: true }];
         const { settings } = migrateAndFill({ schemaVersion: 1, generation: { characters: chars } }, merge);

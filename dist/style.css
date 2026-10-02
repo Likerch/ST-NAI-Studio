@@ -1125,7 +1125,7 @@ body.naist-inline-reading .naist-inline-group {
     overflow: hidden;
 }
 
-.naist-marker-pending .naist-marker-box,
+.naist-inline-marker-pending .naist-marker-box,
 img.naist-marker-stream,
 img.custom-naist-marker-stream,
 img.naist-marker-wait {
@@ -1139,7 +1139,7 @@ img.naist-marker-wait {
     animation: naist-shimmer 1.6s linear infinite;
 }
 
-.naist-marker-error .naist-marker-box {
+.naist-inline-marker-error .naist-marker-box {
     border-style: solid;
     border-color: var(--SmartThemeQuoteColor, #e6a);
 }

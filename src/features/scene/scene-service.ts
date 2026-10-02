@@ -15,11 +15,14 @@ import {
     detectPose,
     getCapabilities,
     isModelId,
+    isPassportEmpty,
+    joinTags,
     MODE,
     markerPosition,
     mentionIndex,
     participantFrom,
     POSES,
+    primaryPassport,
     processReply,
 } from '../../domain';
 import type {
@@ -31,7 +34,7 @@ import type {
     SceneSpec,
 } from '../../domain';
 import { avatarKey, readCharacterPrompt } from '../characters/character-prompts';
-import { cardPassport, currentPersonaKey, loadCharacter, personaPassport } from '../characters/passport-store';
+import { cardPassports, currentPersonaKey, loadCharacter, personaPassport } from '../characters/passport-store';
 import type { Pipeline, PictureResult } from '../generation/pipeline';
 import type { InlineImages } from '../inline/inline-service';
 
@@ -61,37 +64,92 @@ function aliasesOf(name: string): string[] {
     return first && first !== name.trim() ? [first] : [];
 }
 
-async function characterCandidate(index: number): Promise<SceneCandidate | null> {
+/** Separator between the card key and a passport id in candidate keys ("<avatar>#<passport>"). */
+export const PASSPORT_KEY_SEPARATOR = '#';
+
+/**
+ * The people of a card: one candidate per character passport (the main one keeps the card key);
+ * a card without character passports is one candidate with its character prompt, unless it is a
+ * scenario (then nobody is drawn for the card itself).
+ */
+async function characterCandidates(index: number): Promise<SceneCandidate[]> {
     const character = await loadCharacter(index);
-    if (!character) return null;
+    if (!character) return [];
     const prompt = readCharacterPrompt(character);
-    return {
-        key: avatarKey(character.avatar),
-        name: character.name,
-        aliases: aliasesOf(character.name),
-        passport: cardPassport(character),
-        fallbackPrompt: prompt.positive,
-        fallbackNegative: prompt.negative,
-        isUser: false,
-    };
+    const key = avatarKey(character.avatar);
+    const list = cardPassports(character);
+    const people = list.filter((p) => p.kind === 'character' && !isPassportEmpty(p));
+    if (people.length) {
+        const main = primaryPassport(people, character.name);
+        return people.map((passport) => {
+            const isMain = passport === main;
+            const name = passport.name || character.name;
+            return {
+                key: isMain ? key : `${key}${PASSPORT_KEY_SEPARATOR}${passport.id}`,
+                name,
+                aliases: [...new Set([...passport.aliases, ...aliasesOf(name)])],
+                passport,
+                fallbackPrompt: isMain ? prompt.positive : '',
+                fallbackNegative: isMain ? prompt.negative : '',
+                isUser: false,
+            };
+        });
+    }
+    if (list.some((p) => p.kind === 'scenario')) return [];
+    return [
+        {
+            key,
+            name: character.name,
+            aliases: aliasesOf(character.name),
+            passport: null,
+            fallbackPrompt: prompt.positive,
+            fallbackNegative: prompt.negative,
+            isUser: false,
+        },
+    ];
+}
+
+/** Card indexes of the current chat: the 1:1 character or every group member. */
+function chatCardIndexes(): number[] {
+    const c = ctx();
+    if (c.groupId) {
+        const members = c.groups.find((g) => g.id === c.groupId)?.members ?? [];
+        return members.map((avatar) => c.characters.findIndex((ch) => ch.avatar === avatar)).filter((i) => i >= 0);
+    }
+    if (c.characterId !== undefined && c.characterId !== null && c.characterId !== '') return [Number(c.characterId)];
+    return [];
+}
+
+export interface SceneLocation {
+    name: string;
+    aliases: string[];
+    tags: string;
+}
+
+/** Setting of the chat from its cards: world and scenario tags, named locations. */
+export async function sceneSetting(): Promise<{ world: string; locations: SceneLocation[] }> {
+    const world: string[] = [];
+    const locations: SceneLocation[] = [];
+    for (const index of chatCardIndexes()) {
+        for (const passport of cardPassports(await loadCharacter(index))) {
+            if (passport.kind === 'world' || passport.kind === 'scenario') world.push(passport.tags);
+            else if (passport.kind === 'location' && passport.name && passport.tags.trim())
+                locations.push({ name: passport.name, aliases: passport.aliases, tags: passport.tags });
+        }
+    }
+    return { world: joinTags(...world), locations };
+}
+
+/** Tags of the locations a text names (whole-word name or alias). */
+export function mentionedLocationTags(text: string, locations: readonly SceneLocation[]): string {
+    return joinTags(...locations.filter((l) => mentionIndex(text, [l.name, ...l.aliases]) >= 0).map((l) => l.tags));
 }
 
 /** Characters of the current chat (the 1:1 character or every group member) and the persona. */
 export async function sceneCandidates(): Promise<SceneCandidate[]> {
     const c = ctx();
     const result: SceneCandidate[] = [];
-    if (c.groupId) {
-        const members = c.groups.find((g) => g.id === c.groupId)?.members ?? [];
-        for (const avatar of members) {
-            const index = c.characters.findIndex((ch) => ch.avatar === avatar);
-            if (index < 0) continue;
-            const candidate = await characterCandidate(index);
-            if (candidate) result.push(candidate);
-        }
-    } else if (c.characterId !== undefined && c.characterId !== null && c.characterId !== '') {
-        const candidate = await characterCandidate(Number(c.characterId));
-        if (candidate) result.push(candidate);
-    }
+    for (const index of chatCardIndexes()) result.push(...(await characterCandidates(index)));
     const personaKey = await currentPersonaKey();
     result.push({
         key: `${PERSONA_PREFIX}${personaKey}`,
@@ -185,6 +243,8 @@ export class SceneService {
         if (settings().scene.llmBase && source.text.trim()) {
             spec.base = await this.describeLocation();
         }
+        const setting = await sceneSetting();
+        spec.base = joinTags(spec.base, mentionedLocationTags(source.text, setting.locations), setting.world);
         return { spec, candidates };
     }
 

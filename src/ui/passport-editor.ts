@@ -1,10 +1,13 @@
 // Appearance passport editor (TZ Phase 4): slots, NSFW layer, outfits, states, personal UC,
 // default pose and canvas position. Character passports go to the card, persona ones to settings.
+// Since v0.8: name, aliases and kind (world, location, scenario and object passports hold tags
+// instead of appearance), and filling the form from the description through the language backend.
 import { ctx } from '../core/context';
 import { localize, t } from '../core/i18n';
+import { reportGenerationError } from '../core/notify';
 import { settings } from '../core/settings';
-import { defaultPassport, PASSPORT_SLOTS, STATE_PRESETS } from '../domain';
-import type { Outfit, Passport, PassportState } from '../domain';
+import { defaultPassport, PASSPORT_KINDS, PASSPORT_SLOTS, STATE_PRESETS } from '../domain';
+import type { Outfit, Passport, PassportKind, PassportState } from '../domain';
 import { escapeHtml } from './components/dom';
 import { attachPromptAssist } from './prompt-assist';
 import { poseSelectOptions } from './pose-helpers';
@@ -13,8 +16,19 @@ function stateLabel(state: PassportState): string {
     return state.id in STATE_PRESETS ? t(`naist.state.${state.id}`) : state.id;
 }
 
+export interface PassportEditorOptions {
+    /** Name, aliases and kind can be edited (passports of a card; a persona has one character). */
+    identity?: boolean;
+    /** Fills the form from the description (persona passports). */
+    generate?: () => Promise<Passport>;
+}
+
 /** Opens the editor; resolves with the edited passport or null when cancelled. */
-export async function editPassport(name: string, initial: Passport | null): Promise<Passport | null> {
+export async function editPassport(
+    name: string,
+    initial: Passport | null,
+    options: PassportEditorOptions = {},
+): Promise<Passport | null> {
     const c = ctx();
     const passport: Passport = structuredClone(initial ?? defaultPassport());
     const root = document.createElement('div');
@@ -43,9 +57,27 @@ export async function editPassport(name: string, initial: Passport | null): Prom
             .join('') +
         `<div class="naist-row"><input class="text_pole naist-grow naist-state-new" placeholder="${escapeHtml(t('naist.passport.newState'))}"><div class="menu_button naist-state-add">${escapeHtml(t('naist.passport.addState'))}</div></div>`;
 
+    const identity = options.identity
+        ? `<div class="naist-grid2">
+            <div><label>${escapeHtml(t('naist.passport.name'))}</label>
+                <input class="text_pole naist-passport-name" value="${escapeHtml(passport.name)}" placeholder="${escapeHtml(name)}"></div>
+            <div><label>${escapeHtml(t('naist.passport.kind'))}</label>
+                <select class="text_pole naist-passport-kind">${PASSPORT_KINDS.map((k) => `<option value="${k}"${k === passport.kind ? ' selected' : ''}>${escapeHtml(t(`naist.passport.kind.${k}`))}</option>`).join('')}</select></div>
+        </div>
+        <label>${escapeHtml(t('naist.passport.aliases'))}</label>
+        <input class="text_pole naist-passport-aliases" value="${escapeHtml(passport.aliases.join(', '))}" placeholder="${escapeHtml(t('naist.passport.aliasesHint'))}">`
+        : '';
     root.innerHTML = `
-        <h3>${escapeHtml(t('naist.passport.title', { name }))}</h3>
+        <h3>${escapeHtml(t('naist.passport.title', { name: passport.name || name }))}</h3>
         <div class="naist-hint">${escapeHtml(t('naist.passport.hint'))}</div>
+        ${options.generate ? `<div class="naist-row"><div class="menu_button naist-passport-generate"><i class="fa-solid fa-wand-magic-sparkles"></i> ${escapeHtml(t('naist.passport.generateOne'))}</div><span class="naist-muted">${escapeHtml(t('naist.passport.generateHint'))}</span></div>` : ''}
+        ${identity}
+        <div class="naist-passport-tags-box">
+            <label>${escapeHtml(t('naist.passport.tags'))}</label>
+            <textarea class="text_pole textarea_compact naist-slot-input naist-passport-tags" rows="3">${escapeHtml(passport.tags)}</textarea>
+            <div class="naist-hint">${escapeHtml(t('naist.passport.tagsHint'))}</div>
+        </div>
+        <div class="naist-passport-character">
         <div class="naist-grid2">${PASSPORT_SLOTS.map(
             (slot) => `<div><label>${escapeHtml(t(`naist.slot.${slot}`))}</label>
                 <textarea class="text_pole textarea_compact naist-slot-input" data-slot="${slot}" rows="2">${escapeHtml(passport.slots[slot])}</textarea></div>`,
@@ -76,7 +108,22 @@ export async function editPassport(name: string, initial: Passport | null): Prom
             <label class="checkbox_label"><input type="checkbox" class="naist-pos-on"${passport.position ? ' checked' : ''}><span>${escapeHtml(t('naist.passport.position'))}</span></label>
             <input type="number" min="0" max="1" step="0.1" class="text_pole naist-pos-x" value="${passport.position?.x ?? 0.5}" title="x">
             <input type="number" min="0" max="1" step="0.1" class="text_pole naist-pos-y" value="${passport.position?.y ?? 0.5}" title="y">
+        </div>
         </div>`;
+    // The personal undesired content belongs to every kind: keep it outside the character block.
+    const negativeBlock = root.querySelector('.naist-negative')?.previousElementSibling;
+    const characterBlock = root.querySelector('.naist-passport-character');
+    if (negativeBlock && characterBlock) {
+        characterBlock.after(negativeBlock, root.querySelector('.naist-negative') as Node);
+    }
+    const kindSelect = root.querySelector<HTMLSelectElement>('.naist-passport-kind');
+    const applyKind = () => {
+        const kind = (kindSelect?.value ?? passport.kind) as PassportKind;
+        root.querySelector('.naist-passport-character')?.classList.toggle('naist-hidden', kind !== 'character');
+        root.querySelector('.naist-passport-tags-box')?.classList.toggle('naist-hidden', kind === 'character');
+    };
+    kindSelect?.addEventListener('change', applyKind);
+    applyKind();
 
     const outfitsBox = root.querySelector('.naist-outfits') as HTMLElement;
     const statesBox = root.querySelector('.naist-states') as HTMLElement;
@@ -108,8 +155,43 @@ export async function editPassport(name: string, initial: Passport | null): Prom
     };
     fillActive();
 
+    const fill = (generated: Passport) => {
+        root.querySelectorAll<HTMLTextAreaElement>('.naist-slot-input[data-slot]').forEach((area) => {
+            const slot = area.dataset.slot as (typeof PASSPORT_SLOTS)[number];
+            if (slot && generated.slots[slot]) area.value = generated.slots[slot];
+        });
+        const tags = root.querySelector<HTMLTextAreaElement>('.naist-passport-tags');
+        if (tags && generated.tags) tags.value = generated.tags;
+        const nsfw = root.querySelector<HTMLTextAreaElement>('.naist-nsfw-tags');
+        if (nsfw && generated.nsfw.tags) nsfw.value = generated.nsfw.tags;
+        const negative = root.querySelector<HTMLTextAreaElement>('.naist-negative');
+        if (negative && generated.negative) negative.value = generated.negative;
+        const aliases = root.querySelector<HTMLInputElement>('.naist-passport-aliases');
+        if (aliases && generated.aliases.length) aliases.value = generated.aliases.join(', ');
+        if (generated.outfits.length) {
+            readOutfits();
+            const names = new Set(passport.outfits.map((o) => o.name.toLowerCase()));
+            passport.outfits.push(...generated.outfits.filter((o) => !names.has(o.name.toLowerCase())));
+            outfitsBox.innerHTML = renderOutfits();
+            fillActive();
+        }
+    };
+
     root.addEventListener('click', (event) => {
         const target = event.target as HTMLElement;
+        const generateButton = target.closest<HTMLElement>('.naist-passport-generate');
+        if (generateButton && options.generate && !generateButton.classList.contains('disabled')) {
+            generateButton.classList.add('disabled');
+            void options
+                .generate()
+                .then((generated) => {
+                    fill(generated);
+                    toastr.success(t('naist.passport.generated'));
+                })
+                .catch(reportGenerationError)
+                .finally(() => generateButton.classList.remove('disabled'));
+            return;
+        }
         if (target.classList.contains('naist-outfit-add')) {
             readOutfits();
             passport.outfits.push({
@@ -147,10 +229,19 @@ export async function editPassport(name: string, initial: Passport | null): Prom
     });
     if (result !== c.POPUP_RESULT.AFFIRMATIVE) return null;
 
-    root.querySelectorAll<HTMLTextAreaElement>('.naist-slot-input').forEach((area) => {
+    root.querySelectorAll<HTMLTextAreaElement>('.naist-slot-input[data-slot]').forEach((area) => {
         const slot = area.dataset.slot as (typeof PASSPORT_SLOTS)[number];
         if (slot) passport.slots[slot] = area.value.trim();
     });
+    passport.tags = root.querySelector<HTMLTextAreaElement>('.naist-passport-tags')?.value.trim() ?? passport.tags;
+    if (options.identity) {
+        passport.name = root.querySelector<HTMLInputElement>('.naist-passport-name')?.value.trim() ?? passport.name;
+        passport.kind = (kindSelect?.value as PassportKind | undefined) ?? passport.kind;
+        passport.aliases = (root.querySelector<HTMLInputElement>('.naist-passport-aliases')?.value ?? '')
+            .split(',')
+            .map((a) => a.trim())
+            .filter(Boolean);
+    }
     readOutfits();
     passport.outfits = passport.outfits.filter((o) => o.name);
     passport.activeOutfit = passport.outfits.some((o) => o.name === activeSelect.value) ? activeSelect.value : '';

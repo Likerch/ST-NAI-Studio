@@ -91,7 +91,7 @@ enableServerPlugins: true
 [NAI Studio plugin] ready (secrets: ST, config token: not set)
 ```
 
-В панели расширения транспорт покажет «Серверный плагин 0.4.0 · токен: из секретов SillyTavern».
+В панели расширения транспорт покажет «Серверный плагин 0.4.1 · токен: из секретов SillyTavern».
 
 ### Проверка без UI
 
@@ -99,7 +99,7 @@ enableServerPlugins: true
 curl -s http://127.0.0.1:8000/api/plugins/nai-studio/health
 ```
 
-Ожидается `{"ok":true,"version":"0.4.0","tokenSource":"st-secrets"}`.
+Ожидается `{"ok":true,"version":"0.4.1","tokenSource":"st-secrets"}`.
 
 ---
 

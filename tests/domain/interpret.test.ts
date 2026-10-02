@@ -62,6 +62,18 @@ describe('tag matching', () => {
         ).toEqual({ tags: ['1girl', 'no humans'], unmatched: ['cozy mood'] });
     });
 
+    it('does not fix short real words into other tags', () => {
+        const small = buildTagIndex(
+            [
+                ['stocks', 0, 5000],
+                ['holding book', 0, 9000],
+            ],
+            {},
+        );
+        expect(matchTag(small, 'stocky')).toBeNull();
+        expect(matchTag(small, 'holdng book')).toEqual({ tag: 'holding book', kind: 'fuzzy' });
+    });
+
     it('dedupes, keeps order and reports what it could not match', () => {
         expect(matchTags(index, ['1girl', 'red hair', 'Red_Hair', 'black crop top', 'glowing aura'])).toEqual({
             tags: ['1girl', 'red hair', 'crop top'],

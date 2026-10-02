@@ -75,7 +75,94 @@ export function mentionIndex(text: string, names: readonly string[]): number {
         const match = pattern.exec(text);
         if (match && (best < 0 || match.index < best)) best = match.index;
     }
-    return best;
+    return best >= 0 ? best : soundMentionIndex(text, names);
+}
+
+/** Latin letters of the Russian alphabet from U+0430 (a) to U+044F (ya); U+0451 (yo) is "e". */
+const RU_LATIN = [
+    'a',
+    'b',
+    'v',
+    'g',
+    'd',
+    'e',
+    'zh',
+    'z',
+    'i',
+    'y',
+    'k',
+    'l',
+    'm',
+    'n',
+    'o',
+    'p',
+    'r',
+    's',
+    't',
+    'u',
+    'f',
+    'kh',
+    'ts',
+    'ch',
+    'sh',
+    'sch',
+    '',
+    'y',
+    '',
+    'e',
+    'yu',
+    'ya',
+];
+
+/** How a name sounds in Latin letters, loosely: "Lyra" and the Russian spelling give "lira". */
+export function nameSound(word: string): string {
+    let latin = '';
+    for (const ch of word.toLowerCase()) {
+        const code = ch.codePointAt(0) ?? 0;
+        if (code >= 0x430 && code <= 0x44f) latin += RU_LATIN[code - 0x430];
+        else if (code === 0x451) latin += 'e';
+        else latin += ch;
+    }
+    return latin
+        .replace(/kh/g, 'h')
+        .replace(/ph/g, 'f')
+        .replace(/ck/g, 'k')
+        .replace(/w/g, 'v')
+        .replace(/x/g, 'ks')
+        .replace(/y/g, 'i')
+        .replace(/[^a-z]/g, '')
+        .replace(/(.)\1+/g, '$1');
+}
+
+/** Russian case endings after a final vowel (Lira, Liry, Lire, Liru, Liroi) or a consonant (Brom, Broma, Bromom). */
+const AFTER_VOWEL = ['a', 'i', 'e', 'u', 'o', 'oi', 'oiu', 'ei', 'eiu'];
+const AFTER_CONSONANT = ['', 'a', 'u', 'e', 'i', 'om', 'em', 'ov', 'ami', 'ah', 'am'];
+
+/** Every declined form of a name, as sounds. */
+function nameForms(name: string): string[] {
+    const sound = nameSound(name);
+    if (sound.length < 3) return [];
+    if (/[aeiou]$/.test(sound)) return [sound, ...AFTER_VOWEL.map((e) => sound.slice(0, -1) + e)];
+    return AFTER_CONSONANT.map((e) => sound + e);
+}
+
+/**
+ * Names written in another alphabet or declined (a Latin card name in a Russian text: "Brom" in
+ * the Russian "Broma", "Lyra" in "Liru"): a word whose sound is one of the name's case forms.
+ * One-word names only; exact forms, so "Anna" does not catch words that merely start alike.
+ */
+function soundMentionIndex(text: string, names: readonly string[]): number {
+    const forms = new Set(
+        names
+            .map((n) => n.trim())
+            .filter((n) => n && !/\s/.test(n))
+            .flatMap((n) => nameForms(n)),
+    );
+    if (!forms.size) return -1;
+    for (const match of text.matchAll(/[\p{L}]+/gu)) {
+        if (forms.has(nameSound(match[0]))) return match.index ?? -1;
+    }
+    return -1;
 }
 
 /**

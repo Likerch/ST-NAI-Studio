@@ -17,6 +17,7 @@ import {
     findMarkers,
     getCapabilities,
     isModelId,
+    joinTags,
     limitMarkers,
     markerDimensions,
     markerDisplay,
@@ -34,7 +35,7 @@ import type { CallOverrides, Pipeline, ProducedImages } from '../generation/pipe
 import { blobToBase64, toPngBlob } from '../images/image-utils';
 import type { InlineImages } from '../inline/inline-service';
 import type { SceneService } from '../scene/scene-service';
-import { sceneCandidates } from '../scene/scene-service';
+import { mentionedLocationTags, sceneCandidates, sceneSetting } from '../scene/scene-service';
 import { vibeItems } from '../vibes/vibe-library';
 
 interface Job {
@@ -291,20 +292,29 @@ export class MarkerService {
                 negative = join(negative, saved.negative);
             } else scene = join(style, scene);
         }
-        if (params.chars?.length) {
-            const built = await this.scenes.markerScene(scene, params.chars);
+        // Characters with a passport named in the description take part without "chars" too.
+        let chars = params.chars;
+        if (!chars?.length) {
+            const known = (await sceneCandidates()).filter((cand) => cand.passport !== null);
+            const named = detectParticipants(`${params.prompt} ${params.caption ?? ''}`, known, { max: 4 });
+            if (named.length) chars = named.map((cand) => ({ name: cand.name }));
+        }
+        if (chars?.length) {
+            const built = await this.scenes.markerScene(scene, chars);
             if (built) {
                 scene = built.prompt;
                 generation.characters = built.characters;
                 generation.useCoords = built.useCoords;
             } else {
                 // Nobody known by that name: what they do still describes the picture.
-                const actions = params.chars
-                    .map((ch) => [ch.pose, ch.action].filter(Boolean).join(' '))
-                    .filter(Boolean);
+                const actions = chars.map((ch) => [ch.pose, ch.action].filter(Boolean).join(' ')).filter(Boolean);
                 scene = [scene, ...actions].join(', ');
             }
         }
+        // Setting of the chat: world / scenario tags and the locations the marker names.
+        const setting = await sceneSetting();
+        const place = mentionedLocationTags(`${params.location ?? ''} ${params.prompt}`, setting.locations);
+        if (place || setting.world) scene = joinTags(scene, place, setting.world);
         if (params.text && caps.family !== 'v3') scene = `${scene}, text: ${params.text}`;
         if (params.location && s.continuity.enabled) await setCurrentLocation(params.location).catch(() => undefined);
 
@@ -317,6 +327,8 @@ export class MarkerService {
             scene,
             mode: MODE.FREE,
             interpret: 'auto',
+            // Character prompts come from passports: curated tags, converted only when Russian.
+            interpretCharacters: 'cyrillic',
             overrides,
             ...(requestPatch ? { requestPatch, noContinuity: true } : {}),
             ...(vibes?.length ? { vibes } : {}),

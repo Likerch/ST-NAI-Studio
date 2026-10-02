@@ -24,7 +24,7 @@ import { translatePrompt } from '../features/translate/translate-service';
 import { setExtraVibes } from '../features/vibes/vibe-library';
 import { openComicDialog } from '../ui/comic-dialog';
 import { openSpritesDialog } from '../ui/sprites-dialog';
-import { editedCharacterIndex } from './scene-setup';
+import { editedCharacterIndex, setEmotionsHandler } from './scene-setup';
 import { setToolScenes } from './tools';
 
 const SPRITES_OPTION = 'naist_char_sprites';
@@ -151,13 +151,13 @@ async function bindCurrent(): Promise<void> {
 
 // ---- dialogs ---------------------------------------------------------------------------
 
-function openSprites(index: number | null = editedCharacterIndex()): void {
+function openSprites(index: number | null = editedCharacterIndex(), passportId?: string): void {
     if (!sprites) return;
     if (index === null || ctx().groupId) {
         toastr.info(t('naist.sprites.noCharacter'));
         return;
     }
-    void openSpritesDialog(sprites, index).catch(reportGenerationError);
+    void openSpritesDialog(sprites, index, passportId).catch(reportGenerationError);
 }
 
 function openComic(): void {
@@ -255,6 +255,7 @@ function installMenuOption(): void {
 
 export function setupPhase6(pipeline: Pipeline, scenes: SceneService): void {
     pipeline.setInterpreter(languageInterpreter);
+    setEmotionsHandler((index, passportId) => openSprites(index, passportId));
     const continuity = new ContinuityService();
     pipeline.setContinuityProvider(continuity);
     pipeline.onGenerated(continuity.observe);

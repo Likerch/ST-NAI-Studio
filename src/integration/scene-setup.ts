@@ -1,22 +1,18 @@
 // Scene composer wiring (TZ Phase 4): a button in the character card, "More…" menu items,
-// panel buttons, the wand item and /nai-scene.
+// panel buttons, the wand item and /nai-scene. Since v0.8 the card also has "Passports" and
+// "Emotions" buttons, and the persona panel a passport button.
 import { ctx } from '../core/context';
 import { localize, t } from '../core/i18n';
 import { log } from '../core/logger';
 import { reportGenerationError } from '../core/notify';
 import { avatarKey } from '../features/characters/character-prompts';
-import {
-    cardPassport,
-    currentPersonaKey,
-    loadCharacter,
-    personaPassport,
-    saveCardPassport,
-    savePersonaPassport,
-} from '../features/characters/passport-store';
+import { generatePersonaPassport } from '../features/characters/passport-generator';
+import { currentPersonaKey, personaPassport, savePersonaPassport } from '../features/characters/passport-store';
 import type { Pipeline } from '../features/generation/pipeline';
 import type { SceneService } from '../features/scene/scene-service';
 import { openComposer } from '../ui/composer';
 import { editPassport } from '../ui/passport-editor';
+import { openPassportManager } from '../ui/passport-manager';
 import { openPoseLibrary } from '../ui/pose-library';
 
 const MENU_OPTIONS: [id: string, key: string][] = [
@@ -25,6 +21,12 @@ const MENU_OPTIONS: [id: string, key: string][] = [
 ];
 
 let state: { service: SceneService; pipeline: Pipeline } | null = null;
+let emotionsHandler: (index: number, passportId?: string) => void = () => {};
+
+/** The sprite generator registers itself here (it lives with the Phase 6 tools). */
+export function setEmotionsHandler(handler: (index: number, passportId?: string) => void): void {
+    emotionsHandler = handler;
+}
 
 export async function openSceneComposer(auto = true, focusKey?: string): Promise<void> {
     if (!state) return;
@@ -42,21 +44,33 @@ export function editedCharacterIndex(): number | null {
     return Number.isInteger(index) && c.characters[index] ? index : null;
 }
 
+/** The passports of a card: characters, world, locations, scenario, objects. */
 export async function editCharacterPassport(index: number): Promise<void> {
-    const character = await loadCharacter(index);
-    if (!character) return;
-    const passport = await editPassport(character.name, cardPassport(character));
-    if (!passport) return;
-    await saveCardPassport(index, passport);
-    toastr.success(t('naist.passport.saved', { name: character.name }));
+    await openPassportManager(index, { emotions: (i, passportId) => emotionsHandler(i, passportId) });
 }
 
 export async function editPersonaPassport(): Promise<void> {
     const key = await currentPersonaKey();
-    const passport = await editPassport(ctx().name1, personaPassport(key));
+    const passport = await editPassport(ctx().name1, personaPassport(key), { generate: generatePersonaPassport });
     if (!passport) return;
     savePersonaPassport(key, passport);
     toastr.success(t('naist.passport.saved', { name: ctx().name1 }));
+}
+
+function cardButton(id: string, icon: string, titleKey: string, onClick: () => void): HTMLElement {
+    const button = document.createElement('div');
+    button.id = id;
+    button.className = `menu_button fa-solid ${icon}`;
+    button.setAttribute('data-i18n', `[title]${titleKey}`);
+    button.title = t(titleKey);
+    button.addEventListener('click', onClick);
+    return button;
+}
+
+function withEditedCharacter(run: (index: number) => void): void {
+    const index = editedCharacterIndex();
+    if (index === null || ctx().groupId) toastr.info(t('naist.prompts.characterNone'));
+    else run(index);
 }
 
 function installCardButton(): void {
@@ -75,6 +89,25 @@ function installCardButton(): void {
         const key = index === null ? undefined : avatarKey(ctx().characters[index]?.avatar);
         void openSceneComposer(false, key);
     });
+    const passports = cardButton('naist_passport_button', 'fa-id-card', 'naist.card.passports', () =>
+        withEditedCharacter((index) => void editCharacterPassport(index).catch(reportGenerationError)),
+    );
+    const emotions = cardButton('naist_emotions_button', 'fa-masks-theater', 'naist.card.emotions', () =>
+        withEditedCharacter((index) => emotionsHandler(index)),
+    );
+    button.after(passports, emotions);
+}
+
+/** Passport button among the persona panel's buttons. */
+function installPersonaButton(): void {
+    const block = document.querySelector('#persona_controls .persona_controls_buttons_block');
+    if (!block || block.querySelector('#naist_persona_passport')) return;
+    const button = cardButton('naist_persona_passport', 'fa-id-card', 'naist.card.personaPassport', () => {
+        void editPersonaPassport().catch(reportGenerationError);
+    });
+    const anchor = block.querySelector('#persona_lore_button');
+    if (anchor) anchor.after(button);
+    else block.prepend(button);
 }
 
 function installMenuOptions(): void {
@@ -160,14 +193,13 @@ function registerSceneCommand(): void {
 export function setupScenes(pipeline: Pipeline, service: SceneService): void {
     state = { service, pipeline };
     installCardButton();
+    installPersonaButton();
     installMenuOptions();
     document.addEventListener('click', (event) => {
         const target = event.target as HTMLElement;
         if (target.closest('#naist_open_composer')) void openSceneComposer(true);
         else if (target.closest('#naist_edit_char_passport')) {
-            const index = editedCharacterIndex();
-            if (index === null || ctx().groupId) toastr.info(t('naist.prompts.characterNone'));
-            else void editCharacterPassport(index).catch(reportGenerationError);
+            withEditedCharacter((index) => void editCharacterPassport(index).catch(reportGenerationError));
         } else if (target.closest('#naist_edit_persona_passport'))
             void editPersonaPassport().catch(reportGenerationError);
         else if (target.closest('#naist_open_pose_library')) void openPoseLibrary();
@@ -175,9 +207,12 @@ export function setupScenes(pipeline: Pipeline, service: SceneService): void {
     const c = ctx();
     c.eventSource.on(c.eventTypes.APP_READY ?? 'app_ready', () => {
         installCardButton();
+        installPersonaButton();
         registerSceneCommand();
-        const block = document.querySelector('#avatar_controls');
-        if (block) localize(block);
+        for (const selector of ['#avatar_controls', '#persona_controls']) {
+            const block = document.querySelector(selector);
+            if (block) localize(block);
+        }
         log.info('scene composer ready');
     });
 }

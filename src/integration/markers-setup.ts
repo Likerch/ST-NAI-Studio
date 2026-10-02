@@ -21,6 +21,7 @@ import { sceneCandidates } from '../features/scene/scene-service';
 import { escapeHtml } from '../ui/components/dom';
 import { IMG_ATTR, PIXEL, WIDGET_SRC_MARK } from './inline-render';
 import { inlineRenderer } from './inline-setup';
+import { registerCharactersMacro } from './macros';
 
 const PROMPT_KEY = 'nai_studio_markers';
 /** extension_prompt_types.IN_CHAT and extension_prompt_roles in public/script.js. */
@@ -29,6 +30,8 @@ const ROLES = { system: 0, user: 1, assistant: 2 } as const;
 const NO_INSTRUCTION = new Set(['impersonate', 'quiet']);
 
 let service: MarkerService | null = null;
+/** Names for {{nai_characters}}, refreshed with the instruction. */
+let knownCharacters = '';
 
 export function markerService(): MarkerService | null {
     return service;
@@ -68,13 +71,16 @@ export async function refreshMarkerInstruction(): Promise<void> {
     const c = ctx();
     const s = settings().markers;
     let value = '';
-    if (s.enabled && s.inject) {
-        let chars: string[] = [];
+    let chars: string[] = [];
+    if (s.enabled) {
         try {
             chars = (await sceneCandidates()).filter((cand) => cand.passport).map((cand) => cand.name);
         } catch (error) {
             log.warn('marker instruction: characters not available', error);
         }
+    }
+    knownCharacters = chars.join(', ');
+    if (s.enabled && s.inject) {
         value = markerInstruction(s.preset, s.template, {
             min: s.min,
             max: s.max,
@@ -93,6 +99,11 @@ export function setupMarkers(pipeline: Pipeline, inline: InlineImages, scenes: S
     const markers = new MarkerService(pipeline, inline, scenes);
     service = markers;
     c.messageFormatter.addHook(formatHook, { stage: 'beforeRegex' });
+    try {
+        registerCharactersMacro(() => knownCharacters);
+    } catch (error) {
+        log.warn('{{nai_characters}} macro not registered', error);
+    }
     const renderer = inlineRenderer();
     renderer?.setMarkerHooks({
         isRunning: (id) => markers.isRunning(id),

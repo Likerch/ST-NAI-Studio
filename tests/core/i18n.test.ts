@@ -219,6 +219,7 @@ describe('source code', () => {
             ...COMIC_LAYOUTS.map((l) => `naist.comic.layout.${l.id}`),
             ...['not-json', 'wrong-format', 'newer-schema', 'invalid'].map((r) => `naist.io.reason.${r}`),
             ...['base', 'director', 'img2img', 'seed'].map((h) => `naist.sprites.how.${h}`),
+            ...['character', 'world', 'location', 'scenario', 'object'].map((k) => `naist.passport.kind.${k}`),
             ...['done', 'cached'].map((k) => `naist.interpret.${k}`),
             ...['modeSeedHint', 'modeDirectorHint'].map((k) => `naist.sprites.${k}`),
             ...['spritesHelp', 'comicHelp'].map((k) => `naist.command.${k}`),

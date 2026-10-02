@@ -13,7 +13,8 @@ export interface InstructionVars {
 }
 
 const COMMON_TAIL = `- "caption": a few words in {{captionLanguage}} shown under the picture.
-- Optional keys: "chars": [{"name":"...","pos":"left|center|right","action":"..."}] for the characters in the picture{{charsHint}}; "ratio": "portrait", "landscape", "square", "wide" or "tall"; "negative": what must not be in the picture; "text": words written in the picture; "id": a short name for the picture and "ref": the id of an earlier picture to continue its scene; "spoiler": true for a picture that gives too much away.
+- Characters whose looks are known{{charsHint}}: just use their names in "prompt" — their appearance is added automatically; describe only what they do, wear differently, feel.
+- Optional keys: "chars": [{"name":"...","pos":"left|center|right","action":"..."}] to place characters and say what each one does; "ratio": "portrait", "landscape", "square", "wide" or "tall"; "negative": what must not be in the picture; "text": words written in the picture; "id": a short name for the picture and "ref": the id of an earlier picture to continue its scene; "spoiler": true for a picture that gives too much away.
 - Write the marker exactly in this form, inside the reply where the picture belongs. Never write image links or file names, and do not talk about the markers.`;
 
 export const MARKER_TEMPLATES: Record<Exclude<MarkerPreset, 'custom'>, string> = {

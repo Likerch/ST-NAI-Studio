@@ -1,8 +1,17 @@
 // Appearance passport (TZ Phase 4): a character's permanent tags, stored in the card
-// (data.extensions.nai_studio.passport) so it travels with export/import. Pure.
+// (data.extensions.nai_studio) so it travels with export/import. Pure.
+// A card can carry several passports (v0.8): every character it describes, and the world,
+// locations, the scenario or objects (their visual tags), because a card is not always one person.
 
 export const PASSPORT_SLOTS = ['base', 'hair', 'eyes', 'body', 'skin', 'clothing', 'accessories', 'style'] as const;
 export type PassportSlot = (typeof PASSPORT_SLOTS)[number];
+
+/** What a passport describes; only characters take part in scenes, the rest add setting tags. */
+export const PASSPORT_KINDS = ['character', 'world', 'location', 'scenario', 'object'] as const;
+export type PassportKind = (typeof PASSPORT_KINDS)[number];
+
+/** Id of the passport kept by versions before 0.8 (one passport per card). */
+export const LEGACY_PASSPORT_ID = 'main';
 
 /** Built-in state modifiers (names are localized as naist.state.<id>). */
 export const STATE_PRESETS: Readonly<Record<string, string>> = {
@@ -30,6 +39,15 @@ export interface PassportState {
 
 export interface Passport {
     version: 1;
+    /** Stable id inside the card. */
+    id: string;
+    kind: PassportKind;
+    /** Who or what it is; '' means the card (or persona) itself. */
+    name: string;
+    /** Other names the text uses (nicknames, short names, names in other languages). */
+    aliases: string[];
+    /** Visual tags of a world, location, scenario or object (characters use the slots). */
+    tags: string;
     slots: Record<PassportSlot, string>;
     nsfw: { enabled: boolean; tags: string };
     outfits: Outfit[];
@@ -44,9 +62,18 @@ export interface Passport {
     position: { x: number; y: number } | null;
 }
 
-export function defaultPassport(): Passport {
+export function newPassportId(): string {
+    return `p${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`;
+}
+
+export function defaultPassport(kind: PassportKind = 'character', name = '', id = newPassportId()): Passport {
     return {
         version: 1,
+        id,
+        kind,
+        name,
+        aliases: [],
+        tags: '',
         slots: { base: '', hair: '', eyes: '', body: '', skin: '', clothing: '', accessories: '', style: '' },
         nsfw: { enabled: false, tags: '' },
         outfits: [],
@@ -77,7 +104,14 @@ function unit(value: unknown, fallback: number): number {
 export function normalizePassport(raw: unknown): Passport | null {
     if (raw === null || raw === undefined || typeof raw !== 'object' || Array.isArray(raw)) return null;
     const source = obj(raw);
-    const result = defaultPassport();
+    const kind = (PASSPORT_KINDS as readonly string[]).includes(str(source.kind))
+        ? (source.kind as PassportKind)
+        : 'character';
+    const result = defaultPassport(kind, str(source.name).trim(), str(source.id).trim() || LEGACY_PASSPORT_ID);
+    result.aliases = (Array.isArray(source.aliases) ? source.aliases.map(str) : str(source.aliases).split(','))
+        .map((a) => a.trim())
+        .filter(Boolean);
+    result.tags = str(source.tags);
     const slots = obj(source.slots);
     for (const slot of PASSPORT_SLOTS) result.slots[slot] = str(slots[slot]);
     const nsfw = obj(source.nsfw);
@@ -108,6 +142,33 @@ export function normalizePassport(raw: unknown): Passport | null {
             ? { x: unit(position.x, 0.5), y: unit(position.y, 0.5) }
             : null;
     return result;
+}
+
+/**
+ * The passports of a card: the list (v0.8) or the single legacy passport. Ids are made unique so
+ * every passport can be addressed.
+ */
+export function normalizePassportList(list: unknown, legacy?: unknown): Passport[] {
+    const raw = Array.isArray(list) ? list : legacy !== undefined && legacy !== null ? [legacy] : [];
+    const result: Passport[] = [];
+    const ids = new Set<string>();
+    for (const item of raw) {
+        const passport = normalizePassport(item);
+        if (!passport) continue;
+        let id = passport.id;
+        for (let n = 2; ids.has(id); n++) id = `${passport.id}-${n}`;
+        passport.id = id;
+        ids.add(id);
+        result.push(passport);
+    }
+    return result;
+}
+
+/** The passport that stands for the card itself: unnamed or named like the card, else the first character. */
+export function primaryPassport(list: readonly Passport[], cardName: string): Passport | null {
+    const people = list.filter((p) => p.kind === 'character');
+    const name = cardName.trim().toLowerCase();
+    return people.find((p) => !p.name || p.name.trim().toLowerCase() === name) ?? people[0] ?? null;
 }
 
 /** Splits a tag string, trims, drops empties and case-insensitive duplicates (first wins). */
@@ -149,6 +210,7 @@ export function clothingTags(passport: Passport, outfit?: string): string {
  * accessories, states, NSFW layer, art style.
  */
 export function passportTags(passport: Passport, options: PassportOptions): string {
+    if (passport.kind !== 'character') return joinTags(passport.tags);
     const states = passport.states.filter((s) => s.enabled || options.states?.includes(s.id)).map((s) => s.tags);
     const nsfw = options.allowNsfw && passport.nsfw.enabled ? passport.nsfw.tags : '';
     return joinTags(
@@ -167,6 +229,7 @@ export function passportTags(passport: Passport, options: PassportOptions): stri
 
 export function isPassportEmpty(passport: Passport | null): boolean {
     if (!passport) return true;
+    if (passport.kind !== 'character') return !passport.tags.trim();
     return (
         PASSPORT_SLOTS.every((slot) => !passport.slots[slot].trim()) &&
         !passport.outfits.length &&

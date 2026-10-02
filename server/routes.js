@@ -293,7 +293,7 @@ export function registerRoutes(router, deps) {
                 );
             if (!valid)
                 return send(res, 400, { error: { kind: 'http', status: 400, message: 'Malformed text request' } });
-            const limit = Math.min(2000, Math.max(16, Number(maxTokens) || 500));
+            const limit = Math.min(4096, Math.max(16, Number(maxTokens) || 500));
             const content = await client.chat({ token, model, messages, maxTokens: limit, signal });
             log('text', model, `${content.length} chars`);
             send(res, 200, { content });

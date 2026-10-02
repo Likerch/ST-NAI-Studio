@@ -39,6 +39,8 @@ declare global {
         avatar: string;
         data?: { extensions?: Record<string, unknown> };
         description?: string;
+        personality?: string;
+        first_mes?: string;
         scenario?: string;
         shallow?: boolean;
     }

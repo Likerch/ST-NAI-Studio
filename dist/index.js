@@ -1050,7 +1050,41 @@ var EN = {
 	"naist.language.testPlaceholder": "e.g. a red-haired girl reads a book by a rainy window",
 	"naist.language.testRun": "Convert",
 	"naist.language.testNegative": "Negative:",
-	"naist.markers.retryHint": "Click to generate this picture again"
+	"naist.markers.retryHint": "Click to generate this picture again",
+	"naist.card.passports": "Passports: characters, world, places of this card",
+	"naist.card.emotions": "Emotions: generate Expressions sprites one by one",
+	"naist.card.personaPassport": "NAI Studio: persona passport",
+	"naist.passport.name": "Name",
+	"naist.passport.kind": "Kind",
+	"naist.passport.kind.character": "Character",
+	"naist.passport.kind.world": "World",
+	"naist.passport.kind.location": "Location",
+	"naist.passport.kind.scenario": "Scenario",
+	"naist.passport.kind.object": "Object",
+	"naist.passport.aliases": "Other names",
+	"naist.passport.aliasesHint": "comma separated: nicknames, short names, names in other languages",
+	"naist.passport.tags": "Visual tags",
+	"naist.passport.tagsHint": "World and scenario tags join every scene of this chat; a location joins when it is named; an object is for your notes and the tools.",
+	"naist.passport.generateOne": "Fill from the description",
+	"naist.passport.generateHint": "The language model of \"Human language\" reads the persona description; empty fields are filled, nothing is saved until you press Save.",
+	"naist.passport.generated": "The passport was filled from the description.",
+	"naist.passports.title": "Passports: {name}",
+	"naist.passports.hint": "A card can describe several characters, a world, places, a scenario. Characters take part in scenes and markers by name (their looks are added automatically); world and scenario tags join every scene of the chat; a location joins when it is named.",
+	"naist.passports.generate": "Generate from the description",
+	"naist.passports.generateHint": "Reads the description, personality, scenario and first message with the language model of \"Human language\".",
+	"naist.passports.none": "No passports yet: add one or generate them.",
+	"naist.passports.main": "main",
+	"naist.passports.empty": "(empty)",
+	"naist.passports.emotions": "Emotions of this character",
+	"naist.passports.edit": "Edit",
+	"naist.passports.add": "Add",
+	"naist.passports.mergeQuestion": "The card already has passports. Add only the new ones (by name), or replace all of them?",
+	"naist.passports.mergeAdd": "Add new",
+	"naist.passports.mergeReplace": "Replace all",
+	"naist.passports.generated": "Passports generated: {count}. Check them and press Save.",
+	"naist.sprites.who": "For",
+	"naist.sprites.costume": "own folder, switch with /costume",
+	"naist.macro.characters": "Characters of the chat with a NAI Studio passport (name them in an image marker, their looks are added)."
 };
 var translator = (text) => text;
 /** Wires the host translator (SillyTavern's translate). Called once on activation. */
@@ -3845,7 +3879,7 @@ function modelFromSource(source) {
 function num$2(value) {
 	return typeof value === "number" && Number.isFinite(value) ? value : void 0;
 }
-function str$3(value) {
+function str$4(value) {
 	return typeof value === "string" ? value : "";
 }
 function obj$1(value) {
@@ -3903,8 +3937,8 @@ function parseNovelAIMetadata(text, fallbackModel) {
 	const v4 = obj$1(comment.v4_prompt);
 	const v4Caption = obj$1(v4.caption);
 	const v4Negative = obj$1(obj$1(comment.v4_negative_prompt).caption);
-	const basePrompt = str$3(v4Caption.base_caption) || str$3(comment.prompt) || str$3(text.Description);
-	const baseNegative = str$3(v4Negative.base_caption) || str$3(comment.uc);
+	const basePrompt = str$4(v4Caption.base_caption) || str$4(comment.prompt) || str$4(text.Description);
+	const baseNegative = str$4(v4Negative.base_caption) || str$4(comment.uc);
 	const quality = model ? splitQualityTags(basePrompt, model) : {
 		prompt: basePrompt,
 		preset: void 0
@@ -3918,8 +3952,8 @@ function parseNovelAIMetadata(text, fallbackModel) {
 	const characters = charCaptions.map((caption, i) => {
 		const center = obj$1(Array.isArray(caption.centers) ? caption.centers[0] : void 0);
 		return {
-			prompt: str$3(caption.char_caption),
-			negative: str$3(charNegatives[i]?.char_caption),
+			prompt: str$4(caption.char_caption),
+			negative: str$4(charNegatives[i]?.char_caption),
 			x: num$2(center.x) ?? .5,
 			y: num$2(center.y) ?? .5
 		};
@@ -3943,13 +3977,13 @@ function parseNovelAIMetadata(text, fallbackModel) {
 	assign("cfgRescale", num$2(comment.cfg_rescale));
 	assign("width", num$2(comment.width));
 	assign("height", num$2(comment.height));
-	assign("sampler", str$3(comment.sampler) || void 0);
-	assign("noiseSchedule", str$3(comment.noise_schedule) || void 0);
+	assign("sampler", str$4(comment.sampler) || void 0);
+	assign("noiseSchedule", str$4(comment.noise_schedule) || void 0);
 	if (typeof comment.sm === "boolean") result.smea = comment.sm;
 	if (typeof comment.sm_dyn === "boolean") result.smeaDyn = comment.sm_dyn;
 	if ("skip_cfg_above_sigma" in comment) result.varietyBoost = comment.skip_cfg_above_sigma !== null;
 	if (typeof v4.use_coords === "boolean") result.useCoords = v4.use_coords;
-	assign("requestType", str$3(comment.request_type) || void 0);
+	assign("requestType", str$4(comment.request_type) || void 0);
 	return result;
 }
 var SOURCE_NAMES = {
@@ -4106,6 +4140,14 @@ var PASSPORT_SLOTS = [
 	"accessories",
 	"style"
 ];
+/** What a passport describes; only characters take part in scenes, the rest add setting tags. */
+var PASSPORT_KINDS = [
+	"character",
+	"world",
+	"location",
+	"scenario",
+	"object"
+];
 /** Built-in state modifiers (names are localized as naist.state.<id>). */
 var STATE_PRESETS = {
 	wet: "wet, wet hair, wet clothes",
@@ -4117,9 +4159,17 @@ var STATE_PRESETS = {
 	angry: "angry, frown",
 	happy: "smile, happy"
 };
-function defaultPassport() {
+function newPassportId() {
+	return `p${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`;
+}
+function defaultPassport(kind = "character", name = "", id = newPassportId()) {
 	return {
 		version: 1,
+		id,
+		kind,
+		name,
+		aliases: [],
+		tags: "",
 		slots: {
 			base: "",
 			hair: "",
@@ -4149,7 +4199,7 @@ function defaultPassport() {
 		position: null
 	};
 }
-function str$2(value) {
+function str$3(value) {
 	return typeof value === "string" ? value : "";
 }
 function obj(value) {
@@ -4163,33 +4213,35 @@ function unit(value, fallback) {
 function normalizePassport(raw) {
 	if (raw === null || raw === void 0 || typeof raw !== "object" || Array.isArray(raw)) return null;
 	const source = obj(raw);
-	const result = defaultPassport();
+	const result = defaultPassport(PASSPORT_KINDS.includes(str$3(source.kind)) ? source.kind : "character", str$3(source.name).trim(), str$3(source.id).trim() || "main");
+	result.aliases = (Array.isArray(source.aliases) ? source.aliases.map(str$3) : str$3(source.aliases).split(",")).map((a) => a.trim()).filter(Boolean);
+	result.tags = str$3(source.tags);
 	const slots = obj(source.slots);
-	for (const slot of PASSPORT_SLOTS) result.slots[slot] = str$2(slots[slot]);
+	for (const slot of PASSPORT_SLOTS) result.slots[slot] = str$3(slots[slot]);
 	const nsfw = obj(source.nsfw);
 	result.nsfw = {
 		enabled: nsfw.enabled === true,
-		tags: str$2(nsfw.tags)
+		tags: str$3(nsfw.tags)
 	};
 	result.outfits = (Array.isArray(source.outfits) ? source.outfits : []).map(obj).map((o) => ({
-		name: str$2(o.name).trim(),
-		tags: str$2(o.tags)
+		name: str$3(o.name).trim(),
+		tags: str$3(o.tags)
 	})).filter((o) => o.name);
-	result.activeOutfit = result.outfits.some((o) => o.name === str$2(source.activeOutfit)) ? str$2(source.activeOutfit) : "";
+	result.activeOutfit = result.outfits.some((o) => o.name === str$3(source.activeOutfit)) ? str$3(source.activeOutfit) : "";
 	if (Array.isArray(source.states)) {
 		const stored = source.states.map(obj).map((s) => ({
-			id: str$2(s.id).trim(),
-			tags: str$2(s.tags),
+			id: str$3(s.id).trim(),
+			tags: str$3(s.tags),
 			enabled: s.enabled === true
 		}));
 		const byId = new Map(stored.filter((s) => s.id).map((s) => [s.id, s]));
 		result.states = [...result.states.map((preset) => byId.get(preset.id) ?? preset), ...stored.filter((s) => s.id && !(s.id in STATE_PRESETS))];
 	}
-	result.negative = str$2(source.negative);
+	result.negative = str$3(source.negative);
 	const pose = obj(source.pose);
 	result.pose = {
-		preset: str$2(pose.preset),
-		custom: str$2(pose.custom)
+		preset: str$3(pose.preset),
+		custom: str$3(pose.custom)
 	};
 	const position = obj(source.position);
 	result.position = source.position && typeof source.position === "object" ? {
@@ -4197,6 +4249,31 @@ function normalizePassport(raw) {
 		y: unit(position.y, .5)
 	} : null;
 	return result;
+}
+/**
+* The passports of a card: the list (v0.8) or the single legacy passport. Ids are made unique so
+* every passport can be addressed.
+*/
+function normalizePassportList(list, legacy) {
+	const raw = Array.isArray(list) ? list : legacy !== void 0 && legacy !== null ? [legacy] : [];
+	const result = [];
+	const ids = /* @__PURE__ */ new Set();
+	for (const item of raw) {
+		const passport = normalizePassport(item);
+		if (!passport) continue;
+		let id = passport.id;
+		for (let n = 2; ids.has(id); n++) id = `${passport.id}-${n}`;
+		passport.id = id;
+		ids.add(id);
+		result.push(passport);
+	}
+	return result;
+}
+/** The passport that stands for the card itself: unnamed or named like the card, else the first character. */
+function primaryPassport(list, cardName) {
+	const people = list.filter((p) => p.kind === "character");
+	const name = cardName.trim().toLowerCase();
+	return people.find((p) => !p.name || p.name.trim().toLowerCase() === name) ?? people[0] ?? null;
 }
 /** Splits a tag string, trims, drops empties and case-insensitive duplicates (first wins). */
 function splitTags(text) {
@@ -4225,9 +4302,15 @@ function clothingTags(passport, outfit) {
 * accessories, states, NSFW layer, art style.
 */
 function passportTags(passport, options) {
+	if (passport.kind !== "character") return joinTags(passport.tags);
 	const states = passport.states.filter((s) => s.enabled || options.states?.includes(s.id)).map((s) => s.tags);
 	const nsfw = options.allowNsfw && passport.nsfw.enabled ? passport.nsfw.tags : "";
 	return joinTags(passport.slots.base, passport.slots.hair, passport.slots.eyes, passport.slots.body, passport.slots.skin, clothingTags(passport, options.outfit), passport.slots.accessories, ...states, nsfw, passport.slots.style);
+}
+function isPassportEmpty(passport) {
+	if (!passport) return true;
+	if (passport.kind !== "character") return !passport.tags.trim();
+	return PASSPORT_SLOTS.every((slot) => !passport.slots[slot].trim()) && !passport.outfits.length && !passport.nsfw.tags.trim();
 }
 //#endregion
 //#region src/domain/poses.ts
@@ -4884,7 +4967,96 @@ function mentionIndex(text, names) {
 		const match = new RegExp(`(^|[^\\p{L}\\p{N}])${escapeRegExp$3(trimmed)}(?=$|[^\\p{L}\\p{N}])`, "iu").exec(text);
 		if (match && (best < 0 || match.index < best)) best = match.index;
 	}
-	return best;
+	return best >= 0 ? best : soundMentionIndex(text, names);
+}
+/** Latin letters of the Russian alphabet from U+0430 (a) to U+044F (ya); U+0451 (yo) is "e". */
+var RU_LATIN = [
+	"a",
+	"b",
+	"v",
+	"g",
+	"d",
+	"e",
+	"zh",
+	"z",
+	"i",
+	"y",
+	"k",
+	"l",
+	"m",
+	"n",
+	"o",
+	"p",
+	"r",
+	"s",
+	"t",
+	"u",
+	"f",
+	"kh",
+	"ts",
+	"ch",
+	"sh",
+	"sch",
+	"",
+	"y",
+	"",
+	"e",
+	"yu",
+	"ya"
+];
+/** How a name sounds in Latin letters, loosely: "Lyra" and the Russian spelling give "lira". */
+function nameSound(word) {
+	let latin = "";
+	for (const ch of word.toLowerCase()) {
+		const code = ch.codePointAt(0) ?? 0;
+		if (code >= 1072 && code <= 1103) latin += RU_LATIN[code - 1072];
+		else if (code === 1105) latin += "e";
+		else latin += ch;
+	}
+	return latin.replace(/kh/g, "h").replace(/ph/g, "f").replace(/ck/g, "k").replace(/w/g, "v").replace(/x/g, "ks").replace(/y/g, "i").replace(/[^a-z]/g, "").replace(/(.)\1+/g, "$1");
+}
+/** Russian case endings after a final vowel (Lira, Liry, Lire, Liru, Liroi) or a consonant (Brom, Broma, Bromom). */
+var AFTER_VOWEL = [
+	"a",
+	"i",
+	"e",
+	"u",
+	"o",
+	"oi",
+	"oiu",
+	"ei",
+	"eiu"
+];
+var AFTER_CONSONANT = [
+	"",
+	"a",
+	"u",
+	"e",
+	"i",
+	"om",
+	"em",
+	"ov",
+	"ami",
+	"ah",
+	"am"
+];
+/** Every declined form of a name, as sounds. */
+function nameForms(name) {
+	const sound = nameSound(name);
+	if (sound.length < 3) return [];
+	if (/[aeiou]$/.test(sound)) return [sound, ...AFTER_VOWEL.map((e) => sound.slice(0, -1) + e)];
+	return AFTER_CONSONANT.map((e) => sound + e);
+}
+/**
+* Names written in another alphabet or declined (a Latin card name in a Russian text: "Brom" in
+* the Russian "Broma", "Lyra" in "Liru"): a word whose sound is one of the name's case forms.
+* One-word names only; exact forms, so "Anna" does not catch words that merely start alike.
+*/
+function soundMentionIndex(text, names) {
+	const forms = new Set(names.map((n) => n.trim()).filter((n) => n && !/\s/.test(n)).flatMap((n) => nameForms(n)));
+	if (!forms.size) return -1;
+	for (const match of text.matchAll(/[\p{L}]+/gu)) if (forms.has(nameSound(match[0]))) return match.index ?? -1;
+	return -1;
 }
 /**
 * Candidates mentioned in the message, in order of first mention. When nobody is named, the
@@ -6336,7 +6508,7 @@ function parseLooseJson(text) {
 	}
 	return Object.keys(out).length ? out : null;
 }
-var str$1 = (v) => typeof v === "string" && v.trim() ? v.trim() : typeof v === "number" ? String(v) : void 0;
+var str$2 = (v) => typeof v === "string" && v.trim() ? v.trim() : typeof v === "number" ? String(v) : void 0;
 var num$1 = (v) => {
 	const n = typeof v === "number" ? v : typeof v === "string" && v.trim() ? Number(v) : NaN;
 	return Number.isFinite(n) ? n : void 0;
@@ -6349,12 +6521,12 @@ function characters(value) {
 	for (const item of list) if (typeof item === "string" && item.trim()) out.push({ name: item.trim() });
 	else if (item && typeof item === "object") {
 		const o = item;
-		const name = str$1(pick$1(o, "name", "who", "character"));
+		const name = str$2(pick$1(o, "name", "who", "character"));
 		if (!name) continue;
 		const ch = { name };
-		const pos = str$1(pick$1(o, "pos", "position"));
-		const pose = str$1(o.pose);
-		const action = str$1(o.action);
+		const pos = str$2(pick$1(o, "pos", "position"));
+		const pose = str$2(o.pose);
+		const action = str$2(o.action);
 		if (pos) ch.pos = pos;
 		if (pose) ch.pose = pose;
 		if (action) ch.action = action;
@@ -6364,37 +6536,37 @@ function characters(value) {
 }
 /** Marker parameters from any key spelling models use; unknown keys are ignored. */
 function normalizeParams(o) {
-	const prompt = str$1(pick$1(o, "prompt", "description", "desc", "scene", "image"));
+	const prompt = str$2(pick$1(o, "prompt", "description", "desc", "scene", "image"));
 	if (!prompt) return null;
 	const p = { prompt };
 	const set = (key, value) => {
 		if (value !== void 0) p[key] = value;
 	};
-	set("negative", str$1(pick$1(o, "negative", "neg", "uc", "undesired")));
+	set("negative", str$2(pick$1(o, "negative", "neg", "uc", "undesired")));
 	set("chars", characters(pick$1(o, "chars", "characters", "who")));
-	set("ratio", str$1(pick$1(o, "ratio", "aspect", "aspect_ratio", "aspectRatio", "orientation")));
-	set("size", str$1(pick$1(o, "size", "image_size", "imageSize", "resolution")));
-	set("model", str$1(o.model));
-	set("style", str$1(pick$1(o, "style", "preset")));
-	set("text", str$1(pick$1(o, "text", "text_in_image", "sign")));
-	set("caption", str$1(pick$1(o, "caption", "title", "figcaption")));
+	set("ratio", str$2(pick$1(o, "ratio", "aspect", "aspect_ratio", "aspectRatio", "orientation")));
+	set("size", str$2(pick$1(o, "size", "image_size", "imageSize", "resolution")));
+	set("model", str$2(o.model));
+	set("style", str$2(pick$1(o, "style", "preset")));
+	set("text", str$2(pick$1(o, "text", "text_in_image", "sign")));
+	set("caption", str$2(pick$1(o, "caption", "title", "figcaption")));
 	set("spoiler", bool(o.spoiler));
-	set("align", str$1(o.align));
+	set("align", str$2(o.align));
 	set("width", num$1(o.width));
 	set("seed", num$1(o.seed));
 	set("steps", num$1(o.steps));
 	set("scale", num$1(pick$1(o, "scale", "guidance", "cfg")));
-	set("sampler", str$1(o.sampler));
+	set("sampler", str$2(o.sampler));
 	set("rescale", num$1(pick$1(o, "rescale", "cfg_rescale")));
 	set("variety", bool(pick$1(o, "variety", "variety_boost")));
 	set("quality", bool(pick$1(o, "quality", "quality_tags")));
-	set("uc", str$1(pick$1(o, "uc_preset", "ucPreset")));
+	set("uc", str$2(pick$1(o, "uc_preset", "ucPreset")));
 	set("transparent", bool(pick$1(o, "transparent", "transparency")));
-	set("location", str$1(pick$1(o, "location", "place")));
-	set("ref", str$1(pick$1(o, "ref", "base", "from")));
-	set("vibe", str$1(o.vibe));
+	set("location", str$2(pick$1(o, "location", "place")));
+	set("ref", str$2(pick$1(o, "ref", "base", "from")));
+	set("vibe", str$2(o.vibe));
 	set("count", num$1(pick$1(o, "count", "n", "variants")));
-	set("id", str$1(o.id));
+	set("id", str$2(o.id));
 	return p;
 }
 /** Underscored URL tags (`white_hair,golden_eyes`) back to NovelAI's spelling (`white hair, golden eyes`). */
@@ -6927,8 +7099,8 @@ function matchTag(index, raw) {
 			rest: words.slice(0, i).join(" ")
 		};
 	}
-	if (candidate.length >= 5 && !hasCyrillic(candidate)) {
-		const limit = candidate.length >= 9 ? 2 : 1;
+	if (candidate.length >= 7 && !hasCyrillic(candidate)) {
+		const limit = candidate.length >= 10 ? 2 : 1;
 		let best = null;
 		for (const entry of index.entries) {
 			if (entry.name[0] !== candidate[0] || Math.abs(entry.name.length - candidate.length) > limit) continue;
@@ -7036,7 +7208,8 @@ function interpretCacheSource(text, family, glossary) {
 //#endregion
 //#region src/domain/marker-instructions.ts
 var COMMON_TAIL = `- "caption": a few words in {{captionLanguage}} shown under the picture.
-- Optional keys: "chars": [{"name":"...","pos":"left|center|right","action":"..."}] for the characters in the picture{{charsHint}}; "ratio": "portrait", "landscape", "square", "wide" or "tall"; "negative": what must not be in the picture; "text": words written in the picture; "id": a short name for the picture and "ref": the id of an earlier picture to continue its scene; "spoiler": true for a picture that gives too much away.
+- Characters whose looks are known{{charsHint}}: just use their names in "prompt" — their appearance is added automatically; describe only what they do, wear differently, feel.
+- Optional keys: "chars": [{"name":"...","pos":"left|center|right","action":"..."}] to place characters and say what each one does; "ratio": "portrait", "landscape", "square", "wide" or "tall"; "negative": what must not be in the picture; "text": words written in the picture; "id": a short name for the picture and "ref": the id of an earlier picture to continue its scene; "spoiler": true for a picture that gives too much away.
 - Write the marker exactly in this form, inside the reply where the picture belongs. Never write image links or file names, and do not talk about the markers.`;
 var MARKER_TEMPLATES = {
 	natural: `[Illustrations]
@@ -7073,6 +7246,147 @@ function markerInstruction(preset, custom, vars) {
 		charsHint: names.length ? ` (known characters: ${names.join(", ")})` : ""
 	};
 	return template.replace(/\{\{(\w+)\}\}/g, (whole, key) => values[key] ?? whole).trim();
+}
+//#endregion
+//#region src/domain/passport-gen.ts
+var LIMITS = {
+	description: 6e3,
+	personality: 1500,
+	scenario: 1500,
+	firstMessage: 2500
+};
+var FIELDS = [
+	"base",
+	"hair",
+	"eyes",
+	"body",
+	"skin",
+	"clothing",
+	"accessories"
+];
+var SYSTEM_CARD = [
+	"You read a roleplay character card and write visual \"passports\" for an image generator (NovelAI, Danbooru tags).",
+	"Answer only with JSON: {\"passports\": [...]}, one entry per thing that can be drawn:",
+	"- kind \"character\": every person or creature whose appearance the text describes (the main character and the others). Fields: name, aliases (short names, nicknames, and the name written in Cyrillic as a Russian text would spell it), base (count tag and what they are: \"1girl, elf, adult\", \"1boy, demon\", \"1other, slime girl\"), hair, eyes, body (build, height, figure, notable features), skin, clothing (usual outfit), accessories, outfits (other named outfits as {\"name\",\"tags\"}), nsfw (explicit body details only if the text gives them), negative (what must never be drawn for them).",
+	"- kind \"world\": the setting as a whole (era, technology, magic, overall look) in \"tags\".",
+	"- kind \"location\": a recurring named place, how it looks, in \"tags\".",
+	"- kind \"scenario\": only when the card is a scenario or a narrator rather than one character; the visual tags of the situation in \"tags\".",
+	"- kind \"object\": an important item or vehicle, how it looks, in \"tags\".",
+	"Rules: English Danbooru tags, lowercase, comma separated, spaces instead of underscores. Only what the text says or clearly implies, never invent; leave a field empty when unknown. Keep names as written in the card. No quality or art style tags."
+].join("\n");
+var SYSTEM_PERSONA = [
+	"You read the description of the player's persona in a roleplay and write one visual passport for an image generator (NovelAI, Danbooru tags).",
+	"Answer only with JSON: {\"passports\": [ one entry of kind \"character\" ]} with the fields name, aliases, base (count tag and what they are: \"1girl, adult\", \"1boy, elf\"), hair, eyes, body, skin, clothing, accessories, outfits ({\"name\",\"tags\"}), nsfw (explicit body details only if given), negative.",
+	"Rules: English Danbooru tags, lowercase, comma separated, spaces instead of underscores. Only what the text says or clearly implies, never invent; leave a field empty when unknown. No quality or art style tags."
+].join("\n");
+var str$1 = { type: "string" };
+var PASSPORT_GEN_SCHEMA = {
+	name: "nai_passports",
+	description: "Visual passports of the characters, world, locations, scenario and objects of a card",
+	strict: false,
+	value: {
+		type: "object",
+		properties: { passports: {
+			type: "array",
+			items: {
+				type: "object",
+				properties: {
+					kind: {
+						type: "string",
+						enum: [...PASSPORT_KINDS]
+					},
+					name: str$1,
+					aliases: {
+						type: "array",
+						items: str$1
+					},
+					...Object.fromEntries(FIELDS.map((f) => [f, str$1])),
+					outfits: {
+						type: "array",
+						items: {
+							type: "object",
+							properties: {
+								name: str$1,
+								tags: str$1
+							},
+							required: ["name", "tags"]
+						}
+					},
+					nsfw: str$1,
+					negative: str$1,
+					tags: str$1
+				},
+				required: ["kind", "name"]
+			}
+		} },
+		required: ["passports"]
+	}
+};
+function clip(text, max) {
+	const value = (text ?? "").trim();
+	return value.length > max ? `${value.slice(0, max)}…` : value;
+}
+/** System and user messages for a card or a persona. */
+function passportGenMessages(source, target) {
+	const parts = [`${target === "card" ? "Card" : "Persona"}: ${source.name}`, `Description:\n${clip(source.description, LIMITS.description)}`];
+	if (source.personality?.trim()) parts.push(`Personality:\n${clip(source.personality, LIMITS.personality)}`);
+	if (source.scenario?.trim()) parts.push(`Scenario:\n${clip(source.scenario, LIMITS.scenario)}`);
+	if (source.firstMessage?.trim()) parts.push(`First message:\n${clip(source.firstMessage, LIMITS.firstMessage)}`);
+	return {
+		system: target === "card" ? SYSTEM_CARD : SYSTEM_PERSONA,
+		user: parts.join("\n\n")
+	};
+}
+/** The first JSON value in a text (code fences, chatter around it). */
+function extractJson(text) {
+	const cleaned = text.replace(/```(?:json)?/gi, "").trim();
+	try {
+		return JSON.parse(cleaned);
+	} catch {}
+	const start = cleaned.search(/[[{]/);
+	if (start < 0) return null;
+	const close = cleaned[start] === "{" ? "}" : "]";
+	const end = cleaned.lastIndexOf(close);
+	if (end <= start) return null;
+	try {
+		return JSON.parse(cleaned.slice(start, end + 1));
+	} catch {
+		return null;
+	}
+}
+var asText$1 = (value) => typeof value === "string" ? value : Array.isArray(value) ? value.filter((v) => typeof v === "string").join(", ") : "";
+/** Danbooru tags as NovelAI reads them: spaces, not underscores; duplicates dropped. */
+function tags(value) {
+	return joinTags(asText$1(value).replace(/_/g, " "));
+}
+/** Passports from the answer; entries without a name or anything visual are dropped. */
+function parseGeneratedPassports(raw, fallbackName = "") {
+	const data = typeof raw === "string" ? extractJson(raw) : raw;
+	const list = Array.isArray(data) ? data : data && typeof data === "object" && Array.isArray(data.passports) ? data.passports : [];
+	const result = [];
+	for (const item of list) {
+		if (!item || typeof item !== "object") continue;
+		const o = item;
+		const kind = PASSPORT_KINDS.includes(String(o.kind)) ? o.kind : "character";
+		const name = asText$1(o.name).trim() || (kind === "character" ? fallbackName : "");
+		if (!name) continue;
+		const passport = defaultPassport(kind, name, newPassportId());
+		passport.aliases = (Array.isArray(o.aliases) ? o.aliases.map(asText$1) : asText$1(o.aliases).split(",")).map((a) => a.trim()).filter((a) => a && a.toLowerCase() !== name.toLowerCase());
+		if (kind === "character") {
+			for (const field of FIELDS) passport.slots[field] = tags(o[field]);
+			passport.outfits = (Array.isArray(o.outfits) ? o.outfits : []).filter((x) => !!x && typeof x === "object").map((x) => ({
+				name: asText$1(x.name).trim(),
+				tags: tags(x.tags)
+			})).filter((x) => x.name && x.tags);
+			passport.nsfw = {
+				enabled: false,
+				tags: tags(o.nsfw)
+			};
+		} else passport.tags = tags(o.tags);
+		passport.negative = tags(o.negative);
+		if (kind === "character" ? PASSPORT_SLOTS.some((slot) => passport.slots[slot]) || passport.outfits.length > 0 : passport.tags !== "") result.push(passport);
+	}
+	return result;
 }
 //#endregion
 //#region src/features/auto/auto-generation.ts
@@ -8739,11 +9053,14 @@ var Pipeline = class {
 		await c.eventSource.emit(c.eventTypes.SD_PROMPT_PROCESSING ?? "sd_prompt_processing", eventData);
 		scene = eventData.prompt;
 		const interpreter = this.interpreter;
+		const targetModel = String(o.generation?.model ?? s.generation.model);
+		const cyrillicOnly = (req.interpret ?? (req.scene === void 0 ? "auto" : "cyrillic")) === "cyrillic";
 		const interpretContext = {
-			model: String(o.generation?.model ?? s.generation.model),
-			cyrillicOnly: (req.interpret ?? (req.scene === void 0 ? "auto" : "cyrillic")) === "cyrillic",
+			model: targetModel,
+			cyrillicOnly,
 			signal: req.signal
 		};
+		const charactersCyrillicOnly = req.interpretCharacters ? req.interpretCharacters === "cyrillic" : cyrillicOnly;
 		let sourcePrompt = interpreter?.original?.(scene);
 		if (interpreter && scene.trim()) {
 			const result = await interpreter.interpret(scene, interpretContext);
@@ -8770,7 +9087,10 @@ var Pipeline = class {
 			let changed = false;
 			const converted = await Promise.all(characters.map(async (ch) => {
 				if (!ch.enabled) return ch;
-				const prompt = ch.prompt.trim() ? await interpreter.interpret(ch.prompt, interpretContext) : null;
+				const prompt = ch.prompt.trim() ? await interpreter.interpret(ch.prompt, {
+					...interpretContext,
+					cyrillicOnly: charactersCyrillicOnly
+				}) : null;
 				const negative = hasCyrillic(ch.negative) ? await interpreter.interpret(ch.negative, {
 					...interpretContext,
 					negative: true
@@ -9395,9 +9715,17 @@ var InlineImages = class {
 };
 //#endregion
 //#region src/features/characters/passport-store.ts
+function cardField(character) {
+	return character?.data?.extensions?.[CARD_FIELD];
+}
+/** Every passport of the card (characters, world, locations, scenario, objects). */
+function cardPassports(character) {
+	const field = cardField(character);
+	return normalizePassportList(field?.passports, field?.passport);
+}
+/** The passport of the card's own character (the composer, sprites and tools use it). */
 function cardPassport(character) {
-	const field = character?.data?.extensions?.[CARD_FIELD];
-	return normalizePassport(field?.passport);
+	return primaryPassport(cardPassports(character), character?.name ?? "");
 }
 /** Lazily loaded cards (shallow) have no extensions until unshallowed. */
 async function loadCharacter(index) {
@@ -9405,15 +9733,25 @@ async function loadCharacter(index) {
 	if (c.characters[index]?.shallow) await c.unshallowCharacter(index);
 	return ctx().characters[index];
 }
-async function saveCardPassport(index, passport) {
+async function saveCardPassports(index, passports) {
 	const c = ctx();
 	const character = await loadCharacter(index);
 	if (!character) return;
 	const existing = character.data?.extensions?.["nai_studio"] ?? {};
+	const main = primaryPassport(passports, character.name);
 	await c.writeExtensionField(index, CARD_FIELD, {
 		...existing,
-		passport
+		passports,
+		passport: main ?? void 0
 	});
+}
+/** Replaces one passport of the card by id (or adds it). */
+async function saveCardPassport(index, passport) {
+	const list = cardPassports(await loadCharacter(index));
+	const at = list.findIndex((p) => p.id === passport.id);
+	if (at >= 0) list[at] = passport;
+	else list.push(passport);
+	await saveCardPassports(index, list);
 }
 async function currentPersonaKey() {
 	try {
@@ -9452,36 +9790,76 @@ function aliasesOf(name) {
 	const first = name.trim().split(/\s+/)[0] ?? "";
 	return first && first !== name.trim() ? [first] : [];
 }
-async function characterCandidate(index) {
+/**
+* The people of a card: one candidate per character passport (the main one keeps the card key);
+* a card without character passports is one candidate with its character prompt, unless it is a
+* scenario (then nobody is drawn for the card itself).
+*/
+async function characterCandidates(index) {
 	const character = await loadCharacter(index);
-	if (!character) return null;
+	if (!character) return [];
 	const prompt = readCharacterPrompt(character);
-	return {
-		key: avatarKey(character.avatar),
+	const key = avatarKey(character.avatar);
+	const list = cardPassports(character);
+	const people = list.filter((p) => p.kind === "character" && !isPassportEmpty(p));
+	if (people.length) {
+		const main = primaryPassport(people, character.name);
+		return people.map((passport) => {
+			const isMain = passport === main;
+			const name = passport.name || character.name;
+			return {
+				key: isMain ? key : `${key}#${passport.id}`,
+				name,
+				aliases: [.../* @__PURE__ */ new Set([...passport.aliases, ...aliasesOf(name)])],
+				passport,
+				fallbackPrompt: isMain ? prompt.positive : "",
+				fallbackNegative: isMain ? prompt.negative : "",
+				isUser: false
+			};
+		});
+	}
+	if (list.some((p) => p.kind === "scenario")) return [];
+	return [{
+		key,
 		name: character.name,
 		aliases: aliasesOf(character.name),
-		passport: cardPassport(character),
+		passport: null,
 		fallbackPrompt: prompt.positive,
 		fallbackNegative: prompt.negative,
 		isUser: false
+	}];
+}
+/** Card indexes of the current chat: the 1:1 character or every group member. */
+function chatCardIndexes() {
+	const c = ctx();
+	if (c.groupId) return (c.groups.find((g) => g.id === c.groupId)?.members ?? []).map((avatar) => c.characters.findIndex((ch) => ch.avatar === avatar)).filter((i) => i >= 0);
+	if (c.characterId !== void 0 && c.characterId !== null && c.characterId !== "") return [Number(c.characterId)];
+	return [];
+}
+/** Setting of the chat from its cards: world and scenario tags, named locations. */
+async function sceneSetting() {
+	const world = [];
+	const locations = [];
+	for (const index of chatCardIndexes()) for (const passport of cardPassports(await loadCharacter(index))) if (passport.kind === "world" || passport.kind === "scenario") world.push(passport.tags);
+	else if (passport.kind === "location" && passport.name && passport.tags.trim()) locations.push({
+		name: passport.name,
+		aliases: passport.aliases,
+		tags: passport.tags
+	});
+	return {
+		world: joinTags(...world),
+		locations
 	};
+}
+/** Tags of the locations a text names (whole-word name or alias). */
+function mentionedLocationTags(text, locations) {
+	return joinTags(...locations.filter((l) => mentionIndex(text, [l.name, ...l.aliases]) >= 0).map((l) => l.tags));
 }
 /** Characters of the current chat (the 1:1 character or every group member) and the persona. */
 async function sceneCandidates() {
 	const c = ctx();
 	const result = [];
-	if (c.groupId) {
-		const members = c.groups.find((g) => g.id === c.groupId)?.members ?? [];
-		for (const avatar of members) {
-			const index = c.characters.findIndex((ch) => ch.avatar === avatar);
-			if (index < 0) continue;
-			const candidate = await characterCandidate(index);
-			if (candidate) result.push(candidate);
-		}
-	} else if (c.characterId !== void 0 && c.characterId !== null && c.characterId !== "") {
-		const candidate = await characterCandidate(Number(c.characterId));
-		if (candidate) result.push(candidate);
-	}
+	for (const index of chatCardIndexes()) result.push(...await characterCandidates(index));
 	const personaKey = await currentPersonaKey();
 	result.push({
 		key: `${PERSONA_PREFIX}${personaKey}`,
@@ -9571,6 +9949,8 @@ var SceneService = class {
 			applyPairLayout(spec, caps);
 		}
 		if (settings().scene.llmBase && source.text.trim()) spec.base = await this.describeLocation();
+		const setting = await sceneSetting();
+		spec.base = joinTags(spec.base, mentionedLocationTags(source.text, setting.locations), setting.world);
 		return {
 			spec,
 			candidates
@@ -10754,7 +11134,7 @@ var InlineRenderer = class {
 		const d = entry.display;
 		const running = this.markers?.isRunning(entry.id) ?? false;
 		const state = marker.status === "error" ? "error" : running ? "pending" : "interrupted";
-		span.className = `naist-inline naist-marker naist-marker-${state}`;
+		span.className = `naist-inline naist-inline-marker naist-inline-marker-${state}`;
 		span.removeAttribute("style");
 		for (const [key, value] of Object.entries(displayStyle(d))) span.style.setProperty(key, value);
 		const box = el("span", "naist-marker-box");
@@ -11863,17 +12243,26 @@ var MarkerService = class {
 				negative = join(negative, saved.negative);
 			} else scene = join(style, scene);
 		}
-		if (params.chars?.length) {
-			const built = await this.scenes.markerScene(scene, params.chars);
+		let chars = params.chars;
+		if (!chars?.length) {
+			const known = (await sceneCandidates()).filter((cand) => cand.passport !== null);
+			const named = detectParticipants(`${params.prompt} ${params.caption ?? ""}`, known, { max: 4 });
+			if (named.length) chars = named.map((cand) => ({ name: cand.name }));
+		}
+		if (chars?.length) {
+			const built = await this.scenes.markerScene(scene, chars);
 			if (built) {
 				scene = built.prompt;
 				generation.characters = built.characters;
 				generation.useCoords = built.useCoords;
 			} else {
-				const actions = params.chars.map((ch) => [ch.pose, ch.action].filter(Boolean).join(" ")).filter(Boolean);
+				const actions = chars.map((ch) => [ch.pose, ch.action].filter(Boolean).join(" ")).filter(Boolean);
 				scene = [scene, ...actions].join(", ");
 			}
 		}
+		const setting = await sceneSetting();
+		const place = mentionedLocationTags(`${params.location ?? ""} ${params.prompt}`, setting.locations);
+		if (place || setting.world) scene = joinTags(scene, place, setting.world);
 		if (params.text && caps.family !== "v3") scene = `${scene}, text: ${params.text}`;
 		if (params.location && s.continuity.enabled) await setCurrentLocation(params.location).catch(() => void 0);
 		const requestPatch = params.ref ? await this.refPatch(params.ref, dims) : void 0;
@@ -11889,6 +12278,7 @@ var MarkerService = class {
 			scene,
 			mode: MODE.FREE,
 			interpret: "auto",
+			interpretCharacters: "cyrillic",
 			overrides,
 			...requestPatch ? {
 				requestPatch,
@@ -11931,6 +12321,39 @@ var MarkerService = class {
 	}
 };
 //#endregion
+//#region src/integration/macros.ts
+function registerMacros() {
+	const c = ctx();
+	const positive = () => currentCharacterPrompt().positive;
+	const negative = () => currentCharacterPrompt().negative;
+	if (c.powerUserSettings.experimental_macro_engine !== false && c.macros) {
+		const category = c.macros.category?.PROMPTS;
+		c.macros.register("charPrefix", {
+			category,
+			description: t("naist.macro.charPrefix"),
+			handler: positive
+		});
+		c.macros.register("charNegativePrefix", {
+			category,
+			description: t("naist.macro.charNegativePrefix"),
+			handler: negative
+		});
+	} else if (c.registerMacro) {
+		c.registerMacro("charPrefix", positive, t("naist.macro.charPrefix"));
+		c.registerMacro("charNegativePrefix", negative, t("naist.macro.charNegativePrefix"));
+	}
+}
+/** {{nai_characters}}: characters of the chat with a passport (their looks are added by name). */
+function registerCharactersMacro(names) {
+	const c = ctx();
+	if (c.powerUserSettings.experimental_macro_engine !== false && c.macros) c.macros.register("nai_characters", {
+		category: c.macros.category?.PROMPTS,
+		description: t("naist.macro.characters"),
+		handler: names
+	});
+	else if (c.registerMacro) c.registerMacro("nai_characters", names, t("naist.macro.characters"));
+}
+//#endregion
 //#region src/integration/markers-setup.ts
 var PROMPT_KEY = "nai_studio_markers";
 /** extension_prompt_types.IN_CHAT and extension_prompt_roles in public/script.js. */
@@ -11942,6 +12365,8 @@ var ROLES = {
 };
 var NO_INSTRUCTION = /* @__PURE__ */ new Set(["impersonate", "quiet"]);
 var service = null;
+/** Names for {{nai_characters}}, refreshed with the instruction. */
+var knownCharacters = "";
 /** Placeholder as <img> for display regexes; the id is in the attribute and in the src fragment. */
 function compatImage(id) {
 	return `<img ${IMG_ATTR}="${id}" class="naist-compat" src="${PIXEL}${WIDGET_SRC_MARK}${id}" alt="">`;
@@ -11971,20 +12396,19 @@ async function refreshMarkerInstruction() {
 	const c = ctx();
 	const s = settings().markers;
 	let value = "";
-	if (s.enabled && s.inject) {
-		let chars = [];
-		try {
-			chars = (await sceneCandidates()).filter((cand) => cand.passport).map((cand) => cand.name);
-		} catch (error) {
-			log.warn("marker instruction: characters not available", error);
-		}
-		value = markerInstruction(s.preset, s.template, {
-			min: s.min,
-			max: s.max,
-			captionLanguage: s.captionLanguage,
-			chars
-		});
+	let chars = [];
+	if (s.enabled) try {
+		chars = (await sceneCandidates()).filter((cand) => cand.passport).map((cand) => cand.name);
+	} catch (error) {
+		log.warn("marker instruction: characters not available", error);
 	}
+	knownCharacters = chars.join(", ");
+	if (s.enabled && s.inject) value = markerInstruction(s.preset, s.template, {
+		min: s.min,
+		max: s.max,
+		captionLanguage: s.captionLanguage,
+		chars
+	});
 	c.setExtensionPrompt(PROMPT_KEY, value, IN_CHAT, Math.max(0, s.depth), false, ROLES[s.role] ?? 0, () => {
 		const now = settings().markers;
 		return now.enabled && now.inject && !NO_INSTRUCTION.has(service?.currentType ?? "");
@@ -11995,6 +12419,11 @@ function setupMarkers(pipeline, inline, scenes) {
 	const markers = new MarkerService(pipeline, inline, scenes);
 	service = markers;
 	c.messageFormatter.addHook(formatHook, { stage: "beforeRegex" });
+	try {
+		registerCharactersMacro(() => knownCharacters);
+	} catch (error) {
+		log.warn("{{nai_characters}} macro not registered", error);
+	}
 	const renderer = inlineRenderer();
 	renderer?.setMarkerHooks({
 		isRunning: (id) => markers.isRunning(id),
@@ -12032,6 +12461,125 @@ function onMarkerSettingChange(path) {
 			if (document.querySelector(`#chat .mes[mesid="${id}"]`)) c.updateMessageBlock(id, m);
 		});
 	}
+}
+//#endregion
+//#region src/features/language/llm.ts
+var asText = (value) => typeof value === "string" ? value : value && typeof value === "object" && "content" in value ? asText(value.content) : value === void 0 || value === null ? "" : JSON.stringify(value);
+async function viaMain(req) {
+	const c = ctx();
+	if (c.mainApi === "openai") return asText(await c.generateRaw({
+		prompt: req.user,
+		systemPrompt: req.system,
+		responseLength: req.maxTokens,
+		...req.schema ? { jsonSchema: req.schema } : {}
+	}));
+	const answer = asText(await c.generateRaw({
+		prompt: [{
+			role: "system",
+			content: `${req.system}\n\n${req.user}`
+		}],
+		prefill: "{",
+		responseLength: req.maxTokens
+	}));
+	return answer.trimStart().startsWith("{") ? answer : `{${answer}`;
+}
+async function viaProfile(req) {
+	const service = ctx().ConnectionManagerRequestService;
+	const id = settings().language.profileId;
+	if (!id) throw new NaiError("translation-failed", "none", { message: "no connection profile selected" });
+	const chat = service.validateProfile(service.getProfile(id)).selected === "openai";
+	const text = asText(chat ? await service.sendRequest(id, [{
+		role: "system",
+		content: req.system
+	}, {
+		role: "user",
+		content: req.user
+	}], req.maxTokens, {
+		stream: false,
+		extractData: true,
+		includePreset: false
+	}, req.schema ? { json_schema: req.schema } : {}) : await service.sendRequest(id, `${req.system}\n\n${req.user}\n{`, req.maxTokens, {
+		stream: false,
+		extractData: true,
+		includePreset: true,
+		includeInstruct: false
+	}));
+	return chat || text.trimStart().startsWith("{") ? text : `{${text}`;
+}
+async function viaNovelAi(req) {
+	return await novelAiText({
+		fetch: (input, init) => fetch(input, init),
+		headers: () => requestHeaders()
+	}, {
+		model: settings().language.novelaiModel,
+		messages: [{
+			role: "system",
+			content: req.system
+		}, {
+			role: "user",
+			content: req.user
+		}],
+		maxTokens: req.maxTokens
+	});
+}
+async function askLlm(req) {
+	try {
+		const backend = settings().language.backend;
+		if (backend === "profile") return await viaProfile(req);
+		if (backend === "novelai") return await viaNovelAi(req);
+		return await viaMain(req);
+	} catch (error) {
+		if (error instanceof NaiError) throw error;
+		throw new NaiError("translation-failed", "none", { message: String(error?.message ?? error) });
+	}
+}
+//#endregion
+//#region src/features/characters/passport-generator.ts
+async function ask(source, target) {
+	if (!source.description.trim() && !source.firstMessage?.trim()) throw new NaiError("translation-failed", "none", { message: "the description is empty" });
+	const { system, user } = passportGenMessages(source, target);
+	const answer = await askLlm({
+		system,
+		user,
+		schema: PASSPORT_GEN_SCHEMA,
+		maxTokens: target === "card" ? 3500 : 1200
+	});
+	const passports = parseGeneratedPassports(answer, source.name);
+	if (!passports.length) {
+		log.warn("passport generation: no usable passports in", answer.slice(0, 300));
+		throw new NaiError("translation-failed", "none", { message: "the answer had no usable passports" });
+	}
+	return passports;
+}
+/** Passports for every character, the world, places, the scenario and objects of a card. */
+async function generateCardPassports(index) {
+	const character = await loadCharacter(index);
+	if (!character) throw new NaiError("no-usable-message", "none");
+	const c = ctx();
+	const sub = (text) => c.substituteParams(text ?? "");
+	const passports = await ask({
+		name: character.name,
+		description: sub(character.description),
+		personality: sub(character.personality),
+		scenario: sub(character.scenario),
+		firstMessage: sub(character.first_mes)
+	}, "card");
+	const own = passports.find((p) => p.kind === "character" && p.name.toLowerCase() === character.name.toLowerCase());
+	if (own) own.name = "";
+	return passports;
+}
+/** One character passport from the current persona's description. */
+async function generatePersonaPassport() {
+	const c = ctx();
+	const description = String(c.powerUserSettings.persona_description ?? "");
+	const [first] = await ask({
+		name: c.name1,
+		description: c.substituteParams(description)
+	}, "persona");
+	const passport = first;
+	passport.kind = "character";
+	passport.name = "";
+	return passport;
 }
 //#endregion
 //#region src/features/prompt-tools/tag-db.ts
@@ -12632,7 +13180,7 @@ function stateLabel(state) {
 	return state.id in STATE_PRESETS ? t(`naist.state.${state.id}`) : state.id;
 }
 /** Opens the editor; resolves with the edited passport or null when cancelled. */
-async function editPassport(name, initial) {
+async function editPassport(name, initial, options = {}) {
 	const c = ctx();
 	const passport = structuredClone(initial ?? defaultPassport());
 	const root = document.createElement("div");
@@ -12648,9 +13196,25 @@ async function editPassport(name, initial) {
                     <label class="checkbox_label"><input type="checkbox" class="naist-state-on"${s.enabled ? " checked" : ""}><span>${escapeHtml$2(stateLabel(s))}</span></label>
                     <input class="text_pole naist-grow naist-state-tags" value="${escapeHtml$2(s.tags)}">
                 </div>`).join("") + `<div class="naist-row"><input class="text_pole naist-grow naist-state-new" placeholder="${escapeHtml$2(t("naist.passport.newState"))}"><div class="menu_button naist-state-add">${escapeHtml$2(t("naist.passport.addState"))}</div></div>`;
+	const identity = options.identity ? `<div class="naist-grid2">
+            <div><label>${escapeHtml$2(t("naist.passport.name"))}</label>
+                <input class="text_pole naist-passport-name" value="${escapeHtml$2(passport.name)}" placeholder="${escapeHtml$2(name)}"></div>
+            <div><label>${escapeHtml$2(t("naist.passport.kind"))}</label>
+                <select class="text_pole naist-passport-kind">${PASSPORT_KINDS.map((k) => `<option value="${k}"${k === passport.kind ? " selected" : ""}>${escapeHtml$2(t(`naist.passport.kind.${k}`))}</option>`).join("")}</select></div>
+        </div>
+        <label>${escapeHtml$2(t("naist.passport.aliases"))}</label>
+        <input class="text_pole naist-passport-aliases" value="${escapeHtml$2(passport.aliases.join(", "))}" placeholder="${escapeHtml$2(t("naist.passport.aliasesHint"))}">` : "";
 	root.innerHTML = `
-        <h3>${escapeHtml$2(t("naist.passport.title", { name }))}</h3>
+        <h3>${escapeHtml$2(t("naist.passport.title", { name: passport.name || name }))}</h3>
         <div class="naist-hint">${escapeHtml$2(t("naist.passport.hint"))}</div>
+        ${options.generate ? `<div class="naist-row"><div class="menu_button naist-passport-generate"><i class="fa-solid fa-wand-magic-sparkles"></i> ${escapeHtml$2(t("naist.passport.generateOne"))}</div><span class="naist-muted">${escapeHtml$2(t("naist.passport.generateHint"))}</span></div>` : ""}
+        ${identity}
+        <div class="naist-passport-tags-box">
+            <label>${escapeHtml$2(t("naist.passport.tags"))}</label>
+            <textarea class="text_pole textarea_compact naist-slot-input naist-passport-tags" rows="3">${escapeHtml$2(passport.tags)}</textarea>
+            <div class="naist-hint">${escapeHtml$2(t("naist.passport.tagsHint"))}</div>
+        </div>
+        <div class="naist-passport-character">
         <div class="naist-grid2">${PASSPORT_SLOTS.map((slot) => `<div><label>${escapeHtml$2(t(`naist.slot.${slot}`))}</label>
                 <textarea class="text_pole textarea_compact naist-slot-input" data-slot="${slot}" rows="2">${escapeHtml$2(passport.slots[slot])}</textarea></div>`).join("")}</div>
         <div class="naist-section">
@@ -12679,7 +13243,19 @@ async function editPassport(name, initial) {
             <label class="checkbox_label"><input type="checkbox" class="naist-pos-on"${passport.position ? " checked" : ""}><span>${escapeHtml$2(t("naist.passport.position"))}</span></label>
             <input type="number" min="0" max="1" step="0.1" class="text_pole naist-pos-x" value="${passport.position?.x ?? .5}" title="x">
             <input type="number" min="0" max="1" step="0.1" class="text_pole naist-pos-y" value="${passport.position?.y ?? .5}" title="y">
+        </div>
         </div>`;
+	const negativeBlock = root.querySelector(".naist-negative")?.previousElementSibling;
+	const characterBlock = root.querySelector(".naist-passport-character");
+	if (negativeBlock && characterBlock) characterBlock.after(negativeBlock, root.querySelector(".naist-negative"));
+	const kindSelect = root.querySelector(".naist-passport-kind");
+	const applyKind = () => {
+		const kind = kindSelect?.value ?? passport.kind;
+		root.querySelector(".naist-passport-character")?.classList.toggle("naist-hidden", kind !== "character");
+		root.querySelector(".naist-passport-tags-box")?.classList.toggle("naist-hidden", kind === "character");
+	};
+	kindSelect?.addEventListener("change", applyKind);
+	applyKind();
 	const outfitsBox = root.querySelector(".naist-outfits");
 	const statesBox = root.querySelector(".naist-states");
 	const activeSelect = root.querySelector(".naist-active-outfit");
@@ -12703,8 +13279,38 @@ async function editPassport(name, initial) {
 		activeSelect.value = passport.outfits.some((o) => o.name === current) ? current : "";
 	};
 	fillActive();
+	const fill = (generated) => {
+		root.querySelectorAll(".naist-slot-input[data-slot]").forEach((area) => {
+			const slot = area.dataset.slot;
+			if (slot && generated.slots[slot]) area.value = generated.slots[slot];
+		});
+		const tags = root.querySelector(".naist-passport-tags");
+		if (tags && generated.tags) tags.value = generated.tags;
+		const nsfw = root.querySelector(".naist-nsfw-tags");
+		if (nsfw && generated.nsfw.tags) nsfw.value = generated.nsfw.tags;
+		const negative = root.querySelector(".naist-negative");
+		if (negative && generated.negative) negative.value = generated.negative;
+		const aliases = root.querySelector(".naist-passport-aliases");
+		if (aliases && generated.aliases.length) aliases.value = generated.aliases.join(", ");
+		if (generated.outfits.length) {
+			readOutfits();
+			const names = new Set(passport.outfits.map((o) => o.name.toLowerCase()));
+			passport.outfits.push(...generated.outfits.filter((o) => !names.has(o.name.toLowerCase())));
+			outfitsBox.innerHTML = renderOutfits();
+			fillActive();
+		}
+	};
 	root.addEventListener("click", (event) => {
 		const target = event.target;
+		const generateButton = target.closest(".naist-passport-generate");
+		if (generateButton && options.generate && !generateButton.classList.contains("disabled")) {
+			generateButton.classList.add("disabled");
+			options.generate().then((generated) => {
+				fill(generated);
+				toastr.success(t("naist.passport.generated"));
+			}).catch(reportGenerationError).finally(() => generateButton.classList.remove("disabled"));
+			return;
+		}
 		if (target.classList.contains("naist-outfit-add")) {
 			readOutfits();
 			passport.outfits.push({
@@ -12742,10 +13348,16 @@ async function editPassport(name, initial) {
 		large: true,
 		allowVerticalScrolling: true
 	}) !== c.POPUP_RESULT.AFFIRMATIVE) return null;
-	root.querySelectorAll(".naist-slot-input").forEach((area) => {
+	root.querySelectorAll(".naist-slot-input[data-slot]").forEach((area) => {
 		const slot = area.dataset.slot;
 		if (slot) passport.slots[slot] = area.value.trim();
 	});
+	passport.tags = root.querySelector(".naist-passport-tags")?.value.trim() ?? passport.tags;
+	if (options.identity) {
+		passport.name = root.querySelector(".naist-passport-name")?.value.trim() ?? passport.name;
+		passport.kind = kindSelect?.value ?? passport.kind;
+		passport.aliases = (root.querySelector(".naist-passport-aliases")?.value ?? "").split(",").map((a) => a.trim()).filter(Boolean);
+	}
 	readOutfits();
 	passport.outfits = passport.outfits.filter((o) => o.name);
 	passport.activeOutfit = passport.outfits.some((o) => o.name === activeSelect.value) ? activeSelect.value : "";
@@ -13026,7 +13638,8 @@ async function openComposer(service, pipeline, opts) {
 				if (!passport) return;
 				if (p.key.startsWith("persona:")) savePersonaPassport(p.key.slice(PERSONA_PREFIX.length), passport);
 				else {
-					const charIndex = c.characters.findIndex((ch) => ch.avatar.replace(/\.[^/.]+$/, "") === p.key);
+					const cardKey = p.key.split("#")[0];
+					const charIndex = c.characters.findIndex((ch) => ch.avatar.replace(/\.[^/.]+$/, "") === cardKey);
 					if (charIndex >= 0) await saveCardPassport(charIndex, passport);
 				}
 				p.passport = passport;
@@ -13087,6 +13700,138 @@ async function openComposer(service, pipeline, opts) {
 		log.warn("scene generation failed", error);
 		reportGenerationError(error);
 	}
+}
+//#endregion
+//#region src/ui/passport-manager.ts
+var KIND_ICON = {
+	character: "fa-user",
+	world: "fa-earth-europe",
+	location: "fa-map-location-dot",
+	scenario: "fa-scroll",
+	object: "fa-cube"
+};
+/** How generated passports join the list: replace everything, or add the ones not there yet. */
+async function chooseMerge() {
+	const c = ctx();
+	const result = await c.callGenericPopup(t("naist.passports.mergeQuestion"), c.POPUP_TYPE.CONFIRM, "", {
+		okButton: t("naist.passports.mergeAdd"),
+		cancelButton: t("naist.inspector.cancel"),
+		customButtons: [{
+			text: t("naist.passports.mergeReplace"),
+			result: 3,
+			classes: []
+		}]
+	});
+	if (result === c.POPUP_RESULT.AFFIRMATIVE) return "add";
+	if (result === 3) return "replace";
+	return null;
+}
+function sameName(a, b, cardName) {
+	return a.kind === b.kind && (a.name || cardName).trim().toLowerCase() === (b.name || cardName).trim().toLowerCase();
+}
+async function openPassportManager(index, actions) {
+	const c = ctx();
+	const character = await loadCharacter(index);
+	if (!character) return;
+	let list = structuredClone(cardPassports(character));
+	let dirty = false;
+	const root = document.createElement("div");
+	root.className = "naist-dialog naist-passports";
+	const render = () => {
+		const main = primaryPassport(list, character.name);
+		const rows = list.map((p, i) => {
+			const label = p.name || character.name;
+			const summary = passportTags(p, { allowNsfw: false });
+			return `<div class="naist-passport-row" data-index="${i}">
+                    <i class="fa-solid ${KIND_ICON[p.kind]} naist-passport-kind-icon" title="${escapeHtml$2(t(`naist.passport.kind.${p.kind}`))}"></i>
+                    <div class="naist-grow">
+                        <div><b>${escapeHtml$2(label)}</b> <span class="naist-muted">${escapeHtml$2(t(`naist.passport.kind.${p.kind}`))}${p === main ? ` · ${escapeHtml$2(t("naist.passports.main"))}` : ""}${p.aliases.length ? ` · ${escapeHtml$2(p.aliases.join(", "))}` : ""}</span></div>
+                        <div class="naist-muted naist-passport-summary">${escapeHtml$2(summary || t("naist.passports.empty"))}</div>
+                    </div>
+                    ${p.kind === "character" ? `<div class="menu_button fa-solid fa-masks-theater naist-passport-emotions" title="${escapeHtml$2(t("naist.passports.emotions"))}"></div>` : ""}
+                    <div class="menu_button fa-solid fa-pen-to-square naist-passport-edit" title="${escapeHtml$2(t("naist.passports.edit"))}"></div>
+                    <div class="menu_button fa-solid fa-trash-can naist-passport-remove" title="${escapeHtml$2(t("naist.passport.remove"))}"></div>
+                </div>`;
+		}).join("");
+		root.innerHTML = `
+            <h3>${escapeHtml$2(t("naist.passports.title", { name: character.name }))}</h3>
+            <div class="naist-hint">${escapeHtml$2(t("naist.passports.hint"))}</div>
+            <div class="naist-row">
+                <div class="menu_button naist-passports-generate"><i class="fa-solid fa-wand-magic-sparkles"></i> ${escapeHtml$2(t("naist.passports.generate"))}</div>
+                <span class="naist-muted">${escapeHtml$2(t("naist.passports.generateHint"))}</span>
+            </div>
+            <div class="naist-passport-list">${rows || `<div class="naist-muted">${escapeHtml$2(t("naist.passports.none"))}</div>`}</div>
+            <div class="naist-row">
+                <select class="text_pole naist-passports-kind">${PASSPORT_KINDS.map((k) => `<option value="${k}">${escapeHtml$2(t(`naist.passport.kind.${k}`))}</option>`).join("")}</select>
+                <div class="menu_button naist-passports-add"><i class="fa-solid fa-plus"></i> ${escapeHtml$2(t("naist.passports.add"))}</div>
+            </div>`;
+		localize(root);
+	};
+	const edit = async (i, fresh = false) => {
+		const current = list[i];
+		if (!current) return;
+		const edited = await editPassport(character.name, current, { identity: true });
+		if (!edited) {
+			if (fresh) {
+				list.splice(i, 1);
+				render();
+			}
+			return;
+		}
+		list[i] = edited;
+		dirty = true;
+		render();
+	};
+	root.addEventListener("click", (event) => {
+		const target = event.target;
+		const row = target.closest(".naist-passport-row");
+		const i = Number(row?.dataset.index);
+		if (target.closest(".naist-passport-edit")) edit(i);
+		else if (target.closest(".naist-passport-remove")) {
+			list.splice(i, 1);
+			dirty = true;
+			render();
+		} else if (target.closest(".naist-passport-emotions")) {
+			const passport = list[i];
+			if (!passport) return;
+			(dirty ? saveCardPassports(index, list) : Promise.resolve()).then(() => {
+				dirty = false;
+				actions.emotions(index, passport.id);
+			}).catch(reportGenerationError);
+		} else if (target.closest(".naist-passports-add")) {
+			const kind = root.querySelector(".naist-passports-kind")?.value ?? "character";
+			const fresh = defaultPassport(kind, kind === "character" && !list.some((p) => p.kind === "character") ? "" : t(`naist.passport.kind.${kind}`));
+			list.push(fresh);
+			dirty = true;
+			edit(list.length - 1, true);
+		} else if (target.closest(".naist-passports-generate")) {
+			const button = target.closest(".naist-passports-generate");
+			if (!button || button.classList.contains("disabled")) return;
+			button.classList.add("disabled");
+			button.querySelector("i")?.classList.add("fa-spin");
+			generateCardPassports(index).then(async (generated) => {
+				const mode = list.some((p) => !isPassportEmpty(p)) ? await chooseMerge() : "replace";
+				if (!mode) return;
+				if (mode === "replace") list = generated;
+				else list.push(...generated.filter((g) => !list.some((p) => sameName(p, g, character.name))));
+				dirty = true;
+				render();
+				toastr.success(t("naist.passports.generated", { count: generated.length }));
+			}).catch(reportGenerationError).finally(() => {
+				root.querySelector(".naist-passports-generate")?.classList.remove("disabled");
+				root.querySelector(".naist-passports-generate i")?.classList.remove("fa-spin");
+			});
+		}
+	});
+	render();
+	if (await c.callGenericPopup(root, c.POPUP_TYPE.CONFIRM, "", {
+		okButton: t("naist.passport.save"),
+		cancelButton: t("naist.inspector.cancel"),
+		wide: true,
+		allowVerticalScrolling: true
+	}) !== c.POPUP_RESULT.AFFIRMATIVE || !dirty) return;
+	await saveCardPassports(index, list);
+	toastr.success(t("naist.passport.saved", { name: character.name }));
 }
 //#endregion
 //#region src/ui/pose-library.ts
@@ -13168,6 +13913,11 @@ async function openPoseLibrary() {
 //#region src/integration/scene-setup.ts
 var MENU_OPTIONS = [["naist_char_composer", "naist.card.composer"], ["naist_char_passport", "naist.card.passport"]];
 var state$1 = null;
+var emotionsHandler = () => {};
+/** The sprite generator registers itself here (it lives with the Phase 6 tools). */
+function setEmotionsHandler(handler) {
+	emotionsHandler = handler;
+}
 async function openSceneComposer(auto = true, focusKey) {
 	if (!state$1) return;
 	try {
@@ -13185,20 +13935,30 @@ function editedCharacterIndex() {
 	const index = Number(c.characterId);
 	return Number.isInteger(index) && c.characters[index] ? index : null;
 }
+/** The passports of a card: characters, world, locations, scenario, objects. */
 async function editCharacterPassport(index) {
-	const character = await loadCharacter(index);
-	if (!character) return;
-	const passport = await editPassport(character.name, cardPassport(character));
-	if (!passport) return;
-	await saveCardPassport(index, passport);
-	toastr.success(t("naist.passport.saved", { name: character.name }));
+	await openPassportManager(index, { emotions: (i, passportId) => emotionsHandler(i, passportId) });
 }
 async function editPersonaPassport() {
 	const key = await currentPersonaKey();
-	const passport = await editPassport(ctx().name1, personaPassport(key));
+	const passport = await editPassport(ctx().name1, personaPassport(key), { generate: generatePersonaPassport });
 	if (!passport) return;
 	savePersonaPassport(key, passport);
 	toastr.success(t("naist.passport.saved", { name: ctx().name1 }));
+}
+function cardButton(id, icon, titleKey, onClick) {
+	const button = document.createElement("div");
+	button.id = id;
+	button.className = `menu_button fa-solid ${icon}`;
+	button.setAttribute("data-i18n", `[title]${titleKey}`);
+	button.title = t(titleKey);
+	button.addEventListener("click", onClick);
+	return button;
+}
+function withEditedCharacter(run) {
+	const index = editedCharacterIndex();
+	if (index === null || ctx().groupId) toastr.info(t("naist.prompts.characterNone"));
+	else run(index);
 }
 function installCardButton() {
 	const block = document.querySelector("#avatar_controls .form_create_bottom_buttons_block");
@@ -13215,6 +13975,20 @@ function installCardButton() {
 		const index = editedCharacterIndex();
 		openSceneComposer(false, index === null ? void 0 : avatarKey(ctx().characters[index]?.avatar));
 	});
+	const passports = cardButton("naist_passport_button", "fa-id-card", "naist.card.passports", () => withEditedCharacter((index) => void editCharacterPassport(index).catch(reportGenerationError)));
+	const emotions = cardButton("naist_emotions_button", "fa-masks-theater", "naist.card.emotions", () => withEditedCharacter((index) => emotionsHandler(index)));
+	button.after(passports, emotions);
+}
+/** Passport button among the persona panel's buttons. */
+function installPersonaButton() {
+	const block = document.querySelector("#persona_controls .persona_controls_buttons_block");
+	if (!block || block.querySelector("#naist_persona_passport")) return;
+	const button = cardButton("naist_persona_passport", "fa-id-card", "naist.card.personaPassport", () => {
+		editPersonaPassport().catch(reportGenerationError);
+	});
+	const anchor = block.querySelector("#persona_lore_button");
+	if (anchor) anchor.after(button);
+	else block.prepend(button);
 }
 function installMenuOptions() {
 	const select = document.querySelector("#char-management-dropdown");
@@ -13281,23 +14055,24 @@ function setupScenes(pipeline, service) {
 		pipeline
 	};
 	installCardButton();
+	installPersonaButton();
 	installMenuOptions();
 	document.addEventListener("click", (event) => {
 		const target = event.target;
 		if (target.closest("#naist_open_composer")) openSceneComposer(true);
-		else if (target.closest("#naist_edit_char_passport")) {
-			const index = editedCharacterIndex();
-			if (index === null || ctx().groupId) toastr.info(t("naist.prompts.characterNone"));
-			else editCharacterPassport(index).catch(reportGenerationError);
-		} else if (target.closest("#naist_edit_persona_passport")) editPersonaPassport().catch(reportGenerationError);
+		else if (target.closest("#naist_edit_char_passport")) withEditedCharacter((index) => void editCharacterPassport(index).catch(reportGenerationError));
+		else if (target.closest("#naist_edit_persona_passport")) editPersonaPassport().catch(reportGenerationError);
 		else if (target.closest("#naist_open_pose_library")) openPoseLibrary();
 	});
 	const c = ctx();
 	c.eventSource.on(c.eventTypes.APP_READY ?? "app_ready", () => {
 		installCardButton();
+		installPersonaButton();
 		registerSceneCommand();
-		const block = document.querySelector("#avatar_controls");
-		if (block) localize(block);
+		for (const selector of ["#avatar_controls", "#persona_controls"]) {
+			const block = document.querySelector(selector);
+			if (block) localize(block);
+		}
 		log.info("scene composer ready");
 	});
 }
@@ -13416,7 +14191,7 @@ var ComicService = class {
 };
 //#endregion
 //#region package.json
-var version = "0.7.1";
+var version = "0.8.0";
 //#endregion
 //#region src/features/settings-io/settings-io.ts
 async function exportSettingsFile(includeImages) {
@@ -13603,8 +14378,29 @@ async function generatedSize(image) {
 }
 //#endregion
 //#region src/features/sprites/sprite-service.ts
-/** Folder Expressions reads for a character: its override, else the character name (RECON §2.12). */
-function spriteFolder(characterIndex) {
+/** Character passports of a card that can get sprites (main character first). */
+function spritePassports(characterIndex) {
+	const character = ctx().characters[characterIndex];
+	const list = cardPassports(character).filter((p) => p.kind === "character");
+	const main = primaryPassport(list, character?.name ?? "");
+	return main ? [main, ...list.filter((p) => p !== main)] : list;
+}
+function extraPassport(characterIndex, passportId) {
+	if (!passportId) return null;
+	const [main, ...rest] = spritePassports(characterIndex);
+	return main?.id === passportId ? null : rest.find((p) => p.id === passportId) ?? null;
+}
+/**
+* Folder Expressions reads for a character: its override, else the character name (RECON §2.12);
+* another character of the card gets "<folder>/<name>".
+*/
+function spriteFolder(characterIndex, passportId) {
+	const base = cardSpriteFolder(characterIndex);
+	const extra = extraPassport(characterIndex, passportId);
+	const sub = extra?.name.replace(/[\\/:*?"<>|]+/g, " ").trim();
+	return extra && sub && base ? `${base}/${sub}` : base;
+}
+function cardSpriteFolder(characterIndex) {
 	const c = ctx();
 	const character = c.characters[characterIndex];
 	const overrides = c.extensionSettings.expressionOverrides;
@@ -13616,8 +14412,10 @@ function spriteFolder(characterIndex) {
 	return character?.name ?? "";
 }
 /** Appearance tags: the passport when the card has one, else the character prompt, else the name. */
-function spriteAppearance(characterIndex) {
+function spriteAppearance(characterIndex, passportId) {
 	const character = ctx().characters[characterIndex];
+	const extra = extraPassport(characterIndex, passportId);
+	if (extra) return passportTags(extra, { allowNsfw: false });
 	const passport = cardPassport(character);
 	if (passport) return passportTags(passport, { allowNsfw: false });
 	return readCharacterPrompt(character).positive.trim() || character?.name || "";
@@ -13700,9 +14498,9 @@ var SpriteService = class {
 		return first;
 	}
 	async generate(options) {
-		const folder = spriteFolder(options.characterIndex);
+		const folder = spriteFolder(options.characterIndex, options.passportId);
 		if (!folder) throw new NaiError("image-not-found", "none");
-		const appearance = spriteAppearance(options.characterIndex);
+		const appearance = spriteAppearance(options.characterIndex, options.passportId);
 		const jobs = spriteLabels(options.labels).map((label) => ({
 			label,
 			status: "pending"
@@ -14020,7 +14818,7 @@ function customLabels() {
 	const expressions = ctx().extensionSettings.expressions;
 	return Array.isArray(expressions?.custom) ? expressions.custom.filter((l) => typeof l === "string") : [];
 }
-async function openSpritesDialog(service, characterIndex) {
+async function openSpritesDialog(service, characterIndex, passportId) {
 	const c = ctx();
 	const s = settings().sprites;
 	const character = c.characters[characterIndex];
@@ -14030,16 +14828,19 @@ async function openSpritesDialog(service, characterIndex) {
 	}
 	const all = [...EXPRESSION_LABELS, ...customLabels().filter((l) => !EXPRESSION_LABELS.includes(l))];
 	const selected = new Set(spriteLabels(s.labels));
+	const people = spritePassports(characterIndex);
+	let who = people.some((p) => p.id === passportId) ? passportId : people[0]?.id;
 	const model = settings().generation.model;
 	const root = document.createElement("div");
 	root.className = "naist-dialog naist-sprites";
 	root.innerHTML = `
         <h3>${escapeHtml$2(t("naist.sprites.title"))}</h3>
-        <div class="naist-hint">${escapeHtml$2(t("naist.sprites.target", {
-		name: character.name,
-		folder: spriteFolder(characterIndex)
-	}))}</div>
-        <div class="naist-muted naist-sprites-appearance">${escapeHtml$2(t("naist.sprites.appearance", { tags: spriteAppearance(characterIndex) || "—" }))}</div>
+        <div class="naist-row naist-sprite-who-row${people.length > 1 ? "" : " naist-hidden"}">
+            <label>${escapeHtml$2(t("naist.sprites.who"))}</label>
+            <select class="text_pole naist-grow naist-sprite-who">${people.map((p, i) => `<option value="${escapeHtml$2(p.id)}"${p.id === who ? " selected" : ""}>${escapeHtml$2(p.name || character.name)}${i === 0 ? "" : ` (${escapeHtml$2(t("naist.sprites.costume"))})`}</option>`).join("")}</select>
+        </div>
+        <div class="naist-hint naist-sprites-target"></div>
+        <div class="naist-muted naist-sprites-appearance"></div>
         <div class="naist-row">
             <label class="checkbox_label"><input type="radio" name="naist_sprite_mode" value="director"${s.mode === "director" ? " checked" : ""}><span>${escapeHtml$2(t("naist.sprites.modeDirector"))}</span></label>
             <label class="checkbox_label"><input type="radio" name="naist_sprite_mode" value="seed"${s.mode === "seed" ? " checked" : ""}><span>${escapeHtml$2(t("naist.sprites.modeSeed"))}</span></label>
@@ -14064,6 +14865,19 @@ async function openSpritesDialog(service, characterIndex) {
 	const modelSelect = root.querySelector(".naist-sprite-model");
 	const transparent = root.querySelector(".naist-sprite-transparent");
 	const mode = () => root.querySelector("input[name=\"naist_sprite_mode\"]:checked")?.value === "seed" ? "seed" : "director";
+	const updateTarget = () => {
+		const target = root.querySelector(".naist-sprites-target");
+		const appearance = root.querySelector(".naist-sprites-appearance");
+		if (target) target.textContent = t("naist.sprites.target", {
+			name: character.name,
+			folder: spriteFolder(characterIndex, who)
+		});
+		if (appearance) appearance.textContent = t("naist.sprites.appearance", { tags: spriteAppearance(characterIndex, who) || "—" });
+	};
+	root.querySelector(".naist-sprite-who")?.addEventListener("change", (event) => {
+		who = event.target.value;
+		updateTarget();
+	});
 	const updateMode = () => {
 		const id = modelSelect.value;
 		const caps = getCapabilities(isModelId(id) ? id : DEFAULT_MODEL);
@@ -14105,6 +14919,7 @@ async function openSpritesDialog(service, characterIndex) {
 			saveSettings();
 			service.generate({
 				characterIndex,
+				passportId: who,
 				labels: chosen,
 				mode: s.mode,
 				transparent: s.transparent,
@@ -14116,7 +14931,7 @@ async function openSpritesDialog(service, characterIndex) {
 				toastr.success(t("naist.sprites.finished", {
 					done,
 					total: jobs.length,
-					folder: spriteFolder(characterIndex)
+					folder: spriteFolder(characterIndex, who)
 				}), t("naist.sprites.title"));
 			}).catch(reportGenerationError).finally(() => {
 				running = false;
@@ -14124,6 +14939,7 @@ async function openSpritesDialog(service, characterIndex) {
 			});
 		}
 	});
+	updateTarget();
 	updateMode();
 	summary();
 	localize(root);
@@ -14331,13 +15147,13 @@ async function bindCurrent() {
 	toastr.success(t("naist.continuity.bound", { name }), t("naist.continuity.title"));
 	refreshContinuity();
 }
-function openSprites(index = editedCharacterIndex()) {
+function openSprites(index = editedCharacterIndex(), passportId) {
 	if (!sprites) return;
 	if (index === null || ctx().groupId) {
 		toastr.info(t("naist.sprites.noCharacter"));
 		return;
 	}
-	openSpritesDialog(sprites, index).catch(reportGenerationError);
+	openSpritesDialog(sprites, index, passportId).catch(reportGenerationError);
 }
 function openComic() {
 	if (comic) openComicDialog(comic).catch(reportGenerationError);
@@ -14425,6 +15241,7 @@ function installMenuOption() {
 }
 function setupPhase6(pipeline, scenes) {
 	pipeline.setInterpreter(languageInterpreter);
+	setEmotionsHandler((index, passportId) => openSprites(index, passportId));
 	const continuity = new ContinuityService();
 	pipeline.setContinuityProvider(continuity);
 	pipeline.onGenerated(continuity.observe);
@@ -15875,29 +16692,6 @@ function installInterceptor(pipeline) {
 		}, 1);
 	};
 	globalThis[INTERCEPTOR_NAME] = interceptor;
-}
-//#endregion
-//#region src/integration/macros.ts
-function registerMacros() {
-	const c = ctx();
-	const positive = () => currentCharacterPrompt().positive;
-	const negative = () => currentCharacterPrompt().negative;
-	if (c.powerUserSettings.experimental_macro_engine !== false && c.macros) {
-		const category = c.macros.category?.PROMPTS;
-		c.macros.register("charPrefix", {
-			category,
-			description: t("naist.macro.charPrefix"),
-			handler: positive
-		});
-		c.macros.register("charNegativePrefix", {
-			category,
-			description: t("naist.macro.charNegativePrefix"),
-			handler: negative
-		});
-	} else if (c.registerMacro) {
-		c.registerMacro("charPrefix", positive, t("naist.macro.charPrefix"));
-		c.registerMacro("charNegativePrefix", negative, t("naist.macro.charNegativePrefix"));
-	}
 }
 //#endregion
 //#region src/integration/message-buttons.ts

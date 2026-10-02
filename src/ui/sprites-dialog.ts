@@ -6,7 +6,7 @@ import { localize, t } from '../core/i18n';
 import { reportGenerationError } from '../core/notify';
 import { saveSettings, settings } from '../core/settings';
 import { DEFAULT_MODEL, EXPRESSION_LABELS, getCapabilities, isModelId, MODELS } from '../domain';
-import { spriteAppearance, spriteFolder, spriteLabels } from '../features/sprites/sprite-service';
+import { spriteAppearance, spriteFolder, spriteLabels, spritePassports } from '../features/sprites/sprite-service';
 import type { SpriteJob, SpriteService } from '../features/sprites/sprite-service';
 import { escapeHtml } from './components/dom';
 
@@ -25,7 +25,11 @@ function customLabels(): string[] {
         : [];
 }
 
-export async function openSpritesDialog(service: SpriteService, characterIndex: number): Promise<void> {
+export async function openSpritesDialog(
+    service: SpriteService,
+    characterIndex: number,
+    passportId?: string,
+): Promise<void> {
     const c = ctx();
     const s = settings().sprites;
     const character = c.characters[characterIndex];
@@ -38,13 +42,25 @@ export async function openSpritesDialog(service: SpriteService, characterIndex: 
         ...customLabels().filter((l) => !(EXPRESSION_LABELS as readonly string[]).includes(l)),
     ];
     const selected = new Set(spriteLabels(s.labels));
+    // Several character passports in one card: each gets its own sprites (a subfolder for the others).
+    const people = spritePassports(characterIndex);
+    let who = people.some((p) => p.id === passportId) ? passportId : people[0]?.id;
     const model = settings().generation.model;
     const root = document.createElement('div');
     root.className = 'naist-dialog naist-sprites';
     root.innerHTML = `
         <h3>${escapeHtml(t('naist.sprites.title'))}</h3>
-        <div class="naist-hint">${escapeHtml(t('naist.sprites.target', { name: character.name, folder: spriteFolder(characterIndex) }))}</div>
-        <div class="naist-muted naist-sprites-appearance">${escapeHtml(t('naist.sprites.appearance', { tags: spriteAppearance(characterIndex) || '—' }))}</div>
+        <div class="naist-row naist-sprite-who-row${people.length > 1 ? '' : ' naist-hidden'}">
+            <label>${escapeHtml(t('naist.sprites.who'))}</label>
+            <select class="text_pole naist-grow naist-sprite-who">${people
+                .map(
+                    (p, i) =>
+                        `<option value="${escapeHtml(p.id)}"${p.id === who ? ' selected' : ''}>${escapeHtml(p.name || character.name)}${i === 0 ? '' : ` (${escapeHtml(t('naist.sprites.costume'))})`}</option>`,
+                )
+                .join('')}</select>
+        </div>
+        <div class="naist-hint naist-sprites-target"></div>
+        <div class="naist-muted naist-sprites-appearance"></div>
         <div class="naist-row">
             <label class="checkbox_label"><input type="radio" name="naist_sprite_mode" value="director"${s.mode === 'director' ? ' checked' : ''}><span>${escapeHtml(t('naist.sprites.modeDirector'))}</span></label>
             <label class="checkbox_label"><input type="radio" name="naist_sprite_mode" value="seed"${s.mode === 'seed' ? ' checked' : ''}><span>${escapeHtml(t('naist.sprites.modeSeed'))}</span></label>
@@ -78,6 +94,23 @@ export async function openSpritesDialog(service: SpriteService, characterIndex: 
         root.querySelector<HTMLInputElement>('input[name="naist_sprite_mode"]:checked')?.value === 'seed'
             ? 'seed'
             : 'director';
+    const updateTarget = () => {
+        const target = root.querySelector('.naist-sprites-target');
+        const appearance = root.querySelector('.naist-sprites-appearance');
+        if (target)
+            target.textContent = t('naist.sprites.target', {
+                name: character.name,
+                folder: spriteFolder(characterIndex, who),
+            });
+        if (appearance)
+            appearance.textContent = t('naist.sprites.appearance', {
+                tags: spriteAppearance(characterIndex, who) || '—',
+            });
+    };
+    root.querySelector('.naist-sprite-who')?.addEventListener('change', (event) => {
+        who = (event.target as HTMLSelectElement).value;
+        updateTarget();
+    });
     const updateMode = () => {
         const id = modelSelect.value;
         const caps = getCapabilities(isModelId(id) ? id : DEFAULT_MODEL);
@@ -132,6 +165,7 @@ export async function openSpritesDialog(service: SpriteService, characterIndex: 
             void service
                 .generate({
                     characterIndex,
+                    passportId: who,
                     labels: chosen,
                     mode: s.mode,
                     transparent: s.transparent,
@@ -142,7 +176,11 @@ export async function openSpritesDialog(service: SpriteService, characterIndex: 
                 .then((jobs) => {
                     const done = jobs.filter((j) => j.status === 'done').length;
                     toastr.success(
-                        t('naist.sprites.finished', { done, total: jobs.length, folder: spriteFolder(characterIndex) }),
+                        t('naist.sprites.finished', {
+                            done,
+                            total: jobs.length,
+                            folder: spriteFolder(characterIndex, who),
+                        }),
                         t('naist.sprites.title'),
                     );
                 })
@@ -153,6 +191,7 @@ export async function openSpritesDialog(service: SpriteService, characterIndex: 
                 });
         }
     });
+    updateTarget();
     updateMode();
     summary();
     localize(root);

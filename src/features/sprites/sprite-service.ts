@@ -3,7 +3,8 @@
 // - director: one neutral base sprite, then Director "emotion" on it where an emotion matches and
 //   img2img from it (same seed) for the other labels;
 // - seed: every sprite drawn from the appearance with one seed (V5 can make them transparent).
-// Files are named `<label>.png` and uploaded with /api/sprites/upload into the character's folder.
+// Files are named `<label>.png` and uploaded with /api/sprites/upload into the character's folder;
+// another character passport of the same card gets a subfolder (switch to it with /costume).
 import { ctx, requestHeaders } from '../../core/context';
 import { NaiError } from '../../core/errors';
 import { log } from '../../core/logger';
@@ -19,13 +20,14 @@ import {
     isModelId,
     MODE,
     passportTags,
+    primaryPassport,
     spriteFileName,
     spritePrompt,
 } from '../../domain';
-import type { DirectorEmotion, ExpressionLabel } from '../../domain';
+import type { DirectorEmotion, ExpressionLabel, Passport } from '../../domain';
 import type { GeneratedImage } from '../../transport';
 import { avatarKey, readCharacterPrompt } from '../characters/character-prompts';
-import { cardPassport } from '../characters/passport-store';
+import { cardPassport, cardPassports } from '../characters/passport-store';
 import { randomSeed } from '../generation/form';
 import type { Pipeline } from '../generation/pipeline';
 import { base64ToBlob, blobToBase64, toPngBlob } from '../images/image-utils';
@@ -43,6 +45,8 @@ export interface SpriteJob {
 
 export interface SpriteOptions {
     characterIndex: number;
+    /** Character passport of the card to draw; the card's main character when absent. */
+    passportId?: string;
     labels: string[];
     mode: 'director' | 'seed';
     transparent: boolean;
@@ -51,8 +55,32 @@ export interface SpriteOptions {
     onProgress?: (jobs: SpriteJob[]) => void;
 }
 
-/** Folder Expressions reads for a character: its override, else the character name (RECON §2.12). */
-export function spriteFolder(characterIndex: number): string {
+/** Character passports of a card that can get sprites (main character first). */
+export function spritePassports(characterIndex: number): Passport[] {
+    const character = ctx().characters[characterIndex];
+    const list = cardPassports(character).filter((p) => p.kind === 'character');
+    const main = primaryPassport(list, character?.name ?? '');
+    return main ? [main, ...list.filter((p) => p !== main)] : list;
+}
+
+function extraPassport(characterIndex: number, passportId: string | undefined): Passport | null {
+    if (!passportId) return null;
+    const [main, ...rest] = spritePassports(characterIndex);
+    return main?.id === passportId ? null : (rest.find((p) => p.id === passportId) ?? null);
+}
+
+/**
+ * Folder Expressions reads for a character: its override, else the character name (RECON §2.12);
+ * another character of the card gets "<folder>/<name>".
+ */
+export function spriteFolder(characterIndex: number, passportId?: string): string {
+    const base = cardSpriteFolder(characterIndex);
+    const extra = extraPassport(characterIndex, passportId);
+    const sub = extra?.name.replace(/[\\/:*?"<>|]+/g, ' ').trim();
+    return extra && sub && base ? `${base}/${sub}` : base;
+}
+
+function cardSpriteFolder(characterIndex: number): string {
     const c = ctx();
     const character = c.characters[characterIndex];
     const overrides = (c.extensionSettings as Record<string, unknown>).expressionOverrides;
@@ -65,8 +93,10 @@ export function spriteFolder(characterIndex: number): string {
 }
 
 /** Appearance tags: the passport when the card has one, else the character prompt, else the name. */
-export function spriteAppearance(characterIndex: number): string {
+export function spriteAppearance(characterIndex: number, passportId?: string): string {
     const character = ctx().characters[characterIndex];
+    const extra = extraPassport(characterIndex, passportId);
+    if (extra) return passportTags(extra, { allowNsfw: false });
     const passport = cardPassport(character);
     if (passport) return passportTags(passport, { allowNsfw: false });
     const prompt = readCharacterPrompt(character).positive.trim();
@@ -150,9 +180,9 @@ export class SpriteService {
     }
 
     async generate(options: SpriteOptions): Promise<SpriteJob[]> {
-        const folder = spriteFolder(options.characterIndex);
+        const folder = spriteFolder(options.characterIndex, options.passportId);
         if (!folder) throw new NaiError('image-not-found', 'none');
-        const appearance = spriteAppearance(options.characterIndex);
+        const appearance = spriteAppearance(options.characterIndex, options.passportId);
         const labels = spriteLabels(options.labels);
         const jobs: SpriteJob[] = labels.map((label) => ({ label, status: 'pending' }));
         const report = () => options.onProgress?.(jobs.map((j) => ({ ...j })));

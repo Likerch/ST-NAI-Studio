@@ -93,6 +93,11 @@ export interface PictureRequest {
      * are already final).
      */
     interpret?: 'auto' | 'cyrillic';
+    /**
+     * The same for character prompts. Default: like `interpret`; a scene built from passports
+     * passes "cyrillic" so their curated tags are not rewritten.
+     */
+    interpretCharacters?: 'auto' | 'cyrillic';
     /** Vibes for this request only, in addition to the active ones. */
     vibes?: PlannedVibe[];
 }
@@ -501,6 +506,7 @@ export class Pipeline {
         const targetModel = String(o.generation?.model ?? s.generation.model);
         const cyrillicOnly = (req.interpret ?? (req.scene === undefined ? 'auto' : 'cyrillic')) === 'cyrillic';
         const interpretContext = { model: targetModel, cyrillicOnly, signal: req.signal };
+        const charactersCyrillicOnly = req.interpretCharacters ? req.interpretCharacters === 'cyrillic' : cyrillicOnly;
         let sourcePrompt: string | undefined = interpreter?.original?.(scene);
         if (interpreter && scene.trim()) {
             const result = await interpreter.interpret(scene, interpretContext);
@@ -533,7 +539,12 @@ export class Pipeline {
             const converted = await Promise.all(
                 characters.map(async (ch) => {
                     if (!ch.enabled) return ch;
-                    const prompt = ch.prompt.trim() ? await interpreter.interpret(ch.prompt, interpretContext) : null;
+                    const prompt = ch.prompt.trim()
+                        ? await interpreter.interpret(ch.prompt, {
+                              ...interpretContext,
+                              cyrillicOnly: charactersCyrillicOnly,
+                          })
+                        : null;
                     const negative = hasCyrillic(ch.negative)
                         ? await interpreter.interpret(ch.negative, { ...interpretContext, negative: true })
                         : null;

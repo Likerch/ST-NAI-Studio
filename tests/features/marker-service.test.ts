@@ -13,6 +13,8 @@ const state = vi.hoisted(() => ({
     chatId: 'chat-1',
     uuid: 0,
     now: 0,
+    candidates: [] as Record<string, unknown>[],
+    setting: { world: '', locations: [] as { name: string; aliases: string[]; tags: string }[] },
 }));
 
 vi.mock('../../src/core/settings', () => ({ settings: () => state.settings }));
@@ -28,9 +30,13 @@ vi.mock('../../src/features/continuity/continuity-service', () => ({
     setCurrentLocation: vi.fn(async () => undefined),
 }));
 vi.mock('../../src/features/scene/scene-service', () => ({
-    sceneCandidates: async () => [
-        { key: 'alice.png', name: 'Alice', aliases: [], passport: null, fallbackPrompt: '', fallbackNegative: '' },
-    ],
+    sceneCandidates: async () => state.candidates,
+    sceneSetting: async () => state.setting,
+    mentionedLocationTags: (text: string, locations: { name: string; tags: string }[]) =>
+        locations
+            .filter((l) => text.includes(l.name))
+            .map((l) => l.tags)
+            .join(', '),
 }));
 vi.mock('../../src/features/vibes/vibe-library', () => ({
     vibeItems: () => [{ id: 'v1', name: 'Watercolor', imageHash: '', imageKey: '', thumbKey: '', createdAt: '' }],
@@ -98,6 +104,10 @@ beforeEach(() => {
     state.uuid = 0;
     state.chatId = 'chat-1';
     state.now = 1000;
+    state.candidates = [
+        { key: 'alice.png', name: 'Alice', aliases: [], passport: null, fallbackPrompt: '', fallbackNegative: '' },
+    ];
+    state.setting = { world: '', locations: [] };
     vi.spyOn(Date, 'now').mockImplementation(() => (state.now += 1000));
 });
 
@@ -233,6 +243,7 @@ describe('MarkerService requests', () => {
             initiator: 'message',
             mode: MODE.FREE,
             interpret: 'auto',
+            interpretCharacters: 'cyrillic',
             skipCostConfirm: true,
             maxCost: 0,
             scene: 'ink drawing, girl reading, monochrome, text: HELLO',
@@ -300,5 +311,33 @@ describe('MarkerService requests', () => {
         expect(req.overrides.generation.characters).toHaveLength(1);
         expect(req.requestPatch).toEqual({ mode: 'img2img', image: 'BASE64', strength: 0.6 });
         expect(req.noContinuity).toBe(true);
+    });
+
+    it('takes characters with a passport named in the description, and adds world and location tags', async () => {
+        const { service, produce, markerScene } = setup();
+        state.candidates = [
+            {
+                key: 'card.png',
+                name: 'Mira',
+                aliases: ['Ms. Mira'],
+                passport: { kind: 'character' },
+                fallbackPrompt: '',
+                fallbackNegative: '',
+            },
+            { key: 'card.png#p2', name: 'Bob', aliases: [], passport: null, fallbackPrompt: '', fallbackNegative: '' },
+        ];
+        state.setting = {
+            world: 'medieval, fantasy',
+            locations: [{ name: 'tavern', aliases: [], tags: 'tavern, wooden interior' }],
+        };
+        await service.produce({ prompt: 'Mira and Bob drink in the tavern' });
+        expect(markerScene).toHaveBeenCalledWith('Mira and Bob drink in the tavern', [{ name: 'Mira' }]);
+        expect(lastRequest(produce).scene).toBe(
+            'scene: Mira and Bob drink in the tavern, tavern, wooden interior, medieval, fantasy',
+        );
+        markerScene.mockClear();
+        await service.produce({ prompt: 'an empty road', location: 'tavern' });
+        expect(markerScene).not.toHaveBeenCalled();
+        expect(lastRequest(produce).scene).toBe('an empty road, tavern, wooden interior, medieval, fantasy');
     });
 });

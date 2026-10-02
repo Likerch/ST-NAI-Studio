@@ -193,8 +193,9 @@ export function matchTag(index: TagIndex, raw: string): { tag: string; kind: Mat
         const hit = lookup(index, words.slice(i).join(' '));
         if (hit) return { tag: hit.name, kind: 'part', rest: words.slice(0, i).join(' ') };
     }
-    if (candidate.length >= 5 && !hasCyrillic(candidate)) {
-        const limit = candidate.length >= 9 ? 2 : 1;
+    // Typos only in longer words: a short real word is too close to another tag ("stocky" / "stocks").
+    if (candidate.length >= 7 && !hasCyrillic(candidate)) {
+        const limit = candidate.length >= 10 ? 2 : 1;
         let best: TagEntry | null = null;
         for (const entry of index.entries) {
             if (entry.name[0] !== candidate[0] || Math.abs(entry.name.length - candidate.length) > limit) continue;

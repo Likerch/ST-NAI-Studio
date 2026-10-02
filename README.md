@@ -9,7 +9,7 @@ A NovelAI image studio for [SillyTavern](https://github.com/SillyTavern/SillyTav
 | SillyTavern          | 1.19.0 or newer                            |
 | NovelAI subscription | any; free generations are tracked for Opus |
 | Interface            | English, Russian                           |
-| Server plugin        | optional, recommended (0.4.0)              |
+| Server plugin        | optional, recommended (0.4.1)              |
 | License              | AGPL-3.0                                   |
 
 ## Why
@@ -52,7 +52,9 @@ The built-in Image Generation treats NovelAI as one backend among many. NAI Stud
 
 ### Characters and scenes
 
-- **Appearance passport** stored in the character card: base, hair, eyes, body, outfits, states, personal undesired content, default pose and position.
+- **Passports** stored in the character card: base, hair, eyes, body, outfits, states, personal undesired content, default pose and position. A card can carry several: **every character it describes**, and the **world, locations, scenario or objects** (their visual tags) — because a card is not always one person.
+- **"Passports" button** in the character card, **"Generate from the description"** — the language model reads the description, personality, scenario and first message and writes the passports for you to review. Personas have their own passport (button in the persona panel), filled from the persona description.
+- Passports are used everywhere: in the composer, the automatic scene, the LLM tool and **image markers in replies** — a character named in a marker (even in Russian, declined) gets their looks automatically; world and scenario tags join every scene of the chat, a location joins when it is named. `{{nai_characters}}` lists the characters with a passport for your own prompts.
 - Pose library (38 poses), pair poses (hug, holding hands, carry…) using NovelAI's `source#` / `target#` / `mutual#` interaction tags, framing, camera angle, distance.
 - **Scene composer** with a position canvas; automatic scene from the last message: who is in the frame, their poses and interactions, character counts. Works in group chats.
 
@@ -72,7 +74,7 @@ The built-in Image Generation treats NovelAI as one backend among many. NAI Stud
 
 ### Extras
 
-- **Expressions sprite generator:** a full emotion set (28 labels) for the built-in Expressions extension, consistent character, named and uploaded where Expressions looks for them.
+- **Expressions sprite generator** ("Emotions" button in the card): a full emotion set (28 labels) generated one by one for the built-in Expressions extension, consistent character, named and uploaded where Expressions looks for them; another character of the card gets its own folder (switch with `/costume`).
 - **Comic pages** for V5: layouts, a prompt and speech lines per panel, the page is assembled automatically.
 - **Scene continuity:** the last picture of a location becomes the base (img2img) or a vibe of the next one there.
 - Export and import of all settings in one JSON file.
@@ -84,7 +86,7 @@ The built-in Image Generation treats NovelAI as one backend among many. NAI Stud
 3. **Server plugin (recommended):**
    - copy the plugin with `install-server.ps1 -SillyTavern "C:\path\to\SillyTavern"` (Windows) or `./install-server.sh /path/to/SillyTavern` (Linux, macOS, Docker host);
    - enable plugins: `enableServerPlugins: true` in `config.yaml` (or env `SILLYTAVERN_ENABLESERVERPLUGINS=true`);
-   - restart SillyTavern. The panel shows "Server plugin 0.4.0".
+   - restart SillyTavern. The panel shows "Server plugin 0.4.1".
 
 Details, Docker notes and uninstalling — [docs/DEPLOY.md](docs/DEPLOY.md).
 

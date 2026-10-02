@@ -295,7 +295,7 @@ export class InlineRenderer {
         const d = entry.display;
         const running = this.markers?.isRunning(entry.id) ?? false;
         const state = marker.status === 'error' ? 'error' : running ? 'pending' : 'interrupted';
-        span.className = `naist-inline naist-marker naist-marker-${state}`;
+        span.className = `naist-inline naist-inline-marker naist-inline-marker-${state}`;
         span.removeAttribute('style');
         for (const [key, value] of Object.entries(displayStyle(d))) span.style.setProperty(key, value);
         const box = el('span', 'naist-marker-box');

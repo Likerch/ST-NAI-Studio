@@ -22,7 +22,7 @@ import {
 import type { SceneCandidate, SceneSpec } from '../domain';
 import { saveCardPassport, savePersonaPassport } from '../features/characters/passport-store';
 import type { Pipeline } from '../features/generation/pipeline';
-import { currentCaps, PERSONA_PREFIX } from '../features/scene/scene-service';
+import { currentCaps, PASSPORT_KEY_SEPARATOR, PERSONA_PREFIX } from '../features/scene/scene-service';
 import type { SceneService } from '../features/scene/scene-service';
 import { escapeHtml } from './components/dom';
 import { attachPromptAssist } from './prompt-assist';
@@ -341,7 +341,9 @@ export async function openComposer(service: SceneService, pipeline: Pipeline, op
                 if (!passport) return;
                 if (p.key.startsWith(PERSONA_PREFIX)) savePersonaPassport(p.key.slice(PERSONA_PREFIX.length), passport);
                 else {
-                    const charIndex = c.characters.findIndex((ch) => ch.avatar.replace(/\.[^/.]+$/, '') === p.key);
+                    // "<avatar>#<passport id>" for the other characters of a card.
+                    const cardKey = p.key.split(PASSPORT_KEY_SEPARATOR)[0];
+                    const charIndex = c.characters.findIndex((ch) => ch.avatar.replace(/\.[^/.]+$/, '') === cardKey);
                     if (charIndex >= 0) await saveCardPassport(charIndex, passport);
                 }
                 p.passport = passport;

@@ -87,6 +87,8 @@ export interface StyleSettings {
     prefix: string;
     suffix: string;
     negative: string;
+    /** UC preset the style switches to (v0.9.5); absent = the current one stays. */
+    ucPreset?: string;
 }
 
 export interface CharacterPromptSettings {

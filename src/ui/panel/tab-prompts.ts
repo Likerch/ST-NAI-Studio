@@ -2,7 +2,8 @@
 // the human-language converter (TZ Phase 7).
 import { ctx } from '../../core/context';
 import { localize, t } from '../../core/i18n';
-import { saveSettings, settings } from '../../core/settings';
+import { saveSettings, settings, notifyExternalChange } from '../../core/settings';
+import { applyStyle, styleFromSettings } from '../../features/generation/styles';
 import type { StyleSettings } from '../../core/settings-schema';
 import { reportGenerationError } from '../../core/notify';
 import { DEFAULT_TEMPLATES, TEMPLATE_MODES } from '../../domain';
@@ -116,15 +117,13 @@ export class PromptsTab {
 
     private applyStyle(style: StyleSettings | undefined): void {
         const s = settings();
-        s.prompts.activeStyle = style?.name ?? '';
-        if (style) {
-            s.prompts.prefix = style.prefix;
-            s.prompts.suffix = style.suffix;
-            s.generation.negativePrompt = style.negative;
-        }
+        if (style) applyStyle(s, style);
+        else s.prompts.activeStyle = '';
         saveSettings();
         readFromSettings(this.root);
         this.onChange();
+        // The UC preset lives on the Generation tab.
+        notifyExternalChange();
     }
 
     private bindStyles(): void {
@@ -141,12 +140,7 @@ export class PromptsTab {
             );
             if (typeof name !== 'string' || !name.trim()) return;
             const s = settings();
-            const style: StyleSettings = {
-                name: name.trim(),
-                prefix: s.prompts.prefix,
-                suffix: s.prompts.suffix,
-                negative: s.generation.negativePrompt,
-            };
+            const style = styleFromSettings(s, name.trim());
             const index = s.prompts.styles.findIndex((x) => x.name === style.name);
             if (index >= 0) s.prompts.styles[index] = style;
             else s.prompts.styles.push(style);

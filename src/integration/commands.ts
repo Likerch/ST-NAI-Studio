@@ -5,6 +5,7 @@ import { t } from '../core/i18n';
 import { log } from '../core/logger';
 import { reportGenerationError } from '../core/notify';
 import { notifyExternalChange, saveSettings, settings } from '../core/settings';
+import { applyStyle } from '../features/generation/styles';
 import type { GenerationSettings } from '../core/settings-schema';
 import { MODE, MODEL_IDS, NOISE_SCHEDULES, QUALITY_PRESETS, SAMPLERS, TRIGGER_WORDS, UC_PRESETS } from '../domain';
 import type { Pipeline } from '../features/generation/pipeline';
@@ -118,10 +119,7 @@ function styleCallback() {
             toastr.warning(t('naist.command.styleMissing', { name }));
             return prompts.activeStyle;
         }
-        prompts.activeStyle = style.name;
-        prompts.prefix = style.prefix;
-        prompts.suffix = style.suffix;
-        settings().generation.negativePrompt = style.negative;
+        applyStyle(settings(), style);
         saveSettings();
         notifyExternalChange();
         return style.name;

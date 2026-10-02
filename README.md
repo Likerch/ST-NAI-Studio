@@ -131,7 +131,7 @@ Features that need the plugin stay visible in the interface with the reason they
 | --------------------------------------------------------- | ---------------------------------------------------------------------------------- |
 | `/nai [prompt]` (`/nai-imagine`)                          | Generate an image; accepts the built-in `/sd` arguments plus NovelAI-specific ones |
 | `/imagine`, `/sd`, `/img`, `/image`                       | The same, after the takeover of the built-in extension                             |
-| `/nai-style [name]` (`/imagine-style` after takeover)     | Select a style or return the active one                                            |
+| `/nai-style [name]` (`/imagine-style` after takeover)     | Select a style (with its UC preset) or return the active one                       |
 | `/nai-insert message=<id> [at=<pos>] [prompt]`            | Generate and insert an image inside a message                                      |
 | `/nai-images`                                             | Show or hide inline images of the chat; reading mode                               |
 | `/nai-gallery`                                            | Open the gallery                                                                   |

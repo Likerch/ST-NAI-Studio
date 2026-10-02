@@ -9,6 +9,7 @@ import { t } from '../../core/i18n';
 import { log } from '../../core/logger';
 import type { GenerationSettings } from '../../core/settings-schema';
 import { settings } from '../../core/settings';
+import { styleUcPreset } from '../generation/styles';
 import {
     activeSwipe,
     createPendingImage,
@@ -332,6 +333,8 @@ export class MarkerService {
             if (saved) {
                 scene = join(saved.prefix, scene, saved.suffix);
                 negative = join(negative, saved.negative);
+                const preset = styleUcPreset(saved);
+                if (preset && !params.uc) generation.ucPreset = preset;
             } else scene = join(style, scene);
         }
         // Characters with a passport named in the description take part without "chars" too. Only the

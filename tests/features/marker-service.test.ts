@@ -105,7 +105,14 @@ beforeEach(() => {
     state.chatId = 'chat-1';
     state.now = 1000;
     state.candidates = [
-        { key: 'alice.png', name: 'Alice', aliases: [], passport: null, fallbackPrompt: 'blonde', fallbackNegative: '' },
+        {
+            key: 'alice.png',
+            name: 'Alice',
+            aliases: [],
+            passport: null,
+            fallbackPrompt: 'blonde',
+            fallbackNegative: '',
+        },
     ];
     state.setting = { world: '', location: '', locations: [] };
     vi.spyOn(Date, 'now').mockImplementation(() => (state.now += 1000));
@@ -273,6 +280,17 @@ describe('MarkerService requests', () => {
         expect(req.vibes).toEqual([
             { item: expect.objectContaining({ id: 'v1' }), strength: 0.6, informationExtracted: 1 },
         ]);
+    });
+
+    it('switches to the UC preset of a saved style unless the marker names one', async () => {
+        const { service, produce } = setup();
+        state.settings.prompts.styles = [
+            { name: 'Manga Ink', prefix: 'manga, screentone', suffix: '', negative: 'color', ucPreset: 'none' },
+        ];
+        await service.produce({ prompt: 'girl reading', style: 'manga ink' });
+        expect(lastRequest(produce).overrides.generation.ucPreset).toBe('none');
+        await service.produce({ prompt: 'girl reading', style: 'manga ink', uc: 'light' });
+        expect(lastRequest(produce).overrides.generation.ucPreset).toBe('light');
     });
 
     it('allows paid sizes, steps and samples up to the cap when paid markers are allowed', async () => {

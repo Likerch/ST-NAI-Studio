@@ -310,10 +310,10 @@ var EN = {
 	"naist.prompts.prefixHint": "Put {prompt} into the prefix to place the scene prompt inside it. SillyTavern macros work. Undesired content is on the Generate tab.",
 	"naist.prompts.styles": "Styles",
 	"naist.prompts.styleNone": "— no style —",
-	"naist.prompts.styleSave": "Save prefix, suffix and undesired content as a style",
+	"naist.prompts.styleSave": "Save the prefix, suffix, undesired content and UC preset as a style",
 	"naist.prompts.styleRename": "Rename style",
 	"naist.prompts.styleDelete": "Delete style",
-	"naist.prompts.stylesHint": "Choosing a style copies its prefix, suffix and undesired content into the fields.",
+	"naist.prompts.stylesHint": "Choosing a style copies its prefix, suffix and undesired content into the fields and switches the UC preset (Generation tab) when the style has one.",
 	"naist.prompts.styleNamePrompt": "Style name:",
 	"naist.prompts.styleDeleteConfirm": "Delete style \"{name}\"?",
 	"naist.prompts.characterPrompt": "Character prompt",
@@ -13961,6 +13961,32 @@ async function editPassport(name, initial, options = {}) {
 	return passport;
 }
 //#endregion
+//#region src/features/generation/styles.ts
+/** The style's UC preset when it is a known one. */
+function styleUcPreset(style) {
+	const preset = style.ucPreset;
+	return preset && UC_PRESETS.includes(preset) ? preset : void 0;
+}
+/** Puts a style into the fields it fills and makes it the active one. */
+function applyStyle(s, style) {
+	s.prompts.activeStyle = style.name;
+	s.prompts.prefix = style.prefix;
+	s.prompts.suffix = style.suffix;
+	s.generation.negativePrompt = style.negative;
+	const preset = styleUcPreset(style);
+	if (preset) s.generation.ucPreset = preset;
+}
+/** The current fields as a style under this name. */
+function styleFromSettings(s, name) {
+	return {
+		name,
+		prefix: s.prompts.prefix,
+		suffix: s.prompts.suffix,
+		negative: s.generation.negativePrompt,
+		ucPreset: s.generation.ucPreset
+	};
+}
+//#endregion
 //#region src/integration/command-args.ts
 /** Built-in arguments without a NovelAI meaning (SD-WebUI/ComfyUI specific). */
 var IGNORED_ARGS = [
@@ -14179,10 +14205,7 @@ function styleCallback() {
 			toastr.warning(t("naist.command.styleMissing", { name }));
 			return prompts.activeStyle;
 		}
-		prompts.activeStyle = style.name;
-		prompts.prefix = style.prefix;
-		prompts.suffix = style.suffix;
-		settings().generation.negativePrompt = style.negative;
+		applyStyle(settings(), style);
 		saveSettings();
 		notifyExternalChange();
 		return style.name;
@@ -16123,6 +16146,8 @@ var MarkerService = class {
 			if (saved) {
 				scene = join(saved.prefix, scene, saved.suffix);
 				negative = join(negative, saved.negative);
+				const preset = styleUcPreset(saved);
+				if (preset && !params.uc) generation.ucPreset = preset;
 			} else scene = join(style, scene);
 		}
 		let chars = params.chars;
@@ -16470,7 +16495,7 @@ var ComicService = class {
 };
 //#endregion
 //#region package.json
-var version = "0.9.4";
+var version = "0.9.5";
 //#endregion
 //#region src/features/settings-io/settings-io.ts
 async function exportSettingsFile(includeImages) {
@@ -18930,15 +18955,12 @@ var PromptsTab = class {
 	}
 	applyStyle(style) {
 		const s = settings();
-		s.prompts.activeStyle = style?.name ?? "";
-		if (style) {
-			s.prompts.prefix = style.prefix;
-			s.prompts.suffix = style.suffix;
-			s.generation.negativePrompt = style.negative;
-		}
+		if (style) applyStyle(s, style);
+		else s.prompts.activeStyle = "";
 		saveSettings();
 		readFromSettings(this.root);
 		this.onChange();
+		notifyExternalChange();
 	}
 	bindStyles() {
 		const c = ctx();
@@ -18948,12 +18970,7 @@ var PromptsTab = class {
 			const name = await c.callGenericPopup(t("naist.prompts.styleNamePrompt"), c.POPUP_TYPE.INPUT, settings().prompts.activeStyle);
 			if (typeof name !== "string" || !name.trim()) return;
 			const s = settings();
-			const style = {
-				name: name.trim(),
-				prefix: s.prompts.prefix,
-				suffix: s.prompts.suffix,
-				negative: s.generation.negativePrompt
-			};
+			const style = styleFromSettings(s, name.trim());
 			const index = s.prompts.styles.findIndex((x) => x.name === style.name);
 			if (index >= 0) s.prompts.styles[index] = style;
 			else s.prompts.styles.push(style);

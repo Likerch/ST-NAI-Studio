@@ -19,3 +19,6 @@ export * from './autogen';
 export * from './inline';
 export * from './png-meta';
 export * from './gallery';
+export * from './passport';
+export * from './poses';
+export * from './scene-assembly';

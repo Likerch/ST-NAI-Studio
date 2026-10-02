@@ -277,6 +277,12 @@ export class Pipeline {
         return this.controller.prepare(assembled.overrides);
     }
 
+    /** Composed scene (TZ Phase 4) as the inspector will see it. */
+    previewScene(scene: string, generation: Partial<GenerationSettings>): Prepared {
+        const assembled = this.assemble(MODE.FREE, scene, '', { isSwipe: false, expanded: true }, { generation });
+        return this.controller.prepare(assembled.overrides);
+    }
+
     private assemble(
         mode: ModeId,
         scene: string,
@@ -351,7 +357,9 @@ export class Pipeline {
                 scene = edited.prompt;
                 additionalNegative = edited.negative ?? additionalNegative;
             }
-            if (!scene.trim()) return null;
+            // A composed scene may carry everything in its character prompts.
+            const hasCharacters = (o.generation?.characters ?? []).some((ch) => ch.enabled && ch.prompt.trim());
+            if (!scene.trim() && !hasCharacters) return null;
         } else if (req.swipe) {
             const attachment = req.swipe.attachment;
             mode = (attachment?.generation_type ?? MODE.FREE) as ModeId;

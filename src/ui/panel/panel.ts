@@ -268,6 +268,16 @@ export class Panel {
             .join('');
         localize(container);
         const caps = this.caps();
+        // Slots beyond the model limit stay visible (switching back to V5 restores them) but are
+        // unavailable: the builder drops them anyway (TZ Phase 4).
+        container.querySelectorAll<HTMLElement>('.naist-character').forEach((row) => {
+            const over = Number(row.dataset.index) >= caps.maxCharacters;
+            row.classList.toggle('naist-disabled', over);
+            row.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>('input, textarea').forEach((el) => {
+                el.disabled = over;
+            });
+            row.title = over ? t('naist.panel.characterOverLimit', { max: caps.maxCharacters }) : '';
+        });
         $id(this.root, 'naist_characters_count').textContent = t('naist.panel.charactersLimit', {
             count: chars.length,
             max: caps.maxCharacters,

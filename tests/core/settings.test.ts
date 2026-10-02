@@ -105,6 +105,20 @@ describe('settings schema', () => {
             expect(settings.png.stripMetadata).toBe(false);
         });
 
+        it('v4: adds pose library and scene sections; stored pose arrays are kept as they are', () => {
+            const custom = [{ id: 'c1', category: 'standing', tags: 't', keywords: [], name: 'Mine' }];
+            const { settings, fromVersion } = migrateAndFill(
+                { schemaVersion: 3, poses: { custom, favorites: ['sitting'] }, inline: { defaultWidth: 40 } },
+                merge,
+            );
+            expect(fromVersion).toBe(3);
+            expect(settings.poses.custom).toEqual(custom);
+            expect(settings.poses.favorites).toEqual(['sitting']);
+            expect(settings.inline.defaultWidth).toBe(40);
+            expect(settings.scene.allowNsfw).toBe(false);
+            expect(settings.scene.target).toBe('message');
+        });
+
         it('keeps stored styles and the migration report arrays as they are', () => {
             const styles = [{ name: 'a', prefix: 'p', suffix: '', negative: '' }];
             const { settings } = migrateAndFill(

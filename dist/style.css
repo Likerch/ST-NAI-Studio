@@ -605,4 +605,117 @@ body.naist-inline-reading .naist-inline-group {
 .naist-wand-sep {
     border-top: 1px solid var(--SmartThemeBorderColor);
 }
+
+/* ---- Phase 4: passport, composer, pose library ---- */
+
+.naist-composer-body {
+    display: grid;
+    grid-template-columns: minmax(180px, 240px) 1fr;
+    gap: 10px;
+    align-items: start;
+}
+
+@media (max-width: 700px) {
+    .naist-composer-body {
+        grid-template-columns: 1fr;
+    }
+}
+
+.naist-canvas {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 8px;
+    background: var(--black30a, rgba(0, 0, 0, 0.3));
+    touch-action: none;
+    overflow: hidden;
+}
+
+.naist-canvas-cell {
+    position: absolute;
+    box-sizing: border-box;
+    border: 1px dashed rgba(255, 255, 255, 0.12);
+    pointer-events: none;
+}
+
+.naist-marker {
+    position: absolute;
+    width: 26px;
+    height: 26px;
+    margin: -13px 0 0 -13px;
+    border-radius: 50%;
+    color: #111;
+    font-weight: bold;
+    line-height: 26px;
+    text-align: center;
+    cursor: grab;
+    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.5);
+    user-select: none;
+}
+
+.naist-marker:active {
+    cursor: grabbing;
+}
+
+.naist-composer-slots {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+}
+
+.naist-slot {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 6px 8px;
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-left-width: 4px;
+    border-radius: 8px;
+}
+
+.naist-slot .menu_button {
+    margin: 0;
+    padding: 3px 6px;
+}
+
+.naist-slot-states {
+    font-size: 0.85em;
+}
+
+.naist-composer-preview {
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-size: 0.8em;
+    max-height: 30vh;
+    overflow: auto;
+    padding: 6px;
+    border-radius: 6px;
+    background: var(--black30a, rgba(0, 0, 0, 0.3));
+}
+
+.naist-c-pair .text_pole {
+    width: auto;
+    flex: 1 1 140px;
+    margin: 0;
+}
+
+.naist-passport .naist-grid2 textarea {
+    width: 100%;
+}
+
+.naist-outfit .text_pole,
+.naist-state .text_pole,
+.naist-custom-pose .text_pole {
+    margin: 0;
+}
+
+.naist-pose-fav {
+    font-size: 0.9em;
+}
+
+#naist_card_button {
+    color: var(--SmartThemeQuoteColor, #e6a);
+}
 /*$vite$:1*/

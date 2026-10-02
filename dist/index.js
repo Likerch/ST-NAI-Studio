@@ -552,7 +552,188 @@ var EN = {
 	"naist.tab.images": "Images",
 	"naist.wand.gallery": "Gallery",
 	"naist.wand.toggleImages": "Show / hide images in this chat",
-	"naist.wand.readingMode": "Reading mode (no images)"
+	"naist.wand.readingMode": "Reading mode (no images)",
+	"naist.card.button": "NAI Studio: passport and scene",
+	"naist.card.composer": "NAI Studio: scene with this character",
+	"naist.card.passport": "NAI Studio: appearance passport",
+	"naist.command.sceneHelp": "Assembles a scene from the last message (who is in the frame, poses, positions) and opens the composer; edit=false generates right away.",
+	"naist.command.sceneReturns": "image path or inline image id, or an empty string",
+	"naist.command.arg.sceneEdit": "open the composer before generating (default true)",
+	"naist.command.arg.sceneTarget": "message (new message) or inline (into the last message)",
+	"naist.command.arg.sceneText": "text to analyze instead of the last message",
+	"naist.scene.title": "Scenes and characters",
+	"naist.scene.hint": "The passport is a character's permanent tags (kept in the card). The composer assembles a scene: who is in the frame, poses, positions, personal undesired content.",
+	"naist.scene.openComposer": "Scene composer",
+	"naist.scene.charPassport": "Character passport",
+	"naist.scene.personaPassport": "My persona passport",
+	"naist.scene.poseLibrary": "Pose library",
+	"naist.scene.llmBase": "Automatic scene: the LLM describes the location",
+	"naist.wand.scene": "Scene (composer)…",
+	"naist.composer.title": "Scene composer",
+	"naist.composer.auto": "From the last message",
+	"naist.composer.add": "Add to the scene…",
+	"naist.composer.full": "Model limit: {max} characters",
+	"naist.composer.persona": "you",
+	"naist.composer.relayout": "Arrange automatically",
+	"naist.composer.limit": "{count} of {max}",
+	"naist.composer.base": "Scene (location, action, mood)",
+	"naist.composer.basePlaceholder": "tavern, night, warm lighting",
+	"naist.composer.llmBase": "Let the LLM describe the location",
+	"naist.composer.framing": "Framing",
+	"naist.composer.camera": "Camera angle",
+	"naist.composer.distance": "Distance",
+	"naist.composer.useCoords": "Use positions",
+	"naist.composer.gridHint": "V4/V4.5: positions snap to the 5×5 grid. Drag the numbers.",
+	"naist.composer.freeHint": "V5: free positions. Drag the numbers.",
+	"naist.composer.noPositions": "This model has no character positions; everyone goes into one prompt.",
+	"naist.composer.empty": "Nobody in the scene yet: use \"From the last message\" or add characters.",
+	"naist.composer.noPassport": "no passport",
+	"naist.composer.inFrame": "in frame",
+	"naist.composer.up": "Move up",
+	"naist.composer.down": "Move down",
+	"naist.composer.editPassport": "Edit passport",
+	"naist.composer.remove": "Remove from the scene",
+	"naist.composer.pose": "Pose",
+	"naist.composer.poseTags": "Extra pose tags",
+	"naist.composer.outfit": "Outfit",
+	"naist.composer.outfitDefault": "From the passport",
+	"naist.composer.negative": "Extra undesired content for this scene",
+	"naist.composer.pair": "Pair pose",
+	"naist.composer.noPair": "No pair pose",
+	"naist.composer.target": "Result",
+	"naist.composer.targetMessage": "New message",
+	"naist.composer.targetInline": "Into the last message",
+	"naist.composer.allowNsfw": "Allow the NSFW layer of passports",
+	"naist.composer.basePrompt": "Base",
+	"naist.composer.warnNoPassport": "Without a passport (character prompt is used): {names}",
+	"naist.composer.warnDropped": "Not sent, over the model limit of {max}: {names}",
+	"naist.composer.generate": "Generate",
+	"naist.passport.title": "Appearance passport: {name}",
+	"naist.passport.hint": "Danbooru tags in English. Kept in the character card and travels with export.",
+	"naist.passport.outfits": "Outfits",
+	"naist.passport.outfitsHint": "Named outfits replace the clothing slot when chosen.",
+	"naist.passport.outfitName": "Name",
+	"naist.passport.outfitTags": "Tags",
+	"naist.passport.outfitDefault": "Outfit {n}",
+	"naist.passport.addOutfit": "Add outfit",
+	"naist.passport.activeOutfit": "Active outfit",
+	"naist.passport.clothingSlot": "Clothing slot",
+	"naist.passport.states": "States",
+	"naist.passport.newState": "Custom state name",
+	"naist.passport.addState": "Add",
+	"naist.passport.nsfw": "NSFW layer",
+	"naist.passport.nsfwHint": "Used only when \"Allow the NSFW layer\" is on in the composer.",
+	"naist.passport.negative": "Personal undesired content",
+	"naist.passport.pose": "Default pose",
+	"naist.passport.poseTags": "Extra pose tags",
+	"naist.passport.noPose": "No pose",
+	"naist.passport.position": "Default position (x, y from 0 to 1)",
+	"naist.passport.remove": "Remove",
+	"naist.passport.save": "Save",
+	"naist.passport.saved": "Passport of {name} saved.",
+	"naist.poseLib.title": "Pose library",
+	"naist.poseLib.favoritesHint": "Checked poses are shown first as favorites.",
+	"naist.poseLib.custom": "My poses",
+	"naist.poseLib.customHint": "Keywords (comma-separated, any language) let the automatic scene pick the pose from the text.",
+	"naist.poseLib.name": "Name",
+	"naist.poseLib.tags": "Tags",
+	"naist.poseLib.keywords": "Keywords",
+	"naist.poseLib.add": "Add pose",
+	"naist.poseLib.done": "Done",
+	"naist.pose.favorites": "Favorites",
+	"naist.slot.base": "Base (gender, age, species, race)",
+	"naist.slot.hair": "Hair",
+	"naist.slot.eyes": "Eyes",
+	"naist.slot.body": "Body",
+	"naist.slot.skin": "Skin and marks",
+	"naist.slot.clothing": "Clothing",
+	"naist.slot.accessories": "Accessories",
+	"naist.slot.style": "Art style",
+	"naist.state.wet": "Wet",
+	"naist.state.messy": "Disheveled",
+	"naist.state.tears": "In tears",
+	"naist.state.blush": "Embarrassed",
+	"naist.state.injured": "Injured",
+	"naist.state.sleepy": "Sleepy",
+	"naist.state.angry": "Angry",
+	"naist.state.happy": "Happy",
+	"naist.poseCat.standing": "Standing",
+	"naist.poseCat.sitting": "Sitting",
+	"naist.poseCat.lying": "Lying",
+	"naist.poseCat.kneeling": "Kneeling",
+	"naist.poseCat.back": "From behind",
+	"naist.poseCat.gaze": "Gaze",
+	"naist.poseCat.arms": "Arms and hands",
+	"naist.poseCat.action": "Action",
+	"naist.pose.standing": "Standing",
+	"naist.pose.contrapposto": "Contrapposto",
+	"naist.pose.hands_on_hips": "Hands on hips",
+	"naist.pose.leaning_wall": "Leaning against a wall",
+	"naist.pose.walking": "Walking",
+	"naist.pose.sitting": "Sitting",
+	"naist.pose.sitting_chair": "Sitting on a chair",
+	"naist.pose.sitting_floor": "Sitting on the floor",
+	"naist.pose.crossed_legs": "Legs crossed",
+	"naist.pose.seiza": "Seiza",
+	"naist.pose.squatting": "Squatting",
+	"naist.pose.lying": "Lying",
+	"naist.pose.on_back": "On the back",
+	"naist.pose.on_stomach": "On the stomach",
+	"naist.pose.on_side": "On the side",
+	"naist.pose.sleeping": "Sleeping",
+	"naist.pose.kneeling": "Kneeling",
+	"naist.pose.on_one_knee": "On one knee",
+	"naist.pose.from_behind": "From behind",
+	"naist.pose.looking_back": "Looking back",
+	"naist.pose.looking_at_viewer": "Looking at the viewer",
+	"naist.pose.looking_away": "Looking away",
+	"naist.pose.looking_up": "Looking up",
+	"naist.pose.looking_down": "Looking down",
+	"naist.pose.crossed_arms": "Arms crossed",
+	"naist.pose.arms_up": "Arms up",
+	"naist.pose.arms_behind_back": "Arms behind the back",
+	"naist.pose.hand_on_chin": "Hand on chin",
+	"naist.pose.waving": "Waving",
+	"naist.pose.peace_sign": "Peace sign",
+	"naist.pose.running": "Running",
+	"naist.pose.jumping": "Jumping",
+	"naist.pose.leaning_forward": "Leaning forward",
+	"naist.pose.stretching": "Stretching",
+	"naist.pose.reading": "Reading",
+	"naist.pose.eating": "Eating",
+	"naist.pose.drinking": "Drinking",
+	"naist.pose.fighting_stance": "Fighting stance",
+	"naist.framing.auto": "Automatic",
+	"naist.framing.portrait": "Portrait",
+	"naist.framing.upper_body": "Upper body",
+	"naist.framing.cowboy_shot": "Cowboy shot (to the thighs)",
+	"naist.framing.full_body": "Full body",
+	"naist.camera.auto": "Automatic",
+	"naist.camera.from_above": "From above",
+	"naist.camera.from_below": "From below",
+	"naist.camera.from_side": "From the side",
+	"naist.camera.straight_on": "Straight on",
+	"naist.camera.dutch_angle": "Dutch angle",
+	"naist.camera.pov": "POV",
+	"naist.distance.auto": "Automatic",
+	"naist.distance.close_up": "Close-up",
+	"naist.distance.wide_shot": "Wide shot",
+	"naist.distance.very_wide_shot": "Very wide shot",
+	"naist.pair.hug": "Hug (1 hugs 2)",
+	"naist.pair.hug_from_behind": "Hug from behind",
+	"naist.pair.holding_hands": "Holding hands",
+	"naist.pair.back_to_back": "Back to back",
+	"naist.pair.princess_carry": "Princess carry (1 carries 2)",
+	"naist.pair.piggyback": "Piggyback (1 carries 2)",
+	"naist.pair.headpat": "Headpat (1 pats 2)",
+	"naist.pair.high_five": "High five",
+	"naist.pair.face_to_face": "Face to face",
+	"naist.pair.eye_contact": "Eye contact",
+	"naist.pair.sitting_on_lap": "Sitting on the lap (1 on 2)",
+	"naist.pair.dancing": "Dancing together",
+	"naist.pair.fighting": "Fighting",
+	"naist.panel.characterOverLimit": "Over the model limit ({max}): this slot is not sent. Switch to V5 for up to 32 characters.",
+	"naist.composer.overLimit": "over the model limit"
 };
 var translator = (text) => text;
 /** Wires the host translator (SillyTavern's translate). Called once on activation. */
@@ -653,7 +834,7 @@ function defaultGeneration() {
 }
 function defaultSettings() {
 	return {
-		schemaVersion: 3,
+		schemaVersion: 4,
 		transport: { mode: "auto" },
 		generation: defaultGeneration(),
 		prompts: {
@@ -725,6 +906,20 @@ function defaultSettings() {
 			thumbSize: 256
 		},
 		png: { stripMetadata: false },
+		poses: {
+			custom: [],
+			favorites: []
+		},
+		scene: {
+			framing: "auto",
+			camera: "auto",
+			distance: "auto",
+			allowNsfw: false,
+			llmBase: false,
+			useCoords: true,
+			target: "message",
+			personaPassports: {}
+		},
 		inspector: { openBeforeSend: false },
 		rawOverride: {
 			enabled: false,
@@ -780,13 +975,22 @@ var MIGRATIONS = [
 				schemaVersion: 3
 			};
 		}
+	},
+	{
+		to: 4,
+		migrate(settings) {
+			return {
+				...settings,
+				schemaVersion: 4
+			};
+		}
 	}
 ];
 /** Applies pending migrations, then fills missing keys from defaults (lodash.merge in the host). */
 function migrateAndFill(stored, merge) {
 	let raw = isObject$1(stored) ? structuredClone(stored) : {};
 	const fromVersion = typeof raw.schemaVersion === "number" ? raw.schemaVersion : 0;
-	if (fromVersion > 3) return {
+	if (fromVersion > 4) return {
 		settings: merge(defaultSettings(), raw),
 		fromVersion,
 		migrated: false
@@ -797,13 +1001,16 @@ function migrateAndFill(stored, merge) {
 	settings.generation.characters = Array.isArray(generation.characters) ? generation.characters : [];
 	const prompts = isObject$1(raw.prompts) ? raw.prompts : {};
 	settings.prompts.styles = Array.isArray(prompts.styles) ? prompts.styles : [];
+	const poses = isObject$1(raw.poses) ? raw.poses : {};
+	settings.poses.custom = Array.isArray(poses.custom) ? poses.custom : [];
+	settings.poses.favorites = Array.isArray(poses.favorites) ? poses.favorites : [];
 	const takeover = isObject$1(raw.takeover) ? raw.takeover : {};
 	settings.takeover.migrationReport = Array.isArray(takeover.migrationReport) ? takeover.migrationReport : [];
-	settings.schemaVersion = 3;
+	settings.schemaVersion = 4;
 	return {
 		settings,
 		fromVersion,
-		migrated: fromVersion !== 3
+		migrated: fromVersion !== 4
 	};
 }
 //#endregion
@@ -2518,15 +2725,15 @@ function assemblePrompt(input) {
 function list(text) {
 	return text.split(",").map((s) => s.trim()).filter(Boolean);
 }
-function escapeRegExp(text) {
+function escapeRegExp$1(text) {
 	return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 function matchesKeyword(message, keywords) {
-	return list(keywords).some((word) => new RegExp(`(^|[^\\p{L}\\p{N}])${escapeRegExp(word)}($|[^\\p{L}\\p{N}])`, "iu").test(message));
+	return list(keywords).some((word) => new RegExp(`(^|[^\\p{L}\\p{N}])${escapeRegExp$1(word)}($|[^\\p{L}\\p{N}])`, "iu").test(message));
 }
 function isSceneChange(message, markers) {
 	return list(markers).some((marker) => {
-		return (/^[\p{L}\p{N}]/u.test(marker) ? new RegExp(`(^|\\n)\\s*${escapeRegExp(marker)}\\b`, "iu") : new RegExp(escapeRegExp(marker))).test(message);
+		return (/^[\p{L}\p{N}]/u.test(marker) ? new RegExp(`(^|\\n)\\s*${escapeRegExp$1(marker)}\\b`, "iu") : new RegExp(escapeRegExp$1(marker))).test(message);
 	});
 }
 /** Called for every new AI message. Returns the decision and the updated counters. */
@@ -3019,10 +3226,10 @@ function modelFromSource(source) {
 function num$1(value) {
 	return typeof value === "number" && Number.isFinite(value) ? value : void 0;
 }
-function str$1(value) {
+function str$2(value) {
 	return typeof value === "string" ? value : "";
 }
-function obj(value) {
+function obj$1(value) {
 	return typeof value === "object" && value !== null && !Array.isArray(value) ? value : {};
 }
 /** Removes the quality suffix the client appended to the first `|` segment. */
@@ -3068,17 +3275,17 @@ function parseNovelAIMetadata(text, fallbackModel) {
 	if (!raw) return null;
 	let comment;
 	try {
-		comment = obj(JSON.parse(raw));
+		comment = obj$1(JSON.parse(raw));
 	} catch {
 		return null;
 	}
 	if (!("prompt" in comment) && !("v4_prompt" in comment) && !("steps" in comment)) return null;
 	const model = modelFromSource(text.Source) ?? (isModelId(fallbackModel) ? fallbackModel : void 0);
-	const v4 = obj(comment.v4_prompt);
-	const v4Caption = obj(v4.caption);
-	const v4Negative = obj(obj(comment.v4_negative_prompt).caption);
-	const basePrompt = str$1(v4Caption.base_caption) || str$1(comment.prompt) || str$1(text.Description);
-	const baseNegative = str$1(v4Negative.base_caption) || str$1(comment.uc);
+	const v4 = obj$1(comment.v4_prompt);
+	const v4Caption = obj$1(v4.caption);
+	const v4Negative = obj$1(obj$1(comment.v4_negative_prompt).caption);
+	const basePrompt = str$2(v4Caption.base_caption) || str$2(comment.prompt) || str$2(text.Description);
+	const baseNegative = str$2(v4Negative.base_caption) || str$2(comment.uc);
 	const quality = model ? splitQualityTags(basePrompt, model) : {
 		prompt: basePrompt,
 		preset: void 0
@@ -3087,13 +3294,13 @@ function parseNovelAIMetadata(text, fallbackModel) {
 		negative: baseNegative,
 		preset: void 0
 	};
-	const charCaptions = Array.isArray(v4Caption.char_captions) ? v4Caption.char_captions.map(obj) : [];
-	const charNegatives = Array.isArray(v4Negative.char_captions) ? v4Negative.char_captions.map(obj) : [];
+	const charCaptions = Array.isArray(v4Caption.char_captions) ? v4Caption.char_captions.map(obj$1) : [];
+	const charNegatives = Array.isArray(v4Negative.char_captions) ? v4Negative.char_captions.map(obj$1) : [];
 	const characters = charCaptions.map((caption, i) => {
-		const center = obj(Array.isArray(caption.centers) ? caption.centers[0] : void 0);
+		const center = obj$1(Array.isArray(caption.centers) ? caption.centers[0] : void 0);
 		return {
-			prompt: str$1(caption.char_caption),
-			negative: str$1(charNegatives[i]?.char_caption),
+			prompt: str$2(caption.char_caption),
+			negative: str$2(charNegatives[i]?.char_caption),
 			x: num$1(center.x) ?? .5,
 			y: num$1(center.y) ?? .5
 		};
@@ -3117,13 +3324,13 @@ function parseNovelAIMetadata(text, fallbackModel) {
 	assign("cfgRescale", num$1(comment.cfg_rescale));
 	assign("width", num$1(comment.width));
 	assign("height", num$1(comment.height));
-	assign("sampler", str$1(comment.sampler) || void 0);
-	assign("noiseSchedule", str$1(comment.noise_schedule) || void 0);
+	assign("sampler", str$2(comment.sampler) || void 0);
+	assign("noiseSchedule", str$2(comment.noise_schedule) || void 0);
 	if (typeof comment.sm === "boolean") result.smea = comment.sm;
 	if (typeof comment.sm_dyn === "boolean") result.smeaDyn = comment.sm_dyn;
 	if ("skip_cfg_above_sigma" in comment) result.varietyBoost = comment.skip_cfg_above_sigma !== null;
 	if (typeof v4.use_coords === "boolean") result.useCoords = v4.use_coords;
-	assign("requestType", str$1(comment.request_type) || void 0);
+	assign("requestType", str$2(comment.request_type) || void 0);
 	return result;
 }
 var SOURCE_NAMES = {
@@ -3267,6 +3474,1018 @@ function compareMeta(a, b) {
 		"prompt",
 		"negativePrompt"
 	].filter((k) => JSON.stringify(a[k]) !== JSON.stringify(b[k]));
+}
+//#endregion
+//#region src/domain/passport.ts
+var PASSPORT_SLOTS = [
+	"base",
+	"hair",
+	"eyes",
+	"body",
+	"skin",
+	"clothing",
+	"accessories",
+	"style"
+];
+/** Built-in state modifiers (names are localized as naist.state.<id>). */
+var STATE_PRESETS = {
+	wet: "wet, wet hair, wet clothes",
+	messy: "messy hair, disheveled",
+	tears: "tears, crying",
+	blush: "blush, embarrassed",
+	injured: "injury, bandages, bruise",
+	sleepy: "sleepy, half-closed eyes",
+	angry: "angry, frown",
+	happy: "smile, happy"
+};
+function defaultPassport() {
+	return {
+		version: 1,
+		slots: {
+			base: "",
+			hair: "",
+			eyes: "",
+			body: "",
+			skin: "",
+			clothing: "",
+			accessories: "",
+			style: ""
+		},
+		nsfw: {
+			enabled: false,
+			tags: ""
+		},
+		outfits: [],
+		activeOutfit: "",
+		states: Object.entries(STATE_PRESETS).map(([id, tags]) => ({
+			id,
+			tags,
+			enabled: false
+		})),
+		negative: "",
+		pose: {
+			preset: "",
+			custom: ""
+		},
+		position: null
+	};
+}
+function str$1(value) {
+	return typeof value === "string" ? value : "";
+}
+function obj(value) {
+	return typeof value === "object" && value !== null && !Array.isArray(value) ? value : {};
+}
+function unit(value, fallback) {
+	const n = Number(value);
+	return Number.isFinite(n) ? Math.min(1, Math.max(0, n)) : fallback;
+}
+/** Defensive parse of a stored passport (hand-edited cards, older versions). Null when absent. */
+function normalizePassport(raw) {
+	if (raw === null || raw === void 0 || typeof raw !== "object" || Array.isArray(raw)) return null;
+	const source = obj(raw);
+	const result = defaultPassport();
+	const slots = obj(source.slots);
+	for (const slot of PASSPORT_SLOTS) result.slots[slot] = str$1(slots[slot]);
+	const nsfw = obj(source.nsfw);
+	result.nsfw = {
+		enabled: nsfw.enabled === true,
+		tags: str$1(nsfw.tags)
+	};
+	result.outfits = (Array.isArray(source.outfits) ? source.outfits : []).map(obj).map((o) => ({
+		name: str$1(o.name).trim(),
+		tags: str$1(o.tags)
+	})).filter((o) => o.name);
+	result.activeOutfit = result.outfits.some((o) => o.name === str$1(source.activeOutfit)) ? str$1(source.activeOutfit) : "";
+	if (Array.isArray(source.states)) {
+		const stored = source.states.map(obj).map((s) => ({
+			id: str$1(s.id).trim(),
+			tags: str$1(s.tags),
+			enabled: s.enabled === true
+		}));
+		const byId = new Map(stored.filter((s) => s.id).map((s) => [s.id, s]));
+		result.states = [...result.states.map((preset) => byId.get(preset.id) ?? preset), ...stored.filter((s) => s.id && !(s.id in STATE_PRESETS))];
+	}
+	result.negative = str$1(source.negative);
+	const pose = obj(source.pose);
+	result.pose = {
+		preset: str$1(pose.preset),
+		custom: str$1(pose.custom)
+	};
+	const position = obj(source.position);
+	result.position = source.position && typeof source.position === "object" ? {
+		x: unit(position.x, .5),
+		y: unit(position.y, .5)
+	} : null;
+	return result;
+}
+/** Splits a tag string, trims, drops empties and case-insensitive duplicates (first wins). */
+function splitTags(text) {
+	const seen = /* @__PURE__ */ new Set();
+	const result = [];
+	for (const raw of text.split(/,|\n/)) {
+		const tag = raw.trim();
+		const key = tag.toLowerCase();
+		if (!tag || seen.has(key)) continue;
+		seen.add(key);
+		result.push(tag);
+	}
+	return result;
+}
+function joinTags(...parts) {
+	return splitTags(parts.filter(Boolean).join(", ")).join(", ");
+}
+/** Tags of the clothing slot or the chosen outfit. */
+function clothingTags(passport, outfit) {
+	const name = outfit ?? passport.activeOutfit;
+	const found = passport.outfits.find((o) => o.name === name);
+	return found ? found.tags : passport.slots.clothing;
+}
+/**
+* The passport as one tag list in a stable order: base, hair, eyes, body, skin, clothing/outfit,
+* accessories, states, NSFW layer, art style.
+*/
+function passportTags(passport, options) {
+	const states = passport.states.filter((s) => s.enabled || options.states?.includes(s.id)).map((s) => s.tags);
+	const nsfw = options.allowNsfw && passport.nsfw.enabled ? passport.nsfw.tags : "";
+	return joinTags(passport.slots.base, passport.slots.hair, passport.slots.eyes, passport.slots.body, passport.slots.skin, clothingTags(passport, options.outfit), passport.slots.accessories, ...states, nsfw, passport.slots.style);
+}
+//#endregion
+//#region src/domain/poses.ts
+/** Non-English keywords live in a data file (source files stay free of non-ASCII UI text). */
+var EXTRA_KEYWORDS = {
+	poses: {
+		"standing": ["стоит", "стоя"],
+		"hands_on_hips": ["руки в боки"],
+		"leaning_wall": ["прислонил"],
+		"walking": [
+			"идёт",
+			"идет",
+			"шагает"
+		],
+		"sitting": [
+			"сидит",
+			"сидя",
+			"села",
+			"сел "
+		],
+		"sitting_chair": ["на стул", "в кресл"],
+		"sitting_floor": ["на полу"],
+		"crossed_legs": ["закинув ногу"],
+		"squatting": [
+			"на корточк",
+			"присела",
+			"присел"
+		],
+		"lying": [
+			"лежит",
+			"лёжа",
+			"лежа"
+		],
+		"on_back": ["на спине"],
+		"on_stomach": ["на животе"],
+		"on_side": ["на боку"],
+		"sleeping": ["спит", "уснул"],
+		"kneeling": ["на колен"],
+		"on_one_knee": ["на одно колено"],
+		"from_behind": ["спиной", "отвернул"],
+		"looking_back": ["через плечо", "оглядыва"],
+		"looking_at_viewer": ["смотрит на тебя", "смотрит на вас"],
+		"looking_away": ["отводит взгляд", "отвела взгляд"],
+		"looking_up": ["поднимает взгляд", "смотрит вверх"],
+		"looking_down": ["опускает взгляд", "смотрит вниз"],
+		"crossed_arms": ["скрестил"],
+		"arms_up": ["поднимает руки"],
+		"arms_behind_back": ["руки за спин"],
+		"hand_on_chin": ["подпирает подбородок"],
+		"waving": ["машет"],
+		"running": ["бежит", "бегут"],
+		"jumping": ["прыга"],
+		"leaning_forward": ["наклоняется", "наклонилась"],
+		"stretching": ["потягива"],
+		"reading": ["читает"],
+		"eating": ["ест ", "кушает"],
+		"drinking": [
+			"пьёт",
+			"пьет",
+			"отпивает"
+		],
+		"fighting_stance": ["боевую стойку", "боевой стойке"]
+	},
+	pairs: {
+		"auto": [
+			"обнимает",
+			"обняла",
+			"обнял"
+		],
+		"hug_from_behind": ["обнимает сзади"],
+		"holding_hands": ["за руку", "держатся за руки"],
+		"back_to_back": ["спиной к спине"],
+		"princess_carry": ["несёт на руках", "несет на руках"],
+		"piggyback": ["на спине несёт", "на закорках"],
+		"headpat": ["гладит по голове"],
+		"high_five": ["дай пять"],
+		"face_to_face": ["лицом к лицу"],
+		"eye_contact": ["встречаются взглядами"],
+		"sitting_on_lap": ["на коленях у"],
+		"dancing": ["танцуют"],
+		"fighting": ["сражаются", "дерутся"]
+	}
+};
+var POSE_CATEGORIES = [
+	"standing",
+	"sitting",
+	"lying",
+	"kneeling",
+	"back",
+	"gaze",
+	"arms",
+	"action"
+];
+var POSES = [
+	{
+		id: "standing",
+		category: "standing",
+		tags: "standing",
+		keywords: ["stands", "standing"]
+	},
+	{
+		id: "contrapposto",
+		category: "standing",
+		tags: "standing, contrapposto",
+		keywords: []
+	},
+	{
+		id: "hands_on_hips",
+		category: "standing",
+		tags: "standing, hands on hips",
+		keywords: ["hands on her hips", "hands on his hips"]
+	},
+	{
+		id: "leaning_wall",
+		category: "standing",
+		tags: "standing, against wall, leaning back",
+		keywords: ["leans against"]
+	},
+	{
+		id: "walking",
+		category: "standing",
+		tags: "walking",
+		keywords: ["walks", "walking"]
+	},
+	{
+		id: "sitting",
+		category: "sitting",
+		tags: "sitting",
+		keywords: [
+			"sits",
+			"sitting",
+			"sat down"
+		]
+	},
+	{
+		id: "sitting_chair",
+		category: "sitting",
+		tags: "sitting, on chair",
+		keywords: ["on a chair", "in a chair"]
+	},
+	{
+		id: "sitting_floor",
+		category: "sitting",
+		tags: "sitting, on floor",
+		keywords: ["on the floor"]
+	},
+	{
+		id: "crossed_legs",
+		category: "sitting",
+		tags: "sitting, crossed legs",
+		keywords: ["crosses her legs", "crossed legs"]
+	},
+	{
+		id: "seiza",
+		category: "sitting",
+		tags: "seiza",
+		keywords: ["seiza"]
+	},
+	{
+		id: "squatting",
+		category: "sitting",
+		tags: "squatting",
+		keywords: ["squats", "squatting"]
+	},
+	{
+		id: "lying",
+		category: "lying",
+		tags: "lying",
+		keywords: ["lies", "lying"]
+	},
+	{
+		id: "on_back",
+		category: "lying",
+		tags: "lying, on back",
+		keywords: ["on her back", "on his back"]
+	},
+	{
+		id: "on_stomach",
+		category: "lying",
+		tags: "lying, on stomach",
+		keywords: ["on her stomach", "on his stomach"]
+	},
+	{
+		id: "on_side",
+		category: "lying",
+		tags: "lying, on side",
+		keywords: ["on her side", "on his side"]
+	},
+	{
+		id: "sleeping",
+		category: "lying",
+		tags: "sleeping, closed eyes",
+		keywords: [
+			"sleeps",
+			"asleep",
+			"sleeping"
+		]
+	},
+	{
+		id: "kneeling",
+		category: "kneeling",
+		tags: "kneeling",
+		keywords: ["kneels", "kneeling"]
+	},
+	{
+		id: "on_one_knee",
+		category: "kneeling",
+		tags: "on one knee",
+		keywords: ["one knee"]
+	},
+	{
+		id: "from_behind",
+		category: "back",
+		tags: "from behind",
+		keywords: ["turns away", "turned away"]
+	},
+	{
+		id: "looking_back",
+		category: "back",
+		tags: "from behind, looking back",
+		keywords: [
+			"looks back",
+			"over her shoulder",
+			"over his shoulder"
+		]
+	},
+	{
+		id: "looking_at_viewer",
+		category: "gaze",
+		tags: "looking at viewer",
+		keywords: ["looks at you", "looking at you"]
+	},
+	{
+		id: "looking_away",
+		category: "gaze",
+		tags: "looking away",
+		keywords: ["looks away"]
+	},
+	{
+		id: "looking_up",
+		category: "gaze",
+		tags: "looking up",
+		keywords: ["looks up"]
+	},
+	{
+		id: "looking_down",
+		category: "gaze",
+		tags: "looking down",
+		keywords: ["looks down"]
+	},
+	{
+		id: "crossed_arms",
+		category: "arms",
+		tags: "crossed arms",
+		keywords: [
+			"crosses her arms",
+			"crosses his arms",
+			"arms crossed"
+		]
+	},
+	{
+		id: "arms_up",
+		category: "arms",
+		tags: "arms up",
+		keywords: ["raises her arms", "raises his arms"]
+	},
+	{
+		id: "arms_behind_back",
+		category: "arms",
+		tags: "arms behind back",
+		keywords: ["hands behind her back"]
+	},
+	{
+		id: "hand_on_chin",
+		category: "arms",
+		tags: "hand on own chin",
+		keywords: ["hand on her chin"]
+	},
+	{
+		id: "waving",
+		category: "arms",
+		tags: "waving",
+		keywords: ["waves", "waving"]
+	},
+	{
+		id: "peace_sign",
+		category: "arms",
+		tags: "v",
+		keywords: ["peace sign"]
+	},
+	{
+		id: "running",
+		category: "action",
+		tags: "running",
+		keywords: ["runs", "running"]
+	},
+	{
+		id: "jumping",
+		category: "action",
+		tags: "jumping",
+		keywords: ["jumps", "jumping"]
+	},
+	{
+		id: "leaning_forward",
+		category: "action",
+		tags: "leaning forward",
+		keywords: ["leans forward", "leans closer"]
+	},
+	{
+		id: "stretching",
+		category: "action",
+		tags: "stretching",
+		keywords: ["stretches"]
+	},
+	{
+		id: "reading",
+		category: "action",
+		tags: "reading, holding book",
+		keywords: ["reads", "reading"]
+	},
+	{
+		id: "eating",
+		category: "action",
+		tags: "eating",
+		keywords: ["eats", "eating"]
+	},
+	{
+		id: "drinking",
+		category: "action",
+		tags: "drinking, holding cup",
+		keywords: ["drinks", "sips"]
+	},
+	{
+		id: "fighting_stance",
+		category: "action",
+		tags: "fighting stance",
+		keywords: ["fighting stance"]
+	}
+].map((pose) => ({
+	...pose,
+	keywords: [...pose.keywords, ...EXTRA_KEYWORDS.poses[pose.id] ?? []]
+}));
+var FRAMINGS = [
+	{
+		id: "auto",
+		tags: ""
+	},
+	{
+		id: "portrait",
+		tags: "portrait"
+	},
+	{
+		id: "upper_body",
+		tags: "upper body"
+	},
+	{
+		id: "cowboy_shot",
+		tags: "cowboy shot"
+	},
+	{
+		id: "full_body",
+		tags: "full body"
+	}
+];
+var CAMERA_ANGLES = [
+	{
+		id: "auto",
+		tags: ""
+	},
+	{
+		id: "from_above",
+		tags: "from above"
+	},
+	{
+		id: "from_below",
+		tags: "from below"
+	},
+	{
+		id: "from_side",
+		tags: "from side"
+	},
+	{
+		id: "straight_on",
+		tags: "straight-on"
+	},
+	{
+		id: "dutch_angle",
+		tags: "dutch angle"
+	},
+	{
+		id: "pov",
+		tags: "pov"
+	}
+];
+var DISTANCES = [
+	{
+		id: "auto",
+		tags: ""
+	},
+	{
+		id: "close_up",
+		tags: "close-up"
+	},
+	{
+		id: "wide_shot",
+		tags: "wide shot"
+	},
+	{
+		id: "very_wide_shot",
+		tags: "very wide shot"
+	}
+];
+var PAIR_POSES = [
+	{
+		id: "hug",
+		tag: "hug",
+		kind: "directed",
+		layout: [{
+			x: .4,
+			y: .5
+		}, {
+			x: .6,
+			y: .5
+		}],
+		keywords: ["hugs", "embraces"]
+	},
+	{
+		id: "hug_from_behind",
+		tag: "hug from behind",
+		kind: "directed",
+		layout: [{
+			x: .5,
+			y: .5
+		}, {
+			x: .5,
+			y: .5
+		}],
+		keywords: ["hugs her from behind", "hugs him from behind"]
+	},
+	{
+		id: "holding_hands",
+		tag: "holding hands",
+		kind: "mutual",
+		layout: [{
+			x: .3,
+			y: .5
+		}, {
+			x: .7,
+			y: .5
+		}],
+		keywords: [
+			"holding hands",
+			"takes her hand",
+			"takes his hand"
+		]
+	},
+	{
+		id: "back_to_back",
+		tag: "back-to-back",
+		kind: "mutual",
+		layout: [{
+			x: .3,
+			y: .5
+		}, {
+			x: .7,
+			y: .5
+		}],
+		keywords: ["back to back"]
+	},
+	{
+		id: "princess_carry",
+		tag: "princess carry",
+		kind: "directed",
+		layout: [{
+			x: .5,
+			y: .5
+		}, {
+			x: .5,
+			y: .3
+		}],
+		keywords: ["carries her", "on his arms"]
+	},
+	{
+		id: "piggyback",
+		tag: "piggyback",
+		kind: "directed",
+		layout: [{
+			x: .5,
+			y: .7
+		}, {
+			x: .5,
+			y: .3
+		}],
+		keywords: ["piggyback"]
+	},
+	{
+		id: "headpat",
+		tag: "headpat",
+		kind: "directed",
+		layout: [{
+			x: .3,
+			y: .3
+		}, {
+			x: .7,
+			y: .5
+		}],
+		keywords: ["pats her head", "pats his head"]
+	},
+	{
+		id: "high_five",
+		tag: "high five",
+		kind: "mutual",
+		layout: [{
+			x: .3,
+			y: .5
+		}, {
+			x: .7,
+			y: .5
+		}],
+		keywords: ["high five"]
+	},
+	{
+		id: "face_to_face",
+		tag: "face-to-face",
+		kind: "mutual",
+		layout: [{
+			x: .3,
+			y: .5
+		}, {
+			x: .7,
+			y: .5
+		}],
+		keywords: ["face to face"]
+	},
+	{
+		id: "eye_contact",
+		tag: "eye contact",
+		kind: "mutual",
+		layout: [{
+			x: .3,
+			y: .5
+		}, {
+			x: .7,
+			y: .5
+		}],
+		keywords: ["eyes meet"]
+	},
+	{
+		id: "sitting_on_lap",
+		tag: "sitting on lap",
+		kind: "directed",
+		layout: [{
+			x: .5,
+			y: .3
+		}, {
+			x: .5,
+			y: .7
+		}],
+		keywords: ["on his lap", "on her lap"]
+	},
+	{
+		id: "dancing",
+		tag: "dancing",
+		kind: "mutual",
+		layout: [{
+			x: .4,
+			y: .5
+		}, {
+			x: .6,
+			y: .5
+		}],
+		keywords: ["dance together", "dancing with"]
+	},
+	{
+		id: "fighting",
+		tag: "fighting",
+		kind: "mutual",
+		layout: [{
+			x: .3,
+			y: .5
+		}, {
+			x: .7,
+			y: .5
+		}],
+		keywords: ["fight each other"]
+	}
+].map((pose) => ({
+	...pose,
+	keywords: [...pose.keywords, ...EXTRA_KEYWORDS.pairs[pose.id] ?? []]
+}));
+function findPose(id, custom = []) {
+	return custom.find((p) => p.id === id) ?? POSES.find((p) => p.id === id);
+}
+function findPairPose(id) {
+	return PAIR_POSES.find((p) => p.id === id);
+}
+function containsKeyword(text, keywords) {
+	const lower = ` ${text.toLowerCase()} `;
+	let best = -1;
+	for (const keyword of keywords) {
+		const index = lower.indexOf(keyword.toLowerCase());
+		if (index >= 0 && (best < 0 || index < best)) best = index;
+	}
+	return best;
+}
+/** First pose whose keyword appears in the text (earliest mention wins). */
+function detectPose(text, library = POSES) {
+	let found = null;
+	let at = Number.POSITIVE_INFINITY;
+	for (const pose of library) {
+		const index = containsKeyword(text, pose.keywords);
+		if (index >= 0 && index < at) {
+			at = index;
+			found = pose;
+		}
+	}
+	return found;
+}
+function detectPairPose(text) {
+	let found = null;
+	let at = Number.POSITIVE_INFINITY;
+	for (const pose of PAIR_POSES) {
+		const index = containsKeyword(text, pose.keywords);
+		if (index >= 0 && index < at) {
+			at = index;
+			found = pose;
+		}
+	}
+	return found;
+}
+/**
+* Per-participant tags of a pair pose. With interaction support (V4+ character prompts) the first
+* participant is the source, the second the target; otherwise both get the plain tag.
+*/
+function pairPoseTags(pose, interactions) {
+	if (!interactions) return [pose.tag, pose.tag];
+	if (pose.kind === "mutual") return [`mutual#${pose.tag}`, `mutual#${pose.tag}`];
+	return [`source#${pose.tag}`, `target#${pose.tag}`];
+}
+function optionTags(options, id) {
+	return options.find((o) => o.id === id)?.tags ?? "";
+}
+//#endregion
+//#region src/domain/scene-assembly.ts
+function escapeRegExp(text) {
+	return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+/** Earliest whole-word mention of a name or alias (Unicode letters), -1 when absent. */
+function mentionIndex(text, names) {
+	let best = -1;
+	for (const name of names) {
+		const trimmed = name.trim();
+		if (trimmed.length < 2) continue;
+		const match = new RegExp(`(^|[^\\p{L}\\p{N}])${escapeRegExp(trimmed)}(?=$|[^\\p{L}\\p{N}])`, "iu").exec(text);
+		if (match && (best < 0 || match.index < best)) best = match.index;
+	}
+	return best;
+}
+/**
+* Candidates mentioned in the message, in order of first mention. When nobody is named, the
+* speaker of the message is in the frame. Capped by the model's character limit.
+*/
+function detectParticipants(message, candidates, options) {
+	const mentioned = candidates.map((c) => ({
+		c,
+		at: mentionIndex(message, [c.name, ...c.aliases])
+	})).filter((m) => m.at >= 0).sort((a, b) => a.at - b.at).map((m) => m.c);
+	return (mentioned.length ? mentioned : candidates.filter((c) => c.key === options.speakerKey).slice(0, 1)).slice(0, Math.max(0, options.max));
+}
+/**
+* Evenly spread positions: one row of up to five, then more rows (V5 holds up to 32).
+* Locked positions are kept; grid models snap to the 5x5 grid.
+*/
+function autoLayout(count, caps, locked = []) {
+	const perRow = Math.min(5, Math.max(1, count));
+	const rows = Math.ceil(count / perRow);
+	const result = [];
+	for (let i = 0; i < count; i++) {
+		const fixed = locked[i];
+		if (fixed) {
+			result.push(placeOnCanvas(fixed, caps));
+			continue;
+		}
+		const row = Math.floor(i / perRow);
+		const inRow = Math.min(perRow, count - row * perRow);
+		const x = (i % perRow + 1) / (inRow + 1);
+		const y = rows === 1 ? .5 : (row + 1) / (rows + 1);
+		result.push(placeOnCanvas({
+			x,
+			y
+		}, caps));
+	}
+	return result;
+}
+function participantFrom(candidate, position, pose) {
+	return {
+		key: candidate.key,
+		name: candidate.name,
+		enabled: true,
+		passport: candidate.passport,
+		fallbackPrompt: candidate.fallbackPrompt,
+		fallbackNegative: candidate.fallbackNegative,
+		outfit: "",
+		states: [],
+		pose: pose?.id ?? candidate.passport?.pose.preset ?? "",
+		poseTags: candidate.passport?.pose.custom ?? "",
+		position,
+		negative: ""
+	};
+}
+function genderOf(tags) {
+	const list = splitTags(tags).map((t) => t.toLowerCase());
+	if (list.some((t) => /^(1)?girl$|^woman$|^female$/.test(t))) return "girl";
+	if (list.some((t) => /^(1)?boy$|^man$|^male$/.test(t))) return "boy";
+	if (list.some((t) => /^(1)?other$/.test(t))) return "other";
+	return null;
+}
+/** Count tags for the base prompt ("2girls, 1boy"), from each participant's base tags. */
+function countTags(tagsPerParticipant) {
+	const counts = {
+		girl: 0,
+		boy: 0,
+		other: 0
+	};
+	let known = 0;
+	for (const tags of tagsPerParticipant) {
+		const gender = genderOf(tags);
+		if (gender) {
+			counts[gender]++;
+			known++;
+		}
+	}
+	if (!known) return "";
+	const parts = [];
+	if (counts.girl) parts.push(counts.girl === 1 ? "1girl" : `${Math.min(counts.girl, 6)}girls`);
+	if (counts.boy) parts.push(counts.boy === 1 ? "1boy" : `${Math.min(counts.boy, 6)}boys`);
+	if (counts.other) parts.push(counts.other === 1 ? "1other" : `${Math.min(counts.other, 6)}others`);
+	return parts.join(", ");
+}
+/** Turns the composer state into the base prompt and character slots for the request. */
+function buildScene(spec, caps, options) {
+	const active = spec.participants.filter((p) => p.enabled);
+	const capacity = caps.maxCharacters;
+	const kept = capacity > 0 ? active.slice(0, capacity) : active;
+	const dropped = capacity > 0 ? active.slice(capacity).map((p) => p.name) : [];
+	const pair = spec.pair ? findPairPose(spec.pair.pose) : void 0;
+	const pairTags = pair ? pairPoseTags(pair, caps.v4Prompt && capacity > 0) : null;
+	const characterTags = kept.map((p) => {
+		const identity = p.passport ? passportTags(p.passport, {
+			outfit: p.outfit || void 0,
+			states: p.states,
+			allowNsfw: options.allowNsfw
+		}) : p.fallbackPrompt;
+		const pose = p.pose ? findPose(p.pose, options.customPoses)?.tags ?? "" : "";
+		const index = spec.participants.indexOf(p);
+		const pairTag = pairTags && spec.pair ? index === spec.pair.a ? pairTags[0] : index === spec.pair.b ? pairTags[1] : "" : "";
+		return {
+			p,
+			prompt: joinTags(identity, pose, p.poseTags, pairTag),
+			negative: joinTags(p.passport?.negative ?? p.fallbackNegative, p.negative)
+		};
+	});
+	const counts = countTags(kept.map((p) => p.passport ? p.passport.slots.base : p.fallbackPrompt));
+	const framing = joinTags(optionTags(FRAMINGS, spec.framing), optionTags(CAMERA_ANGLES, spec.camera), optionTags(DISTANCES, spec.distance));
+	if (capacity === 0) return {
+		prompt: joinTags(counts, spec.base, ...characterTags.map((c) => c.prompt), framing),
+		characters: [],
+		useCoords: false,
+		withoutPassport: kept.filter((p) => !p.passport).map((p) => p.name),
+		dropped
+	};
+	const canPosition = caps.positioning !== "none" && (kept.length > 1 || caps.canPositionSingleCharacter) && spec.useCoords;
+	return {
+		prompt: joinTags(counts, spec.base, framing),
+		characters: characterTags.map(({ p, prompt, negative }) => {
+			const point = placeOnCanvas(p.position, caps);
+			return {
+				prompt,
+				negative,
+				x: point.x,
+				y: point.y,
+				enabled: true
+			};
+		}),
+		useCoords: canPosition,
+		withoutPassport: kept.filter((p) => !p.passport).map((p) => p.name),
+		dropped
+	};
+}
+/** Sentences of a message (split after . ! ? … and at line breaks). */
+function sentences(text) {
+	return text.split(/(?<=[.!?…])\s+|\n+/).map((s) => s.trim()).filter(Boolean);
+}
+/**
+* Pair pose from the text: the sentence with the action decides the participants — the first
+* one named there is the source ("Seraphina hugs Lyra": Seraphina hugs), the second the target.
+*/
+function detectPairInText(text, participants) {
+	if (participants.length < 2) return null;
+	for (const sentence of sentences(text)) {
+		const pose = detectPairPose(sentence);
+		if (!pose) continue;
+		const [first, second] = participants.map((p, i) => ({
+			i,
+			at: mentionIndex(sentence, [p.name, ...p.aliases ?? []])
+		})).filter((m) => m.at >= 0).sort((x, y) => x.at - y.at);
+		if (first && second) return {
+			pose: pose.id,
+			a: first.i,
+			b: second.i
+		};
+		if (first && participants.length === 2) return {
+			pose: pose.id,
+			a: first.i,
+			b: first.i === 0 ? 1 : 0
+		};
+	}
+	const pose = detectPairPose(text);
+	return pose ? {
+		pose: pose.id,
+		a: 0,
+		b: 1
+	} : null;
+}
+/** Applies a pair pose's canvas layout to its two participants. */
+function applyPairLayout(spec, caps) {
+	if (!spec.pair) return spec;
+	const pose = findPairPose(spec.pair.pose);
+	const a = spec.participants[spec.pair.a];
+	const b = spec.participants[spec.pair.b];
+	if (!pose || !a || !b) return spec;
+	a.position = placeOnCanvas(pose.layout[0], caps);
+	b.position = placeOnCanvas(pose.layout[1], caps);
+	resolveOverlaps(spec, caps, /* @__PURE__ */ new Set([spec.pair.a, spec.pair.b]));
+	return spec;
+}
+var pointKey = (p) => `${p.x},${p.y}`;
+/**
+* Moves participants that share a spot with an earlier (or fixed) one to the nearest free spot:
+* a 5x5 grid cell, or the same cells used as a free-positioning raster on V5.
+*/
+function resolveOverlaps(spec, caps, fixed = /* @__PURE__ */ new Set()) {
+	const cells = [];
+	for (const y of [
+		.1,
+		.3,
+		.5,
+		.7,
+		.9
+	]) for (const x of [
+		.1,
+		.3,
+		.5,
+		.7,
+		.9
+	]) cells.push(placeOnCanvas({
+		x,
+		y
+	}, caps));
+	const occupied = /* @__PURE__ */ new Set();
+	spec.participants.forEach((p, i) => {
+		if (fixed.has(i) && p.enabled) occupied.add(pointKey(p.position));
+	});
+	spec.participants.forEach((p, i) => {
+		if (fixed.has(i) || !p.enabled) return;
+		if (!occupied.has(pointKey(p.position))) {
+			occupied.add(pointKey(p.position));
+			return;
+		}
+		const from = p.position;
+		const free = cells.filter((cell) => !occupied.has(pointKey(cell))).sort((x, y) => Math.hypot(x.x - from.x, (x.y - from.y) * 2) - Math.hypot(y.x - from.x, (y.y - from.y) * 2))[0];
+		if (free) {
+			p.position = free;
+			occupied.add(pointKey(free));
+		}
+	});
+	return spec;
 }
 //#endregion
 //#region src/features/auto/auto-generation.ts
@@ -4560,6 +5779,14 @@ var Pipeline = class {
 		});
 		return this.controller.prepare(assembled.overrides);
 	}
+	/** Composed scene (TZ Phase 4) as the inspector will see it. */
+	previewScene(scene, generation) {
+		const assembled = this.assemble(MODE.FREE, scene, "", {
+			isSwipe: false,
+			expanded: true
+		}, { generation });
+		return this.controller.prepare(assembled.overrides);
+	}
 	assemble(mode, scene, additionalNegative, flags, overrides = {}, forcedSize) {
 		const s = settings();
 		const c = ctx();
@@ -4626,7 +5853,8 @@ var Pipeline = class {
 				scene = edited.prompt;
 				additionalNegative = edited.negative ?? additionalNegative;
 			}
-			if (!scene.trim()) return null;
+			const hasCharacters = (o.generation?.characters ?? []).some((ch) => ch.enabled && ch.prompt.trim());
+			if (!scene.trim() && !hasCharacters) return null;
 		} else if (req.swipe) {
 			const attachment = req.swipe.attachment;
 			mode = attachment?.generation_type ?? MODE.FREE;
@@ -5177,6 +6405,240 @@ var InlineImages = class {
 	}
 };
 //#endregion
+//#region src/features/characters/passport-store.ts
+function cardPassport(character) {
+	const field = character?.data?.extensions?.[CARD_FIELD];
+	return normalizePassport(field?.passport);
+}
+/** Lazily loaded cards (shallow) have no extensions until unshallowed. */
+async function loadCharacter(index) {
+	const c = ctx();
+	if (c.characters[index]?.shallow) await c.unshallowCharacter(index);
+	return ctx().characters[index];
+}
+async function saveCardPassport(index, passport) {
+	const c = ctx();
+	const character = await loadCharacter(index);
+	if (!character) return;
+	const existing = character.data?.extensions?.["nai_studio"] ?? {};
+	await c.writeExtensionField(index, CARD_FIELD, {
+		...existing,
+		passport
+	});
+}
+async function currentPersonaKey() {
+	try {
+		return (await importHost("/scripts/personas.js")).user_avatar || "default";
+	} catch {
+		return "default";
+	}
+}
+function personaPassport(key) {
+	return normalizePassport(settings().scene.personaPassports[key]);
+}
+function savePersonaPassport(key, passport) {
+	settings().scene.personaPassports[key] = passport;
+	saveSettings();
+}
+//#endregion
+//#region src/features/scene/scene-service.ts
+var PERSONA_PREFIX = "persona:";
+function customPoses() {
+	return settings().poses.custom.map((p) => ({
+		id: p.id,
+		category: p.category || "standing",
+		tags: p.tags,
+		keywords: p.keywords
+	}));
+}
+function poseLibrary() {
+	const custom = customPoses();
+	return [...custom, ...POSES.filter((p) => !custom.some((c) => c.id === p.id))];
+}
+function currentCaps() {
+	const model = settings().generation.model;
+	return getCapabilities(isModelId(model) ? model : DEFAULT_MODEL);
+}
+function aliasesOf(name) {
+	const first = name.trim().split(/\s+/)[0] ?? "";
+	return first && first !== name.trim() ? [first] : [];
+}
+async function characterCandidate(index) {
+	const character = await loadCharacter(index);
+	if (!character) return null;
+	const prompt = readCharacterPrompt(character);
+	return {
+		key: avatarKey(character.avatar),
+		name: character.name,
+		aliases: aliasesOf(character.name),
+		passport: cardPassport(character),
+		fallbackPrompt: prompt.positive,
+		fallbackNegative: prompt.negative,
+		isUser: false
+	};
+}
+/** Characters of the current chat (the 1:1 character or every group member) and the persona. */
+async function sceneCandidates() {
+	const c = ctx();
+	const result = [];
+	if (c.groupId) {
+		const members = c.groups.find((g) => g.id === c.groupId)?.members ?? [];
+		for (const avatar of members) {
+			const index = c.characters.findIndex((ch) => ch.avatar === avatar);
+			if (index < 0) continue;
+			const candidate = await characterCandidate(index);
+			if (candidate) result.push(candidate);
+		}
+	} else if (c.characterId !== void 0 && c.characterId !== null && c.characterId !== "") {
+		const candidate = await characterCandidate(Number(c.characterId));
+		if (candidate) result.push(candidate);
+	}
+	const personaKey = await currentPersonaKey();
+	result.push({
+		key: `${PERSONA_PREFIX}${personaKey}`,
+		name: c.name1,
+		aliases: aliasesOf(c.name1),
+		passport: personaPassport(personaKey),
+		fallbackPrompt: "",
+		fallbackNegative: "",
+		isUser: true
+	});
+	return result;
+}
+function sentencesMentioning(text, candidate) {
+	const names = [candidate.name, ...candidate.aliases].map((n) => n.toLowerCase()).filter((n) => n.length > 1);
+	return text.split(/(?<=[.!?…])\s+|\n+/).filter((sentence) => names.some((n) => sentence.toLowerCase().includes(n))).join(" ");
+}
+function lastMessage() {
+	const chat = ctx().chat;
+	for (let i = chat.length - 1; i >= 0; i--) {
+		const message = chat[i];
+		if (!message || message.is_system) continue;
+		const avatar = typeof message.original_avatar === "string" ? message.original_avatar : void 0;
+		const c = ctx();
+		const speakerKey = message.is_user ? void 0 : avatar ? avatarKey(avatar) : c.characterId !== void 0 ? avatarKey(c.characters[Number(c.characterId)]?.avatar) : void 0;
+		return {
+			text: message.mes.replace(/\[nai:img:[^\]]+\]/g, ""),
+			speakerKey
+		};
+	}
+	return {
+		text: "",
+		speakerKey: void 0
+	};
+}
+var SceneService = class {
+	pipeline;
+	inline;
+	constructor(pipeline, inline) {
+		this.pipeline = pipeline;
+		this.inline = inline;
+	}
+	/** An empty scene with every candidate available (the composer starts from this). */
+	async emptySpec() {
+		const s = settings().scene;
+		return {
+			candidates: await sceneCandidates(),
+			spec: {
+				base: "",
+				framing: s.framing,
+				camera: s.camera,
+				distance: s.distance,
+				pair: null,
+				participants: [],
+				useCoords: s.useCoords
+			}
+		};
+	}
+	/**
+	* Automatic assembly from the last message (or a given text): who is in the frame, their
+	* poses (from the sentences that mention them, else the passport default), a pair pose,
+	* positions, and optionally an LLM-written location for the base prompt.
+	*/
+	async autoSpec(text) {
+		const { spec, candidates } = await this.emptySpec();
+		const source = text !== void 0 ? {
+			text,
+			speakerKey: void 0
+		} : lastMessage();
+		const caps = currentCaps();
+		const max = caps.maxCharacters > 0 ? caps.maxCharacters : 3;
+		const found = detectParticipants(source.text, candidates, {
+			speakerKey: source.speakerKey,
+			max
+		});
+		const library = poseLibrary();
+		const positions = autoLayout(found.length, caps, found.map((c) => c.passport?.position ?? null));
+		spec.participants = found.map((candidate, i) => {
+			const pose = detectPose(sentencesMentioning(source.text, candidate) || (found.length === 1 ? source.text : ""), library);
+			return participantFrom(candidate, positions[i] ?? {
+				x: .5,
+				y: .5
+			}, pose);
+		});
+		const pair = detectPairInText(source.text, found);
+		if (pair) {
+			spec.pair = pair;
+			applyPairLayout(spec, caps);
+		}
+		if (settings().scene.llmBase && source.text.trim()) spec.base = await this.describeLocation();
+		return {
+			spec,
+			candidates
+		};
+	}
+	/** Location tags written by the LLM with the built-in "background" template. */
+	async describeLocation() {
+		const template = settings().prompts.templates[String(MODE.BACKGROUND)] ?? DEFAULT_TEMPLATES[String(MODE.BACKGROUND)] ?? "";
+		try {
+			return processReply(await ctx().generateQuietPrompt({ quietPrompt: template }), false).replace(/^background,\s*/i, "");
+		} catch {
+			return "";
+		}
+	}
+	build(spec) {
+		return buildScene(spec, currentCaps(), {
+			allowNsfw: settings().scene.allowNsfw,
+			customPoses: customPoses()
+		});
+	}
+	/** Overrides for the panel preview and the inspector. */
+	overrides(built) {
+		return {
+			characters: built.characters,
+			useCoords: built.useCoords
+		};
+	}
+	/** Generates the composed scene into a new message or inline into the last message. */
+	async generate(spec, target) {
+		const built = this.build(spec);
+		if (!built.prompt.trim() && !built.characters.some((c) => c.prompt.trim())) throw new NaiError("no-usable-message", "none");
+		const overrides = {
+			edit: false,
+			generation: this.overrides(built)
+		};
+		if (target === "inline") {
+			const chat = ctx().chat;
+			let messageId = chat.length - 1;
+			while (messageId >= 0 && chat[messageId]?.is_system) messageId--;
+			if (messageId < 0) throw new NaiError("no-usable-message", "none");
+			return (await this.inline.insert(messageId, {
+				trigger: built.prompt,
+				scene: built.prompt,
+				mode: MODE.FREE,
+				overrides
+			}))?.id ?? null;
+		}
+		return await this.pipeline.generatePicture({
+			initiator: "panel",
+			trigger: built.prompt || "scene",
+			scene: built.prompt,
+			mode: MODE.FREE,
+			overrides
+		});
+	}
+};
+//#endregion
 //#region src/features/takeover/migration.ts
 /** Defaults of the built-in extension (public/scripts/extensions/stable-diffusion/index.js:220-221). */
 var BUILTIN_DEFAULT_PREFIX = "best quality, absurdres, aesthetic,";
@@ -5514,7 +6976,7 @@ function bytes(n) {
 	if (n > 1024 ** 2) return `${(n / 1024 ** 2).toFixed(1)} MB`;
 	return `${Math.round(n / 1024)} KB`;
 }
-function options(values, current, emptyKey) {
+function options$1(values, current, emptyKey) {
 	return [`<option value="">${escapeHtml$2(t(emptyKey))}</option>`, ...values.map((v) => `<option value="${escapeHtml$2(v)}"${v === current ? " selected" : ""}>${escapeHtml$2(v)}</option>`)].join("");
 }
 async function openGallery(actions) {
@@ -5546,9 +7008,9 @@ async function openGallery(actions) {
 		return `
         <div class="naist-gallery-toolbar">
             <input class="text_pole naist-g-text" type="search" placeholder="${escapeHtml$2(t("naist.gallery.search"))}" value="${escapeHtml$2(query.text)}">
-            <select class="text_pole naist-g-model">${options(f.models, query.model, "naist.gallery.allModels")}</select>
-            <select class="text_pole naist-g-character">${options(f.characters, query.character, "naist.gallery.allCharacters")}</select>
-            <select class="text_pole naist-g-chat">${options(f.chats, query.chatId, "naist.gallery.allChats")}</select>
+            <select class="text_pole naist-g-model">${options$1(f.models, query.model, "naist.gallery.allModels")}</select>
+            <select class="text_pole naist-g-character">${options$1(f.characters, query.character, "naist.gallery.allCharacters")}</select>
+            <select class="text_pole naist-g-chat">${options$1(f.chats, query.chatId, "naist.gallery.allChats")}</select>
             <input class="text_pole naist-g-from" type="date" value="${escapeHtml$2(query.from)}" title="${escapeHtml$2(t("naist.gallery.from"))}">
             <input class="text_pole naist-g-to" type="date" value="${escapeHtml$2(query.to)}" title="${escapeHtml$2(t("naist.gallery.to"))}">
             <select class="text_pole naist-g-sort">
@@ -6743,6 +8205,805 @@ function registerInlineCommands(pipeline, service) {
 	log.info("inline image commands registered");
 }
 //#endregion
+//#region src/ui/components/json-view.ts
+var BASE64_MIN = 256;
+function escapeHtml$1(text) {
+	return text.replace(/[&<>"']/g, (ch) => ({
+		"&": "&amp;",
+		"<": "&lt;",
+		">": "&gt;",
+		"\"": "&quot;",
+		"'": "&#39;"
+	})[ch] ?? ch);
+}
+function renderValue(value, path, highlight, indent) {
+	const pad = "  ".repeat(indent);
+	let html;
+	if (value === null || typeof value !== "object") {
+		if (typeof value === "string" && value.length > BASE64_MIN && /^[A-Za-z0-9+/=]+$/.test(value)) html = `<span class="naist-json-b64">"&lt;base64 ${value.length}&gt;"</span>`;
+		else html = `<span class="naist-json-${value === null ? "null" : typeof value}">${escapeHtml$1(JSON.stringify(value))}</span>`;
+	} else if (Array.isArray(value)) {
+		if (value.length === 0) html = "[]";
+		else html = `[\n${value.map((item, i) => `${pad}  ${renderValue(item, `${path}[${i}]`, highlight, indent + 1)}`).join(",\n")}\n${pad}]`;
+	} else {
+		const entries = Object.entries(value);
+		if (entries.length === 0) html = "{}";
+		else html = `{\n${entries.map(([key, item]) => {
+			const childPath = path ? `${path}.${key}` : key;
+			return `${pad}  <span class="naist-json-key">${escapeHtml$1(JSON.stringify(key))}</span>: ${renderValue(item, childPath, highlight, indent + 1)}`;
+		}).join(",\n")}\n${pad}}`;
+	}
+	return highlight.has(path) ? `<span class="naist-json-override">${html}</span>` : html;
+}
+function renderJson(value, highlightPaths = []) {
+	return `<pre class="naist-json">${renderValue(value, "", new Set(highlightPaths), 0)}</pre>`;
+}
+//#endregion
+//#region src/ui/panel/inspector.ts
+function escapeHtml(text) {
+	const div = document.createElement("div");
+	div.textContent = text;
+	return div.innerHTML;
+}
+function droppedList(prepared) {
+	if (prepared.build.dropped.length === 0) return `<p class="naist-muted" data-i18n="naist.inspector.nothingDropped"></p>`;
+	return `<ul class="naist-list">${[...prepared.build.dropped].sort((a, b) => Number(b.userSet) - Number(a.userSet)).map((d) => `<li class="${d.userSet ? "naist-dropped-user" : "naist-muted"}"><code>${escapeHtml(d.path)}</code> — ${escapeHtml(t(`naist.drop.${d.reason}`))}</li>`).join("")}</ul>`;
+}
+function warningsList(prepared) {
+	const warnings = prepared.build.warnings.map((w) => `<li>${escapeHtml(t(`naist.warning.${w.code}`, w.params))}</li>`);
+	const clamps = prepared.clampChanges.map((c) => `<li>${escapeHtml(t(`naist.clamp.${c.kind}`, c))}</li>`);
+	const all = [...warnings, ...clamps];
+	return all.length ? `<ul class="naist-list">${all.join("")}</ul>` : `<p class="naist-muted" data-i18n="naist.inspector.noWarnings"></p>`;
+}
+function lostList(prepared) {
+	if (prepared.effective.lost.length === 0) return "";
+	return `<h4 data-i18n="naist.inspector.lost"></h4><ul class="naist-list naist-dropped-user">${prepared.effective.lost.map((l) => `<li>${escapeHtml(t(`naist.lost.${l}`))}</li>`).join("")}</ul>`;
+}
+/** Opens the inspector popup. Resolves true when the user chose to send (confirmSend mode). */
+async function openInspector(prepared, options = { confirmSend: false }) {
+	const c = ctx();
+	const root = document.createElement("div");
+	root.className = "naist-inspector";
+	const native = prepared.transportId === "native";
+	const costText = prepared.cost.total === 0 ? t("naist.cost.free") : t("naist.cost.paid", {
+		total: prepared.cost.total,
+		perImage: prepared.cost.perImage,
+		billable: prepared.cost.billableSamples
+	});
+	root.innerHTML = `
+        <h3 data-i18n="naist.inspector.title"></h3>
+        <div class="naist-row">
+            <span>${escapeHtml(t(`naist.transport.${prepared.transportId}`))}</span>
+            <span class="naist-muted">${escapeHtml(prepared.body.model)} · ${escapeHtml(prepared.body.action)}</span>
+            <span class="naist-cost-inline">${escapeHtml(costText)}</span>
+        </div>
+        ${prepared.overridePaths.length ? `<div class="naist-warning" data-i18n="naist.inspector.overrideApplied"></div>` : ""}
+        ${lostList(prepared)}
+        <div class="naist-row">
+            <div class="menu_button menu_button_icon naist-copy"><i class="fa-solid fa-copy"></i><span data-i18n="naist.inspector.copy"></span></div>
+        </div>
+        <h4 data-i18n="naist.inspector.body"></h4>
+        ${renderJson(prepared.body, prepared.overridePaths)}
+        ${native ? `<h4 data-i18n="naist.inspector.effectiveNative"></h4>${renderJson(prepared.effective.body)}` : ""}
+        <h4 data-i18n="naist.inspector.dropped"></h4>
+        ${droppedList(prepared)}
+        <h4 data-i18n="naist.inspector.warnings"></h4>
+        ${warningsList(prepared)}
+    `;
+	localize(root);
+	root.querySelector(".naist-copy")?.addEventListener("click", async () => {
+		const json = JSON.stringify(native ? prepared.effective.body : prepared.body, null, 2);
+		try {
+			await navigator.clipboard.writeText(json);
+			toastr.success(t("naist.inspector.copied"));
+		} catch {
+			toastr.error(t("naist.inspector.copyFailed"));
+		}
+	});
+	const result = await c.callGenericPopup(root, options.confirmSend ? c.POPUP_TYPE.CONFIRM : c.POPUP_TYPE.TEXT, "", {
+		wide: true,
+		large: true,
+		allowVerticalScrolling: true,
+		okButton: options.confirmSend ? t("naist.inspector.send") : t("naist.inspector.close"),
+		cancelButton: options.confirmSend ? t("naist.inspector.cancel") : false
+	});
+	return options.confirmSend && result === c.POPUP_RESULT.AFFIRMATIVE;
+}
+//#endregion
+//#region src/ui/pose-helpers.ts
+function poseLabel(id) {
+	const custom = settings().poses.custom.find((p) => p.id === id);
+	if (custom) return custom.name || custom.tags;
+	return t(`naist.pose.${id}`);
+}
+/** Grouped options: favorites, then each category; custom poses keep their own names. */
+function poseSelectOptions(current, emptyKey = "naist.passport.noPose") {
+	const library = poseLibrary();
+	const favorites = settings().poses.favorites;
+	const option = (id) => `<option value="${escapeHtml$2(id)}"${id === current ? " selected" : ""}>${escapeHtml$2(poseLabel(id))}</option>`;
+	const groups = [`<option value="">${escapeHtml$2(t(emptyKey))}</option>`];
+	const favs = library.filter((p) => favorites.includes(p.id));
+	if (favs.length) groups.push(`<optgroup label="★ ${escapeHtml$2(t("naist.pose.favorites"))}">${favs.map((p) => option(p.id)).join("")}</optgroup>`);
+	for (const category of POSE_CATEGORIES) {
+		const list = library.filter((p) => p.category === category);
+		if (list.length) groups.push(`<optgroup label="${escapeHtml$2(t(`naist.poseCat.${category}`))}">${list.map((p) => option(p.id)).join("")}</optgroup>`);
+	}
+	return groups.join("");
+}
+//#endregion
+//#region src/ui/passport-editor.ts
+function stateLabel(state) {
+	return state.id in STATE_PRESETS ? t(`naist.state.${state.id}`) : state.id;
+}
+/** Opens the editor; resolves with the edited passport or null when cancelled. */
+async function editPassport(name, initial) {
+	const c = ctx();
+	const passport = structuredClone(initial ?? defaultPassport());
+	const root = document.createElement("div");
+	root.className = "naist-dialog naist-passport";
+	const renderOutfits = () => `
+        ${passport.outfits.map((o, i) => `<div class="naist-row naist-outfit" data-index="${i}">
+                    <input class="text_pole naist-outfit-name" value="${escapeHtml$2(o.name)}" placeholder="${escapeHtml$2(t("naist.passport.outfitName"))}">
+                    <input class="text_pole naist-grow naist-outfit-tags" value="${escapeHtml$2(o.tags)}" placeholder="${escapeHtml$2(t("naist.passport.outfitTags"))}">
+                    <div class="menu_button fa-solid fa-trash-can naist-outfit-remove" title="${escapeHtml$2(t("naist.passport.remove"))}"></div>
+                </div>`).join("")}
+        <div class="menu_button naist-outfit-add">${escapeHtml$2(t("naist.passport.addOutfit"))}</div>`;
+	const renderStates = () => passport.states.map((s, i) => `<div class="naist-row naist-state" data-index="${i}">
+                    <label class="checkbox_label"><input type="checkbox" class="naist-state-on"${s.enabled ? " checked" : ""}><span>${escapeHtml$2(stateLabel(s))}</span></label>
+                    <input class="text_pole naist-grow naist-state-tags" value="${escapeHtml$2(s.tags)}">
+                </div>`).join("") + `<div class="naist-row"><input class="text_pole naist-grow naist-state-new" placeholder="${escapeHtml$2(t("naist.passport.newState"))}"><div class="menu_button naist-state-add">${escapeHtml$2(t("naist.passport.addState"))}</div></div>`;
+	root.innerHTML = `
+        <h3>${escapeHtml$2(t("naist.passport.title", { name }))}</h3>
+        <div class="naist-hint">${escapeHtml$2(t("naist.passport.hint"))}</div>
+        <div class="naist-grid2">${PASSPORT_SLOTS.map((slot) => `<div><label>${escapeHtml$2(t(`naist.slot.${slot}`))}</label>
+                <textarea class="text_pole textarea_compact naist-slot-input" data-slot="${slot}" rows="2">${escapeHtml$2(passport.slots[slot])}</textarea></div>`).join("")}</div>
+        <div class="naist-section">
+            <b>${escapeHtml$2(t("naist.passport.outfits"))}</b>
+            <div class="naist-hint">${escapeHtml$2(t("naist.passport.outfitsHint"))}</div>
+            <div class="naist-outfits">${renderOutfits()}</div>
+            <label>${escapeHtml$2(t("naist.passport.activeOutfit"))}</label>
+            <select class="text_pole naist-active-outfit"></select>
+        </div>
+        <div class="naist-section">
+            <b>${escapeHtml$2(t("naist.passport.states"))}</b>
+            <div class="naist-states">${renderStates()}</div>
+        </div>
+        <div class="naist-section">
+            <label class="checkbox_label"><input type="checkbox" class="naist-nsfw-on"${passport.nsfw.enabled ? " checked" : ""}><span>${escapeHtml$2(t("naist.passport.nsfw"))}</span></label>
+            <textarea class="text_pole textarea_compact naist-nsfw-tags" rows="2">${escapeHtml$2(passport.nsfw.tags)}</textarea>
+            <div class="naist-hint">${escapeHtml$2(t("naist.passport.nsfwHint"))}</div>
+        </div>
+        <label>${escapeHtml$2(t("naist.passport.negative"))}</label>
+        <textarea class="text_pole textarea_compact naist-negative" rows="2">${escapeHtml$2(passport.negative)}</textarea>
+        <div class="naist-grid2">
+            <div><label>${escapeHtml$2(t("naist.passport.pose"))}</label><select class="text_pole naist-pose">${poseSelectOptions(passport.pose.preset)}</select></div>
+            <div><label>${escapeHtml$2(t("naist.passport.poseTags"))}</label><input class="text_pole naist-pose-tags" value="${escapeHtml$2(passport.pose.custom)}"></div>
+        </div>
+        <div class="naist-row">
+            <label class="checkbox_label"><input type="checkbox" class="naist-pos-on"${passport.position ? " checked" : ""}><span>${escapeHtml$2(t("naist.passport.position"))}</span></label>
+            <input type="number" min="0" max="1" step="0.1" class="text_pole naist-pos-x" value="${passport.position?.x ?? .5}" title="x">
+            <input type="number" min="0" max="1" step="0.1" class="text_pole naist-pos-y" value="${passport.position?.y ?? .5}" title="y">
+        </div>`;
+	const outfitsBox = root.querySelector(".naist-outfits");
+	const statesBox = root.querySelector(".naist-states");
+	const activeSelect = root.querySelector(".naist-active-outfit");
+	const readOutfits = () => {
+		passport.outfits = [...outfitsBox.querySelectorAll(".naist-outfit")].map((row) => ({
+			name: row.querySelector(".naist-outfit-name")?.value.trim() ?? "",
+			tags: row.querySelector(".naist-outfit-tags")?.value ?? ""
+		}));
+	};
+	const readStates = () => {
+		statesBox.querySelectorAll(".naist-state").forEach((row) => {
+			const state = passport.states[Number(row.dataset.index)];
+			if (!state) return;
+			state.enabled = row.querySelector(".naist-state-on")?.checked === true;
+			state.tags = row.querySelector(".naist-state-tags")?.value ?? "";
+		});
+	};
+	const fillActive = () => {
+		const current = passport.activeOutfit;
+		activeSelect.innerHTML = [`<option value="">${escapeHtml$2(t("naist.passport.clothingSlot"))}</option>`, ...passport.outfits.filter((o) => o.name).map((o) => `<option value="${escapeHtml$2(o.name)}">${escapeHtml$2(o.name)}</option>`)].join("");
+		activeSelect.value = passport.outfits.some((o) => o.name === current) ? current : "";
+	};
+	fillActive();
+	root.addEventListener("click", (event) => {
+		const target = event.target;
+		if (target.classList.contains("naist-outfit-add")) {
+			readOutfits();
+			passport.outfits.push({
+				name: t("naist.passport.outfitDefault", { n: passport.outfits.length + 1 }),
+				tags: ""
+			});
+			outfitsBox.innerHTML = renderOutfits();
+			fillActive();
+		} else if (target.classList.contains("naist-outfit-remove")) {
+			readOutfits();
+			passport.outfits.splice(Number(target.closest(".naist-outfit")?.dataset.index), 1);
+			outfitsBox.innerHTML = renderOutfits();
+			fillActive();
+		} else if (target.classList.contains("naist-state-add")) {
+			readStates();
+			const id = root.querySelector(".naist-state-new")?.value.trim() ?? "";
+			if (id && !passport.states.some((s) => s.id === id)) passport.states.push({
+				id,
+				tags: id,
+				enabled: true
+			});
+			statesBox.innerHTML = renderStates();
+		}
+	});
+	outfitsBox.addEventListener("change", () => {
+		readOutfits();
+		fillActive();
+	});
+	localize(root);
+	if (await c.callGenericPopup(root, c.POPUP_TYPE.CONFIRM, "", {
+		okButton: t("naist.passport.save"),
+		cancelButton: t("naist.inspector.cancel"),
+		wide: true,
+		large: true,
+		allowVerticalScrolling: true
+	}) !== c.POPUP_RESULT.AFFIRMATIVE) return null;
+	root.querySelectorAll(".naist-slot-input").forEach((area) => {
+		const slot = area.dataset.slot;
+		if (slot) passport.slots[slot] = area.value.trim();
+	});
+	readOutfits();
+	passport.outfits = passport.outfits.filter((o) => o.name);
+	passport.activeOutfit = passport.outfits.some((o) => o.name === activeSelect.value) ? activeSelect.value : "";
+	readStates();
+	passport.nsfw = {
+		enabled: root.querySelector(".naist-nsfw-on")?.checked === true,
+		tags: root.querySelector(".naist-nsfw-tags")?.value.trim() ?? ""
+	};
+	passport.negative = root.querySelector(".naist-negative")?.value.trim() ?? "";
+	passport.pose = {
+		preset: root.querySelector(".naist-pose")?.value ?? "",
+		custom: root.querySelector(".naist-pose-tags")?.value.trim() ?? ""
+	};
+	const useposition = root.querySelector(".naist-pos-on")?.checked === true;
+	const clamp = (v) => Math.min(1, Math.max(0, Number(v) || .5));
+	passport.position = useposition ? {
+		x: clamp(root.querySelector(".naist-pos-x")?.value),
+		y: clamp(root.querySelector(".naist-pos-y")?.value)
+	} : null;
+	return passport;
+}
+//#endregion
+//#region src/ui/composer.ts
+var COLORS = [
+	"#e57373",
+	"#64b5f6",
+	"#81c784",
+	"#ffb74d",
+	"#ba68c8",
+	"#4dd0e1",
+	"#f06292",
+	"#aed581"
+];
+function options(list, prefix, current) {
+	return list.map((o) => `<option value="${o.id}"${o.id === current ? " selected" : ""}>${escapeHtml$2(t(`${prefix}.${o.id}`))}</option>`).join("");
+}
+async function openComposer(service, pipeline, opts) {
+	const c = ctx();
+	const loaded = opts.auto ? await service.autoSpec() : await service.emptySpec();
+	let candidates = loaded.candidates;
+	const spec = loaded.spec;
+	if (opts.focusKey && !spec.participants.some((p) => p.key === opts.focusKey)) {
+		const candidate = candidates.find((x) => x.key === opts.focusKey);
+		if (candidate) spec.participants.unshift(participantFrom(candidate, {
+			x: .5,
+			y: .5
+		}));
+		relayout();
+	}
+	let target = settings().scene.target;
+	const root = document.createElement("div");
+	root.className = "naist-dialog naist-composer";
+	function relayout(keepPositions = false) {
+		const caps = currentCaps();
+		const locked = spec.participants.map((p) => keepPositions ? p.position : p.passport?.position ?? null);
+		const positions = autoLayout(spec.participants.length, caps, locked);
+		spec.participants.forEach((p, i) => p.position = positions[i] ?? p.position);
+		applyPairLayout(spec, caps);
+	}
+	const caps = () => currentCaps();
+	const over = (index) => caps().maxCharacters > 0 && spec.participants.filter((p, i) => p.enabled && i <= index).length > caps().maxCharacters;
+	const renderSlots = () => spec.participants.map((p, i) => {
+		const outfits = p.passport?.outfits ?? [];
+		const states = p.passport?.states ?? Object.keys(STATE_PRESETS).map((id) => ({
+			id,
+			tags: "",
+			enabled: false
+		}));
+		return `
+            <div class="naist-slot${over(i) ? " naist-disabled" : ""}" data-index="${i}" style="border-left-color:${COLORS[i % COLORS.length]}">
+                <div class="naist-row">
+                    <b class="naist-grow">${i + 1}. ${escapeHtml$2(p.name)}</b>
+                    ${p.passport ? "" : `<span class="naist-badge naist-badge-warn">${escapeHtml$2(t("naist.composer.noPassport"))}</span>`}
+                    ${over(i) ? `<span class="naist-badge naist-badge-warn">${escapeHtml$2(t("naist.composer.overLimit"))}</span>` : ""}
+                    <label class="checkbox_label"><input type="checkbox" class="naist-slot-on"${p.enabled ? " checked" : ""}><span>${escapeHtml$2(t("naist.composer.inFrame"))}</span></label>
+                    <div class="menu_button fa-solid fa-arrow-up naist-slot-up" title="${escapeHtml$2(t("naist.composer.up"))}"></div>
+                    <div class="menu_button fa-solid fa-arrow-down naist-slot-down" title="${escapeHtml$2(t("naist.composer.down"))}"></div>
+                    <div class="menu_button fa-solid fa-id-card naist-slot-passport" title="${escapeHtml$2(t("naist.composer.editPassport"))}"></div>
+                    <div class="menu_button fa-solid fa-xmark naist-slot-remove" title="${escapeHtml$2(t("naist.composer.remove"))}"></div>
+                </div>
+                <div class="naist-grid3">
+                    <div><label>${escapeHtml$2(t("naist.composer.pose"))}</label><select class="text_pole naist-slot-pose">${poseSelectOptions(p.pose)}</select></div>
+                    <div><label>${escapeHtml$2(t("naist.composer.poseTags"))}</label><input class="text_pole naist-slot-pose-tags" value="${escapeHtml$2(p.poseTags)}"></div>
+                    <div><label>${escapeHtml$2(t("naist.composer.outfit"))}</label><select class="text_pole naist-slot-outfit"${outfits.length ? "" : " disabled"}>
+                        <option value="">${escapeHtml$2(t("naist.composer.outfitDefault"))}</option>
+                        ${outfits.map((o) => `<option value="${escapeHtml$2(o.name)}"${o.name === p.outfit ? " selected" : ""}>${escapeHtml$2(o.name)}</option>`).join("")}
+                    </select></div>
+                </div>
+                <div class="naist-flags naist-slot-states">${states.map((s) => {
+			const on = s.enabled || p.states.includes(s.id);
+			const label = s.id in STATE_PRESETS ? t(`naist.state.${s.id}`) : s.id;
+			return `<label class="checkbox_label"><input type="checkbox" data-state="${escapeHtml$2(s.id)}"${on ? " checked" : ""}${s.enabled ? " disabled" : ""}><span>${escapeHtml$2(label)}</span></label>`;
+		}).join("")}</div>
+                <input class="text_pole naist-slot-negative" placeholder="${escapeHtml$2(t("naist.composer.negative"))}" value="${escapeHtml$2(p.negative)}">
+            </div>`;
+	}).join("");
+	const renderCanvas = () => {
+		const grid = caps().positioning === "grid";
+		const lines = grid ? GRID_STEPS.map((v) => `<span class="naist-canvas-cell" style="left:${(v - .1) * 100}%;top:0;width:20%;height:100%"></span>`).join("") + GRID_STEPS.map((v) => `<span class="naist-canvas-cell" style="top:${(v - .1) * 100}%;left:0;height:20%;width:100%"></span>`).join("") : "";
+		const markers = spec.participants.map((p, i) => p.enabled ? `<span class="naist-marker" data-index="${i}" style="left:${p.position.x * 100}%;top:${p.position.y * 100}%;background:${COLORS[i % COLORS.length]}" title="${escapeHtml$2(p.name)}">${i + 1}</span>` : "").join("");
+		return `<div class="naist-canvas${grid ? " naist-canvas-grid" : ""}">${lines}${markers}</div>`;
+	};
+	const renderPair = () => {
+		const names = spec.participants.map((p, i) => `<option value="${i}">${i + 1}. ${escapeHtml$2(p.name)}</option>`).join("");
+		return `
+            <select class="text_pole naist-pair-pose">
+                <option value="">${escapeHtml$2(t("naist.composer.noPair"))}</option>
+                ${PAIR_POSES.map((p) => `<option value="${p.id}"${spec.pair?.pose === p.id ? " selected" : ""}>${escapeHtml$2(t(`naist.pair.${p.id}`))}</option>`).join("")}
+            </select>
+            <select class="text_pole naist-pair-a">${names}</select>
+            <select class="text_pole naist-pair-b">${names}</select>`;
+	};
+	const renderPreview = () => {
+		const built = service.build(spec);
+		const lines = [`${t("naist.composer.basePrompt")}: ${built.prompt || "—"}`, ...built.characters.map((ch, i) => `${i + 1}. ${ch.prompt}${ch.negative ? `  [−] ${ch.negative}` : ""}${built.useCoords ? `  @ (${ch.x}, ${ch.y})` : ""}`)];
+		const warnings = [built.withoutPassport.length ? t("naist.composer.warnNoPassport", { names: built.withoutPassport.join(", ") }) : "", built.dropped.length ? t("naist.composer.warnDropped", {
+			names: built.dropped.join(", "),
+			max: caps().maxCharacters
+		}) : ""].filter(Boolean);
+		return `<pre class="naist-composer-preview">${escapeHtml$2(lines.join("\n"))}</pre>${warnings.map((w) => `<div class="naist-warning">${escapeHtml$2(w)}</div>`).join("")}`;
+	};
+	const available = () => candidates.filter((x) => !spec.participants.some((p) => p.key === x.key));
+	const render = () => {
+		const max = caps().maxCharacters;
+		const full = max > 0 && spec.participants.length >= max;
+		root.innerHTML = `
+            <h3>${escapeHtml$2(t("naist.composer.title"))}</h3>
+            <div class="naist-row">
+                <div class="menu_button naist-c-auto"><i class="fa-solid fa-wand-magic-sparkles"></i> ${escapeHtml$2(t("naist.composer.auto"))}</div>
+                <select class="text_pole naist-c-add"${full || !available().length ? " disabled" : ""}>
+                    <option value="">${escapeHtml$2(full ? t("naist.composer.full", { max }) : t("naist.composer.add"))}</option>
+                    ${available().map((x) => `<option value="${escapeHtml$2(x.key)}">${escapeHtml$2(x.name)}${x.isUser ? ` (${escapeHtml$2(t("naist.composer.persona"))})` : ""}</option>`).join("")}
+                </select>
+                <div class="menu_button naist-c-layout" title="${escapeHtml$2(t("naist.composer.relayout"))}"><i class="fa-solid fa-table-cells"></i></div>
+                <span class="naist-muted">${escapeHtml$2(t("naist.composer.limit", {
+			count: spec.participants.length,
+			max: max || 0
+		}))}</span>
+            </div>
+            <label>${escapeHtml$2(t("naist.composer.base"))}</label>
+            <div class="naist-row"><textarea class="text_pole naist-grow naist-c-base" rows="2" placeholder="${escapeHtml$2(t("naist.composer.basePlaceholder"))}">${escapeHtml$2(spec.base)}</textarea>
+                <div class="menu_button fa-solid fa-mountain-sun naist-c-llm" title="${escapeHtml$2(t("naist.composer.llmBase"))}"></div></div>
+            <div class="naist-grid3">
+                <div><label>${escapeHtml$2(t("naist.composer.framing"))}</label><select class="text_pole naist-c-framing">${options(FRAMINGS, "naist.framing", spec.framing)}</select></div>
+                <div><label>${escapeHtml$2(t("naist.composer.camera"))}</label><select class="text_pole naist-c-camera">${options(CAMERA_ANGLES, "naist.camera", spec.camera)}</select></div>
+                <div><label>${escapeHtml$2(t("naist.composer.distance"))}</label><select class="text_pole naist-c-distance">${options(DISTANCES, "naist.distance", spec.distance)}</select></div>
+            </div>
+            <div class="naist-composer-body">
+                <div class="naist-composer-left">
+                    ${renderCanvas()}
+                    <label class="checkbox_label"><input type="checkbox" class="naist-c-coords"${spec.useCoords ? " checked" : ""}><span>${escapeHtml$2(t("naist.composer.useCoords"))}</span></label>
+                    <div class="naist-hint">${escapeHtml$2(t(caps().positioning === "grid" ? "naist.composer.gridHint" : caps().positioning === "none" ? "naist.composer.noPositions" : "naist.composer.freeHint"))}</div>
+                </div>
+                <div class="naist-composer-slots">${renderSlots() || `<div class="naist-hint">${escapeHtml$2(t("naist.composer.empty"))}</div>`}</div>
+            </div>
+            <div class="naist-section"><b>${escapeHtml$2(t("naist.composer.pair"))}</b><div class="naist-row naist-c-pair">${renderPair()}</div></div>
+            <div class="naist-row">
+                <label>${escapeHtml$2(t("naist.composer.target"))}</label>
+                <select class="text_pole naist-c-target">
+                    <option value="message"${target === "message" ? " selected" : ""}>${escapeHtml$2(t("naist.composer.targetMessage"))}</option>
+                    <option value="inline"${target === "inline" ? " selected" : ""}>${escapeHtml$2(t("naist.composer.targetInline"))}</option>
+                </select>
+                <label class="checkbox_label"><input type="checkbox" class="naist-c-nsfw"${settings().scene.allowNsfw ? " checked" : ""}><span>${escapeHtml$2(t("naist.composer.allowNsfw"))}</span></label>
+                <div class="menu_button naist-c-inspect"><i class="fa-solid fa-magnifying-glass"></i> ${escapeHtml$2(t("naist.panel.inspect"))}</div>
+            </div>
+            <div class="naist-c-preview">${renderPreview()}</div>`;
+		const pairA = root.querySelector(".naist-pair-a");
+		const pairB = root.querySelector(".naist-pair-b");
+		if (pairA) pairA.value = String(spec.pair?.a ?? 0);
+		if (pairB) pairB.value = String(spec.pair?.b ?? Math.min(1, Math.max(0, spec.participants.length - 1)));
+		localize(root);
+	};
+	const refreshPreview = () => {
+		const box = root.querySelector(".naist-c-preview");
+		if (box) box.innerHTML = renderPreview();
+	};
+	const slotOf = (el) => spec.participants[Number(el.closest(".naist-slot")?.dataset.index)];
+	root.addEventListener("input", (event) => {
+		const target2 = event.target;
+		if (target2.classList.contains("naist-c-base")) spec.base = target2.value;
+		else if (target2.classList.contains("naist-slot-pose-tags")) {
+			const p = slotOf(target2);
+			if (p) p.poseTags = target2.value;
+		} else if (target2.classList.contains("naist-slot-negative")) {
+			const p = slotOf(target2);
+			if (p) p.negative = target2.value;
+		} else return;
+		refreshPreview();
+	});
+	root.addEventListener("change", (event) => {
+		const el = event.target;
+		const p = slotOf(el);
+		if (el.classList.contains("naist-c-framing")) spec.framing = el.value;
+		else if (el.classList.contains("naist-c-camera")) spec.camera = el.value;
+		else if (el.classList.contains("naist-c-distance")) spec.distance = el.value;
+		else if (el.classList.contains("naist-c-coords")) spec.useCoords = el.checked;
+		else if (el.classList.contains("naist-c-target")) target = el.value === "inline" ? "inline" : "message";
+		else if (el.classList.contains("naist-c-nsfw")) {
+			settings().scene.allowNsfw = el.checked;
+			saveSettings();
+		} else if (el.classList.contains("naist-slot-on") && p) {
+			p.enabled = el.checked;
+			render();
+			return;
+		} else if (el.classList.contains("naist-slot-pose") && p) p.pose = el.value;
+		else if (el.classList.contains("naist-slot-outfit") && p) p.outfit = el.value;
+		else if (el.dataset.state && p) {
+			const id = el.dataset.state;
+			p.states = el.checked ? [.../* @__PURE__ */ new Set([...p.states, id])] : p.states.filter((s) => s !== id);
+		} else if (el.classList.contains("naist-c-add") && el.value) {
+			const candidate = candidates.find((x) => x.key === el.value);
+			if (candidate) {
+				spec.participants.push(participantFrom(candidate, {
+					x: .5,
+					y: .5
+				}));
+				relayout(true);
+				const last = spec.participants.at(-1);
+				if (last) last.position = autoLayout(spec.participants.length, caps()).at(-1) ?? last.position;
+			}
+			render();
+			return;
+		} else if (el.classList.contains("naist-pair-pose") || el.classList.contains("naist-pair-a") || el.classList.contains("naist-pair-b")) {
+			const pose = root.querySelector(".naist-pair-pose")?.value ?? "";
+			const a = Number(root.querySelector(".naist-pair-a")?.value ?? 0);
+			const b = Number(root.querySelector(".naist-pair-b")?.value ?? 1);
+			spec.pair = pose && a !== b ? {
+				pose,
+				a,
+				b
+			} : null;
+			applyPairLayout(spec, caps());
+			render();
+			return;
+		} else return;
+		refreshPreview();
+	});
+	root.addEventListener("click", (event) => {
+		const el = event.target;
+		const index = Number(el.closest(".naist-slot")?.dataset.index);
+		if (el.closest(".naist-c-auto")) service.autoSpec().then((next) => {
+			candidates = next.candidates;
+			Object.assign(spec, next.spec);
+			render();
+		}).catch(reportGenerationError);
+		else if (el.closest(".naist-c-layout")) {
+			relayout();
+			render();
+		} else if (el.closest(".naist-c-llm")) service.describeLocation().then((text) => {
+			if (text) spec.base = text;
+			render();
+		});
+		else if (el.closest(".naist-c-inspect")) {
+			const built = service.build(spec);
+			try {
+				openInspector(pipeline.previewScene(built.prompt, service.overrides(built)), { confirmSend: false });
+			} catch (error) {
+				reportGenerationError(error);
+			}
+		} else if (el.classList.contains("naist-slot-up") && index > 0) {
+			const [moved] = spec.participants.splice(index, 1);
+			if (moved) spec.participants.splice(index - 1, 0, moved);
+			spec.pair = null;
+			render();
+		} else if (el.classList.contains("naist-slot-down") && index < spec.participants.length - 1) {
+			const [moved] = spec.participants.splice(index, 1);
+			if (moved) spec.participants.splice(index + 1, 0, moved);
+			spec.pair = null;
+			render();
+		} else if (el.classList.contains("naist-slot-remove")) {
+			spec.participants.splice(index, 1);
+			spec.pair = null;
+			render();
+		} else if (el.classList.contains("naist-slot-passport")) {
+			const p = spec.participants[index];
+			if (!p) return;
+			editPassport(p.name, p.passport).then(async (passport) => {
+				if (!passport) return;
+				if (p.key.startsWith("persona:")) savePersonaPassport(p.key.slice(PERSONA_PREFIX.length), passport);
+				else {
+					const charIndex = c.characters.findIndex((ch) => ch.avatar.replace(/\.[^/.]+$/, "") === p.key);
+					if (charIndex >= 0) await saveCardPassport(charIndex, passport);
+				}
+				p.passport = passport;
+				const candidate = candidates.find((x) => x.key === p.key);
+				if (candidate) candidate.passport = passport;
+				render();
+			});
+		}
+	});
+	root.addEventListener("pointerdown", (event) => {
+		const marker = event.target.closest(".naist-marker");
+		const canvas = marker?.closest(".naist-canvas");
+		if (!marker || !canvas) return;
+		event.preventDefault();
+		const p = spec.participants[Number(marker.dataset.index)];
+		if (!p) return;
+		const move = (e) => {
+			const rect = canvas.getBoundingClientRect();
+			const point = placeOnCanvas({
+				x: (e.clientX - rect.left) / rect.width,
+				y: (e.clientY - rect.top) / rect.height
+			}, caps());
+			p.position = point;
+			marker.style.left = `${point.x * 100}%`;
+			marker.style.top = `${point.y * 100}%`;
+		};
+		const up = () => {
+			document.removeEventListener("pointermove", move);
+			document.removeEventListener("pointerup", up);
+			spec.useCoords = true;
+			const coords = root.querySelector(".naist-c-coords");
+			if (coords) coords.checked = true;
+			refreshPreview();
+		};
+		document.addEventListener("pointermove", move);
+		document.addEventListener("pointerup", up);
+	});
+	render();
+	const result = await c.callGenericPopup(root, c.POPUP_TYPE.CONFIRM, "", {
+		okButton: t("naist.composer.generate"),
+		cancelButton: t("naist.inspector.cancel"),
+		wide: true,
+		large: true,
+		allowVerticalScrolling: true
+	});
+	const s = settings().scene;
+	s.framing = spec.framing;
+	s.camera = spec.camera;
+	s.distance = spec.distance;
+	s.useCoords = spec.useCoords;
+	s.target = target;
+	saveSettings();
+	if (result !== c.POPUP_RESULT.AFFIRMATIVE) return;
+	try {
+		await service.generate(spec, target);
+	} catch (error) {
+		log.warn("scene generation failed", error);
+		reportGenerationError(error);
+	}
+}
+//#endregion
+//#region src/ui/pose-library.ts
+async function openPoseLibrary() {
+	const c = ctx();
+	const root = document.createElement("div");
+	root.className = "naist-dialog naist-pose-library";
+	const poses = settings().poses;
+	const render = () => {
+		const custom = poses.custom.map((p, i) => `<div class="naist-row naist-custom-pose" data-index="${i}">
+                <input class="text_pole naist-cp-name" value="${escapeHtml$2(p.name)}" placeholder="${escapeHtml$2(t("naist.poseLib.name"))}">
+                <select class="text_pole naist-cp-category">${POSE_CATEGORIES.map((cat) => `<option value="${cat}"${cat === p.category ? " selected" : ""}>${escapeHtml$2(t(`naist.poseCat.${cat}`))}</option>`).join("")}</select>
+                <input class="text_pole naist-grow naist-cp-tags" value="${escapeHtml$2(p.tags)}" placeholder="${escapeHtml$2(t("naist.poseLib.tags"))}">
+                <input class="text_pole naist-cp-keywords" value="${escapeHtml$2(p.keywords.join(", "))}" placeholder="${escapeHtml$2(t("naist.poseLib.keywords"))}">
+                <div class="menu_button fa-solid fa-trash-can naist-cp-remove"></div>
+            </div>`).join("");
+		const library = POSE_CATEGORIES.map((cat) => {
+			const list = POSES.filter((p) => p.category === cat).map((p) => `<label class="checkbox_label naist-pose-fav" title="${escapeHtml$2(p.tags)}"><input type="checkbox" data-fav="${p.id}"${poses.favorites.includes(p.id) ? " checked" : ""}><span>${escapeHtml$2(t(`naist.pose.${p.id}`))}</span></label>`).join("");
+			return `<div class="naist-section"><b>${escapeHtml$2(t(`naist.poseCat.${cat}`))}</b><div class="naist-flags">${list}</div></div>`;
+		}).join("");
+		root.innerHTML = `
+            <h3>${escapeHtml$2(t("naist.poseLib.title"))}</h3>
+            <div class="naist-hint">${escapeHtml$2(t("naist.poseLib.favoritesHint"))}</div>
+            ${library}
+            <div class="naist-section"><b>${escapeHtml$2(t("naist.poseLib.custom"))}</b>
+                <div class="naist-hint">${escapeHtml$2(t("naist.poseLib.customHint"))}</div>
+                ${custom}
+                <div class="menu_button naist-cp-add">${escapeHtml$2(t("naist.poseLib.add"))}</div>
+            </div>`;
+		localize(root);
+	};
+	const read = () => {
+		root.querySelectorAll(".naist-custom-pose").forEach((row) => {
+			const pose = poses.custom[Number(row.dataset.index)];
+			if (!pose) return;
+			pose.name = row.querySelector(".naist-cp-name")?.value.trim() ?? "";
+			pose.category = row.querySelector(".naist-cp-category")?.value ?? "standing";
+			pose.tags = row.querySelector(".naist-cp-tags")?.value.trim() ?? "";
+			pose.keywords = (row.querySelector(".naist-cp-keywords")?.value ?? "").split(",").map((k) => k.trim().toLowerCase()).filter(Boolean);
+		});
+	};
+	root.addEventListener("click", (event) => {
+		const el = event.target;
+		if (el.classList.contains("naist-cp-add")) {
+			read();
+			poses.custom.push({
+				id: `custom-${c.uuidv4().slice(0, 8)}`,
+				category: "standing",
+				tags: "",
+				keywords: [],
+				name: ""
+			});
+			render();
+		} else if (el.classList.contains("naist-cp-remove")) {
+			read();
+			const index = Number(el.closest(".naist-custom-pose")?.dataset.index);
+			const [removed] = poses.custom.splice(index, 1);
+			if (removed) poses.favorites = poses.favorites.filter((f) => f !== removed.id);
+			render();
+		}
+	});
+	root.addEventListener("change", (event) => {
+		const el = event.target;
+		const id = el.dataset.fav;
+		if (!id) return;
+		poses.favorites = el.checked ? [.../* @__PURE__ */ new Set([...poses.favorites, id])] : poses.favorites.filter((f) => f !== id);
+	});
+	render();
+	await c.callGenericPopup(root, c.POPUP_TYPE.TEXT, "", {
+		wide: true,
+		allowVerticalScrolling: true,
+		okButton: t("naist.poseLib.done")
+	});
+	read();
+	poses.custom = poses.custom.filter((p) => p.tags.trim());
+	saveSettings();
+}
+//#endregion
+//#region src/integration/scene-setup.ts
+var MENU_OPTIONS = [["naist_char_composer", "naist.card.composer"], ["naist_char_passport", "naist.card.passport"]];
+var state = null;
+async function openSceneComposer(auto = true, focusKey) {
+	if (!state) return;
+	try {
+		await openComposer(state.service, state.pipeline, {
+			auto,
+			focusKey
+		});
+	} catch (error) {
+		reportGenerationError(error);
+	}
+}
+function editedCharacterIndex() {
+	const c = ctx();
+	if (c.characterId === void 0 || c.characterId === null || c.characterId === "") return null;
+	const index = Number(c.characterId);
+	return Number.isInteger(index) && c.characters[index] ? index : null;
+}
+async function editCharacterPassport(index) {
+	const character = await loadCharacter(index);
+	if (!character) return;
+	const passport = await editPassport(character.name, cardPassport(character));
+	if (!passport) return;
+	await saveCardPassport(index, passport);
+	toastr.success(t("naist.passport.saved", { name: character.name }));
+}
+async function editPersonaPassport() {
+	const key = await currentPersonaKey();
+	const passport = await editPassport(ctx().name1, personaPassport(key));
+	if (!passport) return;
+	savePersonaPassport(key, passport);
+	toastr.success(t("naist.passport.saved", { name: ctx().name1 }));
+}
+function installCardButton() {
+	const block = document.querySelector("#avatar_controls .form_create_bottom_buttons_block");
+	if (!block || block.querySelector("#naist_card_button")) return;
+	const button = document.createElement("div");
+	button.id = "naist_card_button";
+	button.className = "menu_button fa-solid fa-palette";
+	button.setAttribute("data-i18n", "[title]naist.card.button");
+	button.title = t("naist.card.button");
+	const exportButton = block.querySelector("#export_button");
+	if (exportButton) exportButton.after(button);
+	else block.append(button);
+	button.addEventListener("click", () => {
+		const index = editedCharacterIndex();
+		openSceneComposer(false, index === null ? void 0 : avatarKey(ctx().characters[index]?.avatar));
+	});
+}
+function installMenuOptions() {
+	const select = document.querySelector("#char-management-dropdown");
+	if (select && !select.querySelector("#naist_char_composer")) for (const [id, key] of MENU_OPTIONS) {
+		const option = document.createElement("option");
+		option.id = id;
+		option.setAttribute("data-i18n", key);
+		option.textContent = t(key);
+		select.append(option);
+	}
+	const c = ctx();
+	c.eventSource.on(c.eventTypes.CHARACTER_MANAGEMENT_DROPDOWN ?? "charManagementDropdown", (target) => {
+		const index = editedCharacterIndex();
+		if (target === "naist_char_composer") openSceneComposer(false, index === null ? void 0 : avatarKey(ctx().characters[index]?.avatar));
+		else if (target === "naist_char_passport" && index !== null) editCharacterPassport(index).catch(reportGenerationError);
+	});
+}
+function registerSceneCommand() {
+	const { SlashCommandParser: parser, SlashCommand: Command, SlashCommandArgument: Arg, SlashCommandNamedArgument: Named, ARGUMENT_TYPE: T } = ctx();
+	parser.addCommandObject(Command.fromProps({
+		name: "nai-scene",
+		returns: t("naist.command.sceneReturns"),
+		helpString: t("naist.command.sceneHelp"),
+		namedArgumentList: [Named.fromProps({
+			name: "edit",
+			description: t("naist.command.arg.sceneEdit"),
+			typeList: [T.BOOLEAN ?? "bool"],
+			defaultValue: "true",
+			isRequired: false
+		}), Named.fromProps({
+			name: "target",
+			description: t("naist.command.arg.sceneTarget"),
+			typeList: [T.STRING ?? "string"],
+			enumList: ["message", "inline"],
+			isRequired: false
+		})],
+		unnamedArgumentList: [Arg.fromProps({
+			description: t("naist.command.arg.sceneText"),
+			typeList: [T.STRING ?? "string"],
+			isRequired: false
+		})],
+		callback: async (args, value) => {
+			if (!state) return "";
+			if (String(args.edit ?? "true").toLowerCase() !== "false") {
+				openSceneComposer(true);
+				return "";
+			}
+			try {
+				const text = String(value ?? "").trim();
+				const { spec } = await state.service.autoSpec(text || void 0);
+				const target = String(args.target ?? "") === "inline" ? "inline" : "message";
+				const result = await state.service.generate(spec, target);
+				return typeof result === "string" ? result : result?.path ?? "";
+			} catch (error) {
+				reportGenerationError(error);
+				return "";
+			}
+		}
+	}));
+}
+function setupScenes(pipeline, service) {
+	state = {
+		service,
+		pipeline
+	};
+	installCardButton();
+	installMenuOptions();
+	document.addEventListener("click", (event) => {
+		const target = event.target;
+		if (target.closest("#naist_open_composer")) openSceneComposer(true);
+		else if (target.closest("#naist_edit_char_passport")) {
+			const index = editedCharacterIndex();
+			if (index === null || ctx().groupId) toastr.info(t("naist.prompts.characterNone"));
+			else editCharacterPassport(index).catch(reportGenerationError);
+		} else if (target.closest("#naist_edit_persona_passport")) editPersonaPassport().catch(reportGenerationError);
+		else if (target.closest("#naist_open_pose_library")) openPoseLibrary();
+	});
+	const c = ctx();
+	c.eventSource.on(c.eventTypes.APP_READY ?? "app_ready", () => {
+		installCardButton();
+		registerSceneCommand();
+		const block = document.querySelector("#avatar_controls");
+		if (block) localize(block);
+		log.info("scene composer ready");
+	});
+}
+//#endregion
 //#region src/integration/character-card.ts
 var OPTIONS = [[
 	"naist_char_portrait",
@@ -7233,7 +9494,8 @@ function installWandMenu(pipeline) {
             <span data-i18n="naist.wand.heading"></span>
             ${WAND_MODES.map((mode) => `<li class="list-group-item interactable" data-trigger="${TRIGGER_WORDS[mode] ?? ""}" data-i18n="naist.mode.${mode}"></li>`).join("")}
             <li class="list-group-item interactable" data-trigger="__free" data-i18n="naist.wand.free"></li>
-            <li class="list-group-item interactable naist-wand-sep" data-trigger="__gallery" data-i18n="naist.wand.gallery"></li>
+            <li class="list-group-item interactable naist-wand-sep" data-trigger="__scene" data-i18n="naist.wand.scene"></li>
+            <li class="list-group-item interactable" data-trigger="__gallery" data-i18n="naist.wand.gallery"></li>
             <li class="list-group-item interactable" data-trigger="__toggle-images" data-i18n="naist.wand.toggleImages"></li>
             <li class="list-group-item interactable" data-trigger="__reading" data-i18n="naist.wand.readingMode"></li>
         </ul>`;
@@ -7257,6 +9519,10 @@ function installWandMenu(pipeline) {
 		if (!item) return;
 		hide();
 		let trigger = item.dataset.trigger ?? "";
+		if (trigger === "__scene") {
+			openSceneComposer(true);
+			return;
+		}
 		if (trigger === "__gallery") {
 			openGalleryWindow(pipeline);
 			return;
@@ -7308,111 +9574,6 @@ var character_row_default = "<div class=\"naist-character\" data-index=\"{{index
 //#endregion
 //#region src/ui/templates/panel.html?raw
 var panel_default = "<div class=\"naist-panel\" id=\"naist_panel\">\n    <div class=\"inline-drawer\">\n        <div class=\"inline-drawer-toggle inline-drawer-header\">\n            <b data-i18n=\"naist.panel.title\"></b>\n            <div class=\"inline-drawer-icon fa-solid fa-circle-chevron-down down\"></div>\n        </div>\n        <div class=\"inline-drawer-content\">\n            <div class=\"naist-content\">\n                <div class=\"naist-row naist-status\">\n                    <label for=\"naist_transport_mode\" data-i18n=\"naist.panel.transport\"></label>\n                    <select id=\"naist_transport_mode\" class=\"text_pole naist-grow\">\n                        <option value=\"auto\" data-i18n=\"naist.transport.auto\"></option>\n                        <option value=\"plugin\" data-i18n=\"naist.transport.plugin\"></option>\n                        <option value=\"native\" data-i18n=\"naist.transport.native\"></option>\n                    </select>\n                    <div\n                        id=\"naist_refresh\"\n                        class=\"menu_button fa-solid fa-rotate\"\n                        data-i18n=\"[title]naist.panel.refresh\"\n                    ></div>\n                </div>\n                <div id=\"naist_transport_badge\" class=\"naist-badge\"></div>\n                <div id=\"naist_account\" class=\"naist-account\"></div>\n\n                <div id=\"naist_takeover_banner\" class=\"naist-banner naist-hidden\">\n                    <span data-i18n=\"naist.takeover.banner\"></span>\n                    <div id=\"naist_banner_open\" class=\"menu_button\" data-i18n=\"naist.takeover.bannerAction\"></div>\n                </div>\n\n                <div class=\"naist-tabs\" role=\"tablist\">\n                    <div\n                        class=\"naist-tab menu_button\"\n                        role=\"tab\"\n                        data-tab=\"generate\"\n                        data-i18n=\"naist.tab.generate\"\n                    ></div>\n                    <div\n                        class=\"naist-tab menu_button\"\n                        role=\"tab\"\n                        data-tab=\"prompts\"\n                        data-i18n=\"naist.tab.prompts\"\n                    ></div>\n                    <div class=\"naist-tab menu_button\" role=\"tab\" data-tab=\"chat\" data-i18n=\"naist.tab.chat\"></div>\n                    <div class=\"naist-tab menu_button\" role=\"tab\" data-tab=\"images\" data-i18n=\"naist.tab.images\"></div>\n                    <div\n                        class=\"naist-tab menu_button\"\n                        role=\"tab\"\n                        data-tab=\"takeover\"\n                        data-i18n=\"naist.tab.takeover\"\n                    ></div>\n                </div>\n\n                <div class=\"naist-tabpanel\" data-tabpanel=\"generate\">\n                    <label for=\"naist_model\" data-i18n=\"naist.panel.model\"></label>\n                    <select id=\"naist_model\" class=\"text_pole\">\n                        {{#each models}}\n                        <option value=\"{{id}}\" data-i18n=\"{{nameKey}}\"></option>\n                        {{/each}}\n                    </select>\n\n                    <label for=\"naist_prompt\" data-i18n=\"naist.panel.prompt\"></label>\n                    <textarea\n                        id=\"naist_prompt\"\n                        class=\"text_pole textarea_compact\"\n                        rows=\"4\"\n                        data-i18n=\"[placeholder]naist.panel.promptPlaceholder\"\n                    ></textarea>\n\n                    <label for=\"naist_negative\" data-i18n=\"naist.panel.negative\"></label>\n                    <textarea id=\"naist_negative\" class=\"text_pole textarea_compact\" rows=\"2\"></textarea>\n\n                    <div class=\"naist-grid2\">\n                        <div>\n                            <label for=\"naist_uc_preset\" data-i18n=\"naist.panel.ucPreset\"></label>\n                            <select id=\"naist_uc_preset\" class=\"text_pole\"></select>\n                        </div>\n                        <div>\n                            <label for=\"naist_quality\" data-i18n=\"naist.panel.quality\"></label>\n                            <select id=\"naist_quality\" class=\"text_pole\"></select>\n                        </div>\n                    </div>\n\n                    <div\n                        id=\"naist_characters_block\"\n                        class=\"naist-block\"\n                        data-cap=\"characters\"\n                        data-feature=\"characters\"\n                    >\n                        <div class=\"naist-row\">\n                            <b data-i18n=\"naist.panel.characters\"></b>\n                            <span id=\"naist_characters_count\" class=\"naist-muted\"></span>\n                            <div\n                                id=\"naist_add_character\"\n                                class=\"menu_button fa-solid fa-user-plus\"\n                                data-i18n=\"[title]naist.panel.addCharacter\"\n                            ></div>\n                        </div>\n                        <label class=\"checkbox_label\"\n                            ><input type=\"checkbox\" id=\"naist_use_coords\" /><span\n                                data-i18n=\"naist.panel.useCoords\"\n                            ></span\n                        ></label>\n                        <div id=\"naist_characters\"></div>\n                        <div class=\"naist-feature-hint\" data-hint-for=\"characters\"></div>\n                    </div>\n\n                    <label for=\"naist_size_preset\" data-i18n=\"naist.panel.size\"></label>\n                    <div class=\"naist-grid3\">\n                        <select id=\"naist_size_preset\" class=\"text_pole\"></select>\n                        <input\n                            id=\"naist_width\"\n                            type=\"number\"\n                            class=\"text_pole\"\n                            step=\"64\"\n                            min=\"64\"\n                            data-i18n=\"[title]naist.panel.width\"\n                        />\n                        <input\n                            id=\"naist_height\"\n                            type=\"number\"\n                            class=\"text_pole\"\n                            step=\"64\"\n                            min=\"64\"\n                            data-i18n=\"[title]naist.panel.height\"\n                        />\n                    </div>\n\n                    <div class=\"naist-grid2\">\n                        <div>\n                            <label for=\"naist_sampler\" data-i18n=\"naist.panel.sampler\"></label>\n                            <select id=\"naist_sampler\" class=\"text_pole\"></select>\n                        </div>\n                        <div data-cap=\"noiseSchedule\">\n                            <label for=\"naist_schedule\" data-i18n=\"naist.panel.schedule\"></label>\n                            <select id=\"naist_schedule\" class=\"text_pole\"></select>\n                        </div>\n                    </div>\n                    <div class=\"naist-grid3\">\n                        <div>\n                            <label for=\"naist_steps\" data-i18n=\"naist.panel.steps\"></label>\n                            <input id=\"naist_steps\" type=\"number\" min=\"1\" max=\"50\" class=\"text_pole\" />\n                        </div>\n                        <div>\n                            <label for=\"naist_scale\" data-i18n=\"naist.panel.scale\"></label>\n                            <input id=\"naist_scale\" type=\"number\" step=\"0.1\" min=\"0\" max=\"10\" class=\"text_pole\" />\n                        </div>\n                        <div data-feature=\"cfgRescale\">\n                            <label for=\"naist_cfg_rescale\" data-i18n=\"naist.panel.cfgRescale\"></label>\n                            <input id=\"naist_cfg_rescale\" type=\"number\" step=\"0.02\" min=\"0\" max=\"1\" class=\"text_pole\" />\n                        </div>\n                    </div>\n                    <div class=\"naist-grid2\">\n                        <div>\n                            <label for=\"naist_seed\" data-i18n=\"naist.panel.seed\"></label>\n                            <input\n                                id=\"naist_seed\"\n                                type=\"number\"\n                                min=\"-1\"\n                                class=\"text_pole\"\n                                data-i18n=\"[title]naist.panel.seedHint\"\n                            />\n                        </div>\n                        <div data-feature=\"multipleSamples\">\n                            <label for=\"naist_samples\" data-i18n=\"naist.panel.samples\"></label>\n                            <input id=\"naist_samples\" type=\"number\" min=\"1\" max=\"8\" class=\"text_pole\" />\n                        </div>\n                    </div>\n                    <div class=\"naist-feature-hint\" data-hint-for=\"multipleSamples\"></div>\n\n                    <div class=\"naist-flags\">\n                        <label class=\"checkbox_label\" data-cap=\"smea\"\n                            ><input type=\"checkbox\" id=\"naist_smea\" /><span data-i18n=\"naist.panel.smea\"></span\n                        ></label>\n                        <label class=\"checkbox_label\" data-cap=\"smeaDyn\"\n                            ><input type=\"checkbox\" id=\"naist_smea_dyn\" /><span data-i18n=\"naist.panel.smeaDyn\"></span\n                        ></label>\n                        <label class=\"checkbox_label\" data-cap=\"autoSmea\"\n                            ><input type=\"checkbox\" id=\"naist_auto_smea\" /><span data-i18n=\"naist.panel.autoSmea\"></span\n                        ></label>\n                        <label class=\"checkbox_label\" data-cap=\"decrisper\"\n                            ><input type=\"checkbox\" id=\"naist_decrisper\" /><span\n                                data-i18n=\"naist.panel.decrisper\"\n                            ></span\n                        ></label>\n                        <label class=\"checkbox_label\" data-cap=\"varietyBoost\"\n                            ><input type=\"checkbox\" id=\"naist_variety\" /><span data-i18n=\"naist.panel.variety\"></span\n                        ></label>\n                        <label class=\"checkbox_label\" data-cap=\"transparency\" data-feature=\"transparency\"\n                            ><input type=\"checkbox\" id=\"naist_transparent\" /><span\n                                data-i18n=\"naist.panel.transparent\"\n                            ></span\n                        ></label>\n                        <label class=\"checkbox_label\" data-cap=\"legacyUc\"\n                            ><input type=\"checkbox\" id=\"naist_legacy_uc\" /><span data-i18n=\"naist.panel.legacyUc\"></span\n                        ></label>\n                    </div>\n                    <div class=\"naist-feature-hint\" data-hint-for=\"transparency\"></div>\n\n                    <hr />\n                    <label class=\"checkbox_label\"\n                        ><input type=\"checkbox\" id=\"naist_free_only\" /><span data-i18n=\"naist.panel.freeOnly\"></span\n                    ></label>\n                    <div id=\"naist_cost\" class=\"naist-cost\"></div>\n                    <div id=\"naist_lost\" class=\"naist-hint\"></div>\n\n                    <details class=\"naist-override\">\n                        <summary data-i18n=\"naist.panel.override\"></summary>\n                        <div class=\"naist-warning\" data-i18n=\"naist.panel.overrideWarning\"></div>\n                        <label class=\"checkbox_label\"\n                            ><input type=\"checkbox\" id=\"naist_override_enabled\" /><span\n                                data-i18n=\"naist.panel.overrideEnable\"\n                            ></span\n                        ></label>\n                        <textarea\n                            id=\"naist_override_json\"\n                            class=\"text_pole textarea_compact monospace\"\n                            rows=\"4\"\n                        ></textarea>\n                    </details>\n                </div>\n                <div class=\"naist-tabpanel naist-hidden\" data-tabpanel=\"prompts\"></div>\n                <div class=\"naist-tabpanel naist-hidden\" data-tabpanel=\"chat\"></div>\n                <div class=\"naist-tabpanel naist-hidden\" data-tabpanel=\"images\"></div>\n                <div class=\"naist-tabpanel naist-hidden\" data-tabpanel=\"takeover\"></div>\n\n                <label class=\"checkbox_label\"\n                    ><input type=\"checkbox\" id=\"naist_inspect_before\" /><span\n                        data-i18n=\"naist.panel.inspectBeforeSend\"\n                    ></span\n                ></label>\n                <div class=\"naist-row naist-actions\">\n                    <div id=\"naist_inspect\" class=\"menu_button menu_button_icon\">\n                        <i class=\"fa-solid fa-magnifying-glass\"></i><span data-i18n=\"naist.panel.inspect\"></span>\n                    </div>\n                    <div id=\"naist_generate\" class=\"menu_button menu_button_icon\">\n                        <i class=\"fa-solid fa-paintbrush\"></i><span data-i18n=\"naist.panel.generate\"></span>\n                    </div>\n                    <div id=\"naist_cancel\" class=\"menu_button menu_button_icon naist-hidden\">\n                        <i class=\"fa-solid fa-stop\"></i><span data-i18n=\"naist.panel.cancel\"></span>\n                    </div>\n                </div>\n                <div id=\"naist_message\" class=\"naist-message\"></div>\n            </div>\n        </div>\n    </div>\n</div>\n";
-//#endregion
-//#region src/ui/components/json-view.ts
-var BASE64_MIN = 256;
-function escapeHtml$1(text) {
-	return text.replace(/[&<>"']/g, (ch) => ({
-		"&": "&amp;",
-		"<": "&lt;",
-		">": "&gt;",
-		"\"": "&quot;",
-		"'": "&#39;"
-	})[ch] ?? ch);
-}
-function renderValue(value, path, highlight, indent) {
-	const pad = "  ".repeat(indent);
-	let html;
-	if (value === null || typeof value !== "object") {
-		if (typeof value === "string" && value.length > BASE64_MIN && /^[A-Za-z0-9+/=]+$/.test(value)) html = `<span class="naist-json-b64">"&lt;base64 ${value.length}&gt;"</span>`;
-		else html = `<span class="naist-json-${value === null ? "null" : typeof value}">${escapeHtml$1(JSON.stringify(value))}</span>`;
-	} else if (Array.isArray(value)) {
-		if (value.length === 0) html = "[]";
-		else html = `[\n${value.map((item, i) => `${pad}  ${renderValue(item, `${path}[${i}]`, highlight, indent + 1)}`).join(",\n")}\n${pad}]`;
-	} else {
-		const entries = Object.entries(value);
-		if (entries.length === 0) html = "{}";
-		else html = `{\n${entries.map(([key, item]) => {
-			const childPath = path ? `${path}.${key}` : key;
-			return `${pad}  <span class="naist-json-key">${escapeHtml$1(JSON.stringify(key))}</span>: ${renderValue(item, childPath, highlight, indent + 1)}`;
-		}).join(",\n")}\n${pad}}`;
-	}
-	return highlight.has(path) ? `<span class="naist-json-override">${html}</span>` : html;
-}
-function renderJson(value, highlightPaths = []) {
-	return `<pre class="naist-json">${renderValue(value, "", new Set(highlightPaths), 0)}</pre>`;
-}
-//#endregion
-//#region src/ui/panel/inspector.ts
-function escapeHtml(text) {
-	const div = document.createElement("div");
-	div.textContent = text;
-	return div.innerHTML;
-}
-function droppedList(prepared) {
-	if (prepared.build.dropped.length === 0) return `<p class="naist-muted" data-i18n="naist.inspector.nothingDropped"></p>`;
-	return `<ul class="naist-list">${[...prepared.build.dropped].sort((a, b) => Number(b.userSet) - Number(a.userSet)).map((d) => `<li class="${d.userSet ? "naist-dropped-user" : "naist-muted"}"><code>${escapeHtml(d.path)}</code> — ${escapeHtml(t(`naist.drop.${d.reason}`))}</li>`).join("")}</ul>`;
-}
-function warningsList(prepared) {
-	const warnings = prepared.build.warnings.map((w) => `<li>${escapeHtml(t(`naist.warning.${w.code}`, w.params))}</li>`);
-	const clamps = prepared.clampChanges.map((c) => `<li>${escapeHtml(t(`naist.clamp.${c.kind}`, c))}</li>`);
-	const all = [...warnings, ...clamps];
-	return all.length ? `<ul class="naist-list">${all.join("")}</ul>` : `<p class="naist-muted" data-i18n="naist.inspector.noWarnings"></p>`;
-}
-function lostList(prepared) {
-	if (prepared.effective.lost.length === 0) return "";
-	return `<h4 data-i18n="naist.inspector.lost"></h4><ul class="naist-list naist-dropped-user">${prepared.effective.lost.map((l) => `<li>${escapeHtml(t(`naist.lost.${l}`))}</li>`).join("")}</ul>`;
-}
-/** Opens the inspector popup. Resolves true when the user chose to send (confirmSend mode). */
-async function openInspector(prepared, options = { confirmSend: false }) {
-	const c = ctx();
-	const root = document.createElement("div");
-	root.className = "naist-inspector";
-	const native = prepared.transportId === "native";
-	const costText = prepared.cost.total === 0 ? t("naist.cost.free") : t("naist.cost.paid", {
-		total: prepared.cost.total,
-		perImage: prepared.cost.perImage,
-		billable: prepared.cost.billableSamples
-	});
-	root.innerHTML = `
-        <h3 data-i18n="naist.inspector.title"></h3>
-        <div class="naist-row">
-            <span>${escapeHtml(t(`naist.transport.${prepared.transportId}`))}</span>
-            <span class="naist-muted">${escapeHtml(prepared.body.model)} · ${escapeHtml(prepared.body.action)}</span>
-            <span class="naist-cost-inline">${escapeHtml(costText)}</span>
-        </div>
-        ${prepared.overridePaths.length ? `<div class="naist-warning" data-i18n="naist.inspector.overrideApplied"></div>` : ""}
-        ${lostList(prepared)}
-        <div class="naist-row">
-            <div class="menu_button menu_button_icon naist-copy"><i class="fa-solid fa-copy"></i><span data-i18n="naist.inspector.copy"></span></div>
-        </div>
-        <h4 data-i18n="naist.inspector.body"></h4>
-        ${renderJson(prepared.body, prepared.overridePaths)}
-        ${native ? `<h4 data-i18n="naist.inspector.effectiveNative"></h4>${renderJson(prepared.effective.body)}` : ""}
-        <h4 data-i18n="naist.inspector.dropped"></h4>
-        ${droppedList(prepared)}
-        <h4 data-i18n="naist.inspector.warnings"></h4>
-        ${warningsList(prepared)}
-    `;
-	localize(root);
-	root.querySelector(".naist-copy")?.addEventListener("click", async () => {
-		const json = JSON.stringify(native ? prepared.effective.body : prepared.body, null, 2);
-		try {
-			await navigator.clipboard.writeText(json);
-			toastr.success(t("naist.inspector.copied"));
-		} catch {
-			toastr.error(t("naist.inspector.copyFailed"));
-		}
-	});
-	const result = await c.callGenericPopup(root, options.confirmSend ? c.POPUP_TYPE.CONFIRM : c.POPUP_TYPE.TEXT, "", {
-		wide: true,
-		large: true,
-		allowVerticalScrolling: true,
-		okButton: options.confirmSend ? t("naist.inspector.send") : t("naist.inspector.close"),
-		cancelButton: options.confirmSend ? t("naist.inspector.cancel") : false
-	});
-	return options.confirmSend && result === c.POPUP_RESULT.AFFIRMATIVE;
-}
 //#endregion
 //#region src/ui/components/bind.ts
 function resolve(path) {
@@ -7557,7 +9718,7 @@ var ImagesTab = class {
 };
 //#endregion
 //#region src/ui/templates/tab-prompts.html?raw
-var tab_prompts_default = "<div class=\"naist-section\">\n    <label for=\"naist_prefix\" data-i18n=\"naist.prompts.prefix\"></label>\n    <textarea id=\"naist_prefix\" class=\"text_pole textarea_compact\" rows=\"2\" data-setting=\"prompts.prefix\"></textarea>\n    <label for=\"naist_suffix\" data-i18n=\"naist.prompts.suffix\"></label>\n    <textarea id=\"naist_suffix\" class=\"text_pole textarea_compact\" rows=\"2\" data-setting=\"prompts.suffix\"></textarea>\n    <div class=\"naist-hint\" data-i18n=\"naist.prompts.prefixHint\"></div>\n</div>\n\n<div class=\"naist-section\">\n    <b data-i18n=\"naist.prompts.styles\"></b>\n    <div class=\"naist-row\">\n        <select id=\"naist_style\" class=\"text_pole naist-grow\"></select>\n        <div\n            id=\"naist_style_save\"\n            class=\"menu_button fa-solid fa-floppy-disk\"\n            data-i18n=\"[title]naist.prompts.styleSave\"\n        ></div>\n        <div\n            id=\"naist_style_rename\"\n            class=\"menu_button fa-solid fa-pencil\"\n            data-i18n=\"[title]naist.prompts.styleRename\"\n        ></div>\n        <div\n            id=\"naist_style_delete\"\n            class=\"menu_button fa-solid fa-trash-can\"\n            data-i18n=\"[title]naist.prompts.styleDelete\"\n        ></div>\n    </div>\n    <div class=\"naist-hint\" data-i18n=\"naist.prompts.stylesHint\"></div>\n</div>\n\n<div id=\"naist_char_prompt_block\" class=\"naist-section\">\n    <b data-i18n=\"naist.prompts.characterPrompt\"></b> <span id=\"naist_char_prompt_name\" class=\"naist-muted\"></span>\n    <textarea\n        id=\"naist_char_positive\"\n        class=\"text_pole textarea_compact\"\n        rows=\"2\"\n        data-i18n=\"[placeholder]naist.prompts.characterPositive\"\n    ></textarea>\n    <textarea\n        id=\"naist_char_negative\"\n        class=\"text_pole textarea_compact\"\n        rows=\"2\"\n        data-i18n=\"[placeholder]naist.prompts.characterNegative\"\n    ></textarea>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" id=\"naist_char_share\" /><span data-i18n=\"naist.prompts.characterShare\"></span\n    ></label>\n</div>\n<div id=\"naist_char_prompt_none\" class=\"naist-hint naist-hidden\" data-i18n=\"naist.prompts.characterNone\"></div>\n\n<details class=\"naist-section\">\n    <summary data-i18n=\"naist.prompts.templates\"></summary>\n    <div class=\"naist-hint\" data-i18n=\"naist.prompts.templatesHint\"></div>\n    <div id=\"naist_templates\"></div>\n</details>\n";
+var tab_prompts_default = "<div class=\"naist-section\">\n    <b data-i18n=\"naist.scene.title\"></b>\n    <div class=\"naist-hint\" data-i18n=\"naist.scene.hint\"></div>\n    <div class=\"naist-row\">\n        <div id=\"naist_open_composer\" class=\"menu_button\" data-i18n=\"naist.scene.openComposer\"></div>\n        <div id=\"naist_edit_char_passport\" class=\"menu_button\" data-i18n=\"naist.scene.charPassport\"></div>\n        <div id=\"naist_edit_persona_passport\" class=\"menu_button\" data-i18n=\"naist.scene.personaPassport\"></div>\n        <div id=\"naist_open_pose_library\" class=\"menu_button\" data-i18n=\"naist.scene.poseLibrary\"></div>\n    </div>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"scene.allowNsfw\" /><span data-i18n=\"naist.composer.allowNsfw\"></span\n    ></label>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"scene.llmBase\" /><span data-i18n=\"naist.scene.llmBase\"></span\n    ></label>\n</div>\n\n<div class=\"naist-section\">\n    <label for=\"naist_prefix\" data-i18n=\"naist.prompts.prefix\"></label>\n    <textarea id=\"naist_prefix\" class=\"text_pole textarea_compact\" rows=\"2\" data-setting=\"prompts.prefix\"></textarea>\n    <label for=\"naist_suffix\" data-i18n=\"naist.prompts.suffix\"></label>\n    <textarea id=\"naist_suffix\" class=\"text_pole textarea_compact\" rows=\"2\" data-setting=\"prompts.suffix\"></textarea>\n    <div class=\"naist-hint\" data-i18n=\"naist.prompts.prefixHint\"></div>\n</div>\n\n<div class=\"naist-section\">\n    <b data-i18n=\"naist.prompts.styles\"></b>\n    <div class=\"naist-row\">\n        <select id=\"naist_style\" class=\"text_pole naist-grow\"></select>\n        <div\n            id=\"naist_style_save\"\n            class=\"menu_button fa-solid fa-floppy-disk\"\n            data-i18n=\"[title]naist.prompts.styleSave\"\n        ></div>\n        <div\n            id=\"naist_style_rename\"\n            class=\"menu_button fa-solid fa-pencil\"\n            data-i18n=\"[title]naist.prompts.styleRename\"\n        ></div>\n        <div\n            id=\"naist_style_delete\"\n            class=\"menu_button fa-solid fa-trash-can\"\n            data-i18n=\"[title]naist.prompts.styleDelete\"\n        ></div>\n    </div>\n    <div class=\"naist-hint\" data-i18n=\"naist.prompts.stylesHint\"></div>\n</div>\n\n<div id=\"naist_char_prompt_block\" class=\"naist-section\">\n    <b data-i18n=\"naist.prompts.characterPrompt\"></b> <span id=\"naist_char_prompt_name\" class=\"naist-muted\"></span>\n    <textarea\n        id=\"naist_char_positive\"\n        class=\"text_pole textarea_compact\"\n        rows=\"2\"\n        data-i18n=\"[placeholder]naist.prompts.characterPositive\"\n    ></textarea>\n    <textarea\n        id=\"naist_char_negative\"\n        class=\"text_pole textarea_compact\"\n        rows=\"2\"\n        data-i18n=\"[placeholder]naist.prompts.characterNegative\"\n    ></textarea>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" id=\"naist_char_share\" /><span data-i18n=\"naist.prompts.characterShare\"></span\n    ></label>\n</div>\n<div id=\"naist_char_prompt_none\" class=\"naist-hint naist-hidden\" data-i18n=\"naist.prompts.characterNone\"></div>\n\n<details class=\"naist-section\">\n    <summary data-i18n=\"naist.prompts.templates\"></summary>\n    <div class=\"naist-hint\" data-i18n=\"naist.prompts.templatesHint\"></div>\n    <div id=\"naist_templates\"></div>\n</details>\n";
 //#endregion
 //#region src/ui/panel/tab-prompts.ts
 var PromptsTab = class {
@@ -8019,6 +10180,14 @@ var Panel = class {
 		})).join("");
 		localize(container);
 		const caps = this.caps();
+		container.querySelectorAll(".naist-character").forEach((row) => {
+			const over = Number(row.dataset.index) >= caps.maxCharacters;
+			row.classList.toggle("naist-disabled", over);
+			row.querySelectorAll("input, textarea").forEach((el) => {
+				el.disabled = over;
+			});
+			row.title = over ? t("naist.panel.characterOverLimit", { max: caps.maxCharacters }) : "";
+		});
 		$id(this.root, "naist_characters_count").textContent = t("naist.panel.charactersLimit", {
 			count: chars.length,
 			max: caps.maxCharacters
@@ -8388,7 +10557,9 @@ async function onActivate() {
 	pipeline.onGenerated(recordGeneration);
 	mountPanel(studio, pipeline);
 	setupIntegrations(pipeline);
-	setupInline(pipeline, new InlineImages(pipeline));
+	const inline = new InlineImages(pipeline);
+	setupInline(pipeline, inline);
+	setupScenes(pipeline, new SceneService(pipeline, inline));
 	new AutoGenerator(studio, pipeline).attach();
 	studio.refreshTransport();
 	for (const name of [

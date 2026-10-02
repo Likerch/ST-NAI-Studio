@@ -7,10 +7,18 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { localize, setTranslator, t } from '../../src/core/i18n';
 import type { NaiErrorCode } from '../../src/core/errors';
 import {
+    CAMERA_ANGLES,
+    DISTANCES,
+    FRAMINGS,
     MODELS,
     NOISE_SCHEDULES,
+    PAIR_POSES,
+    PASSPORT_SLOTS,
+    POSE_CATEGORIES,
+    POSES,
     QUALITY_PRESETS,
     SAMPLERS,
+    STATE_PRESETS,
     TEMPLATE_MODES,
     UC_PRESETS,
     WAND_MODES,
@@ -182,6 +190,15 @@ describe('source code', () => {
         const commandArgs = [...commandsSource.matchAll(/named\('([\w.-]+)'/g)].map((m) => m[1]!).concat(IGNORED_ARGS);
         expect(commandArgs.length).toBeGreaterThan(IGNORED_ARGS.length);
         const keys = [
+            ...POSES.map((p) => `naist.pose.${p.id}`),
+            ...POSE_CATEGORIES.map((c) => `naist.poseCat.${c}`),
+            ...FRAMINGS.map((f) => `naist.framing.${f.id}`),
+            ...CAMERA_ANGLES.map((f) => `naist.camera.${f.id}`),
+            ...DISTANCES.map((f) => `naist.distance.${f.id}`),
+            ...PAIR_POSES.map((p) => `naist.pair.${p.id}`),
+            ...Object.keys(STATE_PRESETS).map((s) => `naist.state.${s}`),
+            ...PASSPORT_SLOTS.map((s) => `naist.slot.${s}`),
+            ...['gridHint', 'freeHint', 'noPositions'].map((k) => `naist.composer.${k}`),
             ...[...TEMPLATE_MODES, ...WAND_MODES].map((m) => `naist.mode.${m}`),
             ...migration.map((k) => `naist.migration.${k}`),
             ...commandArgs.map((a) => `naist.command.arg.${a}`),

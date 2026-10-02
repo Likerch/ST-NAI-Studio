@@ -2,7 +2,17 @@
 // Lives in extensionSettings.nai_studio. Never store tokens or image blobs here (TZ rules 2 and 4).
 import type { LogLevel } from './logger';
 
-export const CURRENT_SCHEMA_VERSION = 3;
+/** Custom pose preset (same shape as domain PosePreset; core must not import domain). */
+export interface CustomPoseSettings {
+    id: string;
+    category: string;
+    tags: string;
+    keywords: string[];
+    /** Display name (custom poses are not localized). */
+    name: string;
+}
+
+export const CURRENT_SCHEMA_VERSION = 4;
 
 export type TransportMode = 'auto' | 'plugin' | 'native';
 
@@ -154,6 +164,25 @@ export interface NaiStudioSettings {
         /** Remove all metadata from images saved to the server and to disk. */
         stripMetadata: boolean;
     };
+    poses: {
+        custom: CustomPoseSettings[];
+        favorites: string[];
+    };
+    /** Scene composer (TZ Phase 4). */
+    scene: {
+        framing: string;
+        camera: string;
+        distance: string;
+        /** The NSFW layer of passports is used only with this switch on. */
+        allowNsfw: boolean;
+        /** Let the LLM describe the location for the base prompt of an automatic scene. */
+        llmBase: boolean;
+        useCoords: boolean;
+        /** Where a composed scene goes: a new message or inline into the last message. */
+        target: 'message' | 'inline';
+        /** Appearance passports of user personas, keyed by persona avatar file. */
+        personaPassports: Record<string, unknown>;
+    };
     inspector: { openBeforeSend: boolean };
     rawOverride: { enabled: boolean; json: string };
     log: { level: LogLevel };
@@ -241,6 +270,17 @@ export function defaultSettings(): NaiStudioSettings {
         },
         gallery: { enabled: true, thumbSize: 256 },
         png: { stripMetadata: false },
+        poses: { custom: [], favorites: [] },
+        scene: {
+            framing: 'auto',
+            camera: 'auto',
+            distance: 'auto',
+            allowNsfw: false,
+            llmBase: false,
+            useCoords: true,
+            target: 'message',
+            personaPassports: {},
+        },
         inspector: { openBeforeSend: false },
         rawOverride: { enabled: false, json: '' },
         log: { level: 'info' },
@@ -293,6 +333,13 @@ export const MIGRATIONS: readonly Migration[] = [
             return { ...settings, schemaVersion: 3 };
         },
     },
+    {
+        // v4: pose library and scene composer sections; defaults are filled by the merge.
+        to: 4,
+        migrate(settings) {
+            return { ...settings, schemaVersion: 4 };
+        },
+    },
 ];
 
 export type DeepMerge = <T extends object>(target: T, ...sources: unknown[]) => T;
@@ -325,6 +372,9 @@ export function migrateAndFill(stored: unknown, merge: DeepMerge): LoadResult {
     ) as CharacterSlotSettings[];
     const prompts = isObject(raw.prompts) ? raw.prompts : {};
     settings.prompts.styles = (Array.isArray(prompts.styles) ? prompts.styles : []) as StyleSettings[];
+    const poses = isObject(raw.poses) ? raw.poses : {};
+    settings.poses.custom = (Array.isArray(poses.custom) ? poses.custom : []) as CustomPoseSettings[];
+    settings.poses.favorites = (Array.isArray(poses.favorites) ? poses.favorites : []) as string[];
     const takeover = isObject(raw.takeover) ? raw.takeover : {};
     settings.takeover.migrationReport = (
         Array.isArray(takeover.migrationReport) ? takeover.migrationReport : []

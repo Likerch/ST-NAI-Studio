@@ -7,6 +7,7 @@ import { TRIGGER_WORDS, WAND_MODES } from '../domain';
 import { settings } from '../core/settings';
 import type { Pipeline } from '../features/generation/pipeline';
 import { inlineRenderer, openGalleryWindow, setInlineVisibility } from './inline-setup';
+import { openSceneComposer } from './scene-setup';
 
 export function installWandMenu(pipeline: Pipeline): void {
     const menu = document.querySelector('#extensionsMenu');
@@ -35,7 +36,8 @@ export function installWandMenu(pipeline: Pipeline): void {
             <span data-i18n="naist.wand.heading"></span>
             ${items}
             <li class="list-group-item interactable" data-trigger="__free" data-i18n="naist.wand.free"></li>
-            <li class="list-group-item interactable naist-wand-sep" data-trigger="__gallery" data-i18n="naist.wand.gallery"></li>
+            <li class="list-group-item interactable naist-wand-sep" data-trigger="__scene" data-i18n="naist.wand.scene"></li>
+            <li class="list-group-item interactable" data-trigger="__gallery" data-i18n="naist.wand.gallery"></li>
             <li class="list-group-item interactable" data-trigger="__toggle-images" data-i18n="naist.wand.toggleImages"></li>
             <li class="list-group-item interactable" data-trigger="__reading" data-i18n="naist.wand.readingMode"></li>
         </ul>`;
@@ -64,6 +66,10 @@ export function installWandMenu(pipeline: Pipeline): void {
         if (!item) return;
         hide();
         let trigger = item.dataset.trigger ?? '';
+        if (trigger === '__scene') {
+            void openSceneComposer(true);
+            return;
+        }
         if (trigger === '__gallery') {
             void openGalleryWindow(pipeline);
             return;

@@ -1,4 +1,21 @@
 <div class="naist-section">
+    <b data-i18n="naist.scene.title"></b>
+    <div class="naist-hint" data-i18n="naist.scene.hint"></div>
+    <div class="naist-row">
+        <div id="naist_open_composer" class="menu_button" data-i18n="naist.scene.openComposer"></div>
+        <div id="naist_edit_char_passport" class="menu_button" data-i18n="naist.scene.charPassport"></div>
+        <div id="naist_edit_persona_passport" class="menu_button" data-i18n="naist.scene.personaPassport"></div>
+        <div id="naist_open_pose_library" class="menu_button" data-i18n="naist.scene.poseLibrary"></div>
+    </div>
+    <label class="checkbox_label"
+        ><input type="checkbox" data-setting="scene.allowNsfw" /><span data-i18n="naist.composer.allowNsfw"></span
+    ></label>
+    <label class="checkbox_label"
+        ><input type="checkbox" data-setting="scene.llmBase" /><span data-i18n="naist.scene.llmBase"></span
+    ></label>
+</div>
+
+<div class="naist-section">
     <label for="naist_prefix" data-i18n="naist.prompts.prefix"></label>
     <textarea id="naist_prefix" class="text_pole textarea_compact" rows="2" data-setting="prompts.prefix"></textarea>
     <label for="naist_suffix" data-i18n="naist.prompts.suffix"></label>

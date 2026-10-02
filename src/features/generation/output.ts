@@ -18,6 +18,8 @@ export interface GenerationMeta {
     transport: string;
     cost: number;
     correlationId?: string;
+    /** Tool that produced the image (lineart, inpaint, upscale, ...); absent for plain generations. */
+    tool?: string;
     /** Saved when the size was forced for this image (slash command width/height). */
     width?: number;
     height?: number;
@@ -38,6 +40,7 @@ export interface MediaAttachmentData extends STMediaAttachment {
         transport: string;
         cost: number;
         correlationId?: string;
+        tool?: string;
     };
 }
 
@@ -116,6 +119,7 @@ export function toAttachments(saved: SavedImage[], meta: GenerationMeta): MediaA
             transport: meta.transport,
             cost: meta.cost,
             correlationId: meta.correlationId,
+            ...(meta.tool ? { tool: meta.tool } : {}),
         },
     }));
 }

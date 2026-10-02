@@ -3,6 +3,7 @@
 // Upstream failures are answered with 502 (never 401, which would reset the browser's Basic auth
 // on servers with basicAuthMode) and the real NovelAI status inside the JSON body.
 import { UpstreamError, redact } from './lib/novelai.js';
+import { sha256Hex, vibeKey } from './lib/vibe-cache.js';
 import { PLUGIN_VERSION } from './lib/version.js';
 
 function send(res, status, body) {
@@ -47,11 +48,34 @@ function clientAbortSignal(req, res) {
 
 /**
  * @param {{get: Function, post: Function}} router
- * @param {{client: ReturnType<import('./lib/novelai.js').createNovelAiClient>, queue: import('./lib/queue.js').Queue, readToken: Function, log?: Function}} deps
+ * @param {{client: ReturnType<import('./lib/novelai.js').createNovelAiClient>, queue: import('./lib/queue.js').Queue, readToken: Function, vibeCache?: import('./lib/vibe-cache.js').VibeCache | null, log?: Function}} deps
  */
 export function registerRoutes(router, deps) {
     const { client, queue, readToken } = deps;
+    const vibeCache = deps.vibeCache ?? null;
     const log = deps.log ?? (() => {});
+
+    /** Common shape: token check, abort on disconnect, upstream errors as 502 / 499. */
+    function handler(name, run) {
+        return async (req, res) => {
+            let token = null;
+            try {
+                ({ token } = readToken(req));
+                if (!token) return send(res, 400, { error: { kind: 'token-missing' } });
+                await run(req, res, token, clientAbortSignal(req, res));
+            } catch (error) {
+                const body = errorBody(error, token);
+                log(`${name} failed`, body.kind, body.status ?? '', body.message ?? '');
+                if (res.headersSent) {
+                    res.write?.(`event: error\ndata: ${JSON.stringify(body)}\n\n`);
+                    res.end?.();
+                    return;
+                }
+                if (body.kind === 'aborted') return send(res, 499, { error: body });
+                send(res, 502, { error: body });
+            }
+        };
+    }
 
     router.get('/health', (req, res) => {
         try {
@@ -98,6 +122,124 @@ export function registerRoutes(router, deps) {
             send(res, 502, { error: body });
         }
     });
+
+    // Vibe encoding with the disk cache: a hit costs nothing (TZ Phase 5 acceptance).
+    router.post(
+        '/encode-vibe',
+        handler('encode-vibe', async (req, res, token, signal) => {
+            const { image, model, informationExtracted = 1, mask } = req.body ?? {};
+            if (typeof image !== 'string' || !image || typeof model !== 'string') {
+                return send(res, 400, { error: { kind: 'http', status: 400, message: 'Malformed vibe request' } });
+            }
+            const key = vibeKey({
+                imageHash: sha256Hex(image),
+                model,
+                informationExtracted,
+                maskHash: typeof mask === 'string' && mask ? sha256Hex(mask).slice(0, 16) : '',
+            });
+            const cached = vibeCache?.get(key);
+            if (cached) {
+                log('encode-vibe cache hit', model);
+                return send(res, 200, { key, encoding: cached.toString('base64'), cached: true });
+            }
+            const encoding = await queue.run(
+                (s) => client.encodeVibe({ image, model, informationExtracted, mask, token, signal: s }),
+                signal,
+            );
+            vibeCache?.set(key, encoding);
+            log('encode-vibe encoded', model, `${encoding.length} bytes`);
+            send(res, 200, { key, encoding: encoding.toString('base64'), cached: false });
+        }),
+    );
+
+    /** Cached encodings by hash, without uploading the images again. */
+    router.post('/encode-vibe/lookup', (req, res) => {
+        try {
+            const items = Array.isArray(req.body?.items) ? req.body.items : [];
+            const results = items.map((item) => {
+                const key = vibeKey({
+                    imageHash: String(item?.imageHash ?? ''),
+                    model: String(item?.model ?? ''),
+                    informationExtracted: Number(item?.informationExtracted ?? 1),
+                    maskHash: String(item?.maskHash ?? ''),
+                });
+                const cached = vibeCache?.get(key);
+                return { key, encoding: cached ? cached.toString('base64') : null };
+            });
+            send(res, 200, { results, cache: vibeCache?.stats() ?? null });
+        } catch (error) {
+            send(res, 500, { error: errorBody(error) });
+        }
+    });
+
+    router.post(
+        '/augment',
+        handler('augment', async (req, res, token, signal) => {
+            const { body, retryable = false } = req.body ?? {};
+            if (
+                !body ||
+                typeof body !== 'object' ||
+                typeof body.req_type !== 'string' ||
+                typeof body.image !== 'string'
+            ) {
+                return send(res, 400, { error: { kind: 'http', status: 400, message: 'Malformed augment request' } });
+            }
+            const zip = await queue.run(
+                (s) => client.augment({ body, token, signal: s, retryable: retryable === true }),
+                signal,
+            );
+            log('augment', body.req_type);
+            send(res, 200, { zip });
+        }),
+    );
+
+    router.post(
+        '/upscale',
+        handler('upscale', async (req, res, token, signal) => {
+            const { image, width, height } = req.body ?? {};
+            if (typeof image !== 'string' || !image) {
+                return send(res, 400, { error: { kind: 'http', status: 400, message: 'Malformed upscale request' } });
+            }
+            const images = await queue.run((s) => client.upscale({ image, width, height, token, signal: s }), signal);
+            log('upscale', `${width}x${height}`);
+            send(res, 200, { images });
+        }),
+    );
+
+    // Step previews: NovelAI's SSE is passed through unbuffered (no-transform stops ST's gzip).
+    router.post(
+        '/generate-stream',
+        handler('generate-stream', async (req, res, token, signal) => {
+            const { request } = req.body ?? {};
+            if (!isImageRequest(request)) {
+                return send(res, 400, {
+                    error: { kind: 'http', status: 400, message: 'Malformed generation request' },
+                });
+            }
+            await queue.run(
+                (s) =>
+                    client.generateStream({
+                        request,
+                        token,
+                        signal: s,
+                        onChunk: (chunk) => {
+                            if (!res.headersSent) {
+                                res.status(200);
+                                res.set('Content-Type', 'text/event-stream');
+                                res.set('Cache-Control', 'no-cache, no-transform');
+                                res.set('X-Accel-Buffering', 'no');
+                                res.flushHeaders?.();
+                            }
+                            res.write(chunk);
+                            res.flush?.();
+                        },
+                    }),
+                signal,
+            );
+            log('generate-stream done', request.model);
+            res.end();
+        }),
+    );
 
     router.get('/subscription', async (req, res) => {
         let token = null;

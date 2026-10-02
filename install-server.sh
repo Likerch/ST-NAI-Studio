@@ -13,19 +13,11 @@ if [ ! -d "$ST_DIR/plugins" ] && [ ! -f "$ST_DIR/server.js" ]; then
     exit 1
 fi
 
-SAVED=""
-if [ -f "$TARGET/config.json" ]; then
-    SAVED="$(mktemp)"
-    cp "$TARGET/config.json" "$SAVED"
-fi
-rm -rf "$TARGET"
 mkdir -p "$TARGET"
-# Copy everything except a config.json from the repo (it may hold a token).
-(cd "$SRC" && find . -type f ! -name config.json -exec sh -c 'mkdir -p "$2/$(dirname "$1")" && cp "$1" "$2/$1"' _ {} "$TARGET" \;)
-if [ -n "$SAVED" ]; then
-    cp "$SAVED" "$TARGET/config.json"
-    rm -f "$SAVED"
-fi
+# Keep the installed config.json (may hold a token) and cache/ (paid vibe encodings).
+find "$TARGET" -mindepth 1 -maxdepth 1 ! -name config.json ! -name cache -exec rm -rf {} +
+# Copy everything except a config.json and a cache from the repo.
+(cd "$SRC" && find . -type f ! -name config.json ! -path './cache/*' -exec sh -c 'mkdir -p "$2/$(dirname "$1")" && cp "$1" "$2/$1"' _ {} "$TARGET" \;)
 
 echo "NAI Studio plugin installed to $TARGET"
 echo "Make sure enableServerPlugins: true is set in config.yaml (or env SILLYTAVERN_ENABLESERVERPLUGINS=true), then restart SillyTavern."

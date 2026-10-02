@@ -20,7 +20,7 @@ import type {
     NotFreeReason,
 } from '../../domain';
 import type { NaiImageRequest } from '../../shared/nai-wire';
-import type { EffectiveRequest, GenerateResult, Transport } from '../../transport';
+import type { EffectiveRequest, GenerateResult, StreamFrame, Transport } from '../../transport';
 import type { AccountView } from './account';
 import { requestFromSettings, resolveSeed } from './form';
 
@@ -114,6 +114,7 @@ export async function sendPrepared(
     transport: Transport,
     account: AccountView,
     signal?: AbortSignal,
+    onProgress?: (frame: StreamFrame) => void,
 ): Promise<GenerateResult> {
     const freeOnly = prepared.blockers.find((b) => b.kind === 'free-only');
     if (freeOnly) {
@@ -136,6 +137,7 @@ export async function sendPrepared(
             endpoint: prepared.build.endpoint,
             signal,
             retryable: prepared.cost.total === 0,
+            onProgress,
         });
     } catch (error) {
         throw toNaiError(error, {

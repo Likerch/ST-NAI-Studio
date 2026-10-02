@@ -22,6 +22,7 @@ export interface InlineUi {
     lightbox(messageId: number, imageId: string): void;
     edit(messageId: number, imageId: string): void;
     display(messageId: number, imageId: string): void;
+    tools(messageId: number, imageId: string): void;
     confirmDelete(): Promise<boolean>;
 }
 
@@ -275,6 +276,7 @@ export class InlineRenderer {
             icon('variation', 'fa-shuffle', 'naist.inline.variation'),
             icon('edit', 'fa-pen-to-square', 'naist.inline.edit'),
             icon('display', 'fa-sliders', 'naist.inline.display'),
+            icon('tools', 'fa-wand-magic-sparkles', 'naist.tools.title'),
             icon('lightbox', 'fa-expand', 'naist.inline.lightbox'),
             icon('delete', 'fa-trash-can', 'naist.inline.delete'),
         );
@@ -404,6 +406,8 @@ export class InlineRenderer {
                 return this.ui.edit(messageId, imageId);
             case 'display':
                 return this.ui.display(messageId, imageId);
+            case 'tools':
+                return this.ui.tools(messageId, imageId);
             case 'lightbox':
                 return this.ui.lightbox(messageId, imageId);
             case 'delete': {

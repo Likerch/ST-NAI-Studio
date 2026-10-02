@@ -12,14 +12,10 @@ if (-not (Test-Path (Join-Path $SillyTavern 'server.js'))) {
     throw "Not a SillyTavern folder: $SillyTavern"
 }
 $target = Join-Path $plugins 'nai-studio'
-$config = Join-Path $target 'config.json'
-$savedConfig = $null
-if (Test-Path $config) { $savedConfig = Get-Content -Raw -Path $config }
-
-if (Test-Path $target) { Remove-Item -Recurse -Force -Confirm:$false $target }
 New-Item -ItemType Directory -Force $target | Out-Null
-Get-ChildItem -Path $source -Exclude 'config.json' | Copy-Item -Destination $target -Recurse -Force
-if ($null -ne $savedConfig) { Set-Content -Path $config -Value $savedConfig -Encoding utf8 -NoNewline }
+# Keep the installed config.json (may hold a token) and cache\ (paid vibe encodings).
+Get-ChildItem -Path $target -Exclude 'config.json', 'cache' | Remove-Item -Recurse -Force -Confirm:$false
+Get-ChildItem -Path $source -Exclude 'config.json', 'cache' | Copy-Item -Destination $target -Recurse -Force
 
 Write-Output "NAI Studio plugin installed to $target"
 $configYaml = Join-Path $SillyTavern 'config.yaml'

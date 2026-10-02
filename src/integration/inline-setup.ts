@@ -20,6 +20,12 @@ const INSERT_CLASS = 'naist-inline-insert';
 const EDIT_INSERT_CLASS = 'naist-inline-insert-edit';
 
 let renderer: InlineRenderer | null = null;
+let toolsHandler: (messageId: number, imageId: string) => void = () => {};
+
+/** Phase 5 tools register here (avoids an import cycle with tools-setup). */
+export function setInlineToolsHandler(handler: (messageId: number, imageId: string) => void): void {
+    toolsHandler = handler;
+}
 
 export function inlineRenderer(): InlineRenderer | null {
     return renderer;
@@ -112,6 +118,7 @@ export function setupInline(pipeline: Pipeline, service: InlineImages): void {
                 if (display) void service.updateDisplay(messageId, imageId, display).catch(reportGenerationError);
             });
         },
+        tools: (messageId, imageId) => toolsHandler(messageId, imageId),
         confirmDelete,
     });
     renderer.install();

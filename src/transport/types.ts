@@ -1,4 +1,5 @@
 import type { NaiImageRequest, NaiSubscription } from '../shared/nai-wire';
+import type { StreamFrame } from './sse';
 
 export type TransportId = 'plugin' | 'native';
 
@@ -21,6 +22,31 @@ export interface GenerateOptions {
     signal?: AbortSignal;
     /** The request is free, so the plugin may retry it on 5xx without risking a double charge. */
     retryable: boolean;
+    /** Step previews (generate-stream endpoint, plugin transport only). */
+    onProgress?: (frame: StreamFrame) => void;
+}
+
+export interface VibeEncodeRequest {
+    image: string;
+    model: string;
+    informationExtracted: number;
+    mask?: string;
+}
+
+export interface VibeLookupItem {
+    imageHash: string;
+    model: string;
+    informationExtracted: number;
+    maskHash?: string;
+}
+
+/** Plugin-only operations; transports without them leave `extras` undefined (degradation). */
+export interface TransportExtras {
+    encodeVibe(request: VibeEncodeRequest, signal?: AbortSignal): Promise<{ encoding: string; cached: boolean }>;
+    lookupVibes(items: VibeLookupItem[], signal?: AbortSignal): Promise<(string | null)[]>;
+    /** Director Tools: returns the ZIP from NovelAI as base64. */
+    augment(body: Record<string, unknown>, options: { retryable: boolean; signal?: AbortSignal }): Promise<string>;
+    upscale(request: { image: string; width: number; height: number }, signal?: AbortSignal): Promise<GeneratedImage[]>;
 }
 
 /** Features the transport can deliver to NovelAI. Unsupported ones stay visible but disabled. */
@@ -66,6 +92,7 @@ export interface Transport {
     generate(body: NaiImageRequest, options: GenerateOptions): Promise<GenerateResult>;
     subscription(signal?: AbortSignal): Promise<NaiSubscription>;
     effectiveRequest(body: NaiImageRequest, overridePaths: string[]): EffectiveRequest;
+    readonly extras?: TransportExtras;
 }
 
 export type TransportErrorKind =

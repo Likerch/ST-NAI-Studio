@@ -2,6 +2,7 @@
 import { ctx } from '../../core/context';
 import { localize, t } from '../../core/i18n';
 import type { PipelineUi, RefineResult } from '../../features/generation/pipeline';
+import { createProgressUi } from '../progress';
 import { openInspector } from './inspector';
 
 async function refine(
@@ -51,5 +52,6 @@ export function createPipelineUi(balance: () => number): PipelineUi {
             return result === c.POPUP_RESULT.AFFIRMATIVE;
         },
         inspect: (prepared) => openInspector(prepared, { confirmSend: true }),
+        progress: createProgressUi(),
     };
 }

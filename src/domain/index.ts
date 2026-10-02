@@ -22,3 +22,5 @@ export * from './gallery';
 export * from './passport';
 export * from './poses';
 export * from './scene-assembly';
+export * from './advanced';
+export * from './vibes';

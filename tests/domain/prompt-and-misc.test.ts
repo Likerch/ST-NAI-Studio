@@ -131,6 +131,9 @@ describe('sizes', () => {
         expect(fitted.width % 64).toBe(0);
         expect(fitArea(64, 64, 100)).toEqual({ width: 64, height: 64 });
         expect(fitArea(4096, 64, 65536)).toEqual({ width: 1024, height: 64 });
+        // Outpaint 832x1216 grown by 128 on both sides: flooring alone gave 960x1024.
+        expect(fitArea(1088, 1216, 1048576)).toEqual({ width: 960, height: 1088 });
+        expect(fitArea(1024, 1024, 1000000)).toEqual({ width: 960, height: 960 });
     });
 
     it('caps samples by area', () => {

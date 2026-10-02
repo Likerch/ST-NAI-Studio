@@ -88,6 +88,8 @@ declare global {
             options?: Record<string, unknown>,
         ): {
             show(): Promise<unknown>;
+            /** Closes the popup and resolves show() (closing the dialog element directly leaves it pending). */
+            completeCancelled(): Promise<unknown>;
             dlg: HTMLDialogElement;
         };
     }

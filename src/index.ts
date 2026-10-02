@@ -16,6 +16,7 @@ import { SceneService } from './features/scene/scene-service';
 import { needsMigration, ownsCompatSurface, runMigration } from './features/takeover/takeover';
 import { inlineRenderer, openGalleryWindow, setInlineVisibility, setupInline } from './integration/inline-setup';
 import { setupScenes } from './integration/scene-setup';
+import { setupTools } from './integration/tools-setup';
 import { setupIntegrations } from './integration/setup';
 import { syncFunctionTool } from './integration/tools';
 import { Panel } from './ui/panel/panel';
@@ -73,6 +74,7 @@ export async function onActivate(): Promise<void> {
     const inline = new InlineImages(pipeline);
     setupInline(pipeline, inline);
     setupScenes(pipeline, new SceneService(pipeline, inline));
+    setupTools(pipeline, inline);
     new AutoGenerator(studio, pipeline).attach();
     // Network probing must not hold the 5 s activation window.
     void studio.refreshTransport();

@@ -733,7 +733,141 @@ var EN = {
 	"naist.pair.dancing": "Dancing together",
 	"naist.pair.fighting": "Fighting",
 	"naist.panel.characterOverLimit": "Over the model limit ({max}): this slot is not sent. Switch to V5 for up to 32 characters.",
-	"naist.composer.overLimit": "over the model limit"
+	"naist.composer.overLimit": "over the model limit",
+	"naist.command.vibesHelp": "Opens the vibe library (reference images and sets).",
+	"naist.tool.director": "Director Tools",
+	"naist.tool.inpaint": "Inpaint",
+	"naist.tool.img2img": "Enhance (img2img)",
+	"naist.tool.upscale": "Upscale ×2",
+	"naist.tool.upscaling": "Upscaling with NovelAI…",
+	"naist.tools.title": "Image tools",
+	"naist.tools.director": "Director Tools",
+	"naist.tools.directorHint": "Line art, sketch, colorize, emotion, declutter, background removal.",
+	"naist.tools.inpaint": "Inpaint",
+	"naist.tools.inpaintHint": "Paint a mask and redraw only that part.",
+	"naist.tools.outpaint": "Outpaint",
+	"naist.tools.outpaintHint": "Grow the canvas and let NovelAI fill the new areas.",
+	"naist.tools.upscale": "Upscale ×2",
+	"naist.tools.upscaleHint": "NovelAI upscaler; always paid (1–4 Anlas).",
+	"naist.tools.enhance": "Enhance",
+	"naist.tools.enhanceHint": "Scale up and redraw with img2img: more detail, same composition.",
+	"naist.tools.needsPlugin": "needs the server plugin",
+	"naist.tools.confirmCost": "{what} will spend {cost} Anlas (balance: {balance}). Continue?",
+	"naist.director.title": "Director Tools",
+	"naist.director.hint": "The image is sent as {width}×{height}. The result becomes a new swipe; the original stays.",
+	"naist.director.lineart": "Line art",
+	"naist.director.lineartHint": "Clean line art from the picture.",
+	"naist.director.sketch": "Sketch",
+	"naist.director.sketchHint": "A pencil sketch of the picture.",
+	"naist.director.colorize": "Colorize",
+	"naist.director.colorizeHint": "Colors a sketch or line art; a prompt guides the palette.",
+	"naist.director.emotion": "Emotion",
+	"naist.director.emotionHint": "Changes the facial expression and keeps the rest.",
+	"naist.director.declutter": "Declutter",
+	"naist.director.declutterHint": "Removes text, speech bubbles and overlays.",
+	"naist.director.declutter-keep-bubbles": "Declutter (keep bubbles)",
+	"naist.director.declutter-keep-bubblesHint": "Removes text and overlays but keeps empty speech bubbles.",
+	"naist.director.bg-removal": "Background removal",
+	"naist.director.bg-removalHint": "Transparent background; the only paid Director tool.",
+	"naist.director.costPaid": "{cost} Anlas",
+	"naist.director.costFree": "free on Opus",
+	"naist.director.prompt": "Extra prompt (optional)",
+	"naist.director.promptPlaceholder": "e.g. blue dress, sunset light",
+	"naist.director.defry": "Defry (keeps more of the original)",
+	"naist.director.run": "Apply",
+	"naist.director.running": "{tool}: working…",
+	"naist.emotion.neutral": "Neutral",
+	"naist.emotion.happy": "Happy",
+	"naist.emotion.sad": "Sad",
+	"naist.emotion.angry": "Angry",
+	"naist.emotion.scared": "Scared",
+	"naist.emotion.surprised": "Surprised",
+	"naist.emotion.tired": "Tired",
+	"naist.emotion.excited": "Excited",
+	"naist.emotion.nervous": "Nervous",
+	"naist.emotion.thinking": "Thinking",
+	"naist.emotion.confused": "Confused",
+	"naist.emotion.shy": "Shy",
+	"naist.emotion.disgusted": "Disgusted",
+	"naist.emotion.smug": "Smug",
+	"naist.emotion.bored": "Bored",
+	"naist.emotion.laughing": "Laughing",
+	"naist.emotion.irritated": "Irritated",
+	"naist.emotion.aroused": "Aroused",
+	"naist.emotion.embarrassed": "Embarrassed",
+	"naist.emotion.worried": "Worried",
+	"naist.emotion.love": "Love",
+	"naist.emotion.determined": "Determined",
+	"naist.emotion.hurt": "Hurt",
+	"naist.emotion.playful": "Playful",
+	"naist.enhance.title": "Enhance",
+	"naist.enhance.hint": "The image is scaled up and redrawn with img2img. Low strength keeps the composition; noise adds new detail.",
+	"naist.enhance.scale": "Scale",
+	"naist.enhance.strength": "Strength",
+	"naist.enhance.noise": "Noise",
+	"naist.enhance.size": "{from} → {to}",
+	"naist.enhance.freeNote": "With \"free only\" the size is reduced to 1 MP so Opus stays free.",
+	"naist.enhance.run": "Enhance",
+	"naist.inpaint.title": "Inpaint and outpaint",
+	"naist.inpaint.brush": "Brush",
+	"naist.inpaint.eraser": "Eraser",
+	"naist.inpaint.size": "Size",
+	"naist.inpaint.invert": "Invert",
+	"naist.inpaint.clear": "Clear",
+	"naist.inpaint.hint": "Paint over what should be redrawn. Describe the new content in the prompt.",
+	"naist.inpaint.strength": "Strength",
+	"naist.inpaint.keepOriginal": "Keep the original outside the mask",
+	"naist.inpaint.fallback": "This model has no inpainting; {model} will do the work.",
+	"naist.inpaint.run": "Generate",
+	"naist.inpaint.emptyMask": "The mask is empty: paint the area to redraw.",
+	"naist.outpaint.hint": "Pixels to add on each side (rounded to 64). The new areas are masked automatically.",
+	"naist.outpaint.left": "Left",
+	"naist.outpaint.right": "Right",
+	"naist.outpaint.top": "Top",
+	"naist.outpaint.bottom": "Bottom",
+	"naist.outpaint.size": "New size: {width}×{height}",
+	"naist.outpaint.tooLarge": "{width}×{height} is larger than NovelAI accepts.",
+	"naist.progress.streaming": "Generating (live preview)",
+	"naist.progress.estimating": "Generating…",
+	"naist.progress.step": "Step {step} of {steps}",
+	"naist.progress.pluginHint": "Install the NAI Studio server plugin to see the image appear step by step.",
+	"naist.progress.enable": "Live preview while generating (plugin)",
+	"naist.vibes.title": "Vibe library",
+	"naist.vibes.open": "Vibe library…",
+	"naist.vibes.panelHint": "Reference images that pass their style and mood into generations. Sets can be bound to a character, chat or style.",
+	"naist.vibes.status.ok": "Vibes work for {model}.",
+	"naist.vibes.status.feature-flag-off": "{model}: NovelAI has not enabled vibes for this model yet. They will be skipped until it does.",
+	"naist.vibes.status.not-supported": "{model} does not support vibes.",
+	"naist.vibes.status.transport": "{model}: vibes need the NAI Studio server plugin.",
+	"naist.vibes.cacheHint": "V4/V4.5 encode each image once per model and strength of information (2 Anlas); the result is cached and reused for free.",
+	"naist.vibes.active": "Active now: {count} ({names})",
+	"naist.vibes.images": "Images",
+	"naist.vibes.add": "Add images…",
+	"naist.vibes.empty": "No images yet. Add files or drop them here.",
+	"naist.vibes.remove": "Remove",
+	"naist.vibes.confirmEncoding": "Ask before paid encoding",
+	"naist.vibes.sets": "Sets",
+	"naist.vibes.addSet": "Add a set",
+	"naist.vibes.setDefault": "Set {n}",
+	"naist.vibes.removeSet": "Remove the set",
+	"naist.vibes.enabled": "On",
+	"naist.vibes.global": "Everywhere",
+	"naist.vibes.bindCharacter": "This character",
+	"naist.vibes.bindChat": "This chat",
+	"naist.vibes.bindStyle": "Current style",
+	"naist.vibes.strength": "Strength",
+	"naist.vibes.information": "Information",
+	"naist.vibes.encoding": "Vibe encoding",
+	"naist.vibes.encoded": "Encoded {count} vibe(s) for {cost} Anlas; next time they are free.",
+	"naist.vibes.missing": "The image of vibe \"{name}\" is missing; it was skipped.",
+	"naist.vibes.notice.feature-flag-off": "{count} vibe(s) skipped: NovelAI has not enabled vibes for this model yet.",
+	"naist.vibes.notice.not-supported": "{count} vibe(s) skipped: this model does not support vibes.",
+	"naist.vibes.notice.transport": "{count} vibe(s) skipped: vibes need the server plugin.",
+	"naist.vibes.notice.ok": "Vibes are active.",
+	"naist.vibes.skipped.free-only": "{count} vibe(s) skipped: encoding is paid and \"free only\" is on.",
+	"naist.vibes.skipped.declined": "{count} vibe(s) skipped: encoding was declined.",
+	"naist.vibes.skipped.no-plugin": "{count} vibe(s) skipped: encoding needs the server plugin.",
+	"naist.outpaint.freeSize": "(free only: sent as {width}×{height})"
 };
 var translator = (text) => text;
 /** Wires the host translator (SillyTavern's translate). Called once on activation. */
@@ -834,7 +968,7 @@ function defaultGeneration() {
 }
 function defaultSettings() {
 	return {
-		schemaVersion: 4,
+		schemaVersion: 5,
 		transport: { mode: "auto" },
 		generation: defaultGeneration(),
 		prompts: {
@@ -910,6 +1044,25 @@ function defaultSettings() {
 			custom: [],
 			favorites: []
 		},
+		vibes: {
+			items: [],
+			sets: [],
+			confirmEncoding: true
+		},
+		stream: {
+			enabled: true,
+			hintShown: false
+		},
+		tools: {
+			defry: 0,
+			emotion: "happy",
+			inpaintStrength: 1,
+			keepOriginal: true,
+			brushSize: 40,
+			enhanceScale: 1.5,
+			enhanceStrength: .45,
+			enhanceNoise: 0
+		},
 		scene: {
 			framing: "auto",
 			camera: "auto",
@@ -984,13 +1137,22 @@ var MIGRATIONS = [
 				schemaVersion: 4
 			};
 		}
+	},
+	{
+		to: 5,
+		migrate(settings) {
+			return {
+				...settings,
+				schemaVersion: 5
+			};
+		}
 	}
 ];
 /** Applies pending migrations, then fills missing keys from defaults (lodash.merge in the host). */
 function migrateAndFill(stored, merge) {
 	let raw = isObject$1(stored) ? structuredClone(stored) : {};
 	const fromVersion = typeof raw.schemaVersion === "number" ? raw.schemaVersion : 0;
-	if (fromVersion > 4) return {
+	if (fromVersion > 5) return {
 		settings: merge(defaultSettings(), raw),
 		fromVersion,
 		migrated: false
@@ -1004,13 +1166,16 @@ function migrateAndFill(stored, merge) {
 	const poses = isObject$1(raw.poses) ? raw.poses : {};
 	settings.poses.custom = Array.isArray(poses.custom) ? poses.custom : [];
 	settings.poses.favorites = Array.isArray(poses.favorites) ? poses.favorites : [];
+	const vibes = isObject$1(raw.vibes) ? raw.vibes : {};
+	settings.vibes.items = Array.isArray(vibes.items) ? vibes.items : [];
+	settings.vibes.sets = Array.isArray(vibes.sets) ? vibes.sets : [];
 	const takeover = isObject$1(raw.takeover) ? raw.takeover : {};
 	settings.takeover.migrationReport = Array.isArray(takeover.migrationReport) ? takeover.migrationReport : [];
-	settings.schemaVersion = 4;
+	settings.schemaVersion = 5;
 	return {
 		settings,
 		fromVersion,
-		migrated: fromVersion !== 4
+		migrated: fromVersion !== 5
 	};
 }
 //#endregion
@@ -1843,6 +2008,39 @@ function defaultCenter(index) {
 function roundToStep(value) {
 	return Math.max(64, Math.round(value / 64) * 64);
 }
+/** Largest size with the same aspect ratio, multiples of 64, whose area does not exceed `maxPixels`. */
+function fitArea(width, height, maxPixels) {
+	if (width * height <= maxPixels) return {
+		width,
+		height
+	};
+	const ratio = Math.sqrt(maxPixels / (width * height));
+	let w = Math.max(64, Math.floor(width * ratio / 64) * 64);
+	let h = Math.max(64, Math.floor(height * ratio / 64) * 64);
+	while (w * h > maxPixels) if (w >= h && w > 64) w -= 64;
+	else if (h > 64) h -= 64;
+	else break;
+	const aspect = Math.log(width / height);
+	let best = {
+		width: w,
+		height: h
+	};
+	for (const [dw, dh] of [
+		[64, 0],
+		[0, 64],
+		[64, 64]
+	]) {
+		const candidate = {
+			width: w + dw,
+			height: h + dh
+		};
+		if (candidate.width * candidate.height > maxPixels) continue;
+		const error = Math.abs(Math.log(candidate.width / candidate.height) - aspect);
+		const bestError = Math.abs(Math.log(best.width / best.height) - aspect);
+		if (error < bestError - 1e-9 || Math.abs(error - bestError) <= 1e-9 && candidate.width * candidate.height > best.width * best.height) best = candidate;
+	}
+	return best;
+}
 /** n_samples cap by pixel count (bundle:1601@55499). */
 function maxSamplesForArea(width, height) {
 	const pixels = width * height;
@@ -1910,6 +2108,23 @@ function estimateGenerationCost(req, account, options = {}) {
 		invalid,
 		notFreeReasons
 	};
+}
+/** Upscale price by source area (bundle:1601@43991). Null = source too large. No free mode. */
+function upscaleCost(width, height) {
+	const pixels = width * height;
+	for (const [limit, price] of [
+		[1048576, 1],
+		[1747627, 2],
+		[2446678, 3],
+		[3145728, 4]
+	]) if (pixels > 0 && pixels <= limit) return price;
+	return null;
+}
+/** Director tools are priced as Anime V3 at 28 steps; bg-removal is 3x + 5 and never free. */
+function directorToolCost(tool, width, height, account) {
+	const base = basePricePerImage(width, height, 28, false, false, 1, 1);
+	if (tool === "bg-removal") return 3 * base + 5;
+	return account.tier >= 3 && account.active && width * height <= 1048576 ? 0 : base;
 }
 /** "Free only" mode: squeezes steps, size and samples into Opus free limits (TZ Phase 1, task 7). */
 function clampToFree(req, account, options = {}) {
@@ -2396,7 +2611,7 @@ function buildV4Parameters(req, caps, prompt, negative, ctx) {
 }
 //#endregion
 //#region src/domain/payload/build.ts
-var ACTIONS = {
+var ACTIONS$1 = {
 	txt2img: "generate",
 	img2img: "img2img",
 	inpaint: "infill"
@@ -2415,7 +2630,7 @@ function buildPayload(input, caps) {
 	const ctx = new BuildContext();
 	const req = normalizeRequest(input, caps, ctx);
 	const { prompt, negative } = composePrompts(req, caps);
-	const action = ACTIONS[req.mode];
+	const action = ACTIONS$1[req.mode];
 	const renderCaps = req.mode === "inpaint" && caps.inpaintBase !== caps.model ? getInpaintCapabilities(caps.model) : caps;
 	const params = renderCaps.v4Prompt ? buildV4Parameters(req, renderCaps, prompt, negative, ctx) : buildV3Parameters(req, renderCaps, negative, ctx);
 	sanitizeParameters(params, req, renderCaps, action, ctx);
@@ -4488,6 +4703,204 @@ function resolveOverlaps(spec, caps, fixed = /* @__PURE__ */ new Set()) {
 	return spec;
 }
 //#endregion
+//#region src/domain/advanced.ts
+/** Largest request area NovelAI accepts (RECON §3.4). */
+var MAX_REQUEST_PIXELS = 3145728;
+var ceilToStep = (value) => Math.ceil(value / 64) * 64;
+var DIRECTOR_TOOLS = [
+	"lineart",
+	"sketch",
+	"colorize",
+	"emotion",
+	"declutter",
+	"declutter-keep-bubbles",
+	"bg-removal"
+];
+/** Emotions of the emotion tool (bundle:266@100814); names are localized as naist.emotion.<id>. */
+var DIRECTOR_EMOTIONS = [
+	"neutral",
+	"happy",
+	"sad",
+	"angry",
+	"scared",
+	"surprised",
+	"tired",
+	"excited",
+	"nervous",
+	"thinking",
+	"confused",
+	"shy",
+	"disgusted",
+	"smug",
+	"bored",
+	"laughing",
+	"irritated",
+	"aroused",
+	"embarrassed",
+	"worried",
+	"love",
+	"determined",
+	"hurt",
+	"playful"
+];
+/** Tools that take a prompt and the "defry" strength (0-5). */
+function toolTakesPrompt(tool) {
+	return tool === "colorize" || tool === "emotion";
+}
+var DIRECTOR_MAX_PIXELS = 3143728;
+var DIRECTOR_MIN_PIXELS = 1011712;
+/**
+* Size the image is sent at: scaled down to fit 3145728-2000 px, scaled up to ~1 MP when smaller
+* than 1011712 px (bundle:_app@1563250, bundle:266@109900). Integer sides, aspect kept.
+*/
+function directorSize(width, height) {
+	const area = width * height;
+	if (area <= 0) return {
+		width: 0,
+		height: 0
+	};
+	let scale = 1;
+	if (area > DIRECTOR_MAX_PIXELS) scale = Math.sqrt(DIRECTOR_MAX_PIXELS / area);
+	else if (area < DIRECTOR_MIN_PIXELS) scale = Math.sqrt(DIRECTOR_MIN_PIXELS / area);
+	let w = Math.max(1, Math.floor(width * scale));
+	let h = Math.max(1, Math.floor(height * scale));
+	while (w * h > DIRECTOR_MAX_PIXELS) {
+		w--;
+		h = Math.max(1, Math.floor(w * height / width));
+	}
+	return {
+		width: w,
+		height: h
+	};
+}
+/** Body of POST /ai/augment-image (image already resized to `size`). */
+function directorBody(tool, image, size, options = {}) {
+	const body = {
+		req_type: tool,
+		use_new_shared_trial: true,
+		width: size.width,
+		height: size.height,
+		image
+	};
+	if (toolTakesPrompt(tool)) {
+		const extra = (options.prompt ?? "").trim();
+		body.prompt = tool === "emotion" ? `${options.emotion ?? "neutral"};;${extra}` : extra;
+		body.defry = Math.min(5, Math.max(0, Math.round(options.defry ?? 0)));
+	}
+	return body;
+}
+/**
+* Outpaint: grows the canvas by the given margins (rounded to 64 so the request size is valid)
+* and masks the new areas, plus `overlap` pixels into the original for a seamless join.
+*/
+function planOutpaint(width, height, grow, overlap = 16) {
+	const clean = (v) => Math.max(0, Math.round(v));
+	const left = clean(grow.left);
+	let right = clean(grow.right);
+	const top = clean(grow.top);
+	let bottom = clean(grow.bottom);
+	const extraW = ceilToStep(width + left + right) - (width + left + right);
+	const extraH = ceilToStep(height + top + bottom) - (height + top + bottom);
+	if (extraW > 0) right += extraW;
+	if (extraH > 0) bottom += extraH;
+	const newWidth = width + left + right;
+	const newHeight = height + top + bottom;
+	const rects = [];
+	const o = Math.max(0, overlap);
+	if (left) rects.push({
+		x: 0,
+		y: 0,
+		w: left + o,
+		h: newHeight
+	});
+	if (right) rects.push({
+		x: newWidth - right - o,
+		y: 0,
+		w: right + o,
+		h: newHeight
+	});
+	if (top) rects.push({
+		x: 0,
+		y: 0,
+		w: newWidth,
+		h: top + o
+	});
+	if (bottom) rects.push({
+		x: 0,
+		y: newHeight - bottom - o,
+		w: newWidth,
+		h: bottom + o
+	});
+	return {
+		width: newWidth,
+		height: newHeight,
+		offsetX: left,
+		offsetY: top,
+		maskRects: rects,
+		tooLarge: newWidth * newHeight > MAX_REQUEST_PIXELS
+	};
+}
+/** Enhance target: the source scaled up, multiples of 64, capped by the maximum request area. */
+function enhanceSize(width, height, scale) {
+	return fitArea(roundToStep(width * scale), roundToStep(height * scale), MAX_REQUEST_PIXELS);
+}
+/** The web client upscales sources up to 1536x2048 (RECON §3.14). */
+function canUpscale(width, height) {
+	return width * height > 0 && width * height <= 3145728;
+}
+//#endregion
+//#region src/domain/vibes.ts
+/** Defaults of the web client (RECON §3.12): strength 0.6, information extracted 1 (0.7 on V4.5 Full). */
+function defaultVibeEntry(vibeId, model) {
+	return {
+		vibeId,
+		strength: .6,
+		informationExtracted: model === "nai-diffusion-4-5-full" ? .7 : 1,
+		enabled: true
+	};
+}
+function setApplies(set, ctx) {
+	if (!set.enabled) return false;
+	if (set.global) return true;
+	return set.bindings.characters.some((c) => ctx.characters.includes(c)) || ctx.chatId !== "" && set.bindings.chats.includes(ctx.chatId) || ctx.style !== "" && set.bindings.styles.includes(ctx.style);
+}
+/**
+* Vibes for a generation: enabled entries of every applicable set, first occurrence of a vibe
+* wins, capped at 16 (the web client's maximum).
+*/
+function planVibes(sets, items, ctx) {
+	const byId = new Map(items.map((i) => [i.id, i]));
+	const seen = /* @__PURE__ */ new Set();
+	const result = [];
+	for (const set of sets) {
+		if (!setApplies(set, ctx)) continue;
+		for (const entry of set.entries) {
+			const item = byId.get(entry.vibeId);
+			if (!entry.enabled || !item || seen.has(item.id)) continue;
+			seen.add(item.id);
+			result.push({
+				item,
+				strength: clamp(entry.strength, -1, 1),
+				informationExtracted: clamp(entry.informationExtracted, .01, 1)
+			});
+		}
+	}
+	return result.slice(0, 16);
+}
+function clamp(value, min, max) {
+	const n = Number(value);
+	return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : max;
+}
+function vibeAvailability(caps, transportSupportsVibes) {
+	if (caps.family === "v5") return caps.vibeTransfer ? transportSupportsVibes ? "ok" : "transport" : "feature-flag-off";
+	if (!caps.vibeTransfer || caps.vibeKind === "none") return "not-supported";
+	return transportSupportsVibes ? "ok" : "transport";
+}
+/** Client-side encoding cache key (the plugin keeps its own disk cache with a hashed key). */
+function encodingCacheKey(imageHash, model, informationExtracted) {
+	return `vibeenc:${imageHash}:${model}:${(Math.round(informationExtracted * 100) / 100).toFixed(2)}`;
+}
+//#endregion
 //#region src/features/auto/auto-generation.ts
 var SKIPPED_TYPES = /* @__PURE__ */ new Set([
 	"extension",
@@ -4607,6 +5020,15 @@ function sniffMime(bytes) {
 	if (bytes[0] === 82 && bytes[1] === 73 && bytes[8] === 87) return "image/webp";
 	if (bytes[0] === 255 && bytes[1] === 216) return "image/jpeg";
 	return "image/png";
+}
+async function imageSize(blob) {
+	const bitmap = await createImageBitmap(blob);
+	const size = {
+		width: bitmap.width,
+		height: bitmap.height
+	};
+	bitmap.close();
+	return size;
 }
 function canvas(width, height) {
 	const el = document.createElement("canvas");
@@ -4945,6 +5367,76 @@ function createNativeTransport(env) {
 		}
 	};
 }
+//#endregion
+//#region src/transport/sse.ts
+var SseParser = class {
+	buffer = "";
+	/** Adds a chunk and returns the events completed by it (blank line terminates an event). */
+	feed(chunk) {
+		this.buffer += chunk.replace(/\r\n?/g, "\n");
+		const events = [];
+		let boundary = this.buffer.indexOf("\n\n");
+		while (boundary >= 0) {
+			const block = this.buffer.slice(0, boundary);
+			this.buffer = this.buffer.slice(boundary + 2);
+			const event = parseBlock(block);
+			if (event) events.push(event);
+			boundary = this.buffer.indexOf("\n\n");
+		}
+		return events;
+	}
+	/** Remaining partial event at the end of the stream (servers may omit the last blank line). */
+	flush() {
+		const rest = this.buffer.trim();
+		this.buffer = "";
+		const event = rest ? parseBlock(rest) : null;
+		return event ? [event] : [];
+	}
+};
+function parseBlock(block) {
+	let event = "message";
+	const data = [];
+	for (const line of block.split("\n")) {
+		if (!line || line.startsWith(":")) continue;
+		const colon = line.indexOf(":");
+		const field = colon < 0 ? line : line.slice(0, colon);
+		const value = colon < 0 ? "" : line.slice(colon + 1).replace(/^ /, "");
+		if (field === "event") event = value;
+		else if (field === "data") data.push(value);
+	}
+	return data.length ? {
+		event,
+		data: data.join("\n")
+	} : null;
+}
+/** NovelAI stream event -> frame. Unknown events are ignored (null). */
+function toFrame(event) {
+	let payload;
+	try {
+		payload = JSON.parse(event.data);
+	} catch {
+		return null;
+	}
+	const type = String(payload.event_type ?? event.event);
+	const sampleIndex = typeof payload.samp_ix === "number" ? payload.samp_ix : 0;
+	if (type === "intermediate") return {
+		kind: "intermediate",
+		sampleIndex,
+		step: typeof payload.step_ix === "number" ? payload.step_ix : void 0,
+		image: typeof payload.image === "string" ? payload.image : void 0
+	};
+	if (type === "final") return {
+		kind: "final",
+		sampleIndex,
+		image: typeof payload.image === "string" ? payload.image : void 0
+	};
+	if (type === "error") return {
+		kind: "error",
+		sampleIndex,
+		message: String(payload.message ?? payload.kind ?? "stream error")
+	};
+	return null;
+}
 var PLUGIN_BASE = `/api/plugins/nai-studio`;
 var PLUGIN_FEATURES = {
 	characters: true,
@@ -4955,11 +5447,32 @@ var PLUGIN_FEATURES = {
 	characterReference: true,
 	cfgRescale: true,
 	transparency: true,
-	stream: false,
-	upscale: false,
-	director: false,
+	stream: true,
+	upscale: true,
+	director: true,
 	diagnostics: true
 };
+function versionAtLeast(version, minimum) {
+	const a = version.split(".").map((n) => Number.parseInt(n, 10) || 0);
+	const b = minimum.split(".").map((n) => Number.parseInt(n, 10) || 0);
+	for (let i = 0; i < Math.max(a.length, b.length); i++) {
+		const x = a[i] ?? 0;
+		const y = b[i] ?? 0;
+		if (x !== y) return x > y;
+	}
+	return true;
+}
+/** Features of an installed plugin: an older plugin keeps generation but loses the new routes. */
+function pluginFeatures(version) {
+	if (version === null || versionAtLeast(version, "0.2.0")) return PLUGIN_FEATURES;
+	return {
+		...PLUGIN_FEATURES,
+		stream: false,
+		upscale: false,
+		director: false,
+		vibes: false
+	};
+}
 /** Returns plugin health or null when the plugin is not installed / ST was not restarted. */
 async function probePlugin(env, signal) {
 	try {
@@ -5006,7 +5519,8 @@ async function toTransportError(response) {
 		bodyPreview: body.error?.preview
 	});
 }
-function createPluginTransport(env) {
+function createPluginTransport(env, version = null) {
+	const features = pluginFeatures(version);
 	async function post(path, payload, signal) {
 		try {
 			return await env.fetch(`${PLUGIN_BASE}${path}`, {
@@ -5020,10 +5534,88 @@ function createPluginTransport(env) {
 			throw new TransportError("network", { message: error instanceof Error ? error.message : String(error) });
 		}
 	}
+	const mime = (base64) => base64.startsWith("UklGR") ? "image/webp" : "image/png";
+	/** SSE from /generate-stream: previews go to onProgress, final images are the result. */
+	async function generateStream(body, options) {
+		const response = await post("/generate-stream", {
+			request: body,
+			retryable: options.retryable
+		}, options.signal);
+		if (!response.ok || !response.body) throw await toTransportError(response);
+		const parser = new SseParser();
+		const decoder = new TextDecoder();
+		const finals = /* @__PURE__ */ new Map();
+		const reader = response.body.getReader();
+		const seed = Number(body.parameters.seed) || 0;
+		const handle = (events) => {
+			for (const event of events) {
+				const frame = toFrame(event);
+				if (!frame) continue;
+				if (frame.kind === "error") throw new TransportError("http", { serverMessage: frame.message });
+				if (frame.kind === "final" && frame.image) finals.set(frame.sampleIndex, frame.image);
+				options.onProgress?.(frame);
+			}
+		};
+		try {
+			for (;;) {
+				const { done, value } = await reader.read();
+				if (done) break;
+				handle(parser.feed(decoder.decode(value, { stream: true })));
+			}
+			handle(parser.flush());
+		} catch (error) {
+			if (isAbort(error)) throw new TransportError("aborted");
+			throw error;
+		}
+		if (!finals.size) throw new TransportError("invalid-response", { bodyPreview: "stream ended without a final image" });
+		return { images: [...finals.entries()].sort((a, b) => a[0] - b[0]).map(([index, image]) => ({
+			base64: image,
+			mime: mime(image),
+			seed: seed + index,
+			index
+		})) };
+	}
 	return {
 		id: "plugin",
-		features: PLUGIN_FEATURES,
+		features,
+		extras: {
+			async encodeVibe(request, signal) {
+				const response = await post("/encode-vibe", request, signal);
+				if (!response.ok) throw await toTransportError(response);
+				const data = await response.json();
+				if (typeof data.encoding !== "string") throw new TransportError("invalid-response");
+				return {
+					encoding: data.encoding,
+					cached: data.cached === true
+				};
+			},
+			async lookupVibes(items, signal) {
+				const response = await post("/encode-vibe/lookup", { items }, signal);
+				if (!response.ok) throw await toTransportError(response);
+				return ((await response.json()).results ?? []).map((r) => r.encoding ?? null);
+			},
+			async augment(body, options) {
+				const response = await post("/augment", {
+					body,
+					retryable: options.retryable
+				}, options.signal);
+				if (!response.ok) throw await toTransportError(response);
+				const data = await response.json();
+				if (typeof data.zip !== "string") throw new TransportError("invalid-response");
+				return data.zip;
+			},
+			async upscale(request, signal) {
+				const response = await post("/upscale", request, signal);
+				if (!response.ok) throw await toTransportError(response);
+				return ((await response.json()).images ?? []).map((img, i) => ({
+					base64: img.image,
+					mime: mime(img.image),
+					index: img.index ?? i
+				}));
+			}
+		},
 		async generate(body, options) {
+			if (options.endpoint === "generate-stream") return await generateStream(body, options);
 			const response = await post("/generate", {
 				request: body,
 				endpoint: options.endpoint,
@@ -5075,7 +5667,7 @@ async function selectTransport(preference, env, signal) {
 		degraded: false
 	};
 	if (health) return {
-		transport: createPluginTransport(env),
+		transport: createPluginTransport(env, health.version),
 		health,
 		degraded: false
 	};
@@ -5224,7 +5816,7 @@ function prepareGeneration({ settings, transport, account, overrides, requestPat
 	};
 }
 /** Sends a prepared request. Blocked requests never reach the transport. */
-async function sendPrepared(prepared, transport, account, signal) {
+async function sendPrepared(prepared, transport, account, signal, onProgress) {
 	const freeOnly = prepared.blockers.find((b) => b.kind === "free-only");
 	if (freeOnly) throw new NaiError("free-only-blocked", "none", { cost: freeOnly.cost });
 	const overrideBlocker = prepared.blockers.find((b) => b.kind === "override");
@@ -5235,7 +5827,8 @@ async function sendPrepared(prepared, transport, account, signal) {
 		return await transport.generate(prepared.body, {
 			endpoint: prepared.build.endpoint,
 			signal,
-			retryable: prepared.cost.total === 0
+			retryable: prepared.cost.total === 0,
+			onProgress
 		});
 	} catch (error) {
 		throw toNaiError(error, {
@@ -5306,7 +5899,7 @@ var StudioController = class {
 		}
 	}
 	/** Sends a prepared request. One generation at a time; blocked requests never leave. */
-	async send(prepared, signal) {
+	async send(prepared, signal, onProgress) {
 		const transport = this.state.selection?.transport;
 		if (!transport) throw new NaiError("plugin-unavailable", "install-plugin");
 		if (this.state.busy) throw new NaiError("busy", "none");
@@ -5316,7 +5909,7 @@ var StudioController = class {
 		this.state.busy = true;
 		this.emit();
 		try {
-			return await sendPrepared(prepared, transport, this.state.account, this.abort.signal);
+			return await sendPrepared(prepared, transport, this.state.account, this.abort.signal, onProgress);
 		} finally {
 			signal?.removeEventListener("abort", onAbort);
 			this.state.busy = false;
@@ -5578,7 +6171,8 @@ function toAttachments(saved, meta) {
 			prompt: meta.prompt,
 			transport: meta.transport,
 			cost: meta.cost,
-			correlationId: meta.correlationId
+			correlationId: meta.correlationId,
+			...meta.tool ? { tool: meta.tool } : {}
 		}
 	}));
 }
@@ -5716,12 +6310,16 @@ var Pipeline = class {
 	controller;
 	ui;
 	observers = /* @__PURE__ */ new Set();
+	vibes = null;
 	constructor(controller, ui) {
 		this.controller = controller;
 		this.ui = ui;
 	}
 	onGenerated(observer) {
 		this.observers.add(observer);
+	}
+	setVibeProvider(provider) {
+		this.vibes = provider;
 	}
 	notify(produced, outcome) {
 		for (const observer of this.observers) try {
@@ -5900,7 +6498,16 @@ var Pipeline = class {
 			expanded: req.scene !== void 0
 		}, o, forcedSize);
 		if (isSwipe && assembled.overrides.seed === void 0 && s.generation.seed >= 0) assembled.overrides.seed = -1;
-		const prepared = this.controller.prepare(assembled.overrides, req.requestPatch);
+		const patch = { ...req.requestPatch };
+		const transport = this.controller.state.selection?.transport;
+		const model = String(assembled.overrides.model ?? s.generation.model);
+		const caps = getCapabilities(isModelId(model) ? model : DEFAULT_MODEL);
+		if (patch.vibes === void 0 && this.vibes && transport && patch.mode !== "inpaint") {
+			const vibes = await this.vibes.prepare(caps, transport, req.signal);
+			if (vibes.length) patch.vibes = vibes;
+		}
+		if (s.stream.enabled && transport?.features.stream === true && caps.family !== "v3" && patch.stream === void 0) patch.stream = "sse";
+		const prepared = this.controller.prepare(assembled.overrides, patch);
 		if (req.maxCost !== void 0 && prepared.cost.total > req.maxCost) throw new NaiError("free-only-blocked", "none", { cost: prepared.cost.total });
 		if (s.inspector.openBeforeSend) {
 			if (!await this.ui.inspect(prepared)) return null;
@@ -5918,7 +6525,12 @@ var Pipeline = class {
 		});
 		try {
 			const chatId = c.getCurrentChatId();
-			const result = await this.controller.send(prepared, abort.signal);
+			this.ui.progress?.start({
+				steps: prepared.request.steps,
+				streaming: prepared.build.endpoint === "generate-stream",
+				transport: prepared.transportId
+			});
+			const result = await this.controller.send(prepared, abort.signal, (frame) => this.ui.progress?.frame(frame)).finally(() => this.ui.progress?.end());
 			if (!result.images.length) throw new NaiError("invalid-response", "none", { preview: "" });
 			const generation = o.generation ?? {};
 			const legacy = {
@@ -7349,6 +7961,11 @@ async function confirmDelete() {
 //#endregion
 //#region src/ui/lightbox.ts
 var actions = [];
+function registerLightboxAction(action) {
+	const index = actions.findIndex((a) => a.id === action.id);
+	if (index >= 0) actions.splice(index, 1, action);
+	else actions.push(action);
+}
 async function copy(text, doneKey) {
 	try {
 		await navigator.clipboard.writeText(text);
@@ -7486,7 +8103,7 @@ async function openLightbox(item) {
 		okButton: t("naist.lightbox.close")
 	});
 	const close = () => {
-		popup.dlg.close();
+		popup.completeCancelled();
 	};
 	root.addEventListener("click", (event) => {
 		const button = event.target.closest("[data-naist-lb]");
@@ -7717,7 +8334,7 @@ var InlineRenderer = class {
 			counter.textContent = `${entry.activeSwipe + 1}/${entry.swipes.length}`;
 			toolbar.append(counter, icon("next", "fa-chevron-right", "naist.inline.next"));
 		}
-		toolbar.append(icon("regenerate", "fa-rotate", "naist.inline.regenerate"), icon("variation", "fa-shuffle", "naist.inline.variation"), icon("edit", "fa-pen-to-square", "naist.inline.edit"), icon("display", "fa-sliders", "naist.inline.display"), icon("lightbox", "fa-expand", "naist.inline.lightbox"), icon("delete", "fa-trash-can", "naist.inline.delete"));
+		toolbar.append(icon("regenerate", "fa-rotate", "naist.inline.regenerate"), icon("variation", "fa-shuffle", "naist.inline.variation"), icon("edit", "fa-pen-to-square", "naist.inline.edit"), icon("display", "fa-sliders", "naist.inline.display"), icon("tools", "fa-wand-magic-sparkles", "naist.tools.title"), icon("lightbox", "fa-expand", "naist.inline.lightbox"), icon("delete", "fa-trash-can", "naist.inline.delete"));
 		frame.append(toolbar);
 		const spinner = el("span", "naist-inline-spinner");
 		spinner.append(el("i", "fa-solid fa-spinner fa-spin"));
@@ -7822,6 +8439,7 @@ var InlineRenderer = class {
 			case "variation": return await this.run(messageId, imageId, () => this.service.variation(messageId, imageId));
 			case "edit": return this.ui.edit(messageId, imageId);
 			case "display": return this.ui.display(messageId, imageId);
+			case "tools": return this.ui.tools(messageId, imageId);
 			case "lightbox": return this.ui.lightbox(messageId, imageId);
 			case "delete": {
 				if (!await this.ui.confirmDelete()) return;
@@ -7915,6 +8533,11 @@ var InlineRenderer = class {
 var INSERT_CLASS = "naist-inline-insert";
 var EDIT_INSERT_CLASS = "naist-inline-insert-edit";
 var renderer = null;
+var toolsHandler = () => {};
+/** Phase 5 tools register here (avoids an import cycle with tools-setup). */
+function setInlineToolsHandler(handler) {
+	toolsHandler = handler;
+}
 function inlineRenderer() {
 	return renderer;
 }
@@ -7997,6 +8620,7 @@ function setupInline(pipeline, service) {
 				if (display) service.updateDisplay(messageId, imageId, display).catch(reportGenerationError);
 			});
 		},
+		tools: (messageId, imageId) => toolsHandler(messageId, imageId),
 		confirmDelete
 	});
 	renderer.install();
@@ -8869,11 +9493,11 @@ async function openPoseLibrary() {
 //#endregion
 //#region src/integration/scene-setup.ts
 var MENU_OPTIONS = [["naist_char_composer", "naist.card.composer"], ["naist_char_passport", "naist.card.passport"]];
-var state = null;
+var state$1 = null;
 async function openSceneComposer(auto = true, focusKey) {
-	if (!state) return;
+	if (!state$1) return;
 	try {
-		await openComposer(state.service, state.pipeline, {
+		await openComposer(state$1.service, state$1.pipeline, {
 			auto,
 			focusKey
 		});
@@ -8959,16 +9583,16 @@ function registerSceneCommand() {
 			isRequired: false
 		})],
 		callback: async (args, value) => {
-			if (!state) return "";
+			if (!state$1) return "";
 			if (String(args.edit ?? "true").toLowerCase() !== "false") {
 				openSceneComposer(true);
 				return "";
 			}
 			try {
 				const text = String(value ?? "").trim();
-				const { spec } = await state.service.autoSpec(text || void 0);
+				const { spec } = await state$1.service.autoSpec(text || void 0);
 				const target = String(args.target ?? "") === "inline" ? "inline" : "message";
-				const result = await state.service.generate(spec, target);
+				const result = await state$1.service.generate(spec, target);
 				return typeof result === "string" ? result : result?.path ?? "";
 			} catch (error) {
 				reportGenerationError(error);
@@ -8978,7 +9602,7 @@ function registerSceneCommand() {
 	}));
 }
 function setupScenes(pipeline, service) {
-	state = {
+	state$1 = {
 		service,
 		pipeline
 	};
@@ -9001,6 +9625,1371 @@ function setupScenes(pipeline, service) {
 		const block = document.querySelector("#avatar_controls");
 		if (block) localize(block);
 		log.info("scene composer ready");
+	});
+}
+//#endregion
+//#region src/features/tools/tool-common.ts
+/** Free-only blocks every paid tool call; otherwise a paid call above the threshold is confirmed. */
+async function guardCost(cost, what, confirm) {
+	const s = settings().anlas;
+	if (cost <= 0) return;
+	if (s.freeOnly) throw new NaiError("free-only-blocked", "enable-free-only", { cost });
+	if (cost > s.confirmAbove && !await confirm(cost, what)) throw new NaiError("aborted", "none");
+}
+/** The source as a base64 PNG of exactly width x height (NovelAI wants PNG of the request size). */
+async function sourcePng(source, size) {
+	return await blobToBase64$1(await toPngBlob(await source.blob(), size ?? {
+		width: source.width,
+		height: source.height
+	}));
+}
+/** Image source for an inline image of a message. */
+async function inlineSource(inline, messageId, imageId) {
+	const entry = readEntries(ctx().chat[messageId]?.extra).find((e) => e.id === imageId);
+	const swipe = entry ? activeSwipe(entry) : void 0;
+	if (!entry || !swipe) throw new NaiError("image-not-found", "none");
+	const blob = await inline.sourceBlob(swipe);
+	const size = swipe.meta.width && swipe.meta.height ? {
+		width: swipe.meta.width,
+		height: swipe.meta.height
+	} : await imageSize(blob);
+	return {
+		target: {
+			kind: "inline",
+			messageId,
+			imageId
+		},
+		...size,
+		meta: swipe.meta,
+		blob: async () => blob
+	};
+}
+/** Image source for a media attachment of a message (generated or uploaded by the user). */
+async function mediaSource(messageId, mediaIndex) {
+	const attachment = (ctx().chat[messageId]?.extra?.media ?? [])[mediaIndex];
+	if (!attachment?.url) throw new NaiError("image-not-found", "none");
+	const response = await fetch(attachment.url);
+	if (!response.ok) throw new NaiError("image-load-failed", "none");
+	const blob = await response.blob();
+	const size = await imageSize(blob);
+	return {
+		target: {
+			kind: "media",
+			messageId,
+			mediaIndex
+		},
+		...size,
+		meta: attachment.title ? metaFromMedia(attachment, size) : void 0,
+		blob: async () => blob
+	};
+}
+function metaFromMedia(attachment, size) {
+	return {
+		scenePrompt: attachment.title ?? "",
+		prompt: attachment.nai_studio?.prompt ?? attachment.title ?? "",
+		negativePrompt: "",
+		negative: "",
+		mode: 6,
+		model: attachment.nai_studio?.model ?? settings().generation.model,
+		seed: attachment.nai_studio?.seed ?? 0,
+		width: size.width,
+		height: size.height,
+		steps: settings().generation.steps,
+		scale: settings().generation.scale,
+		cfgRescale: 0,
+		sampler: settings().generation.sampler,
+		noiseSchedule: settings().generation.noiseSchedule,
+		ucPreset: settings().generation.ucPreset,
+		qualityPreset: settings().generation.qualityPreset,
+		requestType: "txt2img",
+		characters: [],
+		transport: "",
+		cost: 0,
+		createdAt: (/* @__PURE__ */ new Date()).toISOString()
+	};
+}
+/** Images of a NovelAI ZIP answer, in file-name order (image_0, image_1, …). */
+async function unzipImages(zipBase64) {
+	await importHost("/lib/jszip.min.js");
+	const JSZip = globalThis.JSZip;
+	if (!JSZip) throw new NaiError("invalid-response", "none", { preview: "JSZip unavailable" });
+	const zip = await JSZip.loadAsync(base64ToBytes(zipBase64));
+	const files = Object.values(zip.files).filter((f) => !f.dir && /\.(png|webp|jpe?g)$/i.test(f.name)).sort((a, b) => a.name.localeCompare(b.name, void 0, { numeric: true }));
+	const images = [];
+	for (const [index, file] of files.entries()) {
+		const base64 = await file.async("base64");
+		const mime = sniffMime(base64ToBytes(base64.slice(0, 32)));
+		images.push({
+			base64,
+			mime: mime === "image/webp" ? "image/webp" : "image/png",
+			index
+		});
+	}
+	if (!images.length) throw new NaiError("invalid-response", "none", { preview: "empty ZIP" });
+	return images;
+}
+function legacyMeta(meta) {
+	return {
+		scenePrompt: meta.scenePrompt,
+		prompt: meta.prompt,
+		negative: meta.negative,
+		mode: meta.mode,
+		model: meta.model,
+		seed: meta.seed,
+		transport: meta.transport,
+		cost: meta.cost,
+		width: meta.width,
+		height: meta.height,
+		...meta.tool ? { tool: meta.tool } : {}
+	};
+}
+/** Adds tool results as new swipes of the source image (the original is kept). */
+async function deliver(source, produced, services) {
+	if (source.target.kind === "inline") {
+		await services.inline.addProducedSwipe(source.target.messageId, source.target.imageId, produced);
+		return;
+	}
+	const folder = imageFolder();
+	const saved = await saveImages(produced.images, folder);
+	await appendToMessage(source.target.messageId, saved, legacyMeta(produced.meta));
+	services.pipeline.notify(produced, {
+		target: "message",
+		paths: saved.map((s) => s.path)
+	});
+}
+/** Meta of a tool result derived from the source (Director Tools, upscale keep its prompt). */
+function toolMeta(source, patch) {
+	return {
+		...source.meta ?? metaFromMedia({ url: "" }, {
+			width: source.width,
+			height: source.height
+		}),
+		createdAt: (/* @__PURE__ */ new Date()).toISOString(),
+		...patch
+	};
+}
+/** Dimensions of a generated image (results of tools may differ from the request size). */
+async function generatedSize(image) {
+	return await imageSize(new Blob([base64ToBytes(image.base64)], { type: image.mime }));
+}
+//#endregion
+//#region src/features/tools/tools-service.ts
+function canvasOf(width, height) {
+	const canvas = document.createElement("canvas");
+	canvas.width = width;
+	canvas.height = height;
+	const context = canvas.getContext("2d");
+	if (!context) throw new Error("canvas unavailable");
+	return [canvas, context];
+}
+async function canvasPng(canvas) {
+	return await blobToBase64$1(await new Promise((resolve, reject) => canvas.toBlob((b) => b ? resolve(b) : reject(/* @__PURE__ */ new Error("canvas export failed")), "image/png")));
+}
+/** Keeps the original outside the mask (the web client composites inpaint results itself). */
+async function composite(original, result, mask, offset = {
+	x: 0,
+	y: 0
+}) {
+	const resultBitmap = await createImageBitmap(base64ToBlob(result, "image/png"));
+	const [out, outContext] = canvasOf(resultBitmap.width, resultBitmap.height);
+	outContext.drawImage(resultBitmap, 0, 0);
+	const maskBitmap = await createImageBitmap(base64ToBlob(mask, "image/png"));
+	const [alpha, alphaContext] = canvasOf(maskBitmap.width, maskBitmap.height);
+	alphaContext.drawImage(maskBitmap, 0, 0);
+	const pixels = alphaContext.getImageData(0, 0, alpha.width, alpha.height);
+	for (let i = 0; i < pixels.data.length; i += 4) {
+		pixels.data[i + 3] = pixels.data[i] ?? 0;
+		pixels.data[i] = pixels.data[i + 1] = pixels.data[i + 2] = 0;
+	}
+	alphaContext.putImageData(pixels, 0, 0);
+	const originalBitmap = await createImageBitmap(original);
+	const [keep, keepContext] = canvasOf(resultBitmap.width, resultBitmap.height);
+	keepContext.drawImage(originalBitmap, offset.x, offset.y);
+	keepContext.globalCompositeOperation = "destination-out";
+	keepContext.drawImage(alpha, 0, 0, keep.width, keep.height);
+	outContext.drawImage(keep, 0, 0);
+	[
+		resultBitmap,
+		maskBitmap,
+		originalBitmap
+	].forEach((b) => b.close());
+	return await canvasPng(out);
+}
+var ToolsService = class {
+	pipeline;
+	inline;
+	confirm;
+	constructor(pipeline, inline, confirm) {
+		this.pipeline = pipeline;
+		this.inline = inline;
+		this.confirm = confirm;
+	}
+	transport(feature, needsExtras) {
+		const transport = this.pipeline.studio.state.selection?.transport;
+		if (!transport) throw new NaiError("plugin-unavailable", "install-plugin");
+		if (!transport.features[feature] || needsExtras && !transport.extras) throw new NaiError("feature-unavailable", "install-plugin", { feature: t(`naist.tool.${feature}`) });
+		return transport;
+	}
+	async withLoader(message, task) {
+		const abort = new AbortController();
+		const loader = ctx().loader?.show({
+			blocking: false,
+			slug: "nai-studio-tool",
+			title: t("naist.loader.title"),
+			message,
+			onStop: () => abort.abort()
+		});
+		try {
+			return await task(abort.signal);
+		} catch (error) {
+			throw toNaiError(error);
+		} finally {
+			await loader?.hide();
+			this.pipeline.studio.refreshAccount();
+		}
+	}
+	chatId() {
+		return ctx().getCurrentChatId();
+	}
+	/** Lineart, sketch, colorize, emotion, declutter, declutter-keep-bubbles, background removal. */
+	async director(source, tool, options) {
+		const transport = this.transport("director", true);
+		const size = directorSize(source.width, source.height);
+		const cost = directorToolCost(tool, size.width, size.height, this.pipeline.studio.state.account);
+		await guardCost(cost, t(`naist.director.${tool}`), this.confirm);
+		const body = directorBody(tool, await sourcePng(source, size), size, options);
+		await this.withLoader(t("naist.director.running", { tool: t(`naist.director.${tool}`) }), async (signal) => {
+			const images = await unzipImages(await transport.extras.augment(body, {
+				retryable: cost === 0,
+				signal
+			}));
+			await deliver(source, {
+				images: images.map((img) => ({
+					...img,
+					seed: source.meta?.seed
+				})),
+				meta: toolMeta(source, {
+					requestType: "director",
+					tool,
+					cost,
+					width: size.width,
+					height: size.height,
+					transport: transport.id
+				}),
+				mode: source.meta?.mode ?? MODE.FREE,
+				chatId: this.chatId()
+			}, {
+				inline: this.inline,
+				pipeline: this.pipeline
+			});
+			log.info("director", tool, `${images.length} image(s)`, `cost ${cost}`);
+		});
+	}
+	/** Size an image is sent at: multiples of 64, and within the free area in free-only mode. */
+	requestSize(width, height) {
+		const rounded = {
+			width: roundToStep(width),
+			height: roundToStep(height)
+		};
+		return settings().anlas.freeOnly ? fitArea(rounded.width, rounded.height, FREE_MAX_PIXELS) : rounded;
+	}
+	overrides(source, size, model, negative, seed = -1) {
+		const m = source.meta;
+		return {
+			edit: false,
+			negative,
+			generation: {
+				model,
+				width: size.width,
+				height: size.height,
+				seed,
+				...m ? {
+					steps: m.steps,
+					scale: m.scale,
+					sampler: m.sampler,
+					noiseSchedule: m.noiseSchedule
+				} : {}
+			}
+		};
+	}
+	/** True when the model inpaints with another model (V5 Curated -> V4.5 Curated inpainting). */
+	inpaintFallback(model) {
+		const caps = getCapabilities(isModelId(model) ? model : DEFAULT_MODEL);
+		return caps.inpaintBase !== caps.model ? caps.inpaintModel : null;
+	}
+	async inpaint(source, options, overrideImage) {
+		this.transport("inpaint", false);
+		const size = this.requestSize(source.width, source.height);
+		const image = overrideImage ? await blobToBase64$1(await toPngBlob(overrideImage.image, size)) : await sourcePng(source, size);
+		const mask = await blobToBase64$1(await toPngBlob(base64ToBlob(options.mask, "image/png"), size));
+		const produced = await this.pipeline.produce({
+			initiator: "message",
+			trigger: options.prompt || "inpaint",
+			scene: options.prompt,
+			mode: source.meta?.mode ?? MODE.FREE,
+			overrides: this.overrides(source, size, options.model, options.negative),
+			requestPatch: {
+				mode: "inpaint",
+				image,
+				mask,
+				inpaintStrength: Math.min(1, Math.max(.01, options.strength))
+			}
+		});
+		if (!produced) return;
+		if (options.keepOriginal) {
+			const scaledOriginal = await toPngBlob(overrideImage?.image ?? await source.blob(), size);
+			for (const img of produced.images) {
+				img.base64 = await composite(scaledOriginal, img.base64, mask);
+				img.mime = "image/png";
+			}
+		}
+		produced.meta = {
+			...produced.meta,
+			requestType: "inpaint",
+			tool: options.tool ?? "inpaint"
+		};
+		await deliver(source, produced, {
+			inline: this.inline,
+			pipeline: this.pipeline
+		});
+	}
+	/** Grows the canvas and inpaints the new areas (mask built from the margins). */
+	async outpaint(source, grow, options) {
+		const plan = planOutpaint(source.width, source.height, grow);
+		if (plan.tooLarge) throw new NaiError("size-too-large", "none", {
+			width: plan.width,
+			height: plan.height,
+			max: MAX_REQUEST_PIXELS
+		});
+		const original = await createImageBitmap(await source.blob(), {
+			resizeWidth: source.width,
+			resizeHeight: source.height
+		});
+		const [canvas, context] = canvasOf(plan.width, plan.height);
+		context.fillStyle = "#808080";
+		context.fillRect(0, 0, plan.width, plan.height);
+		context.drawImage(original, plan.offsetX, plan.offsetY);
+		original.close();
+		const [maskCanvas, maskContext] = canvasOf(plan.width, plan.height);
+		maskContext.fillStyle = "#000";
+		maskContext.fillRect(0, 0, plan.width, plan.height);
+		maskContext.fillStyle = "#fff";
+		for (const r of plan.maskRects) maskContext.fillRect(r.x, r.y, r.w, r.h);
+		const expanded = base64ToBlob(await canvasPng(canvas), "image/png");
+		const grown = {
+			...source,
+			width: plan.width,
+			height: plan.height,
+			blob: async () => expanded
+		};
+		await this.inpaint(grown, {
+			...options,
+			mask: await canvasPng(maskCanvas),
+			strength: 1,
+			keepOriginal: true,
+			tool: "outpaint"
+		});
+	}
+	/** Upscale x2 through NovelAI (always paid, 1-4 Anlas). */
+	async upscale(source) {
+		const transport = this.transport("upscale", true);
+		if (!canUpscale(source.width, source.height)) throw new NaiError("size-too-large", "none", {
+			width: source.width,
+			height: source.height,
+			max: MAX_REQUEST_PIXELS
+		});
+		const cost = upscaleCost(source.width, source.height) ?? 0;
+		await guardCost(cost, t("naist.tool.upscale"), this.confirm);
+		const image = await sourcePng(source);
+		await this.withLoader(t("naist.tool.upscaling"), async (signal) => {
+			const images = await transport.extras.upscale({
+				image,
+				width: source.width,
+				height: source.height
+			}, signal);
+			const first = images[0];
+			const size = first ? await generatedSize(first) : {
+				width: source.width * 2,
+				height: source.height * 2
+			};
+			await deliver(source, {
+				images: images.map((img) => ({
+					...img,
+					seed: source.meta?.seed
+				})),
+				meta: toolMeta(source, {
+					requestType: "upscale",
+					tool: "upscale",
+					cost,
+					...size,
+					transport: transport.id
+				}),
+				mode: source.meta?.mode ?? MODE.FREE,
+				chatId: this.chatId()
+			}, {
+				inline: this.inline,
+				pipeline: this.pipeline
+			});
+		});
+	}
+	/** Enhance: the image scaled up and redrawn with img2img (strength and noise adjustable). */
+	async enhance(source, options) {
+		this.transport("img2img", false);
+		const target = enhanceSize(source.width, source.height, options.scale);
+		const size = settings().anlas.freeOnly ? fitArea(target.width, target.height, FREE_MAX_PIXELS) : target;
+		const image = await sourcePng(source, size);
+		const produced = await this.pipeline.produce({
+			initiator: "message",
+			trigger: options.prompt || "enhance",
+			scene: options.prompt,
+			mode: source.meta?.mode ?? MODE.FREE,
+			overrides: this.overrides(source, size, options.model, options.negative, source.meta?.seed ?? -1),
+			requestPatch: {
+				mode: "img2img",
+				image,
+				strength: options.strength,
+				noise: options.noise
+			}
+		});
+		if (produced) {
+			produced.meta = {
+				...produced.meta,
+				requestType: "img2img",
+				tool: "enhance"
+			};
+			await deliver(source, produced, {
+				inline: this.inline,
+				pipeline: this.pipeline
+			});
+		}
+		return size;
+	}
+};
+async function sha256Hex(text) {
+	const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+	return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+function vibeItems() {
+	return settings().vibes.items;
+}
+async function addVibe(file, name) {
+	const png = await toPngBlob(file);
+	const base64 = await blobToBase64$1(png);
+	const id = ctx().uuidv4();
+	const item = {
+		id,
+		name: name.trim() || `vibe-${id.slice(0, 4)}`,
+		imageHash: await sha256Hex(base64),
+		imageKey: `vibe:${id}`,
+		thumbKey: `vibethumb:${id}`,
+		createdAt: (/* @__PURE__ */ new Date()).toISOString()
+	};
+	await imageStore().setItem(item.imageKey, png);
+	await imageStore().setItem(item.thumbKey, await thumbnail(png, 160));
+	settings().vibes.items.push(item);
+	saveSettings();
+	return item;
+}
+async function removeVibe(id) {
+	const s = settings().vibes;
+	const item = s.items.find((i) => i.id === id);
+	if (!item) return;
+	s.items = s.items.filter((i) => i.id !== id);
+	for (const set of s.sets) set.entries = set.entries.filter((e) => e.vibeId !== id);
+	saveSettings();
+	await imageStore().removeItem(item.imageKey);
+	await imageStore().removeItem(item.thumbKey);
+	const keys = (await store().keys()).filter((k) => k.startsWith(`vibeenc:${item.imageHash}:`));
+	await Promise.all(keys.map((k) => store().removeItem(k)));
+}
+async function vibeImage(item) {
+	return await imageStore().getItem(item.imageKey);
+}
+async function vibeThumb(item) {
+	return await imageStore().getItem(item.thumbKey);
+}
+/** Characters, chat and style the vibe bindings are matched against. */
+function vibeContext() {
+	const c = ctx();
+	const characters = [];
+	if (c.groupId) for (const avatar of c.groups.find((g) => g.id === c.groupId)?.members ?? []) characters.push(avatarKey(avatar));
+	else if (c.characterId !== void 0 && c.characterId !== null && c.characterId !== "") characters.push(avatarKey(c.characters[Number(c.characterId)]?.avatar));
+	return {
+		characters,
+		chatId: c.getCurrentChatId() ?? "",
+		style: settings().prompts.activeStyle
+	};
+}
+function activeVibes() {
+	return planVibes(settings().vibes.sets, settings().vibes.items, vibeContext());
+}
+/** Pipeline vibe provider: plans the active vibes and makes sure each has an encoding. */
+var VibeLibraryProvider = class {
+	confirm;
+	notify;
+	noticed = /* @__PURE__ */ new Set();
+	constructor(confirm, notify) {
+		this.confirm = confirm;
+		this.notify = notify;
+	}
+	notifyOnce(key, notice) {
+		if (this.noticed.has(key)) return;
+		this.noticed.add(key);
+		this.notify(notice);
+	}
+	async prepare(caps, transport, signal) {
+		const planned = activeVibes();
+		if (!planned.length) return [];
+		const availability = vibeAvailability(caps, transport.features.vibes);
+		if (availability !== "ok") {
+			this.notifyOnce(`${availability}:${caps.model}`, {
+				kind: "unavailable",
+				reason: availability,
+				count: planned.length
+			});
+			return [];
+		}
+		if (caps.vibeKind === "raw") return await this.raw(planned);
+		return await this.encoded(planned, caps.model, transport, signal);
+	}
+	/** V3: the reference image itself, 448x448 PNG (RECON §3.4). */
+	async raw(planned) {
+		const refs = [];
+		for (const p of planned) {
+			const blob = await vibeImage(p.item);
+			if (!blob) {
+				this.notify({
+					kind: "missing-image",
+					name: p.item.name
+				});
+				continue;
+			}
+			refs.push({
+				data: await blobToBase64$1(await toPngBlob(blob, {
+					width: 448,
+					height: 448
+				})),
+				strength: p.strength,
+				informationExtracted: p.informationExtracted
+			});
+		}
+		return refs;
+	}
+	async encoded(planned, model, transport, signal) {
+		const extras = transport.extras;
+		const encodings = /* @__PURE__ */ new Map();
+		const keyOf = (p) => encodingCacheKey(p.item.imageHash, model, p.informationExtracted);
+		for (const p of planned) {
+			const local = await store().getItem(keyOf(p));
+			if (local) encodings.set(keyOf(p), local);
+		}
+		let missing = planned.filter((p) => !encodings.has(keyOf(p)));
+		if (missing.length && extras) {
+			const found = await extras.lookupVibes(missing.map((p) => ({
+				imageHash: p.item.imageHash,
+				model,
+				informationExtracted: p.informationExtracted
+			})), signal);
+			for (const [i, encoding] of found.entries()) {
+				const p = missing[i];
+				if (p && encoding) {
+					encodings.set(keyOf(p), encoding);
+					await store().setItem(keyOf(p), encoding);
+				}
+			}
+			missing = missing.filter((p) => !encodings.has(keyOf(p)));
+		}
+		if (missing.length) {
+			const cost = missing.length * 2;
+			const reason = settings().anlas.freeOnly ? "free-only" : !extras ? "no-plugin" : settings().vibes.confirmEncoding && !await this.confirm(cost, "vibes") ? "declined" : null;
+			if (reason) this.notify({
+				kind: "skipped",
+				count: missing.length,
+				reason
+			});
+			else {
+				let paid = 0;
+				for (const p of missing) {
+					const blob = await vibeImage(p.item);
+					if (!blob) {
+						this.notify({
+							kind: "missing-image",
+							name: p.item.name
+						});
+						continue;
+					}
+					const image = await blobToBase64$1(blob);
+					const result = await extras.encodeVibe({
+						image,
+						model,
+						informationExtracted: p.informationExtracted
+					}, signal);
+					if (!result.cached) paid++;
+					encodings.set(keyOf(p), result.encoding);
+					await store().setItem(keyOf(p), result.encoding);
+				}
+				if (paid) this.notify({
+					kind: "encoded",
+					count: paid,
+					cost: paid * 2
+				});
+				log.info(`encoded ${paid} vibe(s) for ${model}`);
+			}
+		}
+		return planned.filter((p) => encodings.has(keyOf(p))).map((p) => ({
+			data: encodings.get(keyOf(p)) ?? "",
+			strength: p.strength,
+			informationExtracted: p.informationExtracted
+		}));
+	}
+};
+//#endregion
+//#region src/ui/inpaint-editor.ts
+async function canvasBase64(canvas) {
+	const blob = await new Promise((resolve, reject) => canvas.toBlob((b) => b ? resolve(b) : reject(/* @__PURE__ */ new Error("canvas export failed")), "image/png"));
+	const buffer = new Uint8Array(await blob.arrayBuffer());
+	let binary = "";
+	for (let i = 0; i < buffer.length; i += 32768) binary += String.fromCharCode(...buffer.subarray(i, i + 32768));
+	return btoa(binary);
+}
+async function openInpaintEditor(source, initial, fallbackModel) {
+	const c = ctx();
+	const tools = settings().tools;
+	const meta = source.meta;
+	const url = URL.createObjectURL(await source.blob());
+	const root = document.createElement("div");
+	root.className = "naist-dialog naist-inpaint";
+	const defaultModel = meta?.model ?? settings().generation.model;
+	root.innerHTML = `
+        <h3>${escapeHtml$2(t("naist.inpaint.title"))}</h3>
+        <div class="naist-tabs naist-inpaint-tabs">
+            <div class="naist-tab menu_button" data-pane="inpaint">${escapeHtml$2(t("naist.tools.inpaint"))}</div>
+            <div class="naist-tab menu_button" data-pane="outpaint">${escapeHtml$2(t("naist.tools.outpaint"))}</div>
+        </div>
+        <div class="naist-pane" data-pane="inpaint">
+            <div class="naist-row">
+                <label class="checkbox_label"><input type="radio" name="naist_ip_tool" value="brush" checked><span>${escapeHtml$2(t("naist.inpaint.brush"))}</span></label>
+                <label class="checkbox_label"><input type="radio" name="naist_ip_tool" value="eraser"><span>${escapeHtml$2(t("naist.inpaint.eraser"))}</span></label>
+                <label>${escapeHtml$2(t("naist.inpaint.size"))}</label>
+                <input type="range" min="4" max="300" class="naist-ip-size" value="${tools.brushSize}">
+                <div class="menu_button naist-ip-invert">${escapeHtml$2(t("naist.inpaint.invert"))}</div>
+                <div class="menu_button naist-ip-clear">${escapeHtml$2(t("naist.inpaint.clear"))}</div>
+            </div>
+            <div class="naist-inpaint-stage"><img alt="" src="${escapeHtml$2(url)}"><canvas class="naist-ip-canvas"></canvas></div>
+            <div class="naist-hint">${escapeHtml$2(t("naist.inpaint.hint"))}</div>
+            <div class="naist-grid2">
+                <div><label>${escapeHtml$2(t("naist.inpaint.strength"))}</label><input type="number" min="0.01" max="1" step="0.01" class="text_pole naist-ip-strength" value="${tools.inpaintStrength}"></div>
+                <div><label class="checkbox_label"><input type="checkbox" class="naist-ip-keep"${tools.keepOriginal ? " checked" : ""}><span>${escapeHtml$2(t("naist.inpaint.keepOriginal"))}</span></label></div>
+            </div>
+        </div>
+        <div class="naist-pane naist-hidden" data-pane="outpaint">
+            <div class="naist-hint">${escapeHtml$2(t("naist.outpaint.hint"))}</div>
+            <div class="naist-grid2">${[
+		"left",
+		"right",
+		"top",
+		"bottom"
+	].map((side) => `<div><label>${escapeHtml$2(t(`naist.outpaint.${side}`))}</label><input type="number" min="0" step="64" value="${side === "left" || side === "right" ? 128 : 0}" class="text_pole naist-op-${side}"></div>`).join("")}</div>
+            <div class="naist-muted naist-op-size"></div>
+        </div>
+        <label>${escapeHtml$2(t("naist.inline.prompt"))}</label>
+        <textarea class="text_pole naist-ip-prompt" rows="3">${escapeHtml$2(meta?.scenePrompt ?? "")}</textarea>
+        <label>${escapeHtml$2(t("naist.refine.negative"))}</label>
+        <input class="text_pole naist-ip-negative" value="${escapeHtml$2(meta?.negative ?? "")}">
+        <label>${escapeHtml$2(t("naist.panel.model"))}</label>
+        <select class="text_pole naist-ip-model">${MODELS.map((m) => `<option value="${m.id}"${m.id === defaultModel ? " selected" : ""}>${escapeHtml$2(t(m.nameKey))}</option>`).join("")}</select>
+        <div class="naist-warning naist-ip-fallback"></div>`;
+	const canvas = root.querySelector(".naist-ip-canvas");
+	canvas.width = source.width;
+	canvas.height = source.height;
+	const view = canvas.getContext("2d");
+	const mask = document.createElement("canvas");
+	mask.width = source.width;
+	mask.height = source.height;
+	const maskContext = mask.getContext("2d");
+	maskContext.fillStyle = "#000";
+	maskContext.fillRect(0, 0, mask.width, mask.height);
+	let pane = initial;
+	let painted = false;
+	const redrawView = () => {
+		const data = maskContext.getImageData(0, 0, mask.width, mask.height);
+		const overlay = view.createImageData(mask.width, mask.height);
+		for (let i = 0; i < data.data.length; i += 4) {
+			const on = (data.data[i] ?? 0) > 127;
+			overlay.data[i] = 255;
+			overlay.data[i + 1] = 40;
+			overlay.data[i + 2] = 40;
+			overlay.data[i + 3] = on ? 130 : 0;
+		}
+		view.putImageData(overlay, 0, 0);
+	};
+	const showPane = (name) => {
+		pane = name;
+		root.querySelectorAll(".naist-pane").forEach((p) => p.classList.toggle("naist-hidden", p.dataset.pane !== name));
+		root.querySelectorAll(".naist-inpaint-tabs .naist-tab").forEach((tab) => tab.classList.toggle("naist-tab-active", tab.dataset.pane === name));
+	};
+	const showFallback = () => {
+		const fallback = fallbackModel(root.querySelector(".naist-ip-model")?.value ?? defaultModel);
+		const el = root.querySelector(".naist-ip-fallback");
+		if (el) el.textContent = fallback ? t("naist.inpaint.fallback", { model: fallback }) : "";
+	};
+	const growOf = () => {
+		const read = (side) => Math.max(0, Number(root.querySelector(`.naist-op-${side}`)?.value) || 0);
+		return {
+			left: read("left"),
+			right: read("right"),
+			top: read("top"),
+			bottom: read("bottom")
+		};
+	};
+	const showOutpaintSize = () => {
+		const plan = planOutpaint(source.width, source.height, growOf());
+		const el = root.querySelector(".naist-op-size");
+		if (!el) return;
+		el.textContent = t(plan.tooLarge ? "naist.outpaint.tooLarge" : "naist.outpaint.size", {
+			width: plan.width,
+			height: plan.height
+		});
+		if (!plan.tooLarge && settings().anlas.freeOnly && plan.width * plan.height > 1048576) {
+			const sent = fitArea(roundToStep(plan.width), roundToStep(plan.height), FREE_MAX_PIXELS);
+			el.textContent += ` ${t("naist.outpaint.freeSize", sent)}`;
+		}
+	};
+	const paint = (event) => {
+		const rect = canvas.getBoundingClientRect();
+		const x = (event.clientX - rect.left) / rect.width * canvas.width;
+		const y = (event.clientY - rect.top) / rect.height * canvas.height;
+		const size = Number(root.querySelector(".naist-ip-size")?.value ?? 40);
+		const erase = root.querySelector("input[name=\"naist_ip_tool\"]:checked")?.value === "eraser";
+		maskContext.fillStyle = erase ? "#000" : "#fff";
+		maskContext.beginPath();
+		maskContext.arc(x, y, size / 2, 0, Math.PI * 2);
+		maskContext.fill();
+		painted = true;
+	};
+	let drawing = false;
+	canvas.addEventListener("pointerdown", (event) => {
+		drawing = true;
+		canvas.setPointerCapture(event.pointerId);
+		paint(event);
+		redrawView();
+	});
+	canvas.addEventListener("pointermove", (event) => {
+		if (!drawing) return;
+		paint(event);
+		redrawView();
+	});
+	canvas.addEventListener("pointerup", () => drawing = false);
+	canvas.addEventListener("pointercancel", () => drawing = false);
+	root.addEventListener("click", (event) => {
+		const el = event.target;
+		const tab = el.closest(".naist-inpaint-tabs .naist-tab");
+		if (tab) showPane(tab.dataset.pane === "outpaint" ? "outpaint" : "inpaint");
+		else if (el.classList.contains("naist-ip-clear")) {
+			maskContext.fillStyle = "#000";
+			maskContext.fillRect(0, 0, mask.width, mask.height);
+			painted = false;
+			redrawView();
+		} else if (el.classList.contains("naist-ip-invert")) {
+			const data = maskContext.getImageData(0, 0, mask.width, mask.height);
+			for (let i = 0; i < data.data.length; i += 4) {
+				const v = 255 - (data.data[i] ?? 0);
+				data.data[i] = data.data[i + 1] = data.data[i + 2] = v;
+			}
+			maskContext.putImageData(data, 0, 0);
+			painted = true;
+			redrawView();
+		}
+	});
+	root.addEventListener("change", (event) => {
+		const el = event.target;
+		if (el.classList.contains("naist-ip-model")) showFallback();
+		if (el.className.includes("naist-op-")) showOutpaintSize();
+	});
+	root.addEventListener("input", (event) => {
+		if (event.target.className.includes("naist-op-")) showOutpaintSize();
+	});
+	showPane(initial);
+	showFallback();
+	showOutpaintSize();
+	redrawView();
+	localize(root);
+	const ok = await c.callGenericPopup(root, c.POPUP_TYPE.CONFIRM, "", {
+		okButton: t("naist.inpaint.run"),
+		cancelButton: t("naist.inspector.cancel"),
+		wide: true,
+		large: true,
+		allowVerticalScrolling: true
+	});
+	URL.revokeObjectURL(url);
+	if (ok !== c.POPUP_RESULT.AFFIRMATIVE) return null;
+	const prompt = root.querySelector(".naist-ip-prompt")?.value.trim() ?? "";
+	const negative = root.querySelector(".naist-ip-negative")?.value.trim() ?? "";
+	const model = root.querySelector(".naist-ip-model")?.value ?? defaultModel;
+	tools.brushSize = Number(root.querySelector(".naist-ip-size")?.value ?? tools.brushSize);
+	if (pane === "outpaint") {
+		saveSettings();
+		return {
+			kind: "outpaint",
+			grow: growOf(),
+			prompt,
+			negative,
+			model
+		};
+	}
+	if (!painted) {
+		toastr.warning(t("naist.inpaint.emptyMask"));
+		return null;
+	}
+	tools.inpaintStrength = Math.min(1, Math.max(.01, Number(root.querySelector(".naist-ip-strength")?.value) || 1));
+	tools.keepOriginal = root.querySelector(".naist-ip-keep")?.checked === true;
+	saveSettings();
+	return {
+		kind: "inpaint",
+		mask: await canvasBase64(mask),
+		prompt,
+		negative,
+		strength: tools.inpaintStrength,
+		keepOriginal: tools.keepOriginal,
+		model
+	};
+}
+//#endregion
+//#region src/ui/tool-dialogs.ts
+var ACTIONS = [
+	{
+		id: "director",
+		icon: "fa-wand-magic-sparkles",
+		feature: "director"
+	},
+	{
+		id: "inpaint",
+		icon: "fa-paintbrush",
+		feature: "inpaint"
+	},
+	{
+		id: "outpaint",
+		icon: "fa-expand",
+		feature: "inpaint"
+	},
+	{
+		id: "upscale",
+		icon: "fa-up-right-and-down-left-from-center",
+		feature: "upscale"
+	},
+	{
+		id: "enhance",
+		icon: "fa-wand-sparkles",
+		feature: "img2img"
+	}
+];
+/** Tools available for an image; disabled ones stay visible with the reason (TZ degradation rule). */
+async function toolsMenu(features) {
+	const c = ctx();
+	const root = document.createElement("div");
+	root.className = "naist-dialog naist-tools-menu";
+	root.innerHTML = `<h3>${escapeHtml$2(t("naist.tools.title"))}</h3>${ACTIONS.map((a) => {
+		const on = features?.[a.feature] === true;
+		return `<div class="menu_button naist-tools-item${on ? "" : " disabled"}" data-action="${a.id}" title="${escapeHtml$2(on ? t(`naist.tools.${a.id}Hint`) : t("naist.tools.needsPlugin"))}">
+            <i class="fa-solid ${a.icon}"></i> ${escapeHtml$2(t(`naist.tools.${a.id}`))}${on ? "" : ` <span class="naist-muted">— ${escapeHtml$2(t("naist.tools.needsPlugin"))}</span>`}</div>`;
+	}).join("")}`;
+	let chosen = null;
+	const popup = new c.Popup(root, c.POPUP_TYPE.TEXT, "", { okButton: t("naist.inspector.cancel") });
+	root.addEventListener("click", (event) => {
+		const item = event.target.closest(".naist-tools-item");
+		if (!item || item.classList.contains("disabled")) return;
+		chosen = item.dataset.action;
+		popup.completeCancelled();
+	});
+	await popup.show();
+	return chosen;
+}
+async function directorDialog(size, account) {
+	const c = ctx();
+	const s = settings().tools;
+	const sent = directorSize(size.width, size.height);
+	const root = document.createElement("div");
+	root.className = "naist-dialog";
+	const costOf = (tool) => directorToolCost(tool, sent.width, sent.height, account);
+	root.innerHTML = `
+        <h3>${escapeHtml$2(t("naist.director.title"))}</h3>
+        <div class="naist-hint">${escapeHtml$2(t("naist.director.hint", {
+		width: sent.width,
+		height: sent.height
+	}))}</div>
+        <div class="naist-director-tools">${DIRECTOR_TOOLS.map((tool, i) => {
+		const cost = costOf(tool);
+		return `<label class="checkbox_label naist-director-tool"><input type="radio" name="naist_dir_tool" value="${tool}"${i === 0 ? " checked" : ""}>
+                <span><b>${escapeHtml$2(t(`naist.director.${tool}`))}</b> — ${escapeHtml$2(cost ? t("naist.director.costPaid", { cost }) : t("naist.director.costFree"))}<br><span class="naist-muted">${escapeHtml$2(t(`naist.director.${tool}Hint`))}</span></span></label>`;
+	}).join("")}</div>
+        <div class="naist-director-extra naist-hidden">
+            <div class="naist-director-emotion-row"><label>${escapeHtml$2(t("naist.director.emotion"))}</label>
+            <select class="text_pole naist-dir-emotion">${DIRECTOR_EMOTIONS.map((e) => `<option value="${e}"${e === s.emotion ? " selected" : ""}>${escapeHtml$2(t(`naist.emotion.${e}`))}</option>`).join("")}</select></div>
+            <label>${escapeHtml$2(t("naist.director.prompt"))}</label>
+            <input class="text_pole naist-dir-prompt" placeholder="${escapeHtml$2(t("naist.director.promptPlaceholder"))}">
+            <label>${escapeHtml$2(t("naist.director.defry"))}: <span class="naist-dir-defry-value">${s.defry}</span></label>
+            <input type="range" min="0" max="5" step="1" class="naist-dir-defry" value="${s.defry}">
+        </div>`;
+	const update = () => {
+		const tool = root.querySelector("input[name=\"naist_dir_tool\"]:checked")?.value ?? "lineart";
+		root.querySelector(".naist-director-extra")?.classList.toggle("naist-hidden", !toolTakesPrompt(tool));
+		root.querySelector(".naist-director-emotion-row")?.classList.toggle("naist-hidden", tool !== "emotion");
+	};
+	root.addEventListener("change", update);
+	root.addEventListener("input", (event) => {
+		const el = event.target;
+		if (el.classList.contains("naist-dir-defry")) {
+			const label = root.querySelector(".naist-dir-defry-value");
+			if (label) label.textContent = el.value;
+		}
+	});
+	update();
+	localize(root);
+	if (await c.callGenericPopup(root, c.POPUP_TYPE.CONFIRM, "", {
+		okButton: t("naist.director.run"),
+		cancelButton: t("naist.inspector.cancel"),
+		wide: true
+	}) !== c.POPUP_RESULT.AFFIRMATIVE) return null;
+	const tool = root.querySelector("input[name=\"naist_dir_tool\"]:checked")?.value ?? "lineart";
+	const emotion = root.querySelector(".naist-dir-emotion")?.value ?? "happy";
+	const defry = Number(root.querySelector(".naist-dir-defry")?.value ?? 0);
+	s.emotion = emotion;
+	s.defry = defry;
+	saveSettings();
+	return {
+		tool,
+		options: {
+			emotion,
+			defry,
+			prompt: root.querySelector(".naist-dir-prompt")?.value ?? ""
+		}
+	};
+}
+async function enhanceDialog(size, defaults) {
+	const c = ctx();
+	const s = settings().tools;
+	const root = document.createElement("div");
+	root.className = "naist-dialog";
+	const target = (scale) => enhanceSize(size.width, size.height, scale);
+	root.innerHTML = `
+        <h3>${escapeHtml$2(t("naist.enhance.title"))}</h3>
+        <div class="naist-hint">${escapeHtml$2(t("naist.enhance.hint"))}</div>
+        <div class="naist-grid3">
+            <div><label>${escapeHtml$2(t("naist.enhance.scale"))}</label><select class="text_pole naist-en-scale">${[
+		1,
+		1.5,
+		2
+	].map((v) => `<option value="${v}"${v === s.enhanceScale ? " selected" : ""}>×${v}</option>`).join("")}</select></div>
+            <div><label>${escapeHtml$2(t("naist.enhance.strength"))}</label><input type="number" min="0.01" max="0.99" step="0.01" class="text_pole naist-en-strength" value="${s.enhanceStrength}"></div>
+            <div><label>${escapeHtml$2(t("naist.enhance.noise"))}</label><input type="number" min="0" max="0.99" step="0.01" class="text_pole naist-en-noise" value="${s.enhanceNoise}"></div>
+        </div>
+        <div class="naist-muted naist-en-size"></div>
+        <label>${escapeHtml$2(t("naist.inline.prompt"))}</label>
+        <textarea class="text_pole naist-en-prompt" rows="3">${escapeHtml$2(defaults.prompt)}</textarea>
+        <label>${escapeHtml$2(t("naist.panel.model"))}</label>
+        <select class="text_pole naist-en-model">${MODELS.map((m) => `<option value="${m.id}"${m.id === defaults.model ? " selected" : ""}>${escapeHtml$2(t(m.nameKey))}</option>`).join("")}</select>
+        <div class="naist-hint">${escapeHtml$2(t("naist.enhance.freeNote"))}</div>`;
+	const showSize = () => {
+		const scale = Number(root.querySelector(".naist-en-scale")?.value ?? 1.5);
+		const out = target(scale);
+		const el = root.querySelector(".naist-en-size");
+		if (!el) return;
+		el.textContent = t("naist.enhance.size", {
+			from: `${size.width}×${size.height}`,
+			to: `${out.width}×${out.height}`
+		});
+		if (settings().anlas.freeOnly && out.width * out.height > 1048576) el.textContent += ` ${t("naist.outpaint.freeSize", fitArea(out.width, out.height, FREE_MAX_PIXELS))}`;
+	};
+	root.addEventListener("change", showSize);
+	showSize();
+	localize(root);
+	if (await c.callGenericPopup(root, c.POPUP_TYPE.CONFIRM, "", {
+		okButton: t("naist.enhance.run"),
+		cancelButton: t("naist.inspector.cancel"),
+		wide: true
+	}) !== c.POPUP_RESULT.AFFIRMATIVE) return null;
+	const read = (sel, fallback) => {
+		const n = Number(root.querySelector(sel)?.value);
+		return Number.isFinite(n) ? n : fallback;
+	};
+	const choice = {
+		scale: read(".naist-en-scale", 1.5),
+		strength: Math.min(.99, Math.max(.01, read(".naist-en-strength", .45))),
+		noise: Math.min(.99, Math.max(0, read(".naist-en-noise", 0))),
+		prompt: root.querySelector(".naist-en-prompt")?.value.trim() ?? defaults.prompt,
+		negative: defaults.negative,
+		model: root.querySelector(".naist-en-model")?.value ?? defaults.model
+	};
+	s.enhanceScale = choice.scale;
+	s.enhanceStrength = choice.strength;
+	s.enhanceNoise = choice.noise;
+	saveSettings();
+	return choice;
+}
+/** Cost confirmation of a paid tool call. */
+async function confirmToolCost(cost, what, balance) {
+	const c = ctx();
+	return await c.callGenericPopup(t("naist.tools.confirmCost", {
+		cost,
+		what,
+		balance
+	}), c.POPUP_TYPE.CONFIRM) === c.POPUP_RESULT.AFFIRMATIVE;
+}
+//#endregion
+//#region src/ui/vibe-library.ts
+async function openVibeLibrary(features) {
+	const c = ctx();
+	const vibes = settings().vibes;
+	const urls = [];
+	const root = document.createElement("div");
+	root.className = "naist-dialog naist-vibes";
+	const status = () => {
+		const model = settings().generation.model;
+		const caps = getCapabilities(isModelId(model) ? model : DEFAULT_MODEL);
+		const availability = vibeAvailability(caps, features?.vibes === true);
+		const info = MODELS.find((m) => m.id === caps.model);
+		return t(`naist.vibes.status.${availability}`, { model: info ? t(info.nameKey) : caps.model });
+	};
+	const renderItems = () => vibeItems().map((item) => `<div class="naist-vibe-card" data-id="${escapeHtml$2(item.id)}">
+                <img alt="" data-thumb="${escapeHtml$2(item.id)}">
+                <input class="text_pole naist-vibe-name" value="${escapeHtml$2(item.name)}">
+                <div class="menu_button fa-solid fa-trash-can naist-vibe-remove" title="${escapeHtml$2(t("naist.vibes.remove"))}"></div>
+            </div>`).join("") || `<div class="naist-hint">${escapeHtml$2(t("naist.vibes.empty"))}</div>`;
+	const renderSet = (set, index) => {
+		const ctxNow = vibeContext();
+		const bound = (kind, values) => values.length > 0 && values.every((v) => set.bindings[kind].includes(v));
+		return `<div class="naist-section naist-vibe-set" data-index="${index}">
+            <div class="naist-row">
+                <input class="text_pole naist-grow naist-set-name" value="${escapeHtml$2(set.name)}">
+                <label class="checkbox_label"><input type="checkbox" class="naist-set-enabled"${set.enabled ? " checked" : ""}><span>${escapeHtml$2(t("naist.vibes.enabled"))}</span></label>
+                <div class="menu_button fa-solid fa-trash-can naist-set-remove" title="${escapeHtml$2(t("naist.vibes.removeSet"))}"></div>
+            </div>
+            <div class="naist-flags">
+                <label class="checkbox_label"><input type="checkbox" class="naist-set-global"${set.global ? " checked" : ""}><span>${escapeHtml$2(t("naist.vibes.global"))}</span></label>
+                <label class="checkbox_label"><input type="checkbox" class="naist-set-bind" data-kind="characters"${bound("characters", ctxNow.characters) ? " checked" : ""}${ctxNow.characters.length ? "" : " disabled"}><span>${escapeHtml$2(t("naist.vibes.bindCharacter"))}</span></label>
+                <label class="checkbox_label"><input type="checkbox" class="naist-set-bind" data-kind="chats"${bound("chats", ctxNow.chatId ? [ctxNow.chatId] : []) ? " checked" : ""}${ctxNow.chatId ? "" : " disabled"}><span>${escapeHtml$2(t("naist.vibes.bindChat"))}</span></label>
+                <label class="checkbox_label"><input type="checkbox" class="naist-set-bind" data-kind="styles"${bound("styles", ctxNow.style ? [ctxNow.style] : []) ? " checked" : ""}${ctxNow.style ? "" : " disabled"}><span>${escapeHtml$2(t("naist.vibes.bindStyle"))}</span></label>
+            </div>
+            ${vibeItems().map((item) => {
+			const entry = set.entries.find((e) => e.vibeId === item.id);
+			return `<div class="naist-row naist-set-entry" data-vibe="${escapeHtml$2(item.id)}">
+                        <label class="checkbox_label naist-grow"><input type="checkbox" class="naist-entry-on"${entry?.enabled ? " checked" : ""}><span>${escapeHtml$2(item.name)}</span></label>
+                        <label>${escapeHtml$2(t("naist.vibes.strength"))}</label>
+                        <input type="number" min="-1" max="1" step="0.05" class="text_pole naist-entry-strength" value="${entry?.strength ?? .6}">
+                        <label>${escapeHtml$2(t("naist.vibes.information"))}</label>
+                        <input type="number" min="0.01" max="1" step="0.05" class="text_pole naist-entry-ie" value="${entry?.informationExtracted ?? 1}">
+                    </div>`;
+		}).join("")}
+        </div>`;
+	};
+	const render = () => {
+		const active = activeVibes();
+		root.innerHTML = `
+            <h3>${escapeHtml$2(t("naist.vibes.title"))}</h3>
+            <div class="naist-hint">${escapeHtml$2(status())}</div>
+            <div class="naist-hint">${escapeHtml$2(t("naist.vibes.cacheHint"))}</div>
+            <div class="naist-muted">${escapeHtml$2(t("naist.vibes.active", {
+			count: active.length,
+			names: active.map((a) => a.item.name).join(", ") || "—"
+		}))}</div>
+            <div class="naist-section">
+                <b>${escapeHtml$2(t("naist.vibes.images"))}</b>
+                <div class="naist-vibe-grid">${renderItems()}</div>
+                <div class="naist-row">
+                    <div class="menu_button naist-vibe-add">${escapeHtml$2(t("naist.vibes.add"))}</div>
+                    <input type="file" accept="image/*" multiple class="naist-hidden naist-vibe-file">
+                    <label class="checkbox_label"><input type="checkbox" class="naist-vibe-confirm"${vibes.confirmEncoding ? " checked" : ""}><span>${escapeHtml$2(t("naist.vibes.confirmEncoding"))}</span></label>
+                </div>
+            </div>
+            <b>${escapeHtml$2(t("naist.vibes.sets"))}</b>
+            ${vibes.sets.map(renderSet).join("")}
+            <div class="menu_button naist-set-add">${escapeHtml$2(t("naist.vibes.addSet"))}</div>`;
+		root.querySelectorAll("img[data-thumb]").forEach((img) => {
+			const item = vibeItems().find((i) => i.id === img.dataset.thumb);
+			if (!item) return;
+			vibeThumb(item).then((blob) => {
+				if (!blob) return;
+				const url = URL.createObjectURL(blob);
+				urls.push(url);
+				img.src = url;
+			});
+		});
+		localize(root);
+	};
+	const setOf = (el) => vibes.sets[Number(el.closest(".naist-vibe-set")?.dataset.index)];
+	const save = () => saveSettings();
+	root.addEventListener("click", (event) => {
+		const el = event.target;
+		if (el.classList.contains("naist-vibe-add")) root.querySelector(".naist-vibe-file")?.click();
+		else if (el.classList.contains("naist-vibe-remove")) removeVibe(el.closest(".naist-vibe-card")?.dataset.id ?? "").then(render);
+		else if (el.classList.contains("naist-set-add")) {
+			vibes.sets.push({
+				id: c.uuidv4(),
+				name: t("naist.vibes.setDefault", { n: vibes.sets.length + 1 }),
+				enabled: true,
+				global: false,
+				entries: vibeItems().map((i) => ({
+					...defaultVibeEntry(i.id),
+					enabled: false
+				})),
+				bindings: {
+					characters: [],
+					chats: [],
+					styles: []
+				}
+			});
+			save();
+			render();
+		} else if (el.classList.contains("naist-set-remove")) {
+			vibes.sets.splice(Number(el.closest(".naist-vibe-set")?.dataset.index), 1);
+			save();
+			render();
+		}
+	});
+	root.addEventListener("change", (event) => {
+		const el = event.target;
+		if (el.classList.contains("naist-vibe-file")) {
+			const files = [...el.files ?? []];
+			el.value = "";
+			(async () => {
+				for (const file of files) await addVibe(file, file.name.replace(/\.[^.]+$/, ""));
+				render();
+			})().catch(reportGenerationError);
+			return;
+		}
+		if (el.classList.contains("naist-vibe-confirm")) vibes.confirmEncoding = el.checked;
+		else if (el.classList.contains("naist-vibe-name")) {
+			const item = vibeItems().find((i) => i.id === el.closest(".naist-vibe-card")?.dataset.id);
+			if (item) item.name = el.value.trim() || item.name;
+		} else {
+			const set = setOf(el);
+			if (!set) return;
+			if (el.classList.contains("naist-set-name")) set.name = el.value.trim() || set.name;
+			else if (el.classList.contains("naist-set-enabled")) set.enabled = el.checked;
+			else if (el.classList.contains("naist-set-global")) set.global = el.checked;
+			else if (el.classList.contains("naist-set-bind")) {
+				const kind = el.dataset.kind;
+				const now = vibeContext();
+				const values = kind === "characters" ? now.characters : kind === "chats" ? [now.chatId] : [now.style];
+				set.bindings[kind] = el.checked ? [.../* @__PURE__ */ new Set([...set.bindings[kind], ...values.filter(Boolean)])] : set.bindings[kind].filter((v) => !values.includes(v));
+			} else {
+				const row = el.closest(".naist-set-entry");
+				const vibeId = row?.dataset.vibe ?? "";
+				if (!row || !vibeId) return;
+				let entry = set.entries.find((e) => e.vibeId === vibeId);
+				if (!entry) {
+					entry = {
+						...defaultVibeEntry(vibeId),
+						enabled: false
+					};
+					set.entries.push(entry);
+				}
+				entry.enabled = row.querySelector(".naist-entry-on")?.checked === true;
+				entry.strength = Number(row.querySelector(".naist-entry-strength")?.value) || 0;
+				entry.informationExtracted = Number(row.querySelector(".naist-entry-ie")?.value) || 1;
+			}
+		}
+		save();
+		const active = root.querySelector(".naist-muted");
+		const list = activeVibes();
+		if (active) active.textContent = t("naist.vibes.active", {
+			count: list.length,
+			names: list.map((a) => a.item.name).join(", ") || "—"
+		});
+	});
+	root.addEventListener("dragover", (event) => {
+		if (event.dataTransfer?.types.includes("Files")) event.preventDefault();
+	});
+	root.addEventListener("drop", (event) => {
+		const files = [...event.dataTransfer?.files ?? []].filter((f) => f.type.startsWith("image/"));
+		if (!files.length) return;
+		event.preventDefault();
+		event.stopPropagation();
+		(async () => {
+			for (const file of files) await addVibe(file, file.name.replace(/\.[^.]+$/, ""));
+			render();
+		})().catch(reportGenerationError);
+	});
+	render();
+	await c.callGenericPopup(root, c.POPUP_TYPE.TEXT, "", {
+		wide: true,
+		large: true,
+		allowVerticalScrolling: true
+	});
+	for (const url of urls) URL.revokeObjectURL(url);
+	saveSettings();
+}
+//#endregion
+//#region src/integration/tools-setup.ts
+var MEDIA_BUTTON = "naist-media-tools";
+var state = null;
+function features() {
+	return state?.pipeline.studio.state.selection?.transport.features ?? null;
+}
+/** "NAI Diffusion V4.5 Curated (nai-diffusion-4-5-curated-inpainting)" when another model inpaints. */
+function fallbackName(tools, model) {
+	const id = tools.inpaintFallback(model);
+	if (!id) return null;
+	const base = MODELS.find((m) => m.id === getCapabilities(isModelId(model) ? model : DEFAULT_MODEL).inpaintBase);
+	return base ? `${t(base.nameKey)} (${id})` : id;
+}
+async function runAction(action, source) {
+	if (!state) return;
+	const { tools, pipeline } = state;
+	const meta = source.meta;
+	const defaults = {
+		prompt: meta?.scenePrompt ?? "",
+		negative: meta?.negative ?? "",
+		model: meta?.model ?? settings().generation.model
+	};
+	switch (action) {
+		case "director": {
+			const choice = await directorDialog(source, pipeline.studio.state.account);
+			if (choice) await tools.director(source, choice.tool, choice.options);
+			return;
+		}
+		case "inpaint":
+		case "outpaint": {
+			const result = await openInpaintEditor(source, action, (model) => fallbackName(tools, model));
+			if (!result) return;
+			if (result.kind === "inpaint") await tools.inpaint(source, result);
+			else await tools.outpaint(source, result.grow, {
+				prompt: result.prompt,
+				negative: result.negative,
+				model: result.model
+			});
+			return;
+		}
+		case "upscale":
+			await tools.upscale(source);
+			return;
+		case "enhance": {
+			const choice = await enhanceDialog(source, defaults);
+			if (choice) await tools.enhance(source, choice);
+			return;
+		}
+	}
+}
+async function openToolsFor(source, action) {
+	try {
+		const chosen = action ?? await toolsMenu(features());
+		if (!chosen) return;
+		await runAction(chosen, await source());
+	} catch (error) {
+		reportGenerationError(error);
+	}
+}
+function mediaIndexOf(container) {
+	const messageId = Number(container.closest(".mes")?.getAttribute("mesid"));
+	const index = Number(container.getAttribute("data-index"));
+	if (!Number.isInteger(messageId)) return null;
+	return {
+		messageId,
+		mediaIndex: Number.isInteger(index) ? index : 0
+	};
+}
+/** A small tools button on every media image of the chat ("any picture in the chat", TZ). */
+function installMediaButtons() {
+	const chat = document.getElementById("chat");
+	if (!chat) return;
+	const decorate = () => {
+		chat.querySelectorAll(".mes_img_container").forEach((container) => {
+			if (container.querySelector(`.${MEDIA_BUTTON}`)) return;
+			const button = document.createElement("div");
+			button.title = t("naist.tools.title");
+			button.tabIndex = 0;
+			button.setAttribute("role", "button");
+			const controls = container.querySelector(".mes_img_controls");
+			if (controls) {
+				button.className = `${MEDIA_BUTTON} right_menu_button fa-lg fa-solid fa-wand-magic-sparkles interactable`;
+				controls.append(button);
+			} else {
+				button.className = `${MEDIA_BUTTON} naist-media-tools-float fa-solid fa-wand-magic-sparkles`;
+				container.append(button);
+			}
+		});
+	};
+	let pending = false;
+	new MutationObserver(() => {
+		if (pending) return;
+		pending = true;
+		setTimeout(() => {
+			pending = false;
+			decorate();
+		}, 50);
+	}).observe(chat, {
+		childList: true,
+		subtree: true
+	});
+	const activate = (event) => {
+		const button = event.target.closest(`.${MEDIA_BUTTON}`);
+		if (!button) return;
+		event.preventDefault();
+		event.stopPropagation();
+		const where = mediaIndexOf(button.closest(".mes_img_container") ?? button);
+		if (where) openToolsFor(() => mediaSource(where.messageId, where.mediaIndex));
+	};
+	chat.addEventListener("click", activate);
+	chat.addEventListener("keydown", (event) => {
+		if (event.key === "Enter" || event.key === " ") activate(event);
+	});
+	decorate();
+}
+function vibeNotice(notice) {
+	switch (notice.kind) {
+		case "unavailable":
+			toastr.info(t(`naist.vibes.notice.${notice.reason}`, { count: notice.count }), t("naist.vibes.title"));
+			return;
+		case "skipped":
+			toastr.warning(t(`naist.vibes.skipped.${notice.reason}`, { count: notice.count }), t("naist.vibes.title"));
+			return;
+		case "encoded":
+			toastr.info(t("naist.vibes.encoded", {
+				count: notice.count,
+				cost: notice.cost
+			}), t("naist.vibes.title"));
+			return;
+		case "missing-image": toastr.warning(t("naist.vibes.missing", { name: notice.name }), t("naist.vibes.title"));
+	}
+}
+function setupTools(pipeline, inline) {
+	const confirm = (cost, what) => confirmToolCost(cost, what === "vibes" ? t("naist.vibes.encoding") : what, pipeline.studio.state.account.anlas);
+	state = {
+		pipeline,
+		inline,
+		tools: new ToolsService(pipeline, inline, confirm)
+	};
+	pipeline.setVibeProvider(new VibeLibraryProvider(confirm, vibeNotice));
+	setInlineToolsHandler((messageId, imageId) => void openToolsFor(() => inlineSource(inline, messageId, imageId)));
+	installMediaButtons();
+	registerLightboxAction({
+		id: "tools",
+		icon: "fa-wand-magic-sparkles",
+		labelKey: "naist.tools.title",
+		available: (item) => Boolean(item.chat),
+		run: (item, close) => {
+			const chat = item.chat;
+			if (!chat) return;
+			close();
+			openToolsFor(chat.imageId ? () => inlineSource(inline, chat.messageId, chat.imageId) : () => mediaSource(chat.messageId, chat.mediaIndex ?? 0));
+		}
+	});
+	document.addEventListener("click", (event) => {
+		if (event.target.closest("#naist_open_vibes")) openVibeLibrary(features());
+	});
+	const c = ctx();
+	c.eventSource.on(c.eventTypes.APP_READY ?? "app_ready", () => {
+		const { SlashCommandParser: parser, SlashCommand: Command } = ctx();
+		parser.addCommandObject(Command.fromProps({
+			name: "nai-vibes",
+			returns: "",
+			helpString: t("naist.command.vibesHelp"),
+			callback: async () => {
+				openVibeLibrary(features());
+				return "";
+			}
+		}));
+		log.info("tools ready");
 	});
 }
 //#endregion
@@ -9661,7 +11650,7 @@ var ChatTab = class {
 };
 //#endregion
 //#region src/ui/templates/tab-images.html?raw
-var tab_images_default = "<div class=\"naist-section\">\n    <b data-i18n=\"naist.images.inline\"></b>\n    <div class=\"naist-hint\" data-i18n=\"naist.images.inlineHint\"></div>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"inline.saveToServer\" /><span data-i18n=\"naist.images.saveToServer\"></span\n    ></label>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"inline.keepBrowserCopy\" /><span\n            data-i18n=\"naist.images.keepBrowserCopy\"\n        ></span\n    ></label>\n    <div class=\"naist-grid3\">\n        <div>\n            <label for=\"naist_img_width\" data-i18n=\"naist.inline.width\"></label>\n            <input id=\"naist_img_width\" type=\"number\" min=\"5\" class=\"text_pole\" data-setting=\"inline.defaultWidth\" />\n        </div>\n        <div>\n            <label for=\"naist_img_unit\" data-i18n=\"naist.inline.unit\"></label>\n            <select id=\"naist_img_unit\" class=\"text_pole\" data-setting=\"inline.defaultWidthUnit\">\n                <option value=\"%\">%</option>\n                <option value=\"px\">px</option>\n            </select>\n        </div>\n        <div>\n            <label for=\"naist_img_align\" data-i18n=\"naist.inline.align\"></label>\n            <select id=\"naist_img_align\" class=\"text_pole\" data-setting=\"inline.defaultAlign\">\n                <option value=\"center\" data-i18n=\"naist.inline.alignCenter\"></option>\n                <option value=\"left\" data-i18n=\"naist.inline.alignLeft\"></option>\n                <option value=\"right\" data-i18n=\"naist.inline.alignRight\"></option>\n            </select>\n        </div>\n        <div>\n            <label for=\"naist_img_radius\" data-i18n=\"naist.inline.radius\"></label>\n            <input id=\"naist_img_radius\" type=\"number\" min=\"0\" class=\"text_pole\" data-setting=\"inline.defaultRadius\" />\n        </div>\n        <div>\n            <label for=\"naist_img_layout\" data-i18n=\"naist.inline.layout\"></label>\n            <select id=\"naist_img_layout\" class=\"text_pole\" data-setting=\"inline.defaultLayout\">\n                <option value=\"grid\" data-i18n=\"naist.inline.layoutGrid\"></option>\n                <option value=\"carousel\" data-i18n=\"naist.inline.layoutCarousel\"></option>\n                <option value=\"list\" data-i18n=\"naist.inline.layoutList\"></option>\n            </select>\n        </div>\n        <div>\n            <label for=\"naist_img_llm\" data-i18n=\"naist.images.llmText\"></label>\n            <select id=\"naist_img_llm\" class=\"text_pole\" data-setting=\"inline.llmText\">\n                <option value=\"describe\" data-i18n=\"naist.images.llmDescribe\"></option>\n                <option value=\"remove\" data-i18n=\"naist.images.llmRemove\"></option>\n            </select>\n        </div>\n        <div>\n            <label for=\"naist_img_vstrength\" data-i18n=\"naist.images.variationStrength\"></label>\n            <input\n                id=\"naist_img_vstrength\"\n                type=\"number\"\n                min=\"0.01\"\n                max=\"0.99\"\n                step=\"0.01\"\n                class=\"text_pole\"\n                data-setting=\"inline.variationStrength\"\n            />\n        </div>\n        <div>\n            <label for=\"naist_img_vnoise\" data-i18n=\"naist.images.variationNoise\"></label>\n            <input\n                id=\"naist_img_vnoise\"\n                type=\"number\"\n                min=\"0\"\n                max=\"0.99\"\n                step=\"0.01\"\n                class=\"text_pole\"\n                data-setting=\"inline.variationNoise\"\n            />\n        </div>\n    </div>\n    <div class=\"naist-row\">\n        <div id=\"naist_img_toggle_chat\" class=\"menu_button\"></div>\n        <label class=\"checkbox_label\"\n            ><input id=\"naist_img_reading\" type=\"checkbox\" /><span data-i18n=\"naist.images.readingMode\"></span\n        ></label>\n    </div>\n</div>\n\n<div class=\"naist-section\">\n    <b data-i18n=\"naist.images.gallery\"></b>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"gallery.enabled\" /><span data-i18n=\"naist.images.galleryEnabled\"></span\n    ></label>\n    <div id=\"naist_img_open_gallery\" class=\"menu_button\" data-i18n=\"naist.images.openGallery\"></div>\n</div>\n\n<div class=\"naist-section\">\n    <b data-i18n=\"naist.images.png\"></b>\n    <div class=\"naist-hint\" data-i18n=\"naist.images.pngHint\"></div>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"png.stripMetadata\" /><span data-i18n=\"naist.images.stripMetadata\"></span\n    ></label>\n    <div class=\"naist-row\">\n        <div id=\"naist_img_import\" class=\"menu_button\" data-i18n=\"naist.images.importPng\"></div>\n        <input id=\"naist_img_import_file\" type=\"file\" accept=\"image/png,image/webp\" class=\"naist-hidden\" />\n    </div>\n</div>\n";
+var tab_images_default = "<div class=\"naist-section\">\n    <b data-i18n=\"naist.images.inline\"></b>\n    <div class=\"naist-hint\" data-i18n=\"naist.images.inlineHint\"></div>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"inline.saveToServer\" /><span data-i18n=\"naist.images.saveToServer\"></span\n    ></label>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"inline.keepBrowserCopy\" /><span\n            data-i18n=\"naist.images.keepBrowserCopy\"\n        ></span\n    ></label>\n    <div class=\"naist-grid3\">\n        <div>\n            <label for=\"naist_img_width\" data-i18n=\"naist.inline.width\"></label>\n            <input id=\"naist_img_width\" type=\"number\" min=\"5\" class=\"text_pole\" data-setting=\"inline.defaultWidth\" />\n        </div>\n        <div>\n            <label for=\"naist_img_unit\" data-i18n=\"naist.inline.unit\"></label>\n            <select id=\"naist_img_unit\" class=\"text_pole\" data-setting=\"inline.defaultWidthUnit\">\n                <option value=\"%\">%</option>\n                <option value=\"px\">px</option>\n            </select>\n        </div>\n        <div>\n            <label for=\"naist_img_align\" data-i18n=\"naist.inline.align\"></label>\n            <select id=\"naist_img_align\" class=\"text_pole\" data-setting=\"inline.defaultAlign\">\n                <option value=\"center\" data-i18n=\"naist.inline.alignCenter\"></option>\n                <option value=\"left\" data-i18n=\"naist.inline.alignLeft\"></option>\n                <option value=\"right\" data-i18n=\"naist.inline.alignRight\"></option>\n            </select>\n        </div>\n        <div>\n            <label for=\"naist_img_radius\" data-i18n=\"naist.inline.radius\"></label>\n            <input id=\"naist_img_radius\" type=\"number\" min=\"0\" class=\"text_pole\" data-setting=\"inline.defaultRadius\" />\n        </div>\n        <div>\n            <label for=\"naist_img_layout\" data-i18n=\"naist.inline.layout\"></label>\n            <select id=\"naist_img_layout\" class=\"text_pole\" data-setting=\"inline.defaultLayout\">\n                <option value=\"grid\" data-i18n=\"naist.inline.layoutGrid\"></option>\n                <option value=\"carousel\" data-i18n=\"naist.inline.layoutCarousel\"></option>\n                <option value=\"list\" data-i18n=\"naist.inline.layoutList\"></option>\n            </select>\n        </div>\n        <div>\n            <label for=\"naist_img_llm\" data-i18n=\"naist.images.llmText\"></label>\n            <select id=\"naist_img_llm\" class=\"text_pole\" data-setting=\"inline.llmText\">\n                <option value=\"describe\" data-i18n=\"naist.images.llmDescribe\"></option>\n                <option value=\"remove\" data-i18n=\"naist.images.llmRemove\"></option>\n            </select>\n        </div>\n        <div>\n            <label for=\"naist_img_vstrength\" data-i18n=\"naist.images.variationStrength\"></label>\n            <input\n                id=\"naist_img_vstrength\"\n                type=\"number\"\n                min=\"0.01\"\n                max=\"0.99\"\n                step=\"0.01\"\n                class=\"text_pole\"\n                data-setting=\"inline.variationStrength\"\n            />\n        </div>\n        <div>\n            <label for=\"naist_img_vnoise\" data-i18n=\"naist.images.variationNoise\"></label>\n            <input\n                id=\"naist_img_vnoise\"\n                type=\"number\"\n                min=\"0\"\n                max=\"0.99\"\n                step=\"0.01\"\n                class=\"text_pole\"\n                data-setting=\"inline.variationNoise\"\n            />\n        </div>\n    </div>\n    <div class=\"naist-row\">\n        <div id=\"naist_img_toggle_chat\" class=\"menu_button\"></div>\n        <label class=\"checkbox_label\"\n            ><input id=\"naist_img_reading\" type=\"checkbox\" /><span data-i18n=\"naist.images.readingMode\"></span\n        ></label>\n    </div>\n</div>\n\n<div class=\"naist-section\">\n    <b data-i18n=\"naist.vibes.title\"></b>\n    <div class=\"naist-hint\" data-i18n=\"naist.vibes.panelHint\"></div>\n    <div id=\"naist_open_vibes\" class=\"menu_button\" data-i18n=\"naist.vibes.open\"></div>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"stream.enabled\" /><span data-i18n=\"naist.progress.enable\"></span\n    ></label>\n</div>\n\n<div class=\"naist-section\">\n    <b data-i18n=\"naist.images.gallery\"></b>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"gallery.enabled\" /><span data-i18n=\"naist.images.galleryEnabled\"></span\n    ></label>\n    <div id=\"naist_img_open_gallery\" class=\"menu_button\" data-i18n=\"naist.images.openGallery\"></div>\n</div>\n\n<div class=\"naist-section\">\n    <b data-i18n=\"naist.images.png\"></b>\n    <div class=\"naist-hint\" data-i18n=\"naist.images.pngHint\"></div>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"png.stripMetadata\" /><span data-i18n=\"naist.images.stripMetadata\"></span\n    ></label>\n    <div class=\"naist-row\">\n        <div id=\"naist_img_import\" class=\"menu_button\" data-i18n=\"naist.images.importPng\"></div>\n        <input id=\"naist_img_import_file\" type=\"file\" accept=\"image/png,image/webp\" class=\"naist-hidden\" />\n    </div>\n</div>\n";
 //#endregion
 //#region src/ui/panel/tab-images.ts
 /** Reads NovelAI parameters from a dropped or chosen file and fills the panel. */
@@ -10478,6 +12467,89 @@ var Panel = class {
 	}
 };
 //#endregion
+//#region src/ui/progress.ts
+function mimeOf(base64) {
+	if (base64.startsWith("/9j/")) return "image/jpeg";
+	if (base64.startsWith("UklGR")) return "image/webp";
+	return "image/png";
+}
+function createProgressUi() {
+	let root = null;
+	let timer = null;
+	let steps = 0;
+	let started = 0;
+	const elements = () => {
+		if (!root) {
+			root = document.createElement("div");
+			root.id = "naist_progress";
+			root.className = "naist-progress naist-hidden";
+			root.innerHTML = `
+                <div class="naist-progress-head"><b></b><span class="naist-progress-step"></span></div>
+                <div class="naist-progress-bar"><span></span></div>
+                <img class="naist-progress-preview naist-hidden" alt="">`;
+			document.body.append(root);
+		}
+		return {
+			root,
+			title: root.querySelector("b"),
+			step: root.querySelector(".naist-progress-step"),
+			bar: root.querySelector(".naist-progress-bar span"),
+			preview: root.querySelector(".naist-progress-preview")
+		};
+	};
+	const setBar = (fraction) => {
+		elements().bar.style.width = `${Math.round(Math.min(1, Math.max(0, fraction)) * 100)}%`;
+	};
+	return {
+		start({ steps: total, streaming, transport }) {
+			const el = elements();
+			steps = Math.max(1, total);
+			started = Date.now();
+			el.title.textContent = t(streaming ? "naist.progress.streaming" : "naist.progress.estimating");
+			el.step.textContent = "";
+			el.preview.classList.add("naist-hidden");
+			el.preview.removeAttribute("src");
+			el.root.classList.remove("naist-hidden");
+			setBar(0);
+			if (timer) clearInterval(timer);
+			timer = null;
+			if (!streaming) {
+				const expected = 1500 + steps * 120;
+				timer = setInterval(() => setBar(Math.min(.95, (Date.now() - started) / expected)), 200);
+				const s = settings().stream;
+				if (transport !== "plugin" && !s.hintShown) {
+					s.hintShown = true;
+					saveSettings();
+					toastr.info(t("naist.progress.pluginHint"), t("naist.panel.title"), { timeOut: 1e4 });
+				}
+			}
+		},
+		frame(frame) {
+			const el = elements();
+			if (frame.kind === "intermediate") {
+				if (frame.step !== void 0) {
+					el.step.textContent = t("naist.progress.step", {
+						step: frame.step + 1,
+						steps
+					});
+					setBar((frame.step + 1) / steps);
+				}
+				if (frame.image) {
+					el.preview.src = `data:${mimeOf(frame.image)};base64,${frame.image}`;
+					el.preview.classList.remove("naist-hidden");
+				}
+			} else if (frame.kind === "final") setBar(1);
+		},
+		end() {
+			if (timer) clearInterval(timer);
+			timer = null;
+			setBar(1);
+			const el = elements();
+			setTimeout(() => el.root.classList.add("naist-hidden"), 400);
+		}
+	};
+}
+//#endregion
 //#region src/ui/panel/pipeline-ui.ts
 async function refine(prompt, options) {
 	const c = ctx();
@@ -10518,7 +12590,8 @@ function createPipelineUi(balance) {
 				balance: balance()
 			}), c.POPUP_TYPE.CONFIRM) === c.POPUP_RESULT.AFFIRMATIVE;
 		},
-		inspect: (prepared) => openInspector(prepared, { confirmSend: true })
+		inspect: (prepared) => openInspector(prepared, { confirmSend: true }),
+		progress: createProgressUi()
 	};
 }
 //#endregion
@@ -10560,6 +12633,7 @@ async function onActivate() {
 	const inline = new InlineImages(pipeline);
 	setupInline(pipeline, inline);
 	setupScenes(pipeline, new SceneService(pipeline, inline));
+	setupTools(pipeline, inline);
 	new AutoGenerator(studio, pipeline).attach();
 	studio.refreshTransport();
 	for (const name of [

@@ -718,3 +718,180 @@ body.naist-inline-reading .naist-inline-group {
 #naist_card_button {
     color: var(--SmartThemeQuoteColor, #e6a);
 }
+
+/* Phase 5: progress, image tools, inpaint editor, vibe library */
+.naist-progress {
+    position: fixed;
+    right: 12px;
+    bottom: 80px;
+    z-index: 9000;
+    width: 240px;
+    padding: 8px;
+    border: 1px solid var(--SmartThemeBorderColor, #555);
+    border-radius: 8px;
+    background: var(--SmartThemeBlurTintColor, rgba(20, 20, 20, 0.92));
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+    font-size: 0.9em;
+    transition: opacity 0.3s;
+}
+
+.naist-progress-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 6px;
+    margin-bottom: 6px;
+}
+
+.naist-progress-bar {
+    height: 4px;
+    overflow: hidden;
+    border-radius: 2px;
+    background: var(--black30a, rgba(0, 0, 0, 0.3));
+}
+
+.naist-progress-bar span {
+    display: block;
+    width: 0;
+    height: 100%;
+    background: var(--SmartThemeQuoteColor, #e6a);
+    transition: width 0.2s linear;
+}
+
+.naist-progress-preview {
+    display: block;
+    width: 100%;
+    margin-top: 6px;
+    border-radius: 4px;
+}
+
+.naist-progress-preview.naist-hidden {
+    display: none;
+}
+
+.naist-tools-menu .naist-tools-item {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px;
+    width: 100%;
+    margin: 4px 0;
+    text-align: left;
+}
+
+.naist-tools-menu .naist-tools-item.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.naist-media-tools-float {
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    z-index: 2;
+    padding: 5px;
+    border-radius: 6px;
+    background: var(--black50a, rgba(0, 0, 0, 0.5));
+    color: #fff;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.mes_img_container:hover .naist-media-tools-float,
+.naist-media-tools-float:focus-visible {
+    opacity: 1;
+}
+
+@media (hover: none) {
+    .naist-media-tools-float {
+        opacity: 0.8;
+    }
+}
+
+.naist-director-tools {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin: 8px 0;
+}
+
+.naist-director-tool {
+    align-items: flex-start;
+}
+
+.naist-director-extra {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.naist-inpaint-stage {
+    position: relative;
+    display: inline-block;
+    max-width: 100%;
+    margin: 6px 0;
+    line-height: 0;
+    user-select: none;
+}
+
+.naist-inpaint-stage img {
+    display: block;
+    max-width: 100%;
+    max-height: 60vh;
+}
+
+.naist-inpaint-stage canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    cursor: crosshair;
+    touch-action: none;
+}
+
+.naist-inpaint .naist-row input[type='range'] {
+    flex: 1 1 120px;
+}
+
+.naist-vibe-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 8px;
+    margin: 6px 0;
+}
+
+.naist-vibe-card {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 4px;
+    border: 1px solid var(--SmartThemeBorderColor, #555);
+    border-radius: 6px;
+}
+
+.naist-vibe-card img {
+    width: 100%;
+    aspect-ratio: 1;
+    object-fit: cover;
+    border-radius: 4px;
+}
+
+.naist-vibe-card .text_pole {
+    margin: 0;
+}
+
+.naist-set-entry input[type='number'] {
+    width: 70px;
+    margin: 0;
+}
+
+.naist-vibes .naist-vibe-add,
+.naist-vibes .naist-set-add {
+    width: fit-content;
+    white-space: nowrap;
+}
+
+.naist-vibe-card .menu_button {
+    align-self: flex-end;
+    margin: 0;
+}

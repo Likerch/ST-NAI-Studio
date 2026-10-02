@@ -48,7 +48,7 @@
 | `refine_mode`, `multimodal_captioning`, `snap`, `free_extend`, `minimal_prompt_processing` | Вкладка «Чат» → «Генерация промпта» | ✅ |
 | `interactive_mode`, `function_tool` | Вкладка «Чат» → «Интеграция с LLM» (+ пауза между вызовами инструмента) | ✅ |
 | `wand_visible`, `command_visible`, `interactive_visible`, `tool_visible` | «Кто видит результат» по инициатору (+ панель и автогенерация) | ✅ |
-| `hr_scale` — для NovelAI уходит как `upscale_ratio` | Апскейл ×2 через `image.novelai.net/ai/upscale` (П-14) | ⏭ Фаза 5 (решение П-30) |
+| `hr_scale` — для NovelAI уходит как `upscale_ratio` | Апскейл ×2 через `image.novelai.net/ai/upscale` (П-14): «Инструменты картинки» → «Апскейл ×2», результат — новым вариантом | ✅ Фаза 5 |
 | `novel_anlas_guard` | «Только бесплатные»: включён по умолчанию, считает по формуле веб-клиента, урезает шаги, размер и число картинок до бесплатных | ✅ |
 | `novel_sm`, `novel_sm_dyn`, `novel_decrisper`, `novel_variety_boost` | SMEA, DYN, Decrisper, Variety Boost на вкладке «Генерация» (видны только у моделей, которые их поддерживают) | ✅ |
 | `character_prompts`, `character_negative_prompts` | «Промпт персонажа» на вкладке «Промпты» (чат 1:1) | ✅ |
@@ -64,7 +64,7 @@
 | `snap` | Работает (во встроенном не действует из-за бага ST) | ✅ код: тесты разбора |
 | `seed`, `width`, `height`, `steps`, `cfg`, `model`, `sampler`, `scheduler` | То же; `cfg` → guidance, `model` принимает id и псевдонимы (`v5`, `v4.5`, `v3`, …) | ✅ код: тесты разбора |
 | `skip`, `vae`, `upscaler`, `hires`, `denoise`, `2ndpass`, `faces` | Принимаются и игнорируются с записью в лог — скрипты не ломаются | N/A: параметры SD WebUI/ComfyUI |
-| `scale` (множитель hires) | Принимается и игнорируется; апскейл — отдельным действием над картинкой | ⏭ Фаза 5 (решение П-30) |
+| `scale` (множитель hires) | Принимается и игнорируется; апскейл — отдельным действием над картинкой (Фаза 5) | ✅ |
 | Возврат: путь картинки или `''` при ошибке | То же | ✅ |
 | Именованные аргументы действуют только на один вызов | Переопределения на вызов, настройки не трогаются | ✅ |
 | `/imagine-source` (`sd-source`, `img-source`) | После замены; всегда `novel` и подсказка | ✅ |

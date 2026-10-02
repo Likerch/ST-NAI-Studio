@@ -23,7 +23,7 @@ import {
 import type { DisplayOptions, InlineGenerationMeta, InlineImage, InlineSwipe, ModeId } from '../../domain';
 import type { GeneratedImage } from '../../transport';
 import { imageFileName, imageFolder, uploadImage } from '../generation/output';
-import type { CallOverrides, Pipeline, Produced } from '../generation/pipeline';
+import type { CallOverrides, Pipeline, ProducedImages } from '../generation/pipeline';
 import { base64ToBlob, blobToBase64, toPngBlob } from '../images/image-utils';
 import { collectGarbage, getBlob, newBlobKey, putBlob, removeBlobs, settle } from './inline-store';
 
@@ -133,7 +133,7 @@ export class InlineImages {
         return { blobKey, filePath, mime: image.mime, meta: swipeMeta };
     }
 
-    private record(produced: Produced, swipes: InlineSwipe[], inlineId: string): void {
+    private record(produced: ProducedImages, swipes: InlineSwipe[], inlineId: string): void {
         this.pipeline.notify(produced, {
             target: 'inline',
             paths: swipes.map((s) => s.filePath),
@@ -184,7 +184,11 @@ export class InlineImages {
         settle(entryBlobKeys(entry));
     }
 
-    private async addGeneratedSwipe(messageId: number, imageId: string, produced: Produced | null): Promise<boolean> {
+    private async addGeneratedSwipe(
+        messageId: number,
+        imageId: string,
+        produced: ProducedImages | null,
+    ): Promise<boolean> {
         if (!produced) return false;
         const { entry } = findEntry(messageId, imageId);
         const swipes: InlineSwipe[] = [];
@@ -279,7 +283,7 @@ export class InlineImages {
     }
 
     /** Adds an externally produced image (Director Tools, upscale, inpaint) as a new swipe. */
-    async addProducedSwipe(messageId: number, imageId: string, produced: Produced): Promise<boolean> {
+    async addProducedSwipe(messageId: number, imageId: string, produced: ProducedImages): Promise<boolean> {
         return await this.addGeneratedSwipe(messageId, imageId, produced);
     }
 

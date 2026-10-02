@@ -25,8 +25,8 @@ import {
     resolveMode,
     usesCharacterPrefix,
 } from '../../domain';
-import type { GenerationRequest, InlineGenerationMeta, ModeId } from '../../domain';
-import type { GeneratedImage } from '../../transport';
+import type { GenerationRequest, InlineGenerationMeta, ModelCapabilities, ModeId, VibeReference } from '../../domain';
+import type { GeneratedImage, StreamFrame, Transport } from '../../transport';
 import {
     avatarKey,
     currentCharacterPrompt,
@@ -82,14 +82,30 @@ export interface PictureResult {
     cost: number;
 }
 
-/** Images and everything known about how they were made; nothing is saved or posted yet. */
-export interface Produced {
+/** Finished images with their parameters (generation, Director Tools, upscale, inpaint). */
+export interface ProducedImages {
     images: GeneratedImage[];
     meta: InlineGenerationMeta;
-    legacy: GenerationMeta;
-    prepared: Prepared;
     mode: ModeId;
     chatId: string | undefined;
+}
+
+/** Images and everything known about how they were made; nothing is saved or posted yet. */
+export interface Produced extends ProducedImages {
+    legacy: GenerationMeta;
+    prepared: Prepared;
+}
+
+/** Vibes applied to generations (TZ Phase 5); encoding happens before the request is built. */
+export interface VibeProvider {
+    prepare(caps: ModelCapabilities, transport: Transport, signal?: AbortSignal): Promise<VibeReference[]>;
+}
+
+/** Progress display: step previews on the plugin, an estimate elsewhere. */
+export interface ProgressUi {
+    start(info: { steps: number; streaming: boolean; transport: string }): void;
+    frame(frame: StreamFrame): void;
+    end(): void;
 }
 
 export interface GenerationOutcome {
@@ -100,7 +116,7 @@ export interface GenerationOutcome {
 }
 
 /** Observer of every finished generation (the gallery records them). */
-export type GenerationObserver = (produced: Produced, outcome: GenerationOutcome) => void;
+export type GenerationObserver = (produced: ProducedImages, outcome: GenerationOutcome) => void;
 
 export interface RefineResult {
     prompt: string;
@@ -113,6 +129,7 @@ export interface PipelineUi {
     refine(prompt: string, options: { negative?: string; resolution?: string }): Promise<RefineResult | null>;
     confirmCost(prepared: Prepared): Promise<boolean>;
     inspect(prepared: Prepared): Promise<boolean>;
+    progress?: ProgressUi;
 }
 
 interface MultimodalModule {
@@ -198,6 +215,7 @@ export function metaFromPrepared(
 
 export class Pipeline {
     private readonly observers = new Set<GenerationObserver>();
+    private vibes: VibeProvider | null = null;
 
     constructor(
         private readonly controller: StudioController,
@@ -208,7 +226,11 @@ export class Pipeline {
         this.observers.add(observer);
     }
 
-    notify(produced: Produced, outcome: GenerationOutcome): void {
+    setVibeProvider(provider: VibeProvider): void {
+        this.vibes = provider;
+    }
+
+    notify(produced: ProducedImages, outcome: GenerationOutcome): void {
         for (const observer of this.observers) {
             try {
                 observer(produced, outcome);
@@ -423,7 +445,18 @@ export class Pipeline {
         );
         // An image swipe with a fixed seed gets a random one, like the built-in.
         if (isSwipe && assembled.overrides.seed === undefined && s.generation.seed >= 0) assembled.overrides.seed = -1;
-        const prepared = this.controller.prepare(assembled.overrides, req.requestPatch);
+        const patch: Partial<GenerationRequest> = { ...req.requestPatch };
+        const transport = this.controller.state.selection?.transport;
+        const model = String(assembled.overrides.model ?? s.generation.model);
+        const caps = getCapabilities(isModelId(model) ? model : DEFAULT_MODEL);
+        if (patch.vibes === undefined && this.vibes && transport && patch.mode !== 'inpaint') {
+            const vibes = await this.vibes.prepare(caps, transport, req.signal);
+            if (vibes.length) patch.vibes = vibes;
+        }
+        // Step previews on the plugin for V4+ (TZ Phase 5); a spinner with an estimate elsewhere.
+        const streaming = s.stream.enabled && transport?.features.stream === true && caps.family !== 'v3';
+        if (streaming && patch.stream === undefined) patch.stream = 'sse';
+        const prepared = this.controller.prepare(assembled.overrides, patch);
         if (req.maxCost !== undefined && prepared.cost.total > req.maxCost) {
             throw new NaiError('free-only-blocked', 'none', { cost: prepared.cost.total });
         }
@@ -450,7 +483,14 @@ export class Pipeline {
         });
         try {
             const chatId = c.getCurrentChatId();
-            const result = await this.controller.send(prepared, abort.signal);
+            this.ui.progress?.start({
+                steps: prepared.request.steps,
+                streaming: prepared.build.endpoint === 'generate-stream',
+                transport: prepared.transportId,
+            });
+            const result = await this.controller
+                .send(prepared, abort.signal, (frame) => this.ui.progress?.frame(frame))
+                .finally(() => this.ui.progress?.end());
             if (!result.images.length) throw new NaiError('invalid-response', 'none', { preview: '' });
             const generation = o.generation ?? {};
             const legacy: GenerationMeta = {

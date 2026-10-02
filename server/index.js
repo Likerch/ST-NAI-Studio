@@ -1,10 +1,12 @@
 // NAI Studio server plugin for SillyTavern (contract: RECON §2.7).
 // Install: copy this folder to <ST>/plugins/nai-studio, set enableServerPlugins: true, restart ST.
-// Optional config: <ST>/plugins/nai-studio/config.json  { "token": "pst-...", "timeoutMs": 120000 }
+// Optional config: <ST>/plugins/nai-studio/config.json  { "token": "pst-...", "timeoutMs": 120000, "vibeCacheMb": 200 }
 import fs from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { createNovelAiClient, DEFAULT_BASE_URL } from './lib/novelai.js';
 import { Queue } from './lib/queue.js';
 import { createTokenReader } from './lib/token.js';
+import { VibeCache } from './lib/vibe-cache.js';
 import { registerRoutes } from './routes.js';
 
 export const info = {
@@ -52,8 +54,16 @@ export async function init(router) {
         baseUrl: typeof config.baseUrl === 'string' ? config.baseUrl : DEFAULT_BASE_URL,
         timeoutMs: Number(config.timeoutMs) > 0 ? Number(config.timeoutMs) : 120000,
     });
+    let vibeCache = null;
+    try {
+        const megabytes = Number(config.vibeCacheMb) > 0 ? Number(config.vibeCacheMb) : 200;
+        vibeCache = new VibeCache(fileURLToPath(new URL('./cache/vibes/', import.meta.url)), megabytes * 1024 * 1024);
+    } catch (error) {
+        console.warn(LOG_PREFIX, 'vibe cache unavailable:', error?.message ?? error);
+    }
     registerRoutes(router, {
         client,
+        vibeCache,
         queue: new Queue(1),
         readToken: createTokenReader({ secrets, config }),
         log: (...args) => console.info(LOG_PREFIX, ...args),

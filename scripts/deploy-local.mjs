@@ -3,7 +3,8 @@
 // Target: --st <dir>, or env NAIST_ST_DIR, or .dev/deploy.json {"stDir": "..."}, or ../st-local-docker.
 // Works with a normal ST checkout (public/scripts/extensions/third-party, plugins/) and with the
 // Docker layout used for development (./extensions and ./plugins mounted into the container).
-// Never copies server/config.json (it may hold a token).
+// Never copies server/config.json (it may hold a token) and keeps the plugin's config.json and
+// its vibe cache (paid encodings) in place.
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -67,10 +68,12 @@ if (!serverOnly) {
 
 if (!extensionOnly) {
     const dest = path.join(t.plugins, 'nai-studio');
-    const keep = path.join(dest, 'config.json');
-    const savedConfig = fs.existsSync(keep) ? fs.readFileSync(keep) : null;
-    fs.rmSync(dest, { recursive: true, force: true });
-    copy(path.join(repo, 'server'), dest, (name) => name === 'config.json');
-    if (savedConfig) fs.writeFileSync(keep, savedConfig);
+    const kept = new Set(['config.json', 'cache']);
+    if (fs.existsSync(dest)) {
+        for (const entry of fs.readdirSync(dest)) {
+            if (!kept.has(entry)) fs.rmSync(path.join(dest, entry), { recursive: true, force: true });
+        }
+    }
+    copy(path.join(repo, 'server'), dest, (name) => kept.has(name));
     console.log(`server plugin -> ${dest} (restart SillyTavern; enableServerPlugins must be true)`);
 }

@@ -23,7 +23,7 @@ export async function selectTransport(
         return { transport: createNativeTransport(env), health, degraded: false };
     }
     if (health) {
-        return { transport: createPluginTransport(env), health, degraded: false };
+        return { transport: createPluginTransport(env, health.version), health, degraded: false };
     }
     if (preference === 'plugin') {
         // Explicit choice: keep the plugin so the user sees why it fails instead of a silent switch.
@@ -33,6 +33,7 @@ export async function selectTransport(
 }
 
 export * from './types';
-export { PLUGIN_BASE, PLUGIN_ID, PLUGIN_FEATURES, probePlugin } from './plugin';
+export * from './sse';
+export { PHASE5_PLUGIN_VERSION, PLUGIN_BASE, PLUGIN_ID, PLUGIN_FEATURES, pluginFeatures, probePlugin } from './plugin';
 export type { PluginHealth } from './plugin';
 export { NATIVE_FEATURES, lostOnNative, stEffectiveBody, toStNativeRequest } from './st-native';

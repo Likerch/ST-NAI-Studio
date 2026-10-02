@@ -1,4 +1,6 @@
-// Minimal NovelAI image client for the plugin: generation (JSON response, no ZIP) and subscription.
+// Minimal NovelAI image client for the plugin: generation (JSON response, no ZIP), streaming,
+// vibe encoding, Director Tools (ZIP passed to the browser as base64; the browser unzips it with
+// SillyTavern's JSZip, RECON P-4), upscale and subscription.
 // Retries: 429 always (request was not processed); 5xx only when the caller marked it retryable
 // (free request), so a paid request is never sent twice.
 import { abortError } from './queue.js';
@@ -160,6 +162,136 @@ export function createNovelAiClient({
                 if (!retry) throw await failure(response, token);
                 await response.text().catch(() => '');
                 await sleep(backoffMs * 2 ** attempt, signal);
+            }
+        },
+
+        /**
+         * Binary POST (encode-vibe, augment-image). Retries 429 always and 5xx only when retryable.
+         * @returns {Promise<Buffer>}
+         */
+        async postBinary({ path, body, token, signal, retryable = false }) {
+            for (let attempt = 0; ; attempt++) {
+                const response = await once(
+                    path,
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'x-correlation-id': correlationId(),
+                            'x-initiated-at': new Date().toISOString(),
+                        },
+                        body: JSON.stringify(body),
+                    },
+                    token,
+                    signal,
+                );
+                if (response.ok) return Buffer.from(await response.arrayBuffer());
+                const retry =
+                    (response.status === 429 || (retryable && response.status >= 500)) && attempt < maxRetries;
+                if (!retry) throw await failure(response, token);
+                await response.text().catch(() => '');
+                await sleep(backoffMs * 2 ** attempt, signal);
+            }
+        },
+
+        /** Vibe encoding (V4/V4.5): always paid, never retried on 5xx. */
+        async encodeVibe({ image, model, informationExtracted, mask, token, signal }) {
+            const body = { image, model, information_extracted: informationExtracted };
+            if (mask) body.mask = mask;
+            return await this.postBinary({ path: '/ai/encode-vibe', body, token, signal, retryable: false });
+        },
+
+        /** Director Tools: returns the ZIP as base64 (the browser unzips it). */
+        async augment({ body, token, signal, retryable = false }) {
+            const zip = await this.postBinary({ path: '/ai/augment-image', body, token, signal, retryable });
+            return zip.toString('base64');
+        },
+
+        /** Upscale x2 through the new endpoint (RECON §3.14), JSON response. Always paid. */
+        async upscale({ image, width, height, token, signal }) {
+            const response = await once(
+                '/ai/upscale',
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+                    body: JSON.stringify({
+                        image,
+                        width,
+                        height,
+                        model: 'nai-diffusion-5-curated',
+                        declared_blur_sigma: 0,
+                    }),
+                },
+                token,
+                signal,
+            );
+            if (!response.ok) throw await failure(response, token);
+            const text = await response.text();
+            let parsed;
+            try {
+                parsed = JSON.parse(text);
+            } catch {
+                throw new UpstreamError('invalid-response', {
+                    status: response.status,
+                    preview: Buffer.from(text.slice(0, 32), 'latin1').toString('hex'),
+                });
+            }
+            const images = Array.isArray(parsed?.images) ? parsed.images : [];
+            if (!images.length) throw new UpstreamError('invalid-response', { preview: text.slice(0, 200) });
+            return images.map((img, i) => ({ image: img.image, mime: detectMime(img.image), index: img.index ?? i }));
+        },
+
+        /**
+         * Generation with step previews: NovelAI answers text/event-stream (stream: "sse"); every
+         * chunk is handed to onChunk as it arrives. Throws before the first chunk on HTTP errors.
+         */
+        async generateStream({ request, token, signal, onChunk }) {
+            const response = await once(
+                '/ai/generate-image-stream',
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-correlation-id': correlationId(),
+                        'x-initiated-at': new Date().toISOString(),
+                    },
+                    body: JSON.stringify(request),
+                },
+                token,
+                signal,
+            );
+            if (!response.ok) throw await failure(response, token);
+            const body = response.body;
+            // The request signal no longer covers the body once headers arrived: stop reading
+            // (and close the upstream connection) when the browser goes away.
+            let cancel = () => {};
+            const onAbort = () => cancel();
+            signal?.addEventListener('abort', onAbort, { once: true });
+            try {
+                if (body && typeof body.getReader === 'function') {
+                    const reader = body.getReader();
+                    cancel = () => void reader.cancel().catch(() => {});
+                    for (;;) {
+                        const { done, value } = await reader.read();
+                        if (signal?.aborted) throw new UpstreamError('aborted');
+                        if (done) break;
+                        onChunk(Buffer.from(value));
+                    }
+                } else if (body && typeof body[Symbol.asyncIterator] === 'function') {
+                    cancel = () => body.destroy?.();
+                    for await (const chunk of body) {
+                        if (signal?.aborted) throw new UpstreamError('aborted');
+                        onChunk(Buffer.from(chunk));
+                    }
+                } else {
+                    onChunk(Buffer.from(await response.arrayBuffer()));
+                }
+                if (signal?.aborted) throw new UpstreamError('aborted');
+            } catch (error) {
+                if (signal?.aborted) throw new UpstreamError('aborted');
+                throw error;
+            } finally {
+                signal?.removeEventListener('abort', onAbort);
             }
         },
 

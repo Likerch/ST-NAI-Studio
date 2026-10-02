@@ -5,7 +5,7 @@ import { log } from '../../core/logger';
 import { settings } from '../../core/settings';
 import { galleryStore, imageStore } from '../../core/storage';
 import type { GalleryRecord } from '../../domain';
-import type { GenerationOutcome, Produced } from '../generation/pipeline';
+import type { GenerationOutcome, ProducedImages } from '../generation/pipeline';
 import { base64ToBlob, thumbnail } from '../images/image-utils';
 
 function characterName(): string {
@@ -15,7 +15,7 @@ function characterName(): string {
 }
 
 /** Pipeline observer: one record per generated image. Failures never break a generation. */
-export function recordGeneration(produced: Produced, outcome: GenerationOutcome): void {
+export function recordGeneration(produced: ProducedImages, outcome: GenerationOutcome): void {
     if (!settings().gallery.enabled) return;
     void (async () => {
         for (const [i, image] of produced.images.entries()) {

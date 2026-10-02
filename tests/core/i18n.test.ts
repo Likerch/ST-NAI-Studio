@@ -8,6 +8,8 @@ import { localize, setTranslator, t } from '../../src/core/i18n';
 import type { NaiErrorCode } from '../../src/core/errors';
 import {
     CAMERA_ANGLES,
+    DIRECTOR_EMOTIONS,
+    DIRECTOR_TOOLS,
     DISTANCES,
     FRAMINGS,
     MODELS,
@@ -23,7 +25,7 @@ import {
     UC_PRESETS,
     WAND_MODES,
 } from '../../src/domain';
-import type { DropReason, NotFreeReason, WarningCode } from '../../src/domain';
+import type { DropReason, NotFreeReason, VibeAvailability, WarningCode } from '../../src/domain';
 import type { MigrationKey } from '../../src/features/takeover/migration';
 import { IGNORED_ARGS } from '../../src/integration/command-args';
 import type { LostFeature } from '../../src/transport';
@@ -185,6 +187,8 @@ describe('source code', () => {
             'upscale-not-moved',
             'generation-other-source',
         ];
+        const vibeStates: VibeAvailability[] = ['ok', 'feature-flag-off', 'not-supported', 'transport'];
+        const vibeSkips = ['free-only', 'declined', 'no-plugin'];
         // Named /imagine arguments are declared in commands.ts; read their names from the source.
         const commandsSource = fs.readFileSync(path.join(ROOT, 'src/integration/commands.ts'), 'utf8');
         const commandArgs = [...commandsSource.matchAll(/named\('([\w.-]+)'/g)].map((m) => m[1]!).concat(IGNORED_ARGS);
@@ -198,6 +202,17 @@ describe('source code', () => {
             ...PAIR_POSES.map((p) => `naist.pair.${p.id}`),
             ...Object.keys(STATE_PRESETS).map((s) => `naist.state.${s}`),
             ...PASSPORT_SLOTS.map((s) => `naist.slot.${s}`),
+            ...DIRECTOR_TOOLS.flatMap((tool) => [`naist.director.${tool}`, `naist.director.${tool}Hint`]),
+            ...DIRECTOR_EMOTIONS.map((e) => `naist.emotion.${e}`),
+            ...['director', 'inpaint', 'outpaint', 'upscale', 'enhance'].flatMap((a) => [
+                `naist.tools.${a}`,
+                `naist.tools.${a}Hint`,
+            ]),
+            ...['director', 'inpaint', 'img2img', 'upscale'].map((f) => `naist.tool.${f}`),
+            ...['left', 'right', 'top', 'bottom'].map((side) => `naist.outpaint.${side}`),
+            ...['streaming', 'estimating'].map((k) => `naist.progress.${k}`),
+            ...vibeStates.flatMap((v) => [`naist.vibes.status.${v}`, `naist.vibes.notice.${v}`]),
+            ...vibeSkips.map((v) => `naist.vibes.skipped.${v}`),
             ...['gridHint', 'freeHint', 'noPositions'].map((k) => `naist.composer.${k}`),
             ...[...TEMPLATE_MODES, ...WAND_MODES].map((m) => `naist.mode.${m}`),
             ...migration.map((k) => `naist.migration.${k}`),

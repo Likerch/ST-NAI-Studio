@@ -24,7 +24,27 @@ export function fitArea(width: number, height: number, maxPixels: number): { wid
             break;
         }
     }
-    return { width: w, height: h };
+    // Flooring both sides can lose a whole step on one of them (1088x1216 -> 960x1024); take the
+    // candidate that still fits and keeps the aspect ratio best, the larger one on a tie.
+    const aspect = Math.log(width / height);
+    let best = { width: w, height: h };
+    for (const [dw, dh] of [
+        [SIZE_STEP, 0],
+        [0, SIZE_STEP],
+        [SIZE_STEP, SIZE_STEP],
+    ] as const) {
+        const candidate = { width: w + dw, height: h + dh };
+        if (candidate.width * candidate.height > maxPixels) continue;
+        const error = Math.abs(Math.log(candidate.width / candidate.height) - aspect);
+        const bestError = Math.abs(Math.log(best.width / best.height) - aspect);
+        if (
+            error < bestError - 1e-9 ||
+            (Math.abs(error - bestError) <= 1e-9 && candidate.width * candidate.height > best.width * best.height)
+        ) {
+            best = candidate;
+        }
+    }
+    return best;
 }
 
 /** n_samples cap by pixel count (bundle:1601@55499). */

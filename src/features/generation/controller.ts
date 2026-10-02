@@ -5,7 +5,7 @@ import { settings } from '../../core/settings';
 import type { GenerationSettings } from '../../core/settings-schema';
 import type { GenerationRequest } from '../../domain';
 import { selectTransport } from '../../transport';
-import type { GenerateResult, TransportEnv, TransportSelection } from '../../transport';
+import type { GenerateResult, StreamFrame, TransportEnv, TransportSelection } from '../../transport';
 import { accountFromSubscription, UNKNOWN_ACCOUNT } from './account';
 import type { AccountView } from './account';
 import { prepareGeneration, sendPrepared } from './service';
@@ -76,7 +76,11 @@ export class StudioController {
     }
 
     /** Sends a prepared request. One generation at a time; blocked requests never leave. */
-    async send(prepared: Prepared, signal?: AbortSignal): Promise<GenerateResult> {
+    async send(
+        prepared: Prepared,
+        signal?: AbortSignal,
+        onProgress?: (frame: StreamFrame) => void,
+    ): Promise<GenerateResult> {
         const transport = this.state.selection?.transport;
         if (!transport) throw new NaiError('plugin-unavailable', 'install-plugin');
         if (this.state.busy) throw new NaiError('busy', 'none');
@@ -86,7 +90,7 @@ export class StudioController {
         this.state.busy = true;
         this.emit();
         try {
-            return await sendPrepared(prepared, transport, this.state.account, this.abort.signal);
+            return await sendPrepared(prepared, transport, this.state.account, this.abort.signal, onProgress);
         } finally {
             signal?.removeEventListener('abort', onAbort);
             this.state.busy = false;

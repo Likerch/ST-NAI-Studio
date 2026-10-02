@@ -24,6 +24,8 @@ NAI Studio состоит из двух частей:
    ```
    Используется, только если в секретах ST токена нет. Файл в git не попадает (`.gitignore`), установочные скрипты его не перезаписывают.
 
+   Там же — лимит дискового кэша кодировок вайбов: `{ "vibeCacheMb": 200 }` (по умолчанию 200 МБ, папка `plugins/nai-studio/cache/vibes/`, очистка по LRU). Установочные скрипты кэш сохраняют.
+
 ---
 
 ## 2. Установка расширения
@@ -89,7 +91,7 @@ enableServerPlugins: true
 [NAI Studio plugin] ready (secrets: ST, config token: not set)
 ```
 
-В панели расширения транспорт покажет «Серверный плагин 0.1.0 · токен: из секретов SillyTavern».
+В панели расширения транспорт покажет «Серверный плагин 0.2.0 · токен: из секретов SillyTavern».
 
 ### Проверка без UI
 
@@ -97,7 +99,7 @@ enableServerPlugins: true
 curl -s http://127.0.0.1:8000/api/plugins/nai-studio/health
 ```
 
-Ожидается `{"ok":true,"version":"0.1.0","tokenSource":"st-secrets"}`.
+Ожидается `{"ok":true,"version":"0.2.0","tokenSource":"st-secrets"}`.
 
 ---
 

@@ -2,6 +2,26 @@
 // Lives in extensionSettings.nai_studio. Never store tokens or image blobs here (TZ rules 2 and 4).
 import type { LogLevel } from './logger';
 
+/** Vibe library entry (images live in IndexedDB; same shape as domain VibeItem). */
+export interface VibeItemSettings {
+    id: string;
+    name: string;
+    imageHash: string;
+    imageKey: string;
+    thumbKey: string;
+    createdAt: string;
+}
+
+/** Named vibe set (same shape as domain VibeSet). */
+export interface VibeSetSettings {
+    id: string;
+    name: string;
+    enabled: boolean;
+    global: boolean;
+    entries: { vibeId: string; strength: number; informationExtracted: number; enabled: boolean }[];
+    bindings: { characters: string[]; chats: string[]; styles: string[] };
+}
+
 /** Custom pose preset (same shape as domain PosePreset; core must not import domain). */
 export interface CustomPoseSettings {
     id: string;
@@ -12,7 +32,7 @@ export interface CustomPoseSettings {
     name: string;
 }
 
-export const CURRENT_SCHEMA_VERSION = 4;
+export const CURRENT_SCHEMA_VERSION = 5;
 
 export type TransportMode = 'auto' | 'plugin' | 'native';
 
@@ -168,6 +188,30 @@ export interface NaiStudioSettings {
         custom: CustomPoseSettings[];
         favorites: string[];
     };
+    /** Vibe library (TZ Phase 5): metadata only, images in IndexedDB, encodings on the plugin disk. */
+    vibes: {
+        items: VibeItemSettings[];
+        sets: VibeSetSettings[];
+        /** Encoding costs 2 Anlas per vibe and model: ask first (free-only skips unencoded vibes). */
+        confirmEncoding: boolean;
+    };
+    stream: {
+        /** Step previews on the plugin transport (V4+). */
+        enabled: boolean;
+        /** The one-time hint about what the plugin adds was shown. */
+        hintShown: boolean;
+    };
+    /** Director Tools, inpaint, upscale and Enhance defaults (TZ Phase 5). */
+    tools: {
+        defry: number;
+        emotion: string;
+        inpaintStrength: number;
+        keepOriginal: boolean;
+        brushSize: number;
+        enhanceScale: number;
+        enhanceStrength: number;
+        enhanceNoise: number;
+    };
     /** Scene composer (TZ Phase 4). */
     scene: {
         framing: string;
@@ -271,6 +315,18 @@ export function defaultSettings(): NaiStudioSettings {
         gallery: { enabled: true, thumbSize: 256 },
         png: { stripMetadata: false },
         poses: { custom: [], favorites: [] },
+        vibes: { items: [], sets: [], confirmEncoding: true },
+        stream: { enabled: true, hintShown: false },
+        tools: {
+            defry: 0,
+            emotion: 'happy',
+            inpaintStrength: 1,
+            keepOriginal: true,
+            brushSize: 40,
+            enhanceScale: 1.5,
+            enhanceStrength: 0.45,
+            enhanceNoise: 0,
+        },
         scene: {
             framing: 'auto',
             camera: 'auto',
@@ -340,6 +396,13 @@ export const MIGRATIONS: readonly Migration[] = [
             return { ...settings, schemaVersion: 4 };
         },
     },
+    {
+        // v5: vibe library, streaming and tool defaults; defaults are filled by the merge.
+        to: 5,
+        migrate(settings) {
+            return { ...settings, schemaVersion: 5 };
+        },
+    },
 ];
 
 export type DeepMerge = <T extends object>(target: T, ...sources: unknown[]) => T;
@@ -375,6 +438,9 @@ export function migrateAndFill(stored: unknown, merge: DeepMerge): LoadResult {
     const poses = isObject(raw.poses) ? raw.poses : {};
     settings.poses.custom = (Array.isArray(poses.custom) ? poses.custom : []) as CustomPoseSettings[];
     settings.poses.favorites = (Array.isArray(poses.favorites) ? poses.favorites : []) as string[];
+    const vibes = isObject(raw.vibes) ? raw.vibes : {};
+    settings.vibes.items = (Array.isArray(vibes.items) ? vibes.items : []) as VibeItemSettings[];
+    settings.vibes.sets = (Array.isArray(vibes.sets) ? vibes.sets : []) as VibeSetSettings[];
     const takeover = isObject(raw.takeover) ? raw.takeover : {};
     settings.takeover.migrationReport = (
         Array.isArray(takeover.migrationReport) ? takeover.migrationReport : []

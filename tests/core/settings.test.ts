@@ -119,6 +119,25 @@ describe('settings schema', () => {
             expect(settings.scene.target).toBe('message');
         });
 
+        it('v5: adds vibe library, streaming and tool defaults; stored vibe arrays are kept', () => {
+            const sets = [
+                {
+                    id: 's',
+                    name: 'S',
+                    enabled: true,
+                    global: true,
+                    entries: [],
+                    bindings: { characters: [], chats: [], styles: [] },
+                },
+            ];
+            const { settings } = migrateAndFill({ schemaVersion: 4, vibes: { sets } }, merge);
+            expect(settings.vibes.sets).toEqual(sets);
+            expect(settings.vibes.items).toEqual([]);
+            expect(settings.vibes.confirmEncoding).toBe(true);
+            expect(settings.stream.enabled).toBe(true);
+            expect(settings.tools.keepOriginal).toBe(true);
+        });
+
         it('keeps stored styles and the migration report arrays as they are', () => {
             const styles = [{ name: 'a', prefix: 'p', suffix: '', negative: '' }];
             const { settings } = migrateAndFill(

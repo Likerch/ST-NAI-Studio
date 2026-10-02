@@ -206,7 +206,7 @@ export async function openLightbox(item: LightboxItem): Promise<void> {
         okButton: t('naist.lightbox.close'),
     });
     const close = () => {
-        popup.dlg.close();
+        void popup.completeCancelled();
     };
     root.addEventListener('click', (event) => {
         const button = (event.target as HTMLElement).closest<HTMLElement>('[data-naist-lb]');

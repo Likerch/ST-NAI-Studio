@@ -1,11 +1,30 @@
 // localforage (IndexedDB) for blobs and caches — never extensionSettings (TZ rule 4).
 import { libs } from './context';
 
-let instance: STLocalForage | null = null;
+const instances = new Map<string, STLocalForage>();
 
+function instance(storeName: string): STLocalForage {
+    let found = instances.get(storeName);
+    if (!found) {
+        found = libs().localforage.createInstance({ name: 'NAIStudio', storeName });
+        instances.set(storeName, found);
+    }
+    return found;
+}
+
+/** Settings backups and small caches. */
 export function store(): STLocalForage {
-    instance ??= libs().localforage.createInstance({ name: 'NAIStudio', storeName: 'data' });
-    return instance;
+    return instance('data');
+}
+
+/** Full images and thumbnails (Blob values). */
+export function imageStore(): STLocalForage {
+    return instance('images');
+}
+
+/** Gallery records (one per generated image). */
+export function galleryStore(): STLocalForage {
+    return instance('gallery');
 }
 
 const BACKUP_PREFIX = 'settings-backup:';
@@ -19,5 +38,5 @@ export async function backupSettings(settings: unknown, fromVersion: number): Pr
 
 /** Removes everything NAI Studio stored in IndexedDB (lifecycle "clean"). */
 export async function clearStorage(): Promise<void> {
-    await store().clear();
+    await Promise.all([store().clear(), imageStore().clear(), galleryStore().clear()]);
 }

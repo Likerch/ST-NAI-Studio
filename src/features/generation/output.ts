@@ -1,6 +1,9 @@
 // Saves generated images to /user/images (ST's standard place) and puts them into the chat as
 // media attachments, the shape the built-in Image Generation uses in 1.19 (RECON §2.1.5, §2.3).
 import { ctx, requestHeaders } from '../../core/context';
+import { settings } from '../../core/settings';
+import { base64ToBlob, blobToBase64 } from '../images/image-utils';
+import { exportImage } from '../images/png-io';
 import type { GeneratedImage } from '../../transport';
 
 export interface GenerationMeta {
@@ -42,22 +45,41 @@ function safeName(text: string): string {
     return text.replace(/[^\p{L}\p{N}_-]+/gu, '_').slice(0, 40) || 'nai';
 }
 
+/** Uploads one image to /user/images; with "strip metadata" on it goes up as a clean PNG. */
+export async function uploadImage(base64: string, mime: string, folder: string, filename: string): Promise<string> {
+    let data = base64;
+    let format = mime === 'image/webp' ? 'webp' : mime === 'image/jpeg' ? 'jpg' : 'png';
+    if (settings().png.stripMetadata) {
+        const clean = await exportImage(base64ToBlob(base64, mime), undefined, { strip: true, format: 'png' });
+        data = await blobToBase64(clean);
+        format = 'png';
+    }
+    const response = await fetch('/api/images/upload', {
+        method: 'POST',
+        headers: requestHeaders(),
+        body: JSON.stringify({ image: data, format, ch_name: folder, filename }),
+    });
+    if (!response.ok) {
+        throw new Error(`image upload failed: HTTP ${response.status}`);
+    }
+    const { path } = (await response.json()) as { path: string };
+    return path;
+}
+
+export function imageFileName(folder: string, suffix: string | number): string {
+    const base = folder ? `${safeName(folder)}_` : '';
+    return `${base}${ctx().humanizedDateTime()}_${suffix}`;
+}
+
 export async function saveImages(images: GeneratedImage[], folder: string): Promise<SavedImage[]> {
-    const c = ctx();
     const saved: SavedImage[] = [];
     for (const image of images) {
-        const format = image.mime === 'image/webp' ? 'webp' : 'png';
-        const base = folder ? `${safeName(folder)}_` : '';
-        const filename = `${base}${c.humanizedDateTime()}_${image.seed ?? image.index}`;
-        const response = await fetch('/api/images/upload', {
-            method: 'POST',
-            headers: requestHeaders(),
-            body: JSON.stringify({ image: image.base64, format, ch_name: folder, filename }),
-        });
-        if (!response.ok) {
-            throw new Error(`image upload failed: HTTP ${response.status}`);
-        }
-        const { path } = (await response.json()) as { path: string };
+        const path = await uploadImage(
+            image.base64,
+            image.mime,
+            folder,
+            imageFileName(folder, image.seed ?? image.index),
+        );
         saved.push({ path, seed: image.seed });
     }
     return saved;

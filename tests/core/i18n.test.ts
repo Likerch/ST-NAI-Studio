@@ -110,6 +110,9 @@ describe('source code', () => {
             'missing-mask',
             'unsupported-mode',
             'invalid-override',
+            'image-not-found',
+            'image-load-failed',
+            'feature-unavailable',
             'unknown',
         ];
         const drops: DropReason[] = [

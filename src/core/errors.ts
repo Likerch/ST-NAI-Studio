@@ -39,6 +39,9 @@ export type NaiErrorCode =
     | 'missing-mask'
     | 'unsupported-mode'
     | 'invalid-override'
+    | 'image-not-found'
+    | 'image-load-failed'
+    | 'feature-unavailable'
     | 'unknown';
 
 export interface ErrorContext {

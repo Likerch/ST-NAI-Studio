@@ -8,9 +8,12 @@ import { log } from './core/logger';
 import { loadSettings, resetSettings } from './core/settings';
 import { clearStorage } from './core/storage';
 import { AutoGenerator } from './features/auto/auto-generation';
+import { recordGeneration } from './features/gallery/gallery-store';
 import { StudioController } from './features/generation/controller';
 import { Pipeline } from './features/generation/pipeline';
+import { InlineImages } from './features/inline/inline-service';
 import { needsMigration, ownsCompatSurface, runMigration } from './features/takeover/takeover';
+import { inlineRenderer, openGalleryWindow, setInlineVisibility, setupInline } from './integration/inline-setup';
 import { setupIntegrations } from './integration/setup';
 import { syncFunctionTool } from './integration/tools';
 import { Panel } from './ui/panel/panel';
@@ -40,7 +43,11 @@ function mountPanel(studio: StudioController, pipeline: Pipeline): void {
             syncFunctionTool(pipeline, ownsCompatSurface());
         }
     };
-    new Panel(studio, pipeline, onSettingChange).mount(container);
+    new Panel(studio, pipeline, onSettingChange, {
+        openGallery: () => void openGalleryWindow(pipeline),
+        setVisibility: (state) => setInlineVisibility(state),
+        chatHidden: () => inlineRenderer()?.isChatHidden() ?? false,
+    }).mount(container);
 }
 
 /** hooks.activate */
@@ -58,8 +65,10 @@ export async function onActivate(): Promise<void> {
         studio,
         createPipelineUi(() => studio.state.account.anlas),
     );
+    pipeline.onGenerated(recordGeneration);
     mountPanel(studio, pipeline);
     setupIntegrations(pipeline);
+    setupInline(pipeline, new InlineImages(pipeline));
     new AutoGenerator(studio, pipeline).attach();
     // Network probing must not hold the 5 s activation window.
     void studio.refreshTransport();

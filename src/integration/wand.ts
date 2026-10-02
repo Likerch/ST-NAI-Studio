@@ -4,7 +4,9 @@ import { ctx, libs } from '../core/context';
 import { localize, t } from '../core/i18n';
 import { reportGenerationError as reportError } from '../core/notify';
 import { TRIGGER_WORDS, WAND_MODES } from '../domain';
+import { settings } from '../core/settings';
 import type { Pipeline } from '../features/generation/pipeline';
+import { inlineRenderer, openGalleryWindow, setInlineVisibility } from './inline-setup';
 
 export function installWandMenu(pipeline: Pipeline): void {
     const menu = document.querySelector('#extensionsMenu');
@@ -33,6 +35,9 @@ export function installWandMenu(pipeline: Pipeline): void {
             <span data-i18n="naist.wand.heading"></span>
             ${items}
             <li class="list-group-item interactable" data-trigger="__free" data-i18n="naist.wand.free"></li>
+            <li class="list-group-item interactable naist-wand-sep" data-trigger="__gallery" data-i18n="naist.wand.gallery"></li>
+            <li class="list-group-item interactable" data-trigger="__toggle-images" data-i18n="naist.wand.toggleImages"></li>
+            <li class="list-group-item interactable" data-trigger="__reading" data-i18n="naist.wand.readingMode"></li>
         </ul>`;
     document.body.append(dropdown);
     localize(container);
@@ -59,6 +64,18 @@ export function installWandMenu(pipeline: Pipeline): void {
         if (!item) return;
         hide();
         let trigger = item.dataset.trigger ?? '';
+        if (trigger === '__gallery') {
+            void openGalleryWindow(pipeline);
+            return;
+        }
+        if (trigger === '__toggle-images') {
+            await setInlineVisibility(inlineRenderer()?.isChatHidden() ? 'show' : 'hide');
+            return;
+        }
+        if (trigger === '__reading') {
+            await setInlineVisibility(settings().inline.readingMode ? 'reading-off' : 'reading-on');
+            return;
+        }
         if (trigger === '__free') {
             const c = ctx();
             const value = await c.callGenericPopup(t('naist.wand.freePrompt'), c.POPUP_TYPE.INPUT, '', { rows: 4 });

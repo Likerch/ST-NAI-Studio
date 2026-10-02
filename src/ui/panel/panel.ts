@@ -17,6 +17,8 @@ import characterRowTemplate from '../templates/character-row.html?raw';
 import panelTemplate from '../templates/panel.html?raw';
 import { openInspector } from './inspector';
 import { ChatTab } from './tab-chat';
+import { ImagesTab, importPngFile } from './tab-images';
+import type { ImageActions } from './tab-images';
 import { PromptsTab } from './tab-prompts';
 import { TakeoverTab } from './tab-takeover';
 
@@ -50,13 +52,42 @@ export class Panel {
     private lastPrepared: Prepared | null = null;
     private promptsTab: PromptsTab | null = null;
     private chatTab: ChatTab | null = null;
+    private imagesTab: ImagesTab | null = null;
     private takeoverTab: TakeoverTab | null = null;
 
     constructor(
         private readonly controller: StudioController,
         private readonly pipeline: Pipeline,
         private readonly onSettingChange: (path: string) => void = () => {},
+        private readonly imageActions: ImageActions = {
+            openGallery: () => {},
+            setVisibility: () => {},
+            chatHidden: () => false,
+        },
     ) {}
+
+    /** Dropping a NovelAI PNG/WebP anywhere on the panel fills the parameters (TZ Phase 3). */
+    private installPngDrop(): void {
+        const root = this.root;
+        root.addEventListener('dragover', (event) => {
+            if (!event.dataTransfer?.types.includes('Files')) return;
+            event.preventDefault();
+            event.stopPropagation();
+            root.classList.add('naist-drop-active');
+        });
+        root.addEventListener('dragleave', (event) => {
+            if (event.target === root) root.classList.remove('naist-drop-active');
+        });
+        root.addEventListener('drop', (event) => {
+            const file = event.dataTransfer?.files?.[0];
+            root.classList.remove('naist-drop-active');
+            if (!file) return;
+            // SillyTavern's own drop handler (chat attachments) must not see this file.
+            event.preventDefault();
+            event.stopPropagation();
+            void importPngFile(file);
+        });
+    }
 
     mount(container: HTMLElement): void {
         const html = render(panelTemplate, { models: MODELS });
@@ -86,6 +117,9 @@ export class Panel {
             this.scheduleRefresh();
         });
         this.chatTab.mount(this.tabPanel('chat'));
+        this.imagesTab = new ImagesTab(this.imageActions);
+        this.imagesTab.mount(this.tabPanel('images'));
+        this.installPngDrop();
         // Migration replaces the settings, which already triggers refreshAll() below.
         this.takeoverTab = new TakeoverTab(() => this.scheduleRefresh());
         this.takeoverTab.mount(this.tabPanel('takeover'));
@@ -102,6 +136,7 @@ export class Panel {
         this.syncFromSettings();
         this.promptsTab?.refresh();
         this.chatTab?.refresh();
+        this.imagesTab?.refresh();
         this.takeoverTab?.refresh();
         this.scheduleRefresh();
     }
@@ -114,6 +149,7 @@ export class Panel {
             tab.classList.toggle('naist-tab-active', tab.dataset.tab === name);
         });
         if (name === 'takeover') this.takeoverTab?.refresh();
+        if (name === 'images') this.imagesTab?.refresh();
     }
 
     // ---- settings <-> controls -------------------------------------------------------------

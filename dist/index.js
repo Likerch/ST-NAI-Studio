@@ -421,7 +421,138 @@ var EN = {
 	"naist.refine.hint": "Cancel stops the generation.",
 	"naist.refine.negative": "Additional undesired content",
 	"naist.refine.resolution": "Use the saved resolution ({resolution})",
-	"naist.refine.continue": "Continue"
+	"naist.refine.continue": "Continue",
+	"naist.command.arg.at": "character offset in the message text (default: end)",
+	"naist.command.arg.message": "message id (default: last message)",
+	"naist.command.insertHelp": "Generates an image and inserts it inline into a message at a position.",
+	"naist.command.insertReturns": "id of the inserted image, or an empty string",
+	"naist.command.imagesHelp": "Shows or hides inline images of this chat; reading mode hides them everywhere.",
+	"naist.command.imagesArg": "show, hide, toggle, reading-on, reading-off",
+	"naist.command.imagesReturns": "shown, hidden or reading",
+	"naist.command.galleryHelp": "Opens the NAI Studio gallery.",
+	"naist.error.image-not-found.title": "Image not found",
+	"naist.error.image-not-found.text": "The image or its message no longer exists. Reload the chat.",
+	"naist.error.image-load-failed.title": "Image could not be loaded",
+	"naist.error.image-load-failed.text": "Neither the browser copy nor the server file is available.",
+	"naist.error.feature-unavailable.title": "Not available on this transport",
+	"naist.error.feature-unavailable.text": "\"{feature}\" needs the NAI Studio server plugin. Install it and restart SillyTavern.",
+	"naist.gallery.search": "Search prompt, tags, seed…",
+	"naist.gallery.allModels": "All models",
+	"naist.gallery.allCharacters": "All characters",
+	"naist.gallery.allChats": "All chats",
+	"naist.gallery.from": "From",
+	"naist.gallery.to": "To",
+	"naist.gallery.newest": "Newest first",
+	"naist.gallery.oldest": "Oldest first",
+	"naist.gallery.favoritesOnly": "Favorites only",
+	"naist.gallery.selectAll": "Select all",
+	"naist.gallery.compare": "Compare two",
+	"naist.gallery.compareHint": "Select exactly two images to compare.",
+	"naist.gallery.delete": "Delete selected",
+	"naist.gallery.deleteConfirm": "Delete {count} image(s) from the gallery?",
+	"naist.gallery.deleteFiles": "Also delete their files on the server (images in chats keep their browser copy)",
+	"naist.gallery.deleted": "Deleted: {count}, server files: {files}",
+	"naist.gallery.favorite": "Favorite",
+	"naist.gallery.repeat": "Repeat with a change",
+	"naist.gallery.count": "{shown} of {total}, selected {selected}",
+	"naist.gallery.usage": "Browser storage: {used} of {quota}",
+	"naist.images.inline": "Images in messages",
+	"naist.images.inlineHint": "Inline images are inserted with the image button of a message (or in edit mode at the cursor). The text keeps a [nai:img:…] marker, so editing never breaks them.",
+	"naist.images.saveToServer": "Also save to /user/images (needed for chat export and other devices)",
+	"naist.images.keepBrowserCopy": "Keep a copy in the browser (IndexedDB)",
+	"naist.images.llmText": "Images in the LLM prompt",
+	"naist.images.llmDescribe": "Short description: [image: …]",
+	"naist.images.llmRemove": "Remove",
+	"naist.images.variationStrength": "Variation strength",
+	"naist.images.variationNoise": "Variation noise",
+	"naist.images.hideChat": "Hide images in this chat",
+	"naist.images.showChat": "Show images in this chat",
+	"naist.images.readingMode": "Reading mode (no images anywhere)",
+	"naist.images.gallery": "Gallery",
+	"naist.images.galleryEnabled": "Record every generation in the gallery",
+	"naist.images.openGallery": "Open gallery",
+	"naist.images.png": "PNG metadata",
+	"naist.images.pngHint": "Drop a NovelAI PNG or WebP onto this panel to load its parameters.",
+	"naist.images.stripMetadata": "Strip metadata when saving (server and disk)",
+	"naist.images.importPng": "Load parameters from PNG…",
+	"naist.images.importNone": "No NovelAI parameters found in this file.",
+	"naist.images.importDone": "Parameters loaded ({count} fields, model {model}).",
+	"naist.inline.insert": "Insert an image into this message (NAI Studio)",
+	"naist.inline.insertHere": "Insert an image at the cursor (NAI Studio)",
+	"naist.inline.insertTitle": "Insert an image",
+	"naist.inline.insertOk": "Generate and insert",
+	"naist.inline.insertedInEdit": "Image inserted. Save the message to keep it.",
+	"naist.inline.mode": "What to draw",
+	"naist.inline.modeFree": "My prompt",
+	"naist.inline.modeText": "From the text (LLM writes the prompt)",
+	"naist.inline.prompt": "Prompt",
+	"naist.inline.promptHint": "Selected text is pre-filled. For trigger modes the prompt is not needed.",
+	"naist.inline.width": "Width",
+	"naist.inline.unit": "Unit",
+	"naist.inline.align": "Alignment",
+	"naist.inline.alignCenter": "Center",
+	"naist.inline.alignLeft": "Left",
+	"naist.inline.alignRight": "Right",
+	"naist.inline.radius": "Corner radius (px)",
+	"naist.inline.layout": "Several images in a row",
+	"naist.inline.layoutGrid": "Grid",
+	"naist.inline.layoutCarousel": "Carousel",
+	"naist.inline.layoutList": "List",
+	"naist.inline.wrap": "Text wraps around",
+	"naist.inline.border": "Border",
+	"naist.inline.spoilerOption": "Spoiler (blurred until clicked)",
+	"naist.inline.caption": "Caption",
+	"naist.inline.altText": "Alt text",
+	"naist.inline.alt": "Generated image",
+	"naist.inline.displayTitle": "Display options",
+	"naist.inline.displayOk": "Apply",
+	"naist.inline.editTitle": "Redo with an edited prompt",
+	"naist.inline.editOk": "Generate",
+	"naist.inline.randomSeed": "Random seed",
+	"naist.inline.missing": "[image missing]",
+	"naist.inline.spoiler": "Spoiler — click to show",
+	"naist.inline.hiddenChip": "image hidden",
+	"naist.inline.prev": "Previous version",
+	"naist.inline.next": "Next version",
+	"naist.inline.regenerate": "Regenerate here (new seed)",
+	"naist.inline.variation": "Variation (same seed + noise)",
+	"naist.inline.edit": "Redo with an edited prompt",
+	"naist.inline.display": "Display options",
+	"naist.inline.lightbox": "Open with all parameters",
+	"naist.inline.delete": "Delete this version",
+	"naist.inline.deleteConfirm": "Delete this image version? The last version removes the image from the message.",
+	"naist.lightbox.copyPrompt": "Copy prompt",
+	"naist.lightbox.copySeed": "Copy seed",
+	"naist.lightbox.copied": "Copied",
+	"naist.lightbox.copyFailed": "Could not copy to the clipboard",
+	"naist.lightbox.background": "Chat background",
+	"naist.lightbox.backgroundDone": "Set as the background of this chat.",
+	"naist.lightbox.avatar": "Character avatar",
+	"naist.lightbox.avatarConfirm": "Replace the avatar of {name} with this image? The old avatar file is overwritten.",
+	"naist.lightbox.avatarDone": "Avatar of {name} updated.",
+	"naist.lightbox.avatarNoCharacter": "Open a 1:1 chat with the character first.",
+	"naist.lightbox.save": "Save to disk",
+	"naist.lightbox.close": "Close",
+	"naist.meta.scenePrompt": "Scene prompt",
+	"naist.meta.prompt": "Sent prompt",
+	"naist.meta.negative": "Undesired content",
+	"naist.meta.sourcePrompt": "Original prompt",
+	"naist.meta.model": "Model",
+	"naist.meta.seed": "Seed",
+	"naist.meta.size": "Size",
+	"naist.meta.steps": "Steps",
+	"naist.meta.scale": "Guidance",
+	"naist.meta.cfgRescale": "CFG rescale",
+	"naist.meta.sampler": "Sampler / schedule",
+	"naist.meta.presets": "Quality / UC preset",
+	"naist.meta.requestType": "Request",
+	"naist.meta.cost": "Anlas",
+	"naist.meta.created": "Created",
+	"naist.meta.characters": "Characters",
+	"naist.tab.images": "Images",
+	"naist.wand.gallery": "Gallery",
+	"naist.wand.toggleImages": "Show / hide images in this chat",
+	"naist.wand.readingMode": "Reading mode (no images)"
 };
 var translator = (text) => text;
 /** Wires the host translator (SillyTavern's translate). Called once on activation. */
@@ -468,7 +599,7 @@ var ORDER = {
 	warn: 30,
 	error: 40
 };
-var PREFIX = "[NAI Studio]";
+var PREFIX$1 = "[NAI Studio]";
 var threshold = "info";
 function setLogLevel(level) {
 	threshold = level;
@@ -479,16 +610,16 @@ function enabled(level) {
 /** Console logger with a fixed prefix. The NovelAI token never reaches the client, so it cannot leak here. */
 var log = {
 	debug: (...args) => {
-		if (enabled("debug")) console.debug(PREFIX, ...args);
+		if (enabled("debug")) console.debug(PREFIX$1, ...args);
 	},
 	info: (...args) => {
-		if (enabled("info")) console.info(PREFIX, ...args);
+		if (enabled("info")) console.info(PREFIX$1, ...args);
 	},
 	warn: (...args) => {
-		if (enabled("warn")) console.warn(PREFIX, ...args);
+		if (enabled("warn")) console.warn(PREFIX$1, ...args);
 	},
 	error: (...args) => {
-		if (enabled("error")) console.error(PREFIX, ...args);
+		if (enabled("error")) console.error(PREFIX$1, ...args);
 	}
 };
 function defaultGeneration() {
@@ -522,7 +653,7 @@ function defaultGeneration() {
 }
 function defaultSettings() {
 	return {
-		schemaVersion: 2,
+		schemaVersion: 3,
 		transport: { mode: "auto" },
 		generation: defaultGeneration(),
 		prompts: {
@@ -575,6 +706,25 @@ function defaultSettings() {
 			freeOnly: true,
 			confirmAbove: 0
 		},
+		inline: {
+			saveToServer: true,
+			keepBrowserCopy: true,
+			defaultWidth: 60,
+			defaultWidthUnit: "%",
+			defaultAlign: "center",
+			defaultRadius: 8,
+			defaultLayout: "grid",
+			llmText: "describe",
+			readingMode: false,
+			variationStrength: .5,
+			variationNoise: .1,
+			insertMode: "free"
+		},
+		gallery: {
+			enabled: true,
+			thumbSize: 256
+		},
+		png: { stripMetadata: false },
 		inspector: { openBeforeSend: false },
 		rawOverride: {
 			enabled: false,
@@ -591,40 +741,52 @@ function isObject$1(value) {
 * v1: first schema. Settings saved before versioning (no schemaVersion) start from here.
 * v2: `output.hiddenFromPrompt` became the per-initiator visibility map `chat.visibility`.
 */
-var MIGRATIONS = [{
-	to: 1,
-	migrate(settings) {
-		return {
-			...settings,
-			schemaVersion: 1
-		};
-	}
-}, {
-	to: 2,
-	migrate(settings) {
-		const { output, ...rest } = settings;
-		const next = {
-			...rest,
-			schemaVersion: 2
-		};
-		if (isObject$1(output) && output.hiddenFromPrompt === false) {
-			const chat = isObject$1(rest.chat) ? rest.chat : {};
-			next.chat = {
-				...chat,
-				visibility: {
-					...isObject$1(chat.visibility) ? chat.visibility : {},
-					panel: true
-				}
+var MIGRATIONS = [
+	{
+		to: 1,
+		migrate(settings) {
+			return {
+				...settings,
+				schemaVersion: 1
 			};
 		}
-		return next;
+	},
+	{
+		to: 2,
+		migrate(settings) {
+			const { output, ...rest } = settings;
+			const next = {
+				...rest,
+				schemaVersion: 2
+			};
+			if (isObject$1(output) && output.hiddenFromPrompt === false) {
+				const chat = isObject$1(rest.chat) ? rest.chat : {};
+				next.chat = {
+					...chat,
+					visibility: {
+						...isObject$1(chat.visibility) ? chat.visibility : {},
+						panel: true
+					}
+				};
+			}
+			return next;
+		}
+	},
+	{
+		to: 3,
+		migrate(settings) {
+			return {
+				...settings,
+				schemaVersion: 3
+			};
+		}
 	}
-}];
+];
 /** Applies pending migrations, then fills missing keys from defaults (lodash.merge in the host). */
 function migrateAndFill(stored, merge) {
 	let raw = isObject$1(stored) ? structuredClone(stored) : {};
 	const fromVersion = typeof raw.schemaVersion === "number" ? raw.schemaVersion : 0;
-	if (fromVersion > 2) return {
+	if (fromVersion > 3) return {
 		settings: merge(defaultSettings(), raw),
 		fromVersion,
 		migrated: false
@@ -637,22 +799,38 @@ function migrateAndFill(stored, merge) {
 	settings.prompts.styles = Array.isArray(prompts.styles) ? prompts.styles : [];
 	const takeover = isObject$1(raw.takeover) ? raw.takeover : {};
 	settings.takeover.migrationReport = Array.isArray(takeover.migrationReport) ? takeover.migrationReport : [];
-	settings.schemaVersion = 2;
+	settings.schemaVersion = 3;
 	return {
 		settings,
 		fromVersion,
-		migrated: fromVersion !== 2
+		migrated: fromVersion !== 3
 	};
 }
 //#endregion
 //#region src/core/storage.ts
-var instance = null;
+var instances = /* @__PURE__ */ new Map();
+function instance(storeName) {
+	let found = instances.get(storeName);
+	if (!found) {
+		found = libs().localforage.createInstance({
+			name: "NAIStudio",
+			storeName
+		});
+		instances.set(storeName, found);
+	}
+	return found;
+}
+/** Settings backups and small caches. */
 function store() {
-	instance ??= libs().localforage.createInstance({
-		name: "NAIStudio",
-		storeName: "data"
-	});
-	return instance;
+	return instance("data");
+}
+/** Full images and thumbnails (Blob values). */
+function imageStore() {
+	return instance("images");
+}
+/** Gallery records (one per generated image). */
+function galleryStore() {
+	return instance("gallery");
 }
 var BACKUP_PREFIX = "settings-backup:";
 /** Snapshot of settings taken before a migration, keyed by date. */
@@ -663,7 +841,11 @@ async function backupSettings(settings, fromVersion) {
 }
 /** Removes everything NAI Studio stored in IndexedDB (lifecycle "clean"). */
 async function clearStorage() {
-	await store().clear();
+	await Promise.all([
+		store().clear(),
+		imageStore().clear(),
+		galleryStore().clear()
+	]);
 }
 //#endregion
 //#region src/core/settings.ts
@@ -2394,6 +2576,699 @@ function autoBudget(freeOnly, allowPaid) {
 	return !freeOnly && allowPaid ? Number.POSITIVE_INFINITY : 0;
 }
 //#endregion
+//#region src/domain/inline.ts
+var PLACEHOLDER_PATTERN = /\[nai:img:([0-9a-zA-Z-]{6,64})\]/g;
+function placeholder(id) {
+	return `[nai:img:${id}]`;
+}
+function findPlaceholders(text) {
+	const result = [];
+	for (const match of text.matchAll(new RegExp(PLACEHOLDER_PATTERN.source, "g"))) result.push({
+		id: match[1] ?? "",
+		index: match.index ?? 0,
+		length: match[0].length
+	});
+	return result;
+}
+function placeholderIds(text) {
+	return findPlaceholders(text).map((m) => m.id);
+}
+/**
+* Inserts a placeholder at a character offset. A placeholder directly followed by "(" would
+* become a Markdown link, so a space is added in that case; the offset is clamped to the text.
+*/
+function insertPlaceholder(text, id, offset = text.length) {
+	const at = Math.max(0, Math.min(text.length, Math.round(offset)));
+	const before = text.slice(0, at);
+	const after = text.slice(at);
+	for (const match of findPlaceholders(text)) if (at > match.index && at < match.index + match.length) return insertPlaceholder(text, id, match.index + match.length);
+	const lead = before === "" || /\s$/.test(before) ? "" : " ";
+	const trail = after === "" ? "" : after.startsWith("(") || !/^\s/.test(after) ? " " : "";
+	return `${before}${lead}${placeholder(id)}${trail}${after}`;
+}
+/** Removes every occurrence of the placeholder and the spaces it leaves doubled. */
+function removePlaceholder(text, id) {
+	const escaped = id.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+	const pattern = new RegExp(`([ \\t]*)\\[nai:img:${escaped}\\]([ \\t]*)`, "g");
+	return text.replace(pattern, (match, lead, trail, offset, whole) => {
+		const end = offset + match.length;
+		const atLineStart = offset === 0 || whole[offset - 1] === "\n";
+		const atLineEnd = end === whole.length || whole[end] === "\n";
+		if (atLineStart || atLineEnd) return "";
+		return lead || trail ? " " : "";
+	});
+}
+/** Moves a placeholder before another one (or to the end) inside the same text. */
+function movePlaceholder(text, id, beforeId) {
+	if (id === beforeId || !placeholderIds(text).includes(id)) return text;
+	const without = removePlaceholder(text, id);
+	if (beforeId === null) return insertPlaceholder(without, id, without.length);
+	const target = findPlaceholders(without).find((m) => m.id === beforeId);
+	return target ? insertPlaceholder(without, id, target.index) : insertPlaceholder(without, id);
+}
+/**
+* Keeps text and entries consistent after an edit, a swipe or a regeneration: entries without a
+* placeholder are dropped, orphaned placeholders are removed from the text (TZ Phase 3).
+*/
+function reconcile(text, entries) {
+	const ids = new Set(placeholderIds(text));
+	const known = new Set(entries.map((e) => e.id));
+	const kept = [];
+	const removedEntries = [];
+	for (const entry of entries) if (ids.has(entry.id)) kept.push(entry);
+	else removedEntries.push(entry);
+	const removedPlaceholders = [...ids].filter((id) => !known.has(id));
+	let cleaned = text;
+	for (const id of removedPlaceholders) cleaned = removePlaceholder(cleaned, id);
+	return {
+		text: cleaned,
+		entries: kept,
+		removedEntries,
+		removedPlaceholders
+	};
+}
+/** How placeholders reach the LLM prompt: a short description, or nothing (RECON §2.3 item 8). */
+function textForPrompt(text, entries, mode) {
+	if (!findPlaceholders(text).length) return text;
+	const byId = new Map(entries.map((e) => [e.id, e]));
+	return text.replace(new RegExp(PLACEHOLDER_PATTERN.source, "g"), (_m, id) => {
+		if (mode === "remove") return "";
+		const entry = byId.get(id);
+		const caption = entry?.display.caption.trim() || entry?.meta.scenePrompt.trim() || "";
+		return caption ? `[image: ${caption}]` : "";
+	}).replace(/[ \t]{2,}/g, " ").replace(/\n{3,}/g, "\n\n").trim();
+}
+function defaultDisplay(partial = {}) {
+	return {
+		width: 60,
+		widthUnit: "%",
+		align: "center",
+		wrap: false,
+		caption: "",
+		alt: "",
+		border: false,
+		radius: 8,
+		spoiler: false,
+		layout: "grid",
+		...partial
+	};
+}
+function activeSwipe(entry) {
+	return entry.swipes[entry.activeSwipe] ?? entry.swipes[entry.swipes.length - 1];
+}
+function mirror(entry) {
+	const swipe = activeSwipe(entry);
+	if (!swipe) return entry;
+	entry.blobKey = swipe.blobKey;
+	entry.meta = swipe.meta;
+	if (swipe.filePath) entry.filePath = swipe.filePath;
+	else delete entry.filePath;
+	return entry;
+}
+function createInlineImage(id, swipe, display) {
+	return mirror({
+		id,
+		blobKey: "",
+		meta: swipe.meta,
+		swipes: [swipe],
+		activeSwipe: 0,
+		display
+	});
+}
+/** Adds an alternative generation and makes it active. */
+function addSwipe(entry, swipe) {
+	entry.swipes.push(swipe);
+	entry.activeSwipe = entry.swipes.length - 1;
+	return mirror(entry);
+}
+function setActiveSwipe(entry, index) {
+	const count = entry.swipes.length;
+	if (count === 0) return entry;
+	entry.activeSwipe = (index % count + count) % count;
+	return mirror(entry);
+}
+/** Removes one swipe; returns it so its blob can be freed. The last swipe cannot be removed. */
+function removeSwipe(entry, index) {
+	if (entry.swipes.length <= 1 || index < 0 || index >= entry.swipes.length) return null;
+	const [removed] = entry.swipes.splice(index, 1);
+	if (entry.activeSwipe >= entry.swipes.length) entry.activeSwipe = entry.swipes.length - 1;
+	else if (index < entry.activeSwipe) entry.activeSwipe -= 1;
+	mirror(entry);
+	return removed ?? null;
+}
+/** All blob keys an entry references (every swipe). */
+function entryBlobKeys(entry) {
+	return entry.swipes.map((s) => s.blobKey).filter(Boolean);
+}
+/** Reads `extra.nai_images` defensively (hand-edited or older chats). */
+function readEntries(extra) {
+	const list = extra?.nai_images;
+	if (!Array.isArray(list)) return [];
+	return list.filter((e) => typeof e === "object" && e !== null && typeof e.id === "string" && Array.isArray(e.swipes) && e.swipes.length > 0);
+}
+/** Inline CSS for the image container from its display options. */
+function displayStyle(display) {
+	const width = Math.max(1, display.width);
+	const style = {
+		width: `${display.widthUnit === "%" ? Math.min(100, width) : width}${display.widthUnit}`,
+		"border-radius": `${Math.max(0, display.radius)}px`
+	};
+	if (display.wrap && display.align !== "center") {
+		style.float = display.align;
+		style.margin = display.align === "left" ? "0 12px 8px 0" : "0 0 8px 12px";
+	} else if (display.align === "center") {
+		style["margin-left"] = "auto";
+		style["margin-right"] = "auto";
+	} else if (display.align === "right") style["margin-left"] = "auto";
+	return style;
+}
+//#endregion
+//#region src/domain/png-meta.ts
+var PNG_SIGNATURE = [
+	137,
+	80,
+	78,
+	71,
+	13,
+	10,
+	26,
+	10
+];
+var TEXT_CHUNKS = /* @__PURE__ */ new Set([
+	"tEXt",
+	"iTXt",
+	"zTXt"
+]);
+var METADATA_CHUNKS = /* @__PURE__ */ new Set([
+	"tEXt",
+	"iTXt",
+	"zTXt",
+	"eXIf",
+	"tIME"
+]);
+var crcTable = null;
+function crc32(bytes) {
+	if (!crcTable) {
+		crcTable = /* @__PURE__ */ new Uint32Array(256);
+		for (let n = 0; n < 256; n++) {
+			let c = n;
+			for (let k = 0; k < 8; k++) c = c & 1 ? 3988292384 ^ c >>> 1 : c >>> 1;
+			crcTable[n] = c >>> 0;
+		}
+	}
+	let crc = 4294967295;
+	for (const byte of bytes) crc = (crcTable[(crc ^ byte) & 255] ?? 0) ^ crc >>> 8;
+	return (crc ^ 4294967295) >>> 0;
+}
+function isPng(bytes) {
+	return PNG_SIGNATURE.every((b, i) => bytes[i] === b);
+}
+function isWebp(bytes) {
+	return ascii(bytes, 0, 4) === "RIFF" && ascii(bytes, 8, 4) === "WEBP";
+}
+function ascii(bytes, start, length) {
+	let out = "";
+	for (let i = start; i < start + length && i < bytes.length; i++) out += String.fromCharCode(bytes[i] ?? 0);
+	return out;
+}
+function u32be(bytes, at) {
+	return ((bytes[at] ?? 0) << 24 | (bytes[at + 1] ?? 0) << 16 | (bytes[at + 2] ?? 0) << 8 | (bytes[at + 3] ?? 0)) >>> 0;
+}
+function readPngChunks(bytes) {
+	if (!isPng(bytes)) throw new Error("not a PNG");
+	const chunks = [];
+	let at = 8;
+	while (at + 12 <= bytes.length) {
+		const length = u32be(bytes, at);
+		const type = ascii(bytes, at + 4, 4);
+		const end = at + 12 + length;
+		if (end > bytes.length) break;
+		chunks.push({
+			type,
+			data: bytes.subarray(at + 8, at + 8 + length)
+		});
+		at = end;
+		if (type === "IEND") break;
+	}
+	return chunks;
+}
+function writePngChunks(chunks) {
+	const total = 8 + chunks.reduce((sum, c) => sum + 12 + c.data.length, 0);
+	const out = new Uint8Array(total);
+	out.set(PNG_SIGNATURE, 0);
+	let at = 8;
+	for (const chunk of chunks) {
+		const view = new DataView(out.buffer, out.byteOffset + at);
+		view.setUint32(0, chunk.data.length);
+		const typeAndData = new Uint8Array(4 + chunk.data.length);
+		for (let i = 0; i < 4; i++) typeAndData[i] = chunk.type.charCodeAt(i);
+		typeAndData.set(chunk.data, 4);
+		out.set(typeAndData, at + 4);
+		view.setUint32(8 + chunk.data.length, crc32(typeAndData));
+		at += 12 + chunk.data.length;
+	}
+	return out;
+}
+var utf8 = new TextDecoder("utf-8", { fatal: true });
+var latin1 = new TextDecoder("latin1");
+var encoder = new TextEncoder();
+function decodeText(bytes) {
+	try {
+		return utf8.decode(bytes);
+	} catch {
+		return latin1.decode(bytes);
+	}
+}
+/** tEXt and uncompressed iTXt are decoded; compressed entries are returned for async inflating. */
+function readPngText(bytes) {
+	const text = {};
+	const compressed = [];
+	for (const chunk of readPngChunks(bytes)) {
+		if (!TEXT_CHUNKS.has(chunk.type)) continue;
+		const zero = chunk.data.indexOf(0);
+		if (zero <= 0) continue;
+		const keyword = latin1.decode(chunk.data.subarray(0, zero));
+		if (chunk.type === "tEXt") text[keyword] = decodeText(chunk.data.subarray(zero + 1));
+		else if (chunk.type === "zTXt") compressed.push({
+			keyword,
+			data: chunk.data.subarray(zero + 2)
+		});
+		else {
+			const flag = chunk.data[zero + 1];
+			let at = zero + 3;
+			const langEnd = chunk.data.indexOf(0, at);
+			if (langEnd < 0) continue;
+			const translatedEnd = chunk.data.indexOf(0, langEnd + 1);
+			if (translatedEnd < 0) continue;
+			at = translatedEnd + 1;
+			if (flag === 1) compressed.push({
+				keyword,
+				data: chunk.data.subarray(at)
+			});
+			else text[keyword] = decodeText(chunk.data.subarray(at));
+		}
+	}
+	return {
+		text,
+		compressed
+	};
+}
+function isLatin1(value) {
+	for (let i = 0; i < value.length; i++) if (value.charCodeAt(i) > 255) return false;
+	return true;
+}
+function textChunk(keyword, value) {
+	const key = Array.from(keyword, (ch) => ch.charCodeAt(0) & 255);
+	if (isLatin1(value)) {
+		const data = new Uint8Array(key.length + 1 + value.length);
+		data.set(key, 0);
+		for (let i = 0; i < value.length; i++) data[key.length + 1 + i] = value.charCodeAt(i);
+		return {
+			type: "tEXt",
+			data
+		};
+	}
+	const body = encoder.encode(value);
+	const data = new Uint8Array(key.length + 5 + body.length);
+	data.set(key, 0);
+	data.set(body, key.length + 5);
+	return {
+		type: "iTXt",
+		data
+	};
+}
+/** Replaces (or adds) text chunks before IEND; other chunks stay byte-identical. */
+function writePngText(bytes, entries) {
+	const keywords = new Set(Object.keys(entries));
+	const chunks = readPngChunks(bytes).filter((chunk) => {
+		if (!TEXT_CHUNKS.has(chunk.type)) return true;
+		const zero = chunk.data.indexOf(0);
+		return !keywords.has(latin1.decode(chunk.data.subarray(0, Math.max(0, zero))));
+	});
+	const iend = chunks.findIndex((c) => c.type === "IEND");
+	const added = Object.entries(entries).map(([k, v]) => textChunk(k, v));
+	chunks.splice(iend < 0 ? chunks.length : iend, 0, ...added);
+	return writePngChunks(chunks);
+}
+/** Drops every metadata chunk (text, EXIF, time). Pixel data is untouched. */
+function stripPngMetadata(bytes) {
+	return writePngChunks(readPngChunks(bytes).filter((c) => !METADATA_CHUNKS.has(c.type)));
+}
+function exifPayload(bytes) {
+	if (!isWebp(bytes)) return null;
+	let at = 12;
+	while (at + 8 <= bytes.length) {
+		const fourcc = ascii(bytes, at, 4);
+		const size = new DataView(bytes.buffer, bytes.byteOffset + at + 4, 4).getUint32(0, true);
+		if (fourcc === "EXIF") {
+			const data = bytes.subarray(at + 8, at + 8 + size);
+			return ascii(data, 0, 6) === "Exif\0\0" ? data.subarray(6) : data;
+		}
+		at += 8 + size + size % 2;
+	}
+	return null;
+}
+/** Reads EXIF UserComment (0x9286) from a TIFF block; falls back to the first JSON object. */
+function readExifUserComment(tiff) {
+	const order = ascii(tiff, 0, 2);
+	if (order !== "II" && order !== "MM") return null;
+	const little = order === "II";
+	const view = new DataView(tiff.buffer, tiff.byteOffset, tiff.byteLength);
+	const u16 = (at) => view.getUint16(at, little);
+	const u32 = (at) => view.getUint32(at, little);
+	const entries = (ifd) => {
+		if (ifd + 2 > tiff.length) return [];
+		const count = u16(ifd);
+		const list = [];
+		for (let i = 0; i < count; i++) {
+			const at = ifd + 2 + i * 12;
+			if (at + 12 > tiff.length) break;
+			const typeSize = [
+				0,
+				1,
+				1,
+				2,
+				4,
+				8,
+				1,
+				1,
+				2,
+				4,
+				8,
+				4,
+				8
+			][u16(at + 2)] ?? 1;
+			const n = u32(at + 4);
+			list.push({
+				tag: u16(at),
+				type: u16(at + 2),
+				count: n,
+				valueAt: n * typeSize > 4 ? u32(at + 8) : at + 8
+			});
+		}
+		return list;
+	};
+	try {
+		const ifd0 = entries(u32(4));
+		const exifPointer = ifd0.find((e) => e.tag === 34665);
+		const candidates = exifPointer ? [...entries(u32(exifPointer.valueAt)), ...ifd0] : ifd0;
+		const comment = candidates.find((e) => e.tag === 37510) ?? candidates.find((e) => e.tag === 270);
+		if (comment) {
+			const raw = tiff.subarray(comment.valueAt, comment.valueAt + comment.count);
+			const header = ascii(raw, 0, 8);
+			if (comment.tag === 37510 && header.startsWith("UNICODE")) return new TextDecoder(little ? "utf-16le" : "utf-16be").decode(raw.subarray(8)).replace(/\0+$/, "");
+			return decodeText(comment.tag === 37510 && /^(ASCII|JIS|\0)/.test(header) ? raw.subarray(8) : raw).replace(/\0+$/, "");
+		}
+	} catch {}
+	const text = latin1.decode(tiff);
+	const start = text.indexOf("{\"");
+	const end = text.lastIndexOf("}");
+	return start >= 0 && end > start ? decodeText(tiff.subarray(start, end + 1)) : null;
+}
+/**
+* NovelAI WebP metadata as a text map with the PNG keyword names (Comment, Source, …).
+* Returns an empty map when the file carries none.
+*/
+function readWebpText(bytes) {
+	const tiff = exifPayload(bytes);
+	if (!tiff) return {};
+	const comment = readExifUserComment(tiff);
+	if (!comment) return {};
+	try {
+		const parsed = JSON.parse(comment);
+		if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+			const result = {};
+			for (const [key, value] of Object.entries(parsed)) result[key] = typeof value === "string" ? value : JSON.stringify(value);
+			if (!("Comment" in result) && ("prompt" in result || "steps" in result)) return { Comment: comment };
+			return result;
+		}
+	} catch {}
+	return { Comment: comment };
+}
+var V5_FULL_HASHES = ["657484A5", "0ADF9AB7"];
+/** Model from the `Source` text (RECON §3.2, §3.3); unknown hashes fall back to the Full variant. */
+function modelFromSource(source) {
+	if (!source) return void 0;
+	const hash = source.trim().split(/\s+/).pop()?.toUpperCase() ?? "";
+	if (/Diffusion V5/i.test(source)) return V5_FULL_HASHES.includes(hash) ? "nai-diffusion-5-full" : "nai-diffusion-5-curated";
+	if (/Diffusion V4\.5/i.test(source)) return /curated/i.test(source) ? "nai-diffusion-4-5-curated" : "nai-diffusion-4-5-full";
+	if (/Diffusion V4\b/i.test(source)) return /curated/i.test(source) ? "nai-diffusion-4-curated-preview" : "nai-diffusion-4-full";
+	if (/furry/i.test(source)) return "nai-diffusion-furry-3";
+	if (/Stable Diffusion XL|Diffusion V3/i.test(source)) return "nai-diffusion-3";
+}
+function num$1(value) {
+	return typeof value === "number" && Number.isFinite(value) ? value : void 0;
+}
+function str$1(value) {
+	return typeof value === "string" ? value : "";
+}
+function obj(value) {
+	return typeof value === "object" && value !== null && !Array.isArray(value) ? value : {};
+}
+/** Removes the quality suffix the client appended to the first `|` segment. */
+function splitQualityTags(prompt, model) {
+	const [first = "", ...rest] = prompt.split("|");
+	for (const preset of ["standard", "light"]) {
+		const suffix = getQualityText(model, preset);
+		if (!suffix) continue;
+		for (const tail of [`, ${suffix}`, suffix]) {
+			const trimmed = first.trimEnd();
+			if (trimmed.endsWith(tail)) return {
+				prompt: [trimmed.slice(0, trimmed.length - tail.length), ...rest].join("|"),
+				preset
+			};
+		}
+	}
+	return {
+		prompt,
+		preset: "none"
+	};
+}
+/** Removes `nsfw, ` and the UC preset the client prepended. */
+function splitUcPreset(negative, model) {
+	const caps = getCapabilities(model);
+	let text = negative.trimStart();
+	if (text.startsWith("nsfw, ")) text = text.slice(6);
+	for (const preset of caps.ucPresets) {
+		const presetText = getUcPresetText(model, preset);
+		if (!presetText || !text.startsWith(presetText)) continue;
+		return {
+			negative: text.slice(presetText.length).replace(/^,\s*/, ""),
+			preset
+		};
+	}
+	return {
+		negative,
+		preset: "none"
+	};
+}
+/** Parses NovelAI metadata (PNG text map or the WebP equivalent). Null when it is not NovelAI. */
+function parseNovelAIMetadata(text, fallbackModel) {
+	const raw = text.Comment;
+	if (!raw) return null;
+	let comment;
+	try {
+		comment = obj(JSON.parse(raw));
+	} catch {
+		return null;
+	}
+	if (!("prompt" in comment) && !("v4_prompt" in comment) && !("steps" in comment)) return null;
+	const model = modelFromSource(text.Source) ?? (isModelId(fallbackModel) ? fallbackModel : void 0);
+	const v4 = obj(comment.v4_prompt);
+	const v4Caption = obj(v4.caption);
+	const v4Negative = obj(obj(comment.v4_negative_prompt).caption);
+	const basePrompt = str$1(v4Caption.base_caption) || str$1(comment.prompt) || str$1(text.Description);
+	const baseNegative = str$1(v4Negative.base_caption) || str$1(comment.uc);
+	const quality = model ? splitQualityTags(basePrompt, model) : {
+		prompt: basePrompt,
+		preset: void 0
+	};
+	const uc = model ? splitUcPreset(baseNegative, model) : {
+		negative: baseNegative,
+		preset: void 0
+	};
+	const charCaptions = Array.isArray(v4Caption.char_captions) ? v4Caption.char_captions.map(obj) : [];
+	const charNegatives = Array.isArray(v4Negative.char_captions) ? v4Negative.char_captions.map(obj) : [];
+	const characters = charCaptions.map((caption, i) => {
+		const center = obj(Array.isArray(caption.centers) ? caption.centers[0] : void 0);
+		return {
+			prompt: str$1(caption.char_caption),
+			negative: str$1(charNegatives[i]?.char_caption),
+			x: num$1(center.x) ?? .5,
+			y: num$1(center.y) ?? .5
+		};
+	});
+	const result = {
+		prompt: quality.prompt,
+		negative: uc.negative,
+		characters,
+		source: text.Source,
+		software: text.Software
+	};
+	if (model) result.model = model;
+	if (quality.preset) result.qualityPreset = quality.preset;
+	if (uc.preset) result.ucPreset = uc.preset;
+	const assign = (key, value) => {
+		if (value !== void 0) result[key] = value;
+	};
+	assign("seed", num$1(comment.seed));
+	assign("steps", num$1(comment.steps));
+	assign("scale", num$1(comment.scale));
+	assign("cfgRescale", num$1(comment.cfg_rescale));
+	assign("width", num$1(comment.width));
+	assign("height", num$1(comment.height));
+	assign("sampler", str$1(comment.sampler) || void 0);
+	assign("noiseSchedule", str$1(comment.noise_schedule) || void 0);
+	if (typeof comment.sm === "boolean") result.smea = comment.sm;
+	if (typeof comment.sm_dyn === "boolean") result.smeaDyn = comment.sm_dyn;
+	if ("skip_cfg_above_sigma" in comment) result.varietyBoost = comment.skip_cfg_above_sigma !== null;
+	if (typeof v4.use_coords === "boolean") result.useCoords = v4.use_coords;
+	assign("requestType", str$1(comment.request_type) || void 0);
+	return result;
+}
+var SOURCE_NAMES = {
+	"nai-diffusion-5-full": "NovelAI Diffusion V5 0ADF9AB7",
+	"nai-diffusion-5-curated": "NovelAI Diffusion V5",
+	"nai-diffusion-4-5-full": "NovelAI Diffusion V4.5 4BDE2A90",
+	"nai-diffusion-4-5-curated": "NovelAI Diffusion V4.5 Curated",
+	"nai-diffusion-4-full": "NovelAI Diffusion V4",
+	"nai-diffusion-4-curated-preview": "NovelAI Diffusion V4 Curated",
+	"nai-diffusion-3": "Stable Diffusion XL 7BCCAA2C",
+	"nai-diffusion-furry-3": "Stable Diffusion XL Furry"
+};
+/**
+* Text chunks in the NovelAI layout for images whose own metadata was lost (e.g. re-encoded).
+* Only fields NAI Studio really sent are written.
+*/
+function buildNovelAIText(meta) {
+	const v4 = meta.model.startsWith("nai-diffusion-4") || meta.model.startsWith("nai-diffusion-5");
+	const comment = {
+		prompt: meta.prompt,
+		steps: meta.steps,
+		height: meta.height,
+		width: meta.width,
+		scale: meta.scale,
+		seed: meta.seed,
+		sampler: meta.sampler,
+		noise_schedule: meta.noiseSchedule,
+		cfg_rescale: meta.cfgRescale,
+		n_samples: 1,
+		uc: meta.negativePrompt,
+		request_type: meta.requestType
+	};
+	if (v4) {
+		comment.v4_prompt = {
+			caption: {
+				base_caption: meta.prompt,
+				char_captions: meta.characters.map((c) => ({
+					char_caption: c.prompt,
+					centers: [{
+						x: c.x,
+						y: c.y
+					}]
+				}))
+			},
+			use_coords: meta.characters.length > 0,
+			use_order: true
+		};
+		comment.v4_negative_prompt = { caption: {
+			base_caption: meta.negativePrompt,
+			char_captions: meta.characters.map((c) => ({
+				char_caption: c.negative,
+				centers: [{
+					x: c.x,
+					y: c.y
+				}]
+			}))
+		} };
+	}
+	return {
+		Title: "AI generated image",
+		Description: meta.prompt,
+		Software: "NovelAI",
+		Source: SOURCE_NAMES[meta.model] ?? meta.model,
+		Comment: JSON.stringify(comment)
+	};
+}
+//#endregion
+//#region src/domain/gallery.ts
+function emptyQuery() {
+	return {
+		text: "",
+		model: "",
+		character: "",
+		chatId: "",
+		from: "",
+		to: "",
+		favoritesOnly: false,
+		sort: "newest"
+	};
+}
+/** Prompt tags (comma-separated, weights and braces removed) for search and the tag filter. */
+function promptTags(prompt) {
+	return prompt.split(/[,|\n]/).map((t) => t.replace(/-?\d+(\.\d+)?::/g, "").replace(/::/g, "").replace(/[{}[\]()]/g, "").trim().replace(/:\s*[\d.]+$/, "").toLowerCase()).filter(Boolean);
+}
+function haystack(record) {
+	const m = record.meta;
+	return [
+		m.scenePrompt,
+		m.prompt,
+		m.sourcePrompt ?? "",
+		m.negative,
+		record.characterName,
+		record.tags.join(" "),
+		String(m.seed),
+		m.model,
+		m.tool ?? ""
+	].join("\n").toLowerCase();
+}
+/** Every word of the query must appear somewhere (prompt, tags, seed, character, model). */
+function matchesQuery(record, query) {
+	if (query.favoritesOnly && !record.favorite) return false;
+	if (query.model && record.meta.model !== query.model) return false;
+	if (query.character && record.characterName !== query.character) return false;
+	if (query.chatId && record.chatId !== query.chatId) return false;
+	const day = record.createdAt.slice(0, 10);
+	if (query.from && day < query.from) return false;
+	if (query.to && day > query.to) return false;
+	const words = query.text.toLowerCase().split(/\s+/).filter(Boolean);
+	if (!words.length) return true;
+	const text = haystack(record);
+	return words.every((w) => text.includes(w));
+}
+function filterRecords(records, query) {
+	const list = records.filter((r) => matchesQuery(r, query));
+	list.sort((a, b) => (query.sort === "oldest" ? 1 : -1) * a.createdAt.localeCompare(b.createdAt));
+	return list;
+}
+/** Distinct values for the filter dropdowns. */
+function facets(records) {
+	const unique = (values) => [...new Set(values.filter(Boolean))].sort((a, b) => a.localeCompare(b));
+	return {
+		models: unique(records.map((r) => r.meta.model)),
+		characters: unique(records.map((r) => r.characterName)),
+		chats: unique(records.map((r) => r.chatId))
+	};
+}
+/** Field-by-field differences of two generations, for the side-by-side comparison. */
+function compareMeta(a, b) {
+	return [
+		"model",
+		"seed",
+		"width",
+		"height",
+		"steps",
+		"scale",
+		"cfgRescale",
+		"sampler",
+		"noiseSchedule",
+		"ucPreset",
+		"qualityPreset",
+		"prompt",
+		"negativePrompt"
+	].filter((k) => JSON.stringify(a[k]) !== JSON.stringify(b[k]));
+}
+//#endregion
 //#region src/features/auto/auto-generation.ts
 var SKIPPED_TYPES = /* @__PURE__ */ new Set([
 	"extension",
@@ -2483,6 +3358,183 @@ var AutoGenerator = class {
 		}
 	}
 };
+//#endregion
+//#region src/features/images/image-utils.ts
+function base64ToBytes(base64) {
+	const clean = base64.includes(",") ? base64.slice(base64.indexOf(",") + 1) : base64;
+	const binary = atob(clean);
+	const bytes = new Uint8Array(binary.length);
+	for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+	return bytes;
+}
+function bytesToBase64(bytes) {
+	let binary = "";
+	const chunk = 32768;
+	for (let i = 0; i < bytes.length; i += chunk) binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
+	return btoa(binary);
+}
+function base64ToBlob(base64, mime) {
+	return new Blob([base64ToBytes(base64)], { type: mime });
+}
+async function blobToBytes(blob) {
+	return new Uint8Array(await blob.arrayBuffer());
+}
+async function blobToBase64$1(blob) {
+	return bytesToBase64(await blobToBytes(blob));
+}
+/** MIME type from the first bytes (PNG / WebP / JPEG), defaulting to PNG. */
+function sniffMime(bytes) {
+	if (bytes[0] === 137 && bytes[1] === 80) return "image/png";
+	if (bytes[0] === 82 && bytes[1] === 73 && bytes[8] === 87) return "image/webp";
+	if (bytes[0] === 255 && bytes[1] === 216) return "image/jpeg";
+	return "image/png";
+}
+function canvas(width, height) {
+	const el = document.createElement("canvas");
+	el.width = width;
+	el.height = height;
+	return el;
+}
+async function canvasBlob(el, type, quality) {
+	return await new Promise((resolve, reject) => {
+		el.toBlob((blob) => blob ? resolve(blob) : reject(/* @__PURE__ */ new Error("canvas export failed")), type, quality);
+	});
+}
+/** Re-encodes any image to PNG (drops all metadata, pixels unchanged). */
+async function toPngBlob(blob, size) {
+	const bitmap = await createImageBitmap(blob);
+	const el = canvas(size?.width ?? bitmap.width, size?.height ?? bitmap.height);
+	const context = el.getContext("2d");
+	if (!context) throw new Error("canvas unavailable");
+	context.drawImage(bitmap, 0, 0, el.width, el.height);
+	bitmap.close();
+	return await canvasBlob(el, "image/png");
+}
+/** Small WebP preview for the gallery. */
+async function thumbnail(blob, maxSide) {
+	const bitmap = await createImageBitmap(blob);
+	const ratio = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
+	const el = canvas(Math.max(1, Math.round(bitmap.width * ratio)), Math.max(1, Math.round(bitmap.height * ratio)));
+	const context = el.getContext("2d");
+	if (!context) throw new Error("canvas unavailable");
+	context.drawImage(bitmap, 0, 0, el.width, el.height);
+	bitmap.close();
+	return await canvasBlob(el, "image/webp", .8);
+}
+/** Inflates a zlib stream (compressed PNG text chunks). */
+async function inflate(data) {
+	const stream = new Blob([data]).stream().pipeThrough(new DecompressionStream("deflate"));
+	return new Uint8Array(await new Response(stream).arrayBuffer());
+}
+/** Triggers a browser download of a blob. */
+function downloadBlob(blob, filename) {
+	const url = URL.createObjectURL(blob);
+	const link = document.createElement("a");
+	link.href = url;
+	link.download = filename;
+	document.body.append(link);
+	link.click();
+	link.remove();
+	setTimeout(() => URL.revokeObjectURL(url), 1e4);
+}
+//#endregion
+//#region src/features/gallery/gallery-store.ts
+function characterName() {
+	const c = ctx();
+	if (c.groupId) return c.groups.find((g) => g.id === c.groupId)?.name ?? String(c.groupId);
+	return c.name2 ?? "";
+}
+/** Pipeline observer: one record per generated image. Failures never break a generation. */
+function recordGeneration(produced, outcome) {
+	if (!settings().gallery.enabled) return;
+	(async () => {
+		for (const [i, image] of produced.images.entries()) {
+			const id = ctx().uuidv4();
+			const thumbKey = `thumb:${id}`;
+			try {
+				await imageStore().setItem(thumbKey, await thumbnail(base64ToBlob(image.base64, image.mime), settings().gallery.thumbSize));
+			} catch (error) {
+				log.warn("thumbnail failed", error);
+			}
+			const record = {
+				id,
+				createdAt: produced.meta.createdAt,
+				chatId: produced.chatId ?? "",
+				characterName: characterName(),
+				target: outcome.target === "inline" ? "inline" : outcome.target,
+				filePath: outcome.paths[i] ?? "",
+				blobKey: outcome.blobKeys?.[i] ?? "",
+				thumbKey,
+				mime: image.mime,
+				meta: {
+					...produced.meta,
+					seed: image.seed ?? produced.meta.seed + i
+				},
+				favorite: false,
+				tags: []
+			};
+			if (outcome.inlineId) record.inlineId = outcome.inlineId;
+			await galleryStore().setItem(id, record);
+		}
+	})().catch((error) => log.warn("gallery record failed", error));
+}
+async function listRecords() {
+	const store = galleryStore();
+	const keys = await store.keys();
+	return (await Promise.all(keys.map((key) => store.getItem(key)))).filter((r) => r !== null && typeof r === "object");
+}
+async function saveRecord(record) {
+	await galleryStore().setItem(record.id, record);
+}
+async function thumbBlob(record) {
+	try {
+		return await imageStore().getItem(record.thumbKey);
+	} catch {
+		return null;
+	}
+}
+/** Full image: browser copy, then the server file, then the thumbnail as a last resort. */
+async function fullBlob(record) {
+	if (record.blobKey) {
+		const blob = await imageStore().getItem(record.blobKey).catch(() => null);
+		if (blob) return blob;
+	}
+	if (record.filePath) {
+		const response = await fetch(record.filePath).catch(() => null);
+		if (response?.ok) return await response.blob();
+	}
+	return await thumbBlob(record);
+}
+/**
+* Deletes records and their thumbnails. With `deleteFiles`, server files are deleted too
+* (POST /api/images/delete); inline images in chats then fall back to their browser copy.
+*/
+async function deleteRecords(records, deleteFiles) {
+	let filesDeleted = 0;
+	for (const record of records) {
+		await galleryStore().removeItem(record.id);
+		await imageStore().removeItem(record.thumbKey);
+		if (deleteFiles && record.filePath) {
+			if ((await fetch("/api/images/delete", {
+				method: "POST",
+				headers: requestHeaders(),
+				body: JSON.stringify({ path: record.filePath })
+			}).catch(() => null))?.ok) filesDeleted++;
+		}
+	}
+	return filesDeleted;
+}
+async function storageUsage() {
+	try {
+		const estimate = await navigator.storage.estimate();
+		return {
+			usage: estimate.usage ?? 0,
+			quota: estimate.quota ?? 0
+		};
+	} catch {
+		return null;
+	}
+}
 //#endregion
 //#region src/transport/types.ts
 /** Transport failure. `serverMessage` is NovelAI's own text; tokens never pass through the client. */
@@ -2902,12 +3954,15 @@ function requestFromSettings(g, seed) {
 }
 //#endregion
 //#region src/features/generation/service.ts
-function prepareGeneration({ settings, transport, account, overrides, random }) {
+function prepareGeneration({ settings, transport, account, overrides, requestPatch, random }) {
 	const generation = {
 		...settings.generation,
 		...overrides
 	};
-	let request = requestFromSettings(generation, resolveSeed(generation.seed, random));
+	let request = {
+		...requestFromSettings(generation, resolveSeed(generation.seed, random)),
+		...requestPatch
+	};
 	const caps = getCapabilities(request.model);
 	let clampChanges = [];
 	if (settings.anlas.freeOnly) {
@@ -3016,7 +4071,7 @@ var StudioController = class {
 		this.emit();
 	}
 	/** Builds everything the inspector shows. Throws NaiError for requests that cannot be built. */
-	prepare(overrides) {
+	prepare(overrides, requestPatch) {
 		const transport = this.state.selection?.transport;
 		if (!transport) throw new NaiError("plugin-unavailable", "install-plugin");
 		try {
@@ -3024,7 +4079,8 @@ var StudioController = class {
 				settings: settings(),
 				transport,
 				account: this.state.account,
-				overrides
+				overrides,
+				requestPatch
 			});
 		} catch (error) {
 			throw toNaiError(error);
@@ -3144,28 +4200,128 @@ async function saveCharacterPrompt(index, value, share) {
 	});
 }
 //#endregion
+//#region src/features/images/png-io.ts
+/** NovelAI text map of a PNG or WebP (compressed PNG chunks inflated). Empty for other files. */
+async function readMetadataText(bytes) {
+	if (isPng(bytes)) {
+		const { text, compressed } = readPngText(bytes);
+		for (const entry of compressed) try {
+			text[entry.keyword] = new TextDecoder().decode(await inflate(entry.data));
+		} catch {}
+		return text;
+	}
+	if (isWebp(bytes)) return readWebpText(bytes);
+	return {};
+}
+async function readImportedParams(file) {
+	const bytes = await blobToBytes(file);
+	const model = settings().generation.model;
+	return parseNovelAIMetadata(await readMetadataText(bytes), isModelId(model) ? model : void 0);
+}
+/** Field names that were applied, for the toast. */
+function applyImportedParams(params) {
+	const g = settings().generation;
+	const applied = [];
+	const set = (key, value) => {
+		if (value === void 0) return;
+		g[key] = value;
+		applied.push(String(key));
+	};
+	set("model", params.model);
+	set("prompt", params.prompt);
+	set("negativePrompt", params.negative);
+	set("qualityPreset", params.qualityPreset);
+	if (params.ucPreset && params.model && getCapabilities(params.model).ucPresets.includes(params.ucPreset)) set("ucPreset", params.ucPreset);
+	set("seed", params.seed);
+	set("steps", params.steps);
+	set("scale", params.scale);
+	set("cfgRescale", params.cfgRescale);
+	set("width", params.width);
+	set("height", params.height);
+	set("sampler", params.sampler);
+	set("noiseSchedule", params.noiseSchedule);
+	set("smea", params.smea);
+	set("smeaDyn", params.smeaDyn);
+	if (params.smea !== void 0) g.autoSmea = false;
+	set("varietyBoost", params.varietyBoost);
+	set("useCoords", params.useCoords);
+	g.characters = params.characters.map((c) => ({
+		prompt: c.prompt,
+		negative: c.negative,
+		x: c.x,
+		y: c.y,
+		enabled: true
+	}));
+	applied.push("characters");
+	saveSettings();
+	notifyExternalChange();
+	return applied;
+}
+/**
+* Bytes to write to disk or to the server. PNG/WebP straight from NovelAI already carry their
+* metadata; other cases get it written in the NovelAI layout. With `strip`, everything is removed.
+*/
+async function exportImage(blob, meta, options) {
+	const bytes = await blobToBytes(blob);
+	const mime = sniffMime(bytes);
+	if (options.strip) {
+		if (mime === "image/png") return new Blob([stripPngMetadata(bytes)], { type: "image/png" });
+		return await toPngBlob(blob);
+	}
+	if (options.format === "original" && mime !== "image/png") return blob;
+	const ownText = await readMetadataText(bytes);
+	const text = ownText.Comment ? ownText : meta ? buildNovelAIText({
+		...meta,
+		requestType: requestTypeName(meta)
+	}) : {};
+	const png = mime === "image/png" ? bytes : await blobToBytes(await toPngBlob(blob));
+	const written = Object.keys(text).length ? writePngText(png, text) : png;
+	return new Blob([written], { type: "image/png" });
+}
+function requestTypeName(meta) {
+	switch (meta.requestType) {
+		case "img2img": return "Img2ImgRequest";
+		case "inpaint": return "NativeInfillingRequest";
+		default: return "PromptGenerateRequest";
+	}
+}
+//#endregion
 //#region src/features/generation/output.ts
 function safeName(text) {
 	return text.replace(/[^\p{L}\p{N}_-]+/gu, "_").slice(0, 40) || "nai";
 }
+/** Uploads one image to /user/images; with "strip metadata" on it goes up as a clean PNG. */
+async function uploadImage(base64, mime, folder, filename) {
+	let data = base64;
+	let format = mime === "image/webp" ? "webp" : mime === "image/jpeg" ? "jpg" : "png";
+	if (settings().png.stripMetadata) {
+		data = await blobToBase64$1(await exportImage(base64ToBlob(base64, mime), void 0, {
+			strip: true,
+			format: "png"
+		}));
+		format = "png";
+	}
+	const response = await fetch("/api/images/upload", {
+		method: "POST",
+		headers: requestHeaders(),
+		body: JSON.stringify({
+			image: data,
+			format,
+			ch_name: folder,
+			filename
+		})
+	});
+	if (!response.ok) throw new Error(`image upload failed: HTTP ${response.status}`);
+	const { path } = await response.json();
+	return path;
+}
+function imageFileName(folder, suffix) {
+	return `${folder ? `${safeName(folder)}_` : ""}${ctx().humanizedDateTime()}_${suffix}`;
+}
 async function saveImages(images, folder) {
-	const c = ctx();
 	const saved = [];
 	for (const image of images) {
-		const format = image.mime === "image/webp" ? "webp" : "png";
-		const filename = `${folder ? `${safeName(folder)}_` : ""}${c.humanizedDateTime()}_${image.seed ?? image.index}`;
-		const response = await fetch("/api/images/upload", {
-			method: "POST",
-			headers: requestHeaders(),
-			body: JSON.stringify({
-				image: image.base64,
-				format,
-				ch_name: folder,
-				filename
-			})
-		});
-		if (!response.ok) throw new Error(`image upload failed: HTTP ${response.status}`);
-		const { path } = await response.json();
+		const path = await uploadImage(image.base64, image.mime, folder, imageFileName(folder, image.seed ?? image.index));
 		saved.push({
 			path,
 			seed: image.seed
@@ -3303,12 +4459,60 @@ async function avatarUrl(mode) {
 	const index = soloCharacterIndex();
 	return `/characters/${encodeURIComponent(index === void 0 ? "" : c.characters[index]?.avatar ?? "")}`;
 }
+/** Full parameter record of a prepared request (lightbox, gallery, PNG metadata, "repeat"). */
+function metaFromPrepared(prepared, extra) {
+	const r = prepared.request;
+	const meta = {
+		scenePrompt: extra.scenePrompt,
+		prompt: prepared.body.input,
+		negativePrompt: String(prepared.body.parameters.negative_prompt ?? ""),
+		negative: extra.negative,
+		mode: extra.mode,
+		model: prepared.body.model,
+		seed: r.seed,
+		width: r.width,
+		height: r.height,
+		steps: r.steps,
+		scale: r.scale,
+		cfgRescale: r.cfgRescale,
+		sampler: r.sampler,
+		noiseSchedule: r.noiseSchedule,
+		ucPreset: r.ucPreset,
+		qualityPreset: r.qualityPreset,
+		requestType: r.mode,
+		characters: r.characters.filter((c) => c.enabled && c.prompt.trim()).map((c) => ({
+			prompt: c.prompt,
+			negative: c.negative,
+			x: c.center.x,
+			y: c.center.y
+		})),
+		transport: prepared.transportId,
+		cost: prepared.cost.total,
+		createdAt: (/* @__PURE__ */ new Date()).toISOString()
+	};
+	if (extra.tool) meta.tool = extra.tool;
+	return meta;
+}
 var Pipeline = class {
 	controller;
 	ui;
+	observers = /* @__PURE__ */ new Set();
 	constructor(controller, ui) {
 		this.controller = controller;
 		this.ui = ui;
+	}
+	onGenerated(observer) {
+		this.observers.add(observer);
+	}
+	notify(produced, outcome) {
+		for (const observer of this.observers) try {
+			observer(produced, outcome);
+		} catch (error) {
+			log.warn("generation observer failed", error);
+		}
+	}
+	get studio() {
+		return this.controller;
 	}
 	/** Scene prompt for a mode (before prefix/suffix and character prompt). */
 	async scenePrompt(mode, trigger, message, minimal, addNegative) {
@@ -3350,10 +4554,13 @@ var Pipeline = class {
 	* panel's Generate button will send (minus the random seed).
 	*/
 	previewFree(trigger) {
-		const assembled = this.assemble(MODE.FREE, trigger, "", false);
+		const assembled = this.assemble(MODE.FREE, trigger, "", {
+			isSwipe: false,
+			expanded: false
+		});
 		return this.controller.prepare(assembled.overrides);
 	}
-	assemble(mode, scene, additionalNegative, isSwipe, overrides = {}, forcedSize) {
+	assemble(mode, scene, additionalNegative, flags, overrides = {}, forcedSize) {
 		const s = settings();
 		const c = ctx();
 		const g = {
@@ -3364,7 +4571,7 @@ var Pipeline = class {
 		const dims = forcedSize ?? modeDimensions(mode, g.width, g.height, overrides.snap ?? s.modes.snap, caps.sizePresets);
 		let negativeExtra = additionalNegative;
 		let sceneText = scene;
-		if (mode === MODE.FREE && !isSwipe) {
+		if (mode === MODE.FREE && !flags.isSwipe && !flags.expanded) {
 			const free = applyFreeModeCharacter(scene, lastSpeakerPrompt());
 			sceneText = free.prompt;
 			if (free.negative) negativeExtra = combinePrefixes(negativeExtra, free.negative);
@@ -3378,7 +4585,7 @@ var Pipeline = class {
 			characterPositive: character.positive,
 			characterNegative: character.negative,
 			additionalNegative: negativeExtra,
-			useCharacterPrefix: usesCharacterPrefix(mode, isSwipe, soloCharacterIndex() !== void 0)
+			useCharacterPrefix: usesCharacterPrefix(mode, flags.isSwipe, soloCharacterIndex() !== void 0)
 		});
 		return {
 			overrides: {
@@ -3393,12 +4600,16 @@ var Pipeline = class {
 			dims
 		};
 	}
-	async generatePicture(req) {
+	/**
+	* Everything up to the images: mode, scene prompt (LLM / raw / free / multimodal), optional
+	* edit, SD_PROMPT_PROCESSING, assembly, cost guard, transport. Returns null when cancelled.
+	*/
+	async produce(req) {
 		const s = settings();
 		const c = ctx();
 		const o = req.overrides ?? {};
 		const trigger = req.trigger.trim();
-		if (!trigger && !req.swipe) return null;
+		if (!trigger && !req.swipe && req.scene === void 0) return null;
 		const refine = o.edit ?? s.modes.refine;
 		const minimal = o.minimalProcessing ?? s.modes.minimalProcessing;
 		let mode;
@@ -3406,7 +4617,17 @@ var Pipeline = class {
 		let additionalNegative = o.negative ?? "";
 		let forcedSize;
 		const isSwipe = Boolean(req.swipe);
-		if (req.swipe) {
+		if (req.scene !== void 0) {
+			mode = req.mode ?? MODE.FREE;
+			scene = req.scene;
+			if (refine) {
+				const edited = await this.ui.refine(scene, { negative: additionalNegative });
+				if (!edited) return null;
+				scene = edited.prompt;
+				additionalNegative = edited.negative ?? additionalNegative;
+			}
+			if (!scene.trim()) return null;
+		} else if (req.swipe) {
 			const attachment = req.swipe.attachment;
 			mode = attachment?.generation_type ?? MODE.FREE;
 			scene = attachment?.title ?? req.swipe.text ?? "";
@@ -3446,9 +4667,12 @@ var Pipeline = class {
 		};
 		await c.eventSource.emit(c.eventTypes.SD_PROMPT_PROCESSING ?? "sd_prompt_processing", eventData);
 		scene = eventData.prompt;
-		const assembled = this.assemble(mode, scene, additionalNegative, isSwipe, o, forcedSize);
+		const assembled = this.assemble(mode, scene, additionalNegative, {
+			isSwipe,
+			expanded: req.scene !== void 0
+		}, o, forcedSize);
 		if (isSwipe && assembled.overrides.seed === void 0 && s.generation.seed >= 0) assembled.overrides.seed = -1;
-		const prepared = this.controller.prepare(assembled.overrides);
+		const prepared = this.controller.prepare(assembled.overrides, req.requestPatch);
 		if (req.maxCost !== void 0 && prepared.cost.total > req.maxCost) throw new NaiError("free-only-blocked", "none", { cost: prepared.cost.total });
 		if (s.inspector.openBeforeSend) {
 			if (!await this.ui.inspect(prepared)) return null;
@@ -3467,12 +4691,9 @@ var Pipeline = class {
 		try {
 			const chatId = c.getCurrentChatId();
 			const result = await this.controller.send(prepared, abort.signal);
-			const folder = o.gallery === false ? "" : imageFolder();
-			const saved = await saveImages(result.images, folder);
-			const first = saved[0];
-			if (!first) throw new NaiError("invalid-response", "none", { preview: "" });
+			if (!result.images.length) throw new NaiError("invalid-response", "none", { preview: "" });
 			const generation = o.generation ?? {};
-			const meta = {
+			const legacy = {
 				scenePrompt: assembled.sceneText,
 				prompt: prepared.body.input,
 				negative: assembled.negativeExtra,
@@ -3484,12 +4705,53 @@ var Pipeline = class {
 				correlationId: result.correlationId,
 				...forcedSize ?? (generation.width && generation.height ? assembled.dims : {})
 			};
+			const meta = metaFromPrepared(prepared, {
+				scenePrompt: assembled.sceneText,
+				negative: assembled.negativeExtra,
+				mode
+			});
+			log.info("picture", req.initiator, `mode ${mode}`, prepared.body.model, `cost ${prepared.cost.total}`);
+			return {
+				images: result.images,
+				meta,
+				legacy,
+				prepared,
+				mode,
+				chatId
+			};
+		} catch (error) {
+			throw toNaiError(error, {
+				model: prepared.request.model,
+				family: prepared.caps.family,
+				transport: prepared.transportId
+			});
+		} finally {
+			await loader?.hide();
+		}
+	}
+	async generatePicture(req) {
+		const s = settings();
+		const c = ctx();
+		const o = req.overrides ?? {};
+		const produced = await this.produce(req);
+		if (!produced) return null;
+		const { legacy: meta, mode, chatId } = produced;
+		const cost = produced.prepared.cost.total;
+		try {
+			const folder = o.gallery === false ? "" : imageFolder();
+			const saved = await saveImages(produced.images, folder);
+			const first = saved[0];
+			if (!first) throw new NaiError("invalid-response", "none", { preview: "" });
+			this.notify(produced, {
+				target: o.quiet ? "other" : "message",
+				paths: saved.map((x) => x.path)
+			});
 			if (ctx().getCurrentChatId() !== chatId) {
 				toastr.warning(t("naist.result.chatChanged", { count: saved.length }));
 				return {
 					path: first.path,
 					messageId: null,
-					cost: prepared.cost.total
+					cost
 				};
 			}
 			let messageId = null;
@@ -3506,25 +4768,412 @@ var Pipeline = class {
 						visible: s.chat.visibility[req.initiator] === true,
 						author: s.chat.author,
 						hidePrompt: s.chat.hidePrompt,
-						text: messageText(templates()[String(MODE.MESSAGE)] ?? "{{prompt}}", assembled.sceneText)
+						text: messageText(templates()[String(MODE.MESSAGE)] ?? "{{prompt}}", meta.scenePrompt)
 					});
 				}
 			}
-			log.info("picture", req.initiator, `mode ${mode}`, prepared.body.model, `cost ${prepared.cost.total}`);
 			return {
 				path: first.path,
 				messageId,
-				cost: prepared.cost.total
+				cost
 			};
 		} catch (error) {
 			throw toNaiError(error, {
-				model: prepared.request.model,
-				family: prepared.caps.family,
-				transport: prepared.transportId
+				model: produced.prepared.request.model,
+				transport: produced.prepared.transportId
 			});
-		} finally {
-			await loader?.hide();
 		}
+	}
+};
+//#endregion
+//#region src/features/inline/inline-store.ts
+var PREFIX = "img:";
+/** Keys written but not yet referenced by a saved message (excluded from garbage collection). */
+var pending = /* @__PURE__ */ new Set();
+function chatKey() {
+	return (ctx().getCurrentChatId() ?? "nochat").replace(/:/g, "_");
+}
+function newBlobKey(imageId) {
+	return `${PREFIX}${chatKey()}:${imageId}:${ctx().uuidv4().slice(0, 8)}`;
+}
+async function putBlob(key, blob) {
+	pending.add(key);
+	await imageStore().setItem(key, blob);
+}
+/** Call once the entry that references the key is in the chat. */
+function settle(keys) {
+	for (const key of keys) pending.delete(key);
+}
+async function getBlob(key) {
+	if (!key) return null;
+	try {
+		return await imageStore().getItem(key);
+	} catch {
+		return null;
+	}
+}
+async function removeBlobs(keys) {
+	await Promise.all(keys.filter(Boolean).map((key) => imageStore().removeItem(key)));
+}
+/** Every blob key referenced by any message or any message swipe of a chat. */
+function referencedKeys(chat) {
+	const keys = /* @__PURE__ */ new Set();
+	const add = (extra) => {
+		for (const entry of readEntries(extra)) for (const key of entryBlobKeys(entry)) keys.add(key);
+	};
+	for (const message of chat) {
+		add(message.extra);
+		const swipes = message.swipe_info;
+		if (Array.isArray(swipes)) for (const info of swipes) add(info?.extra);
+	}
+	return keys;
+}
+/** Frees blobs of the current chat that nothing references any more. Returns how many. */
+async function collectGarbage() {
+	const prefix = `${PREFIX}${chatKey()}:`;
+	let keys;
+	try {
+		keys = (await imageStore().keys()).filter((k) => k.startsWith(prefix));
+	} catch (error) {
+		log.warn("image store unavailable", error);
+		return 0;
+	}
+	const used = referencedKeys(ctx().chat);
+	const unused = keys.filter((k) => !used.has(k) && !pending.has(k));
+	await removeBlobs(unused);
+	if (unused.length) log.info(`freed ${unused.length} inline image blob(s)`);
+	return unused.length;
+}
+//#endregion
+//#region src/features/inline/inline-service.ts
+function message(messageId) {
+	const found = ctx().chat[messageId];
+	if (!found) throw new NaiError("image-not-found", "none");
+	return found;
+}
+function entriesOf(m) {
+	m.extra ??= {};
+	const entries = readEntries(m.extra);
+	m.extra.nai_images = entries;
+	return entries;
+}
+function findEntry(messageId, imageId) {
+	const m = message(messageId);
+	const entry = entriesOf(m).find((e) => e.id === imageId);
+	if (!entry) throw new NaiError("image-not-found", "none");
+	return {
+		m,
+		entry
+	};
+}
+/** Keeps the active swipe copy of the message in sync, saves the chat and re-renders. */
+async function commit(messageId, rerender = true) {
+	const c = ctx();
+	const m = c.chat[messageId];
+	if (!m) return;
+	const swipeId = m.swipe_id;
+	if (Array.isArray(m.swipes) && typeof swipeId === "number" && swipeId < m.swipes.length) {
+		m.swipes[swipeId] = m.mes;
+		const info = Array.isArray(m.swipe_info) ? m.swipe_info[swipeId] : void 0;
+		if (info && typeof info === "object") info.extra = structuredClone(m.extra);
+	}
+	await c.saveChat();
+	if (rerender) c.updateMessageBlock(messageId, m);
+}
+var InlineImages = class {
+	pipeline;
+	listeners = /* @__PURE__ */ new Set();
+	constructor(pipeline) {
+		this.pipeline = pipeline;
+	}
+	/** The renderer subscribes to re-mount a message after a change it did not cause. */
+	onChange(listener) {
+		this.listeners.add(listener);
+	}
+	changed(messageId) {
+		for (const listener of this.listeners) listener(messageId);
+	}
+	entries(messageId) {
+		const m = ctx().chat[messageId];
+		return m ? readEntries(m.extra) : [];
+	}
+	displayDefaults(partial = {}) {
+		const s = settings().inline;
+		return defaultDisplay({
+			width: s.defaultWidth,
+			widthUnit: s.defaultWidthUnit,
+			align: s.defaultAlign,
+			radius: s.defaultRadius,
+			layout: s.defaultLayout,
+			...partial
+		});
+	}
+	/** Saves one generated image (browser copy and/or server file) as a swipe. */
+	async storeImage(imageId, image, meta) {
+		const s = settings().inline;
+		const swipeMeta = {
+			...meta,
+			seed: image.seed ?? meta.seed
+		};
+		let blobKey = "";
+		if (s.keepBrowserCopy) {
+			blobKey = newBlobKey(imageId);
+			await putBlob(blobKey, base64ToBlob(image.base64, image.mime));
+		}
+		let filePath = "";
+		if (s.saveToServer || !blobKey) {
+			const folder = imageFolder();
+			filePath = await uploadImage(image.base64, image.mime, folder, imageFileName(folder, swipeMeta.seed));
+		}
+		return {
+			blobKey,
+			filePath,
+			mime: image.mime,
+			meta: swipeMeta
+		};
+	}
+	record(produced, swipes, inlineId) {
+		this.pipeline.notify(produced, {
+			target: "inline",
+			paths: swipes.map((s) => s.filePath),
+			blobKeys: swipes.map((s) => s.blobKey),
+			inlineId
+		});
+	}
+	/** Generates a new image entry for a message (text untouched). Null when cancelled. */
+	async create(messageId, req) {
+		message(messageId);
+		const produced = await this.pipeline.produce({
+			initiator: "message",
+			trigger: req.trigger,
+			mode: req.mode,
+			scene: req.scene,
+			overrides: req.overrides
+		});
+		if (!produced) return null;
+		const m = message(messageId);
+		const id = ctx().uuidv4();
+		const swipes = [];
+		for (const image of produced.images) swipes.push(await this.storeImage(id, image, produced.meta));
+		const [first, ...rest] = swipes;
+		if (!first) throw new NaiError("invalid-response", "none", { preview: "" });
+		const entry = createInlineImage(id, first, this.displayDefaults(req.display));
+		for (const swipe of rest) addSwipe(entry, swipe);
+		if (rest.length) setActiveSwipe(entry, 0);
+		entriesOf(m).push(entry);
+		this.record(produced, swipes, id);
+		return entry;
+	}
+	/** Generates and inserts at a character offset of the message text (end by default). */
+	async insert(messageId, req, offset) {
+		const entry = await this.create(messageId, req);
+		if (!entry) return null;
+		const m = message(messageId);
+		m.mes = insertPlaceholder(m.mes, entry.id, offset ?? m.mes.length);
+		await commit(messageId);
+		settle(entryBlobKeys(entry));
+		return entry;
+	}
+	/** After an edit-mode insertion the placeholder lives in the textarea until ST saves it. */
+	async saveCreated(messageId, entry) {
+		await commit(messageId, false);
+		settle(entryBlobKeys(entry));
+	}
+	async addGeneratedSwipe(messageId, imageId, produced) {
+		if (!produced) return false;
+		const { entry } = findEntry(messageId, imageId);
+		const swipes = [];
+		for (const image of produced.images) swipes.push(await this.storeImage(imageId, image, produced.meta));
+		for (const swipe of swipes) addSwipe(entry, swipe);
+		await commit(messageId);
+		settle(swipes.map((s) => s.blobKey));
+		this.record(produced, swipes, imageId);
+		return true;
+	}
+	overridesFrom(meta, seed) {
+		return {
+			negative: meta.negative,
+			generation: {
+				model: meta.model,
+				width: meta.width,
+				height: meta.height,
+				steps: meta.steps,
+				scale: meta.scale,
+				cfgRescale: meta.cfgRescale,
+				sampler: meta.sampler,
+				noiseSchedule: meta.noiseSchedule,
+				seed
+			}
+		};
+	}
+	/** Same parameters, new seed; kept at the same position as a new swipe. */
+	async regenerate(messageId, imageId) {
+		const { entry } = findEntry(messageId, imageId);
+		const meta = activeSwipe(entry)?.meta ?? entry.meta;
+		const produced = await this.pipeline.produce({
+			initiator: "message",
+			trigger: meta.scenePrompt,
+			scene: meta.scenePrompt,
+			mode: meta.mode,
+			overrides: this.overridesFrom(meta, -1)
+		});
+		return await this.addGeneratedSwipe(messageId, imageId, produced);
+	}
+	/** Same seed plus noise: img2img from the current image (plugin transport only). */
+	async variation(messageId, imageId) {
+		if (!(this.pipeline.studio.state.selection?.transport)?.features.img2img) throw new NaiError("feature-unavailable", "install-plugin", { feature: "img2img" });
+		const { entry } = findEntry(messageId, imageId);
+		const swipe = activeSwipe(entry);
+		if (!swipe) throw new NaiError("image-not-found", "none");
+		const image = await blobToBase64$1(await toPngBlob(await this.sourceBlob(swipe), {
+			width: swipe.meta.width,
+			height: swipe.meta.height
+		}));
+		const s = settings().inline;
+		const produced = await this.pipeline.produce({
+			initiator: "message",
+			trigger: swipe.meta.scenePrompt,
+			scene: swipe.meta.scenePrompt,
+			mode: swipe.meta.mode,
+			overrides: this.overridesFrom(swipe.meta, swipe.meta.seed),
+			requestPatch: {
+				mode: "img2img",
+				image,
+				strength: s.variationStrength,
+				noise: s.variationNoise
+			}
+		});
+		return await this.addGeneratedSwipe(messageId, imageId, produced);
+	}
+	/** "Redo with an edited prompt": parameters from the popup, result as a new swipe. */
+	async editAndRegenerate(messageId, imageId, params) {
+		const { entry } = findEntry(messageId, imageId);
+		const meta = activeSwipe(entry)?.meta ?? entry.meta;
+		const overrides = this.overridesFrom({
+			...meta,
+			model: params.model,
+			width: params.width,
+			height: params.height,
+			steps: params.steps,
+			scale: params.scale
+		}, params.seed);
+		overrides.negative = params.negative;
+		const produced = await this.pipeline.produce({
+			initiator: "message",
+			trigger: params.scene,
+			scene: params.scene,
+			mode: meta.mode === MODE.FREE ? MODE.FREE : meta.mode,
+			overrides
+		});
+		return await this.addGeneratedSwipe(messageId, imageId, produced);
+	}
+	/** Adds an externally produced image (Director Tools, upscale, inpaint) as a new swipe. */
+	async addProducedSwipe(messageId, imageId, produced) {
+		return await this.addGeneratedSwipe(messageId, imageId, produced);
+	}
+	async setActive(messageId, imageId, index) {
+		const { entry } = findEntry(messageId, imageId);
+		setActiveSwipe(entry, index);
+		await commit(messageId);
+	}
+	/** Removes the active swipe (the last remaining one deletes the whole image). */
+	async deleteSwipe(messageId, imageId) {
+		const { entry } = findEntry(messageId, imageId);
+		if (entry.swipes.length <= 1) {
+			await this.remove(messageId, imageId);
+			return;
+		}
+		removeSwipe(entry, entry.activeSwipe);
+		await commit(messageId);
+		await collectGarbage();
+	}
+	async remove(messageId, imageId) {
+		const m = message(messageId);
+		m.mes = removePlaceholder(m.mes, imageId);
+		m.extra ??= {};
+		m.extra.nai_images = entriesOf(m).filter((e) => e.id !== imageId);
+		await commit(messageId);
+		await collectGarbage();
+	}
+	async updateDisplay(messageId, imageId, display) {
+		const { entry } = findEntry(messageId, imageId);
+		entry.display = {
+			...entry.display,
+			...display
+		};
+		await commit(messageId);
+	}
+	/** Moves an image inside a message or to another message (before `beforeId`, or to the end). */
+	async move(fromId, imageId, toId, beforeId) {
+		if (fromId === toId) {
+			const m = message(fromId);
+			m.mes = movePlaceholder(m.mes, imageId, beforeId);
+			await commit(fromId);
+			return;
+		}
+		const { m: from, entry } = findEntry(fromId, imageId);
+		const to = message(toId);
+		from.mes = removePlaceholder(from.mes, imageId);
+		from.extra ??= {};
+		from.extra.nai_images = entriesOf(from).filter((e) => e.id !== imageId);
+		const offset = (beforeId ? readEntries(to.extra).some((e) => e.id === beforeId) : false) ? to.mes.indexOf(`[nai:img:${beforeId}]`) : to.mes.length;
+		to.mes = insertPlaceholder(to.mes, imageId, offset);
+		entriesOf(to).push(entry);
+		await commit(fromId);
+		await commit(toId);
+	}
+	/**
+	* Text and entries of one message after an edit, swipe or regeneration. Returns true when
+	* something was removed. Blobs of other swipes are untouched (they keep their own copies).
+	*/
+	async reconcileMessage(messageId, rerender = true) {
+		const m = ctx().chat[messageId];
+		if (!m) return false;
+		const entries = readEntries(m.extra);
+		if (!entries.length && !m.mes.includes("[nai:img:")) return false;
+		const result = reconcile(m.mes, entries);
+		if (!result.removedEntries.length && !result.removedPlaceholders.length) return false;
+		m.mes = result.text;
+		m.extra ??= {};
+		m.extra.nai_images = result.entries;
+		await commit(messageId, rerender);
+		log.info(`inline images reconciled in message ${messageId}:`, `${result.removedEntries.length} entries, ${result.removedPlaceholders.length} placeholders removed`);
+		return true;
+	}
+	async reconcileChat() {
+		const chat = ctx().chat;
+		let changed = false;
+		for (let i = 0; i < chat.length; i++) changed = await this.reconcileMessage(i) || changed;
+		await collectGarbage();
+		if (changed) log.info("inline images reconciled");
+	}
+	/** Full image of a swipe: browser copy first, then the server file. */
+	async sourceBlob(swipe) {
+		const local = await getBlob(swipe.blobKey);
+		if (local) return local;
+		if (swipe.filePath) {
+			const response = await fetch(swipe.filePath);
+			if (response.ok) return await response.blob();
+		}
+		throw new NaiError("image-load-failed", "none");
+	}
+	/** Makes sure the active swipe has a file in /user/images (backgrounds, avatars need one). */
+	async ensureFile(messageId, imageId) {
+		const { entry } = findEntry(messageId, imageId);
+		const swipe = activeSwipe(entry);
+		if (!swipe) throw new NaiError("image-not-found", "none");
+		if (swipe.filePath) return swipe.filePath;
+		const blob = await this.sourceBlob(swipe);
+		const folder = imageFolder();
+		swipe.filePath = await uploadImage(await blobToBase64$1(blob), blob.type || swipe.mime, folder, imageFileName(folder, swipe.meta.seed));
+		setActiveSwipe(entry, entry.activeSwipe);
+		await commit(messageId, false);
+		this.changed(messageId);
+		return swipe.filePath;
+	}
+	/** Lifecycle "clean" and the gallery's mass delete free blobs through here. */
+	async freeBlobs(keys) {
+		await removeBlobs(keys);
 	}
 };
 //#endregion
@@ -3826,6 +5475,1274 @@ async function enableBuiltIn() {
 	await ctx().executeSlashCommandsWithOptions(`/extension-enable ${BUILTIN_NAME}`);
 }
 //#endregion
+//#region src/ui/components/dom.ts
+/** Handlebars template -> sanitized HTML (SillyTavern's own Handlebars and DOMPurify). */
+function render$1(template, data = {}) {
+	const html = libs().Handlebars.compile(template)(data);
+	return libs().DOMPurify.sanitize(html);
+}
+function $id$1(root, id) {
+	const el = root.querySelector(`#${id}`);
+	if (!el) throw new Error(`NAI Studio UI: missing #${id}`);
+	return el;
+}
+function fillSelect$1(select, options, current) {
+	select.innerHTML = "";
+	for (const option of options) {
+		const el = document.createElement("option");
+		el.value = option.value;
+		el.textContent = option.label;
+		select.append(el);
+	}
+	select.value = options.some((o) => o.value === current) ? current : options[0]?.value ?? "";
+}
+var HTML_ESCAPES = {
+	"&": "&amp;",
+	"<": "&lt;",
+	">": "&gt;",
+	"\"": "&quot;",
+	"'": "&#39;"
+};
+/** Safe for text content and attribute values. */
+function escapeHtml$2(text) {
+	return text.replace(/[&<>"']/g, (ch) => HTML_ESCAPES[ch] ?? ch);
+}
+//#endregion
+//#region src/ui/gallery.ts
+function bytes(n) {
+	if (n > 1024 ** 3) return `${(n / 1024 ** 3).toFixed(1)} GB`;
+	if (n > 1024 ** 2) return `${(n / 1024 ** 2).toFixed(1)} MB`;
+	return `${Math.round(n / 1024)} KB`;
+}
+function options(values, current, emptyKey) {
+	return [`<option value="">${escapeHtml$2(t(emptyKey))}</option>`, ...values.map((v) => `<option value="${escapeHtml$2(v)}"${v === current ? " selected" : ""}>${escapeHtml$2(v)}</option>`)].join("");
+}
+async function openGallery(actions) {
+	const c = ctx();
+	let records = await listRecords();
+	const query = emptyQuery();
+	const selected = /* @__PURE__ */ new Set();
+	const urls = [];
+	const root = document.createElement("div");
+	root.className = "naist-gallery";
+	const observer = new IntersectionObserver((entries) => {
+		for (const entry of entries) {
+			if (!entry.isIntersecting) continue;
+			const img = entry.target;
+			observer.unobserve(img);
+			const record = records.find((r) => r.id === img.dataset.id);
+			if (!record) continue;
+			thumbBlob(record).then((blob) => {
+				if (blob) {
+					const url = URL.createObjectURL(blob);
+					urls.push(url);
+					img.src = url;
+				} else if (record.filePath) img.src = encodeURI(record.filePath);
+			});
+		}
+	}, { rootMargin: "300px" });
+	const toolbar = () => {
+		const f = facets(records);
+		return `
+        <div class="naist-gallery-toolbar">
+            <input class="text_pole naist-g-text" type="search" placeholder="${escapeHtml$2(t("naist.gallery.search"))}" value="${escapeHtml$2(query.text)}">
+            <select class="text_pole naist-g-model">${options(f.models, query.model, "naist.gallery.allModels")}</select>
+            <select class="text_pole naist-g-character">${options(f.characters, query.character, "naist.gallery.allCharacters")}</select>
+            <select class="text_pole naist-g-chat">${options(f.chats, query.chatId, "naist.gallery.allChats")}</select>
+            <input class="text_pole naist-g-from" type="date" value="${escapeHtml$2(query.from)}" title="${escapeHtml$2(t("naist.gallery.from"))}">
+            <input class="text_pole naist-g-to" type="date" value="${escapeHtml$2(query.to)}" title="${escapeHtml$2(t("naist.gallery.to"))}">
+            <select class="text_pole naist-g-sort">
+                <option value="newest"${query.sort === "newest" ? " selected" : ""}>${escapeHtml$2(t("naist.gallery.newest"))}</option>
+                <option value="oldest"${query.sort === "oldest" ? " selected" : ""}>${escapeHtml$2(t("naist.gallery.oldest"))}</option>
+            </select>
+            <label class="checkbox_label"><input type="checkbox" class="naist-g-fav"${query.favoritesOnly ? " checked" : ""}><span>${escapeHtml$2(t("naist.gallery.favoritesOnly"))}</span></label>
+        </div>
+        <div class="naist-gallery-actions">
+            <span class="naist-muted naist-g-count"></span>
+            <div class="menu_button naist-g-all">${escapeHtml$2(t("naist.gallery.selectAll"))}</div>
+            <div class="menu_button naist-g-compare">${escapeHtml$2(t("naist.gallery.compare"))}</div>
+            <div class="menu_button naist-g-delete">${escapeHtml$2(t("naist.gallery.delete"))}</div>
+            <span class="naist-muted naist-g-usage"></span>
+        </div>
+        <div class="naist-gallery-grid"></div>`;
+	};
+	const renderGrid = () => {
+		const grid = root.querySelector(".naist-gallery-grid");
+		if (!grid) return;
+		observer.disconnect();
+		const list = filterRecords(records, query);
+		grid.innerHTML = list.map((r) => `
+            <div class="naist-g-card${selected.has(r.id) ? " naist-g-selected" : ""}" data-id="${escapeHtml$2(r.id)}">
+                <img data-id="${escapeHtml$2(r.id)}" alt="" loading="lazy">
+                <div class="naist-g-card-bar">
+                    <input type="checkbox" class="naist-g-check"${selected.has(r.id) ? " checked" : ""}>
+                    <i class="fa-solid fa-star naist-g-star${r.favorite ? " naist-g-fav-on" : ""}" title="${escapeHtml$2(t("naist.gallery.favorite"))}"></i>
+                    <i class="fa-solid fa-repeat naist-g-repeat" title="${escapeHtml$2(t("naist.gallery.repeat"))}"></i>
+                    <span class="naist-muted" title="${escapeHtml$2(r.meta.scenePrompt)}">${escapeHtml$2(String(r.meta.seed))}</span>
+                </div>
+                <div class="naist-g-card-text" title="${escapeHtml$2(r.meta.scenePrompt)}">${escapeHtml$2(promptTags(r.meta.scenePrompt).slice(0, 6).join(", "))}</div>
+            </div>`).join("");
+		grid.querySelectorAll("img[data-id]").forEach((img) => observer.observe(img));
+		const count = root.querySelector(".naist-g-count");
+		if (count) count.textContent = t("naist.gallery.count", {
+			shown: list.length,
+			total: records.length,
+			selected: selected.size
+		});
+	};
+	const renderAll = () => {
+		root.innerHTML = toolbar();
+		renderGrid();
+		storageUsage().then((u) => {
+			const el = root.querySelector(".naist-g-usage");
+			if (el && u) el.textContent = t("naist.gallery.usage", {
+				used: bytes(u.usage),
+				quota: bytes(u.quota)
+			});
+		});
+	};
+	root.addEventListener("input", (event) => {
+		const target = event.target;
+		if (target.classList.contains("naist-g-text")) query.text = target.value;
+		else if (target.classList.contains("naist-g-from")) query.from = target.value;
+		else if (target.classList.contains("naist-g-to")) query.to = target.value;
+		else return;
+		renderGrid();
+	});
+	root.addEventListener("change", (event) => {
+		const target = event.target;
+		if (target.classList.contains("naist-g-model")) query.model = target.value;
+		else if (target.classList.contains("naist-g-character")) query.character = target.value;
+		else if (target.classList.contains("naist-g-chat")) query.chatId = target.value;
+		else if (target.classList.contains("naist-g-sort")) query.sort = target.value === "oldest" ? "oldest" : "newest";
+		else if (target.classList.contains("naist-g-fav")) query.favoritesOnly = target.checked;
+		else if (target.classList.contains("naist-g-check")) {
+			const id = target.closest(".naist-g-card")?.dataset.id ?? "";
+			if (target.checked) selected.add(id);
+			else selected.delete(id);
+			target.closest(".naist-g-card")?.classList.toggle("naist-g-selected", target.checked);
+			const count = root.querySelector(".naist-g-count");
+			if (count) count.textContent = t("naist.gallery.count", {
+				shown: filterRecords(records, query).length,
+				total: records.length,
+				selected: selected.size
+			});
+			return;
+		} else return;
+		renderGrid();
+	});
+	root.addEventListener("click", (event) => {
+		const target = event.target;
+		const card = target.closest(".naist-g-card");
+		const record = card ? records.find((r) => r.id === card.dataset.id) : void 0;
+		if (target.classList.contains("naist-g-star") && record) {
+			record.favorite = !record.favorite;
+			target.classList.toggle("naist-g-fav-on", record.favorite);
+			saveRecord(record);
+		} else if (target.classList.contains("naist-g-repeat") && record) actions.repeat(record);
+		else if (target.tagName === "IMG" && record) actions.open(record);
+		else if (target.classList.contains("naist-g-all")) {
+			const list = filterRecords(records, query);
+			const all = list.every((r) => selected.has(r.id));
+			for (const r of list) if (all) selected.delete(r.id);
+			else selected.add(r.id);
+			renderGrid();
+		} else if (target.classList.contains("naist-g-compare")) {
+			const pair = records.filter((r) => selected.has(r.id));
+			if (pair.length !== 2) {
+				toastr.info(t("naist.gallery.compareHint"));
+				return;
+			}
+			compare(pair[0], pair[1]);
+		} else if (target.classList.contains("naist-g-delete")) {
+			const list = records.filter((r) => selected.has(r.id));
+			if (!list.length) return;
+			(async () => {
+				const box = document.createElement("div");
+				box.innerHTML = `<p>${escapeHtml$2(t("naist.gallery.deleteConfirm", { count: list.length }))}</p>
+                    <label class="checkbox_label"><input type="checkbox" class="naist-g-del-files"><span>${escapeHtml$2(t("naist.gallery.deleteFiles"))}</span></label>`;
+				if (await c.callGenericPopup(box, c.POPUP_TYPE.CONFIRM) !== c.POPUP_RESULT.AFFIRMATIVE) return;
+				const files = box.querySelector(".naist-g-del-files")?.checked === true;
+				const removed = await deleteRecords(list, files);
+				toastr.success(t("naist.gallery.deleted", {
+					count: list.length,
+					files: removed
+				}));
+				for (const r of list) selected.delete(r.id);
+				records = await listRecords();
+				renderAll();
+			})();
+		}
+	});
+	renderAll();
+	localize(root);
+	await c.callGenericPopup(root, c.POPUP_TYPE.TEXT, "", {
+		wide: true,
+		large: true,
+		allowVerticalScrolling: true
+	});
+	observer.disconnect();
+	for (const url of urls) URL.revokeObjectURL(url);
+}
+async function compare(a, b) {
+	const c = ctx();
+	const [blobA, blobB] = await Promise.all([fullBlob(a), fullBlob(b)]);
+	const urlA = blobA ? URL.createObjectURL(blobA) : encodeURI(a.filePath);
+	const urlB = blobB ? URL.createObjectURL(blobB) : encodeURI(b.filePath);
+	const diff = new Set(compareMeta(a.meta, b.meta));
+	const keys = [
+		"model",
+		"seed",
+		"width",
+		"height",
+		"steps",
+		"scale",
+		"cfgRescale",
+		"sampler",
+		"noiseSchedule",
+		"ucPreset",
+		"qualityPreset",
+		"prompt",
+		"negativePrompt"
+	];
+	const root = document.createElement("div");
+	root.className = "naist-compare";
+	root.innerHTML = `
+        <div class="naist-compare-images"><img alt="" src="${escapeHtml$2(urlA)}"><img alt="" src="${escapeHtml$2(urlB)}"></div>
+        <table class="naist-meta-table">${keys.map((k) => `<tr class="${diff.has(k) ? "naist-compare-diff" : ""}"><th>${escapeHtml$2(String(k))}</th><td>${escapeHtml$2(String(a.meta[k]))}</td><td>${escapeHtml$2(String(b.meta[k]))}</td></tr>`).join("")}</table>`;
+	await c.callGenericPopup(root, c.POPUP_TYPE.TEXT, "", {
+		wide: true,
+		large: true,
+		allowVerticalScrolling: true
+	});
+	if (blobA) URL.revokeObjectURL(urlA);
+	if (blobB) URL.revokeObjectURL(urlB);
+}
+//#endregion
+//#region src/ui/inline-dialogs.ts
+async function confirmPopup(root, okKey, wide = false) {
+	const c = ctx();
+	localize(root);
+	return await c.callGenericPopup(root, c.POPUP_TYPE.CONFIRM, "", {
+		okButton: t(okKey),
+		cancelButton: t("naist.inspector.cancel"),
+		wide
+	}) === c.POPUP_RESULT.AFFIRMATIVE;
+}
+function value(root, selector) {
+	return root.querySelector(selector)?.value ?? "";
+}
+function checked(root, selector) {
+	return root.querySelector(selector)?.checked === true;
+}
+/** Insert dialog. `selection` pre-fills the prompt (selected text or text near the cursor). */
+async function insertDialog(selection) {
+	const s = settings().inline;
+	const modes = [
+		{
+			value: "free",
+			label: t("naist.inline.modeFree")
+		},
+		{
+			value: "text",
+			label: t("naist.inline.modeText")
+		},
+		...WAND_MODES.map((m) => ({
+			value: String(m),
+			label: t(`naist.mode.${m}`)
+		}))
+	];
+	const root = document.createElement("div");
+	root.className = "naist-dialog";
+	root.innerHTML = `
+        <h3 data-i18n="naist.inline.insertTitle"></h3>
+        <label for="naist_ins_mode" data-i18n="naist.inline.mode"></label>
+        <select id="naist_ins_mode" class="text_pole">${modes.map((m) => `<option value="${escapeHtml$2(m.value)}"${m.value === s.insertMode ? " selected" : ""}>${escapeHtml$2(m.label)}</option>`).join("")}</select>
+        <label for="naist_ins_prompt" data-i18n="naist.inline.prompt"></label>
+        <textarea id="naist_ins_prompt" class="text_pole" rows="4">${escapeHtml$2(selection)}</textarea>
+        <div class="naist-hint" data-i18n="naist.inline.promptHint"></div>
+        <div class="naist-grid3">
+            <div><label data-i18n="naist.inline.width"></label><input id="naist_ins_width" type="number" min="5" class="text_pole" value="${s.defaultWidth}"></div>
+            <div><label data-i18n="naist.inline.unit"></label><select id="naist_ins_unit" class="text_pole"><option value="%">%</option><option value="px">px</option></select></div>
+            <div><label data-i18n="naist.inline.align"></label><select id="naist_ins_align" class="text_pole">
+                <option value="center" data-i18n="naist.inline.alignCenter"></option>
+                <option value="left" data-i18n="naist.inline.alignLeft"></option>
+                <option value="right" data-i18n="naist.inline.alignRight"></option></select></div>
+        </div>`;
+	root.querySelector("#naist_ins_unit").value = s.defaultWidthUnit;
+	root.querySelector("#naist_ins_align").value = s.defaultAlign;
+	if (!await confirmPopup(root, "naist.inline.insertOk", true)) return null;
+	const mode = value(root, "#naist_ins_mode");
+	const prompt = value(root, "#naist_ins_prompt").trim();
+	s.insertMode = mode;
+	ctx().saveSettingsDebounced();
+	const display = {
+		width: Number(value(root, "#naist_ins_width")) || s.defaultWidth,
+		widthUnit: value(root, "#naist_ins_unit") === "px" ? "px" : "%",
+		align: value(root, "#naist_ins_align") || "center"
+	};
+	if (mode === "free") return prompt ? {
+		trigger: prompt,
+		mode: MODE.FREE,
+		display
+	} : null;
+	if (mode === "text") return prompt ? {
+		trigger: prompt,
+		mode: MODE.FREE_EXTENDED,
+		display
+	} : null;
+	const id = Number(mode);
+	return {
+		trigger: TRIGGER_WORDS[id] ?? prompt,
+		mode: id,
+		display
+	};
+}
+/** "Redo with an edited prompt": every parameter pre-filled from the current image. */
+async function editDialog(meta) {
+	const root = document.createElement("div");
+	root.className = "naist-dialog";
+	root.innerHTML = `
+        <h3 data-i18n="naist.inline.editTitle"></h3>
+        <label data-i18n="naist.inline.prompt"></label>
+        <textarea id="naist_ed_scene" class="text_pole" rows="5">${escapeHtml$2(meta.scenePrompt)}</textarea>
+        <label data-i18n="naist.refine.negative"></label>
+        <textarea id="naist_ed_negative" class="text_pole" rows="2">${escapeHtml$2(meta.negative)}</textarea>
+        <label data-i18n="naist.panel.model"></label>
+        <select id="naist_ed_model" class="text_pole">${MODELS.map((m) => `<option value="${escapeHtml$2(m.id)}"${m.id === meta.model ? " selected" : ""}>${escapeHtml$2(t(m.nameKey))}</option>`).join("")}</select>
+        <div class="naist-grid3">
+            <div><label data-i18n="naist.meta.seed"></label><input id="naist_ed_seed" type="number" class="text_pole" value="${meta.seed}"></div>
+            <div><label data-i18n="naist.panel.width"></label><input id="naist_ed_width" type="number" step="64" min="64" class="text_pole" value="${meta.width}"></div>
+            <div><label data-i18n="naist.panel.height"></label><input id="naist_ed_height" type="number" step="64" min="64" class="text_pole" value="${meta.height}"></div>
+            <div><label data-i18n="naist.panel.steps"></label><input id="naist_ed_steps" type="number" min="1" max="50" class="text_pole" value="${meta.steps}"></div>
+            <div><label data-i18n="naist.panel.scale"></label><input id="naist_ed_scale" type="number" step="0.1" min="0" max="10" class="text_pole" value="${meta.scale}"></div>
+            <div><label class="checkbox_label"><input id="naist_ed_random" type="checkbox"><span data-i18n="naist.inline.randomSeed"></span></label></div>
+        </div>`;
+	if (!await confirmPopup(root, "naist.inline.editOk", true)) return null;
+	const scene = value(root, "#naist_ed_scene").trim();
+	if (!scene) return null;
+	const num = (selector, fallback) => {
+		const n = Number(value(root, selector));
+		return Number.isFinite(n) ? n : fallback;
+	};
+	return {
+		scene,
+		negative: value(root, "#naist_ed_negative").trim(),
+		model: value(root, "#naist_ed_model") || meta.model,
+		seed: checked(root, "#naist_ed_random") ? -1 : num("#naist_ed_seed", meta.seed),
+		width: num("#naist_ed_width", meta.width),
+		height: num("#naist_ed_height", meta.height),
+		steps: num("#naist_ed_steps", meta.steps),
+		scale: num("#naist_ed_scale", meta.scale)
+	};
+}
+async function displayDialog(display) {
+	const root = document.createElement("div");
+	root.className = "naist-dialog";
+	root.innerHTML = `
+        <h3 data-i18n="naist.inline.displayTitle"></h3>
+        <div class="naist-grid3">
+            <div><label data-i18n="naist.inline.width"></label><input id="naist_dp_width" type="number" min="5" class="text_pole" value="${display.width}"></div>
+            <div><label data-i18n="naist.inline.unit"></label><select id="naist_dp_unit" class="text_pole"><option value="%">%</option><option value="px">px</option></select></div>
+            <div><label data-i18n="naist.inline.align"></label><select id="naist_dp_align" class="text_pole">
+                <option value="center" data-i18n="naist.inline.alignCenter"></option>
+                <option value="left" data-i18n="naist.inline.alignLeft"></option>
+                <option value="right" data-i18n="naist.inline.alignRight"></option></select></div>
+            <div><label data-i18n="naist.inline.radius"></label><input id="naist_dp_radius" type="number" min="0" class="text_pole" value="${display.radius}"></div>
+            <div><label data-i18n="naist.inline.layout"></label><select id="naist_dp_layout" class="text_pole">
+                <option value="grid" data-i18n="naist.inline.layoutGrid"></option>
+                <option value="carousel" data-i18n="naist.inline.layoutCarousel"></option>
+                <option value="list" data-i18n="naist.inline.layoutList"></option></select></div>
+        </div>
+        <div class="naist-flags">
+            <label class="checkbox_label"><input id="naist_dp_wrap" type="checkbox"${display.wrap ? " checked" : ""}><span data-i18n="naist.inline.wrap"></span></label>
+            <label class="checkbox_label"><input id="naist_dp_border" type="checkbox"${display.border ? " checked" : ""}><span data-i18n="naist.inline.border"></span></label>
+            <label class="checkbox_label"><input id="naist_dp_spoiler" type="checkbox"${display.spoiler ? " checked" : ""}><span data-i18n="naist.inline.spoilerOption"></span></label>
+        </div>
+        <label data-i18n="naist.inline.caption"></label>
+        <input id="naist_dp_caption" class="text_pole" value="${escapeHtml$2(display.caption)}">
+        <label data-i18n="naist.inline.altText"></label>
+        <input id="naist_dp_alt" class="text_pole" value="${escapeHtml$2(display.alt)}">`;
+	root.querySelector("#naist_dp_unit").value = display.widthUnit;
+	root.querySelector("#naist_dp_align").value = display.align;
+	root.querySelector("#naist_dp_layout").value = display.layout;
+	if (!await confirmPopup(root, "naist.inline.displayOk")) return null;
+	return {
+		width: Number(value(root, "#naist_dp_width")) || display.width,
+		widthUnit: value(root, "#naist_dp_unit") === "px" ? "px" : "%",
+		align: value(root, "#naist_dp_align") || "center",
+		radius: Math.max(0, Number(value(root, "#naist_dp_radius")) || 0),
+		layout: value(root, "#naist_dp_layout") || "grid",
+		wrap: checked(root, "#naist_dp_wrap"),
+		border: checked(root, "#naist_dp_border"),
+		spoiler: checked(root, "#naist_dp_spoiler"),
+		caption: value(root, "#naist_dp_caption").trim(),
+		alt: value(root, "#naist_dp_alt").trim()
+	};
+}
+async function confirmDelete() {
+	const c = ctx();
+	return await c.callGenericPopup(t("naist.inline.deleteConfirm"), c.POPUP_TYPE.CONFIRM) === c.POPUP_RESULT.AFFIRMATIVE;
+}
+//#endregion
+//#region src/ui/lightbox.ts
+var actions = [];
+async function copy(text, doneKey) {
+	try {
+		await navigator.clipboard.writeText(text);
+		toastr.success(t(doneKey));
+	} catch {
+		toastr.error(t("naist.lightbox.copyFailed"));
+	}
+}
+async function setBackground(item) {
+	const c = ctx();
+	const path = await item.ensureFile();
+	await c.eventSource.emit(c.eventTypes.FORCE_SET_BACKGROUND ?? "force_set_background", {
+		url: `url("${encodeURI(path)}")`,
+		path
+	});
+	toastr.success(t("naist.lightbox.backgroundDone"));
+}
+/** Same flow as SillyTavern's own avatar upload (multipart `avatar` + `avatar_url`, cache bust). */
+async function setAvatar(item) {
+	const c = ctx();
+	if (c.groupId || c.characterId === void 0) {
+		toastr.warning(t("naist.lightbox.avatarNoCharacter"));
+		return;
+	}
+	const character = c.characters[Number(c.characterId)];
+	if (!character) return;
+	if (await c.callGenericPopup(t("naist.lightbox.avatarConfirm", { name: character.name }), c.POPUP_TYPE.CONFIRM) !== c.POPUP_RESULT.AFFIRMATIVE) return;
+	const form = new FormData();
+	form.append("avatar", await exportImage(await item.blob(), item.meta, {
+		strip: true,
+		format: "png"
+	}), "avatar.png");
+	form.append("avatar_url", character.avatar);
+	const response = await fetch("/api/characters/edit-avatar", {
+		method: "POST",
+		headers: requestHeaders(true),
+		body: form
+	});
+	if (!response.ok) throw new Error(`avatar upload failed: HTTP ${response.status}`);
+	const thumbnailUrl = c.getThumbnailUrl("avatar", character.avatar);
+	await fetch(thumbnailUrl, { cache: "reload" }).catch(() => null);
+	await fetch(`/characters/${encodeURIComponent(character.avatar)}`, { cache: "reload" }).catch(() => null);
+	document.querySelectorAll(`img[src^="${thumbnailUrl}"]`).forEach((img) => {
+		const src = img.src;
+		img.src = "";
+		img.src = src;
+	});
+	toastr.success(t("naist.lightbox.avatarDone", { name: character.name }));
+}
+async function saveToDisk(item) {
+	downloadBlob(await exportImage(await item.blob(), item.meta, {
+		strip: settings().png.stripMetadata,
+		format: "png"
+	}), `nai-${item.meta.seed}.png`);
+}
+function metaRows(meta) {
+	const rows = [
+		["naist.meta.scenePrompt", meta.scenePrompt],
+		["naist.meta.prompt", meta.prompt],
+		["naist.meta.negative", meta.negativePrompt],
+		["naist.meta.sourcePrompt", meta.sourcePrompt ?? ""],
+		["naist.meta.model", meta.model],
+		["naist.meta.seed", String(meta.seed)],
+		["naist.meta.size", `${meta.width}×${meta.height}`],
+		["naist.meta.steps", String(meta.steps)],
+		["naist.meta.scale", String(meta.scale)],
+		["naist.meta.cfgRescale", String(meta.cfgRescale)],
+		["naist.meta.sampler", `${meta.sampler} / ${meta.noiseSchedule}`],
+		["naist.meta.presets", `${meta.qualityPreset} / ${meta.ucPreset}`],
+		["naist.meta.requestType", meta.tool ? `${meta.requestType} (${meta.tool})` : meta.requestType],
+		["naist.meta.cost", String(meta.cost)],
+		["naist.meta.created", meta.createdAt ? new Date(meta.createdAt).toLocaleString() : ""]
+	];
+	const characters = meta.characters.map((c, i) => `<div class="naist-meta-char"><b>${i + 1}.</b> ${escapeHtml$2(c.prompt)}${c.negative ? ` <i>(− ${escapeHtml$2(c.negative)})</i>` : ""} <span class="naist-muted">[${c.x}, ${c.y}]</span></div>`).join("");
+	return rows.filter(([, v]) => v !== "").map(([k, v]) => `<tr><th>${escapeHtml$2(t(k))}</th><td>${escapeHtml$2(v)}</td></tr>`).join("") + (characters ? `<tr><th>${escapeHtml$2(t("naist.meta.characters"))}</th><td>${characters}</td></tr>` : "");
+}
+async function openLightbox(item) {
+	const c = ctx();
+	const root = document.createElement("div");
+	root.className = "naist-lightbox";
+	const list = [...[
+		{
+			id: "copy-prompt",
+			icon: "fa-copy",
+			labelKey: "naist.lightbox.copyPrompt",
+			available: () => true,
+			run: (i) => copy(i.meta.prompt, "naist.lightbox.copied")
+		},
+		{
+			id: "copy-seed",
+			icon: "fa-seedling",
+			labelKey: "naist.lightbox.copySeed",
+			available: () => true,
+			run: (i) => copy(String(i.meta.seed), "naist.lightbox.copied")
+		},
+		{
+			id: "background",
+			icon: "fa-panorama",
+			labelKey: "naist.lightbox.background",
+			available: () => Boolean(ctx().getCurrentChatId()),
+			run: (i) => setBackground(i)
+		},
+		{
+			id: "avatar",
+			icon: "fa-user-pen",
+			labelKey: "naist.lightbox.avatar",
+			available: () => !ctx().groupId && ctx().characterId !== void 0,
+			run: (i) => setAvatar(i)
+		},
+		{
+			id: "save",
+			icon: "fa-download",
+			labelKey: "naist.lightbox.save",
+			available: () => true,
+			run: (i) => saveToDisk(i)
+		}
+	], ...actions].filter((a) => {
+		try {
+			return a.available(item);
+		} catch {
+			return false;
+		}
+	});
+	root.innerHTML = `
+        <div class="naist-lightbox-image"><img alt="" src="${escapeHtml$2(item.url)}"></div>
+        <div class="naist-lightbox-side">
+            ${item.position ? `<div class="naist-muted">${escapeHtml$2(item.position)}</div>` : ""}
+            <div class="naist-lightbox-actions">${list.map((a) => `<div class="menu_button" data-naist-lb="${escapeHtml$2(a.id)}" title="${escapeHtml$2(t(a.labelKey))}"><i class="fa-solid ${escapeHtml$2(a.icon)}"></i> ${escapeHtml$2(t(a.labelKey))}</div>`).join("")}</div>
+            <table class="naist-meta-table">${metaRows(item.meta)}</table>
+        </div>`;
+	const popup = new c.Popup(root, c.POPUP_TYPE.TEXT, "", {
+		wide: true,
+		large: true,
+		allowVerticalScrolling: true,
+		okButton: t("naist.lightbox.close")
+	});
+	const close = () => {
+		popup.dlg.close();
+	};
+	root.addEventListener("click", (event) => {
+		const button = event.target.closest("[data-naist-lb]");
+		const action = list.find((a) => a.id === button?.dataset.naistLb);
+		if (!action || !button) return;
+		button.classList.add("disabled");
+		Promise.resolve().then(() => action.run(item, close)).catch((error) => {
+			log.warn("lightbox action failed", action.id, error);
+			reportGenerationError(error);
+		}).finally(() => button.classList.remove("disabled"));
+	});
+	await popup.show();
+}
+//#endregion
+//#region src/integration/inline-render.ts
+var IMG_ATTR = "data-naist-img";
+var MOUNTED_ATTR = "data-naist-mounted";
+var DRAG_TYPE = "application/x-naist-inline";
+function messageIdOf$1(element) {
+	const mes = element.closest(".mes");
+	const id = Number(mes?.getAttribute("mesid"));
+	return Number.isInteger(id) ? id : null;
+}
+function el(tag, className = "", attrs = {}) {
+	const node = document.createElement(tag);
+	if (className) node.className = className;
+	for (const [key, value] of Object.entries(attrs)) node.setAttribute(key, value);
+	return node;
+}
+function icon(action, classes, titleKey) {
+	const node = el("i", `fa-solid ${classes} naist-inline-btn`, { "data-naist-action": action });
+	node.title = t(titleKey);
+	return node;
+}
+var InlineRenderer = class {
+	service;
+	ui;
+	urls = /* @__PURE__ */ new Map();
+	pending = /* @__PURE__ */ new Set();
+	scheduled = false;
+	intersection = null;
+	busy = /* @__PURE__ */ new Set();
+	/** Images waiting for their source; checked on scroll as well (IO needs a painting page). */
+	waiting = /* @__PURE__ */ new Set();
+	lazyTimer = null;
+	constructor(service, ui) {
+		this.service = service;
+		this.ui = ui;
+	}
+	install() {
+		ctx().messageFormatter.addHook((mes) => mes.includes("[nai:img:") ? mes.replace(new RegExp(PLACEHOLDER_PATTERN.source, "g"), (_m, id) => `<span ${IMG_ATTR}="${id}"></span>`) : mes, { stage: "afterMarkdown" });
+		const chat = document.getElementById("chat");
+		if (!chat) {
+			log.warn("chat element not found: inline images will not render");
+			return;
+		}
+		this.intersection = new IntersectionObserver((entries) => this.onVisible(entries), {
+			root: null,
+			rootMargin: "800px 0px"
+		});
+		new MutationObserver((records) => {
+			for (const record of records) {
+				const target = record.target instanceof Element ? record.target : record.target.parentElement;
+				if (!target || target.closest(`[${MOUNTED_ATTR}]`)) continue;
+				const mes = target.closest(".mes");
+				if (mes) this.pending.add(mes);
+				for (const node of record.addedNodes) if (node instanceof Element && node.classList.contains("mes")) this.pending.add(node);
+				else if (node instanceof Element) node.querySelectorAll(".mes").forEach((m) => this.pending.add(m));
+			}
+			if (this.pending.size) this.schedule();
+		}).observe(chat, {
+			childList: true,
+			subtree: true,
+			characterData: true
+		});
+		chat.addEventListener("scroll", () => this.scheduleLazyCheck(), { passive: true });
+		window.addEventListener("resize", () => this.scheduleLazyCheck(), { passive: true });
+		setInterval(() => this.scheduleLazyCheck(), 750);
+		chat.addEventListener("click", (event) => void this.onClick(event));
+		chat.addEventListener("dragstart", (event) => this.onDragStart(event));
+		chat.addEventListener("dragover", (event) => this.onDragOver(event));
+		chat.addEventListener("drop", (event) => void this.onDrop(event));
+		chat.addEventListener("dragend", () => this.clearDropMarks());
+		this.service.onChange((messageId) => this.refreshMessage(messageId));
+		this.applyVisibility();
+		this.renderAll();
+	}
+	/** Re-renders every message (chat change, settings change). */
+	renderAll() {
+		document.querySelectorAll("#chat .mes").forEach((m) => this.pending.add(m));
+		this.schedule();
+	}
+	/** Drops cached object URLs (new chat). */
+	reset() {
+		for (const url of this.urls.values()) URL.revokeObjectURL(url);
+		this.urls.clear();
+	}
+	refreshMessage(messageId) {
+		const mes = document.querySelector(`#chat .mes[mesid="${messageId}"]`);
+		if (!mes) return;
+		mes.querySelectorAll(`[${IMG_ATTR}][${MOUNTED_ATTR}]`).forEach((span) => {
+			span.removeAttribute(MOUNTED_ATTR);
+			span.replaceChildren();
+		});
+		this.pending.add(mes);
+		this.schedule();
+	}
+	/** Body classes for "hide all images in this chat" and the global reading mode. */
+	applyVisibility() {
+		const meta = ctx().chatMetadata?.nai_studio;
+		document.body.classList.toggle("naist-inline-collapsed", meta?.inlineHidden === true);
+		document.body.classList.toggle("naist-inline-reading", settings().inline.readingMode);
+	}
+	schedule() {
+		if (this.scheduled) return;
+		this.scheduled = true;
+		setTimeout(() => {
+			this.scheduled = false;
+			const list = [...this.pending];
+			this.pending.clear();
+			for (const mes of list) try {
+				this.processMessage(mes);
+			} catch (error) {
+				log.warn("inline render failed", error);
+			}
+			this.scheduleLazyCheck();
+		}, 0);
+	}
+	scheduleLazyCheck() {
+		if (this.lazyTimer || !this.waiting.size) return;
+		this.lazyTimer = setTimeout(() => {
+			this.lazyTimer = null;
+			this.lazyCheck();
+		}, 120);
+	}
+	/** Loads images within 800 px of the viewport; the rest stay without a source. */
+	lazyCheck() {
+		const margin = 800;
+		const height = window.innerHeight;
+		for (const img of [...this.waiting]) {
+			if (!img.isConnected) {
+				this.waiting.delete(img);
+				continue;
+			}
+			const rect = img.getBoundingClientRect();
+			if (rect.bottom >= -800 && rect.top <= height + margin && rect.width > 0) this.load(img);
+		}
+	}
+	load(img) {
+		if (!this.waiting.delete(img)) return;
+		this.intersection?.unobserve(img);
+		this.resolveUrl(img.dataset.naistKey ?? "", img.dataset.naistPath ?? "").then((url) => {
+			if (url) img.src = url;
+			else img.closest(".naist-inline")?.classList.add("naist-inline-missing");
+		});
+	}
+	processMessage(mes) {
+		const text = mes.querySelector(".mes_text");
+		if (!text) return;
+		const messageId = messageIdOf$1(mes);
+		if (messageId === null) return;
+		if (text.textContent?.includes("[nai:img:")) this.replaceTextPlaceholders(text);
+		const spans = [...text.querySelectorAll(`[${IMG_ATTR}]:not([${MOUNTED_ATTR}])`)];
+		if (!spans.length) return;
+		const entries = this.service.entries(messageId);
+		for (const span of spans) this.mount(span, messageId, entries);
+		this.groupRuns(text, entries);
+	}
+	/** System messages skip the formatter hook: replace placeholders in their text nodes. */
+	replaceTextPlaceholders(root) {
+		const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+		const nodes = [];
+		while (walker.nextNode()) {
+			const node = walker.currentNode;
+			if (node.data.includes("[nai:img:") && !node.parentElement?.closest(`[${MOUNTED_ATTR}]`)) nodes.push(node);
+		}
+		for (const node of nodes) {
+			const parts = node.data.split(new RegExp(PLACEHOLDER_PATTERN.source, "g"));
+			const fragment = document.createDocumentFragment();
+			parts.forEach((part, i) => {
+				if (i % 2 === 0) {
+					if (part) fragment.append(part);
+				} else fragment.append(el("span", "", { [IMG_ATTR]: part }));
+			});
+			node.replaceWith(fragment);
+		}
+	}
+	mount(span, messageId, entries) {
+		const id = span.getAttribute("data-naist-img") ?? "";
+		span.setAttribute(MOUNTED_ATTR, "1");
+		span.replaceChildren();
+		const entry = entries.find((e) => e.id === id);
+		if (!entry) {
+			span.className = "naist-inline naist-inline-missing";
+			span.textContent = t("naist.inline.missing");
+			return;
+		}
+		const swipe = activeSwipe(entry);
+		const d = entry.display;
+		span.className = "naist-inline";
+		span.removeAttribute("style");
+		for (const [key, value] of Object.entries(displayStyle(d))) span.style.setProperty(key, value);
+		span.classList.toggle("naist-inline-busy", this.busy.has(id));
+		const frame = el("span", "naist-inline-frame", { draggable: "true" });
+		frame.style.borderRadius = `${Math.max(0, d.radius)}px`;
+		frame.classList.toggle("naist-inline-border", d.border);
+		frame.classList.toggle("naist-inline-spoiler", d.spoiler);
+		const img = el("img", "naist-inline-img", {
+			alt: d.alt || d.caption || t("naist.inline.alt"),
+			decoding: "async"
+		});
+		if (swipe) {
+			img.dataset.naistKey = swipe.blobKey;
+			img.dataset.naistPath = swipe.filePath;
+			const ratio = swipe.meta.width && swipe.meta.height ? `${swipe.meta.width} / ${swipe.meta.height}` : "";
+			if (ratio) img.style.aspectRatio = ratio;
+		}
+		frame.append(img);
+		if (d.spoiler) {
+			const cover = el("span", "naist-inline-cover", { "data-naist-action": "reveal" });
+			cover.append(el("i", "fa-solid fa-eye-slash"), document.createTextNode(` ${t("naist.inline.spoiler")}`));
+			frame.append(cover);
+		}
+		const toolbar = el("span", "naist-inline-toolbar");
+		if (entry.swipes.length > 1) {
+			toolbar.append(icon("prev", "fa-chevron-left", "naist.inline.prev"));
+			const counter = el("span", "naist-inline-counter");
+			counter.textContent = `${entry.activeSwipe + 1}/${entry.swipes.length}`;
+			toolbar.append(counter, icon("next", "fa-chevron-right", "naist.inline.next"));
+		}
+		toolbar.append(icon("regenerate", "fa-rotate", "naist.inline.regenerate"), icon("variation", "fa-shuffle", "naist.inline.variation"), icon("edit", "fa-pen-to-square", "naist.inline.edit"), icon("display", "fa-sliders", "naist.inline.display"), icon("lightbox", "fa-expand", "naist.inline.lightbox"), icon("delete", "fa-trash-can", "naist.inline.delete"));
+		frame.append(toolbar);
+		const spinner = el("span", "naist-inline-spinner");
+		spinner.append(el("i", "fa-solid fa-spinner fa-spin"));
+		frame.append(spinner);
+		span.append(frame);
+		if (d.caption) {
+			const caption = el("span", "naist-inline-caption");
+			caption.textContent = d.caption;
+			span.append(caption);
+		}
+		const chip = el("span", "naist-inline-chip", { "data-naist-action": "show-chat" });
+		chip.append(el("i", "fa-solid fa-image"), document.createTextNode(` ${t("naist.inline.hiddenChip")}`));
+		span.append(chip);
+		this.waiting.add(img);
+		this.intersection?.observe(img);
+	}
+	/** Wraps consecutive images (only whitespace or <br> between) into one grid/carousel/list. */
+	groupRuns(text, entries) {
+		const spans = [...text.querySelectorAll(`[${IMG_ATTR}][${MOUNTED_ATTR}]`)].filter((s) => !s.parentElement?.classList.contains("naist-inline-group"));
+		const isGap = (node) => node !== null && (node.nodeType === Node.TEXT_NODE && !(node.textContent ?? "").trim() || node instanceof HTMLElement && node.tagName === "BR");
+		const runs = [];
+		for (const span of spans) {
+			let prev = span.previousSibling;
+			while (isGap(prev)) prev = prev?.previousSibling ?? null;
+			const last = runs.at(-1);
+			if (last && prev === last.at(-1)) last.push(span);
+			else runs.push([span]);
+		}
+		for (const run of runs) {
+			if (run.length < 2) continue;
+			const first = run[0];
+			if (!first) continue;
+			const group = el("span", "naist-inline-group", { "data-layout": entries.find((e) => e.id === first.getAttribute("data-naist-img"))?.display.layout ?? "grid" });
+			first.before(group);
+			let node = first;
+			const end = run.at(-1);
+			while (node) {
+				const next = node === end ? null : node.nextSibling;
+				if (node instanceof HTMLElement && node.hasAttribute("data-naist-img")) {
+					node.style.removeProperty("width");
+					node.style.removeProperty("float");
+					group.append(node);
+				} else node.remove();
+				node = next;
+			}
+		}
+	}
+	async resolveUrl(key, path) {
+		if (key) {
+			const cached = this.urls.get(key);
+			if (cached) return cached;
+			const blob = await getBlob(key);
+			if (blob) {
+				const url = URL.createObjectURL(blob);
+				this.urls.set(key, url);
+				return url;
+			}
+		}
+		return path ? encodeURI(path) : "";
+	}
+	onVisible(entries) {
+		for (const entry of entries) if (entry.isIntersecting) this.load(entry.target);
+	}
+	async run(messageId, imageId, task) {
+		if (this.busy.has(imageId)) return;
+		this.busy.add(imageId);
+		document.querySelectorAll(`[${IMG_ATTR}="${imageId}"]`).forEach((s) => s.classList.add("naist-inline-busy"));
+		try {
+			await task();
+		} catch (error) {
+			reportGenerationError(error);
+		} finally {
+			this.busy.delete(imageId);
+			this.refreshMessage(messageId);
+		}
+	}
+	async onClick(event) {
+		const target = event.target;
+		const span = target.closest(`[${IMG_ATTR}][${MOUNTED_ATTR}]`);
+		if (!span) return;
+		const messageId = messageIdOf$1(span);
+		const imageId = span.getAttribute("data-naist-img") ?? "";
+		if (messageId === null || !imageId) return;
+		const action = target.closest("[data-naist-action]")?.dataset.naistAction ?? (target.classList.contains("naist-inline-img") ? "lightbox" : "");
+		if (!action) return;
+		event.preventDefault();
+		event.stopPropagation();
+		const entry = this.service.entries(messageId).find((e) => e.id === imageId);
+		switch (action) {
+			case "reveal":
+				span.querySelector(".naist-inline-frame")?.classList.remove("naist-inline-spoiler");
+				target.closest(".naist-inline-cover")?.remove();
+				return;
+			case "show-chat":
+				await this.setChatHidden(false);
+				return;
+			case "prev":
+			case "next":
+				if (entry) await this.service.setActive(messageId, imageId, entry.activeSwipe + (action === "next" ? 1 : -1));
+				return;
+			case "regenerate": return await this.run(messageId, imageId, () => this.service.regenerate(messageId, imageId));
+			case "variation": return await this.run(messageId, imageId, () => this.service.variation(messageId, imageId));
+			case "edit": return this.ui.edit(messageId, imageId);
+			case "display": return this.ui.display(messageId, imageId);
+			case "lightbox": return this.ui.lightbox(messageId, imageId);
+			case "delete": {
+				if (!await this.ui.confirmDelete()) return;
+				const multi = (entry?.swipes.length ?? 0) > 1;
+				return await this.run(messageId, imageId, () => multi ? this.service.deleteSwipe(messageId, imageId) : this.service.remove(messageId, imageId));
+			}
+		}
+	}
+	async setChatHidden(hidden) {
+		const c = ctx();
+		const meta = c.chatMetadata.nai_studio ??= {};
+		meta.inlineHidden = hidden;
+		await c.saveMetadata();
+		this.applyVisibility();
+	}
+	isChatHidden() {
+		return (ctx().chatMetadata?.nai_studio)?.inlineHidden === true;
+	}
+	onDragStart(event) {
+		const span = (event.target.closest?.(".naist-inline-frame"))?.closest(`[${IMG_ATTR}]`);
+		if (!span || !event.dataTransfer) return;
+		const messageId = messageIdOf$1(span);
+		if (messageId === null) return;
+		event.dataTransfer.setData(DRAG_TYPE, JSON.stringify({
+			messageId,
+			imageId: span.getAttribute(IMG_ATTR)
+		}));
+		event.dataTransfer.effectAllowed = "move";
+		span.classList.add("naist-inline-dragging");
+	}
+	dropTarget(event) {
+		const target = event.target;
+		const span = target.closest?.(`[${IMG_ATTR}][${MOUNTED_ATTR}]`);
+		const text = target.closest?.(".mes_text");
+		const element = span ?? text;
+		if (!element) return null;
+		const messageId = messageIdOf$1(element);
+		if (messageId === null) return null;
+		return {
+			messageId,
+			beforeId: span?.getAttribute("data-naist-img") ?? null,
+			element
+		};
+	}
+	onDragOver(event) {
+		if (!event.dataTransfer?.types.includes(DRAG_TYPE)) return;
+		const drop = this.dropTarget(event);
+		if (!drop) return;
+		event.preventDefault();
+		event.dataTransfer.dropEffect = "move";
+		this.clearDropMarks();
+		drop.element.classList.add("naist-inline-drop");
+	}
+	clearDropMarks() {
+		document.querySelectorAll(".naist-inline-drop, .naist-inline-dragging").forEach((n) => {
+			n.classList.remove("naist-inline-drop", "naist-inline-dragging");
+		});
+	}
+	async onDrop(event) {
+		const raw = event.dataTransfer?.getData(DRAG_TYPE);
+		this.clearDropMarks();
+		if (!raw) return;
+		const drop = this.dropTarget(event);
+		if (!drop) return;
+		event.preventDefault();
+		const source = JSON.parse(raw);
+		if (source.imageId === drop.beforeId) return;
+		try {
+			await this.service.move(source.messageId, source.imageId, drop.messageId, drop.beforeId);
+		} catch (error) {
+			reportGenerationError(error);
+		}
+	}
+	/** Diagnostics for the console: NAIST_inlineDebug(). */
+	debugState() {
+		return {
+			waiting: this.waiting.size,
+			cachedUrls: this.urls.size,
+			pending: this.pending.size,
+			busy: [...this.busy],
+			lazyTimer: this.lazyTimer !== null
+		};
+	}
+	/** Object URL or file path for a swipe (lightbox, gallery compare). */
+	async urlFor(swipe) {
+		return await this.resolveUrl(swipe.blobKey, swipe.filePath);
+	}
+};
+//#endregion
+//#region src/integration/inline-setup.ts
+var INSERT_CLASS = "naist-inline-insert";
+var EDIT_INSERT_CLASS = "naist-inline-insert-edit";
+var renderer = null;
+function inlineRenderer() {
+	return renderer;
+}
+function button(className, iconClass, titleKey) {
+	const node = document.createElement("div");
+	node.className = `mes_button ${className} fa-solid ${iconClass}`;
+	node.setAttribute("data-i18n", `[title]${titleKey}`);
+	node.title = t(titleKey);
+	return node;
+}
+function addButtons() {
+	const add = (container, className, iconClass, titleKey) => {
+		if (container && !container.querySelector(`.${className}`)) container.prepend(button(className, iconClass, titleKey));
+	};
+	add(document.querySelector("#message_template .extraMesButtons"), INSERT_CLASS, "fa-image", "naist.inline.insert");
+	document.querySelectorAll("#chat .mes .extraMesButtons").forEach((c) => add(c, INSERT_CLASS, "fa-image", "naist.inline.insert"));
+	add(document.querySelector("#message_template .mes_edit_buttons"), EDIT_INSERT_CLASS, "fa-image", "naist.inline.insertHere");
+	document.querySelectorAll("#chat .mes .mes_edit_buttons").forEach((c) => add(c, EDIT_INSERT_CLASS, "fa-image", "naist.inline.insertHere"));
+	const template = document.querySelector("#message_template");
+	if (template) localize(template);
+}
+function messageIdOf(element) {
+	const id = Number(element.closest(".mes")?.getAttribute("mesid"));
+	return Number.isInteger(id) ? id : null;
+}
+/** Offset after the selected text when the selection lies inside this message, else the end. */
+function selectionOffset(messageId) {
+	const selection = window.getSelection();
+	const text = selection?.toString().trim() ?? "";
+	const anchor = selection?.anchorNode?.parentElement;
+	if (!text || !anchor || messageIdOf(anchor) !== messageId) return {
+		offset: void 0,
+		text: ""
+	};
+	const index = (ctx().chat[messageId]?.mes ?? "").indexOf(text);
+	return {
+		offset: index >= 0 ? index + text.length : void 0,
+		text
+	};
+}
+function lightboxFor(service, messageId, entry, url) {
+	const swipe = activeSwipe(entry);
+	if (!swipe) return null;
+	return {
+		url,
+		meta: swipe.meta,
+		position: entry.swipes.length > 1 ? `${entry.activeSwipe + 1}/${entry.swipes.length}` : void 0,
+		blob: () => service.sourceBlob(swipe),
+		ensureFile: () => service.ensureFile(messageId, entry.id),
+		chat: {
+			messageId,
+			imageId: entry.id
+		}
+	};
+}
+function setupInline(pipeline, service) {
+	const c = ctx();
+	renderer = new InlineRenderer(service, {
+		lightbox: (messageId, imageId) => {
+			const entry = service.entries(messageId).find((e) => e.id === imageId);
+			const swipe = entry ? activeSwipe(entry) : void 0;
+			if (!entry || !swipe || !renderer) return;
+			renderer.urlFor(swipe).then((url) => {
+				const item = lightboxFor(service, messageId, entry, url);
+				if (item) openLightbox(item);
+			});
+		},
+		edit: (messageId, imageId) => {
+			const entry = service.entries(messageId).find((e) => e.id === imageId);
+			const swipe = entry ? activeSwipe(entry) : void 0;
+			if (!swipe) return;
+			editDialog(swipe.meta).then((params) => {
+				if (params) renderer?.run(messageId, imageId, () => service.editAndRegenerate(messageId, imageId, params));
+			});
+		},
+		display: (messageId, imageId) => {
+			const entry = service.entries(messageId).find((e) => e.id === imageId);
+			if (!entry) return;
+			displayDialog(entry.display).then((display) => {
+				if (display) service.updateDisplay(messageId, imageId, display).catch(reportGenerationError);
+			});
+		},
+		confirmDelete
+	});
+	renderer.install();
+	globalThis.NAIST_inlineDebug = () => renderer?.debugState();
+	addButtons();
+	document.addEventListener("click", (event) => {
+		const target = event.target;
+		const insert = target.closest(`.${INSERT_CLASS}`);
+		const editInsert = target.closest(`.${EDIT_INSERT_CLASS}`);
+		if (insert) insertFromMenu(service, insert);
+		else if (editInsert) insertInEditMode(service, editInsert);
+		else if (target.closest(".mes_edit_cancel")) {
+			const id = messageIdOf(target);
+			if (id !== null) setTimeout(() => void service.reconcileMessage(id).then(() => collectGarbage()), 50);
+		}
+	});
+	const on = (name, handler) => {
+		const event = c.eventTypes[name];
+		if (event) c.eventSource.on(event, handler);
+	};
+	on("MESSAGE_EDITED", (id) => void service.reconcileMessage(Number(id), false).then(() => collectGarbage()));
+	for (const name of [
+		"MESSAGE_UPDATED",
+		"MESSAGE_SWIPED",
+		"MESSAGE_RECEIVED"
+	]) on(name, (id) => void service.reconcileMessage(Number(id)).then(() => collectGarbage()));
+	for (const name of ["MESSAGE_DELETED", "MESSAGE_SWIPE_DELETED"]) on(name, () => void collectGarbage());
+	on("CHAT_CHANGED", () => {
+		renderer?.reset();
+		renderer?.applyVisibility();
+		renderer?.renderAll();
+		service.reconcileChat();
+	});
+	on("MORE_MESSAGES_LOADED", () => renderer?.renderAll());
+	on("APP_READY", () => registerInlineCommands(pipeline, service));
+}
+async function insertFromMenu(service, buttonEl) {
+	const messageId = messageIdOf(buttonEl);
+	if (messageId === null) return;
+	const { offset, text } = selectionOffset(messageId);
+	const request = await insertDialog(text);
+	if (!request) return;
+	try {
+		await service.insert(messageId, request, offset);
+	} catch (error) {
+		reportGenerationError(error);
+	}
+}
+/** Edit mode: the placeholder goes into the textarea at the cursor; ST saves it with the text. */
+async function insertInEditMode(service, buttonEl) {
+	const messageId = messageIdOf(buttonEl);
+	const textarea = buttonEl.closest(".mes")?.querySelector(".edit_textarea");
+	if (messageId === null || !textarea) return;
+	const start = textarea.selectionStart ?? textarea.value.length;
+	const end = textarea.selectionEnd ?? start;
+	const request = await insertDialog(textarea.value.slice(start, end).trim());
+	if (!request) return;
+	try {
+		const entry = await service.create(messageId, request);
+		if (!entry) return;
+		textarea.value = insertPlaceholder(textarea.value, entry.id, end);
+		textarea.dispatchEvent(new Event("input", { bubbles: true }));
+		await service.saveCreated(messageId, entry);
+		toastr.info(t("naist.inline.insertedInEdit"));
+	} catch (error) {
+		reportGenerationError(error);
+	}
+}
+async function openGalleryWindow(pipeline) {
+	await openGallery({
+		open: (record) => {
+			(async () => {
+				const blob = await fullBlob(record);
+				const url = blob ? URL.createObjectURL(blob) : encodeURI(record.filePath);
+				await openLightbox({
+					url,
+					meta: record.meta,
+					blob: async () => {
+						const full = blob ?? await fullBlob(record);
+						if (!full) throw new Error("image unavailable");
+						return full;
+					},
+					ensureFile: async () => record.filePath
+				});
+				if (blob) URL.revokeObjectURL(url);
+			})();
+		},
+		repeat: async (record) => {
+			const params = await editDialog(record.meta);
+			if (!params) return;
+			try {
+				await pipeline.generatePicture({
+					initiator: "panel",
+					trigger: params.scene,
+					scene: params.scene,
+					mode: record.meta.mode ?? MODE.FREE,
+					overrides: {
+						negative: params.negative,
+						generation: {
+							model: params.model,
+							seed: params.seed,
+							width: params.width,
+							height: params.height,
+							steps: params.steps,
+							scale: params.scale,
+							sampler: record.meta.sampler,
+							noiseSchedule: record.meta.noiseSchedule,
+							cfgRescale: record.meta.cfgRescale
+						}
+					}
+				});
+			} catch (error) {
+				reportGenerationError(error);
+			}
+		}
+	});
+}
+/** Hide/show the images of this chat; reading mode hides them everywhere. */
+async function setInlineVisibility(state) {
+	if (!renderer) return;
+	if (state === "show" || state === "hide") {
+		await renderer.setChatHidden(state === "hide");
+		return;
+	}
+	settings().inline.readingMode = state === "reading-on";
+	saveSettings();
+	renderer.applyVisibility();
+}
+function registerInlineCommands(pipeline, service) {
+	const { SlashCommandParser: parser, SlashCommand: Command, SlashCommandArgument: Arg, SlashCommandNamedArgument: Named, ARGUMENT_TYPE: T } = ctx();
+	parser.addCommandObject(Command.fromProps({
+		name: "nai-insert",
+		returns: t("naist.command.insertReturns"),
+		helpString: t("naist.command.insertHelp"),
+		namedArgumentList: [Named.fromProps({
+			name: "message",
+			description: t("naist.command.arg.message"),
+			typeList: [T.NUMBER ?? "number"],
+			isRequired: false
+		}), Named.fromProps({
+			name: "at",
+			description: t("naist.command.arg.at"),
+			typeList: [T.NUMBER ?? "number"],
+			isRequired: false
+		})],
+		unnamedArgumentList: [Arg.fromProps({
+			description: t("naist.command.trigger"),
+			typeList: [T.STRING ?? "string"],
+			isRequired: true
+		})],
+		callback: async (args, value) => {
+			const chat = ctx().chat;
+			const messageId = args.message !== void 0 && args.message !== "" ? Number(args.message) : chat.length - 1;
+			const trigger = String(value ?? "").trim();
+			if (!trigger || !chat[messageId]) return "";
+			const at = args.at !== void 0 && args.at !== "" ? Number(args.at) : void 0;
+			try {
+				return (await service.insert(messageId, {
+					trigger,
+					mode: MODE.FREE
+				}, at))?.id ?? "";
+			} catch (error) {
+				reportGenerationError(error);
+				return "";
+			}
+		}
+	}));
+	parser.addCommandObject(Command.fromProps({
+		name: "nai-images",
+		returns: t("naist.command.imagesReturns"),
+		helpString: t("naist.command.imagesHelp"),
+		unnamedArgumentList: [Arg.fromProps({
+			description: t("naist.command.imagesArg"),
+			typeList: [T.STRING ?? "string"],
+			isRequired: false,
+			enumList: [
+				"show",
+				"hide",
+				"toggle",
+				"reading-on",
+				"reading-off"
+			]
+		})],
+		callback: async (_args, value) => {
+			const action = String(value ?? "").trim();
+			const hidden = renderer?.isChatHidden() ?? false;
+			if (action === "toggle") await setInlineVisibility(hidden ? "show" : "hide");
+			else if ([
+				"show",
+				"hide",
+				"reading-on",
+				"reading-off"
+			].includes(action)) await setInlineVisibility(action);
+			return settings().inline.readingMode ? "reading" : renderer?.isChatHidden() ? "hidden" : "shown";
+		}
+	}));
+	parser.addCommandObject(Command.fromProps({
+		name: "nai-gallery",
+		returns: "",
+		helpString: t("naist.command.galleryHelp"),
+		callback: async () => {
+			openGalleryWindow(pipeline);
+			return "";
+		}
+	}));
+	log.info("inline image commands registered");
+}
+//#endregion
 //#region src/integration/character-card.ts
 var OPTIONS = [[
 	"naist_char_portrait",
@@ -4120,9 +7037,23 @@ function registerCommands(pipeline, compat) {
 //#endregion
 //#region src/integration/interceptor.ts
 var INTERCEPTOR_NAME = "NAIST_ProcessTriggers";
+/**
+* Inline image placeholders never reach the LLM as raw markers (RECON §2.3 item 8). The prompt array
+* is ST's own copy, so replacing an element with a clone leaves the chat untouched.
+*/
+function stripPlaceholders(chat, mode) {
+	for (let i = 0; i < chat.length; i++) {
+		const message = chat[i];
+		if (!message?.mes?.includes("[nai:img:")) continue;
+		const copy = structuredClone(message);
+		copy.mes = textForPrompt(message.mes, readEntries(message.extra), mode);
+		chat[i] = copy;
+	}
+}
 function installInterceptor(pipeline) {
 	const interceptor = (chat, _contextSize, abort, type) => {
 		const s = settings();
+		stripPlaceholders(chat, s.inline.llmText);
 		if (type === "quiet" || !s.chat.interactive || !ownsCompatSurface()) return;
 		if (s.chat.functionTool && ctx().isToolCallingSupported()) return;
 		const last = chat[chat.length - 1];
@@ -4302,6 +7233,9 @@ function installWandMenu(pipeline) {
             <span data-i18n="naist.wand.heading"></span>
             ${WAND_MODES.map((mode) => `<li class="list-group-item interactable" data-trigger="${TRIGGER_WORDS[mode] ?? ""}" data-i18n="naist.mode.${mode}"></li>`).join("")}
             <li class="list-group-item interactable" data-trigger="__free" data-i18n="naist.wand.free"></li>
+            <li class="list-group-item interactable naist-wand-sep" data-trigger="__gallery" data-i18n="naist.wand.gallery"></li>
+            <li class="list-group-item interactable" data-trigger="__toggle-images" data-i18n="naist.wand.toggleImages"></li>
+            <li class="list-group-item interactable" data-trigger="__reading" data-i18n="naist.wand.readingMode"></li>
         </ul>`;
 	document.body.append(dropdown);
 	localize(container);
@@ -4323,6 +7257,18 @@ function installWandMenu(pipeline) {
 		if (!item) return;
 		hide();
 		let trigger = item.dataset.trigger ?? "";
+		if (trigger === "__gallery") {
+			openGalleryWindow(pipeline);
+			return;
+		}
+		if (trigger === "__toggle-images") {
+			await setInlineVisibility(inlineRenderer()?.isChatHidden() ? "show" : "hide");
+			return;
+		}
+		if (trigger === "__reading") {
+			await setInlineVisibility(settings().inline.readingMode ? "reading-off" : "reading-on");
+			return;
+		}
 		if (trigger === "__free") {
 			const c = ctx();
 			const value = await c.callGenericPopup(t("naist.wand.freePrompt"), c.POPUP_TYPE.INPUT, "", { rows: 4 });
@@ -4361,11 +7307,11 @@ function setupIntegrations(pipeline) {
 var character_row_default = "<div class=\"naist-character\" data-index=\"{{index}}\">\n    <div class=\"naist-row\">\n        <label class=\"checkbox_label\"><input type=\"checkbox\" class=\"naist-char-enabled\" {{#if enabled}}checked{{/if}}><span data-i18n=\"naist.character.enabled\"></span></label>\n        <span class=\"naist-muted\">#{{number}}</span>\n        <div class=\"menu_button fa-solid fa-trash-can naist-char-remove\" data-i18n=\"[title]naist.character.remove\"></div>\n    </div>\n    <textarea class=\"text_pole textarea_compact naist-char-prompt\" rows=\"2\" data-i18n=\"[placeholder]naist.character.prompt\">{{prompt}}</textarea>\n    <input type=\"text\" class=\"text_pole naist-char-negative\" value=\"{{negative}}\" data-i18n=\"[placeholder]naist.character.negative\">\n    <div class=\"naist-grid2 naist-char-position\">\n        <label><span data-i18n=\"naist.character.x\"></span> <input type=\"number\" class=\"text_pole naist-char-x\" min=\"0\" max=\"1\" step=\"0.1\" value=\"{{x}}\"></label>\n        <label><span data-i18n=\"naist.character.y\"></span> <input type=\"number\" class=\"text_pole naist-char-y\" min=\"0\" max=\"1\" step=\"0.1\" value=\"{{y}}\"></label>\n    </div>\n</div>\n";
 //#endregion
 //#region src/ui/templates/panel.html?raw
-var panel_default = "<div class=\"naist-panel\" id=\"naist_panel\">\n    <div class=\"inline-drawer\">\n        <div class=\"inline-drawer-toggle inline-drawer-header\">\n            <b data-i18n=\"naist.panel.title\"></b>\n            <div class=\"inline-drawer-icon fa-solid fa-circle-chevron-down down\"></div>\n        </div>\n        <div class=\"inline-drawer-content\">\n            <div class=\"naist-content\">\n                <div class=\"naist-row naist-status\">\n                    <label for=\"naist_transport_mode\" data-i18n=\"naist.panel.transport\"></label>\n                    <select id=\"naist_transport_mode\" class=\"text_pole naist-grow\">\n                        <option value=\"auto\" data-i18n=\"naist.transport.auto\"></option>\n                        <option value=\"plugin\" data-i18n=\"naist.transport.plugin\"></option>\n                        <option value=\"native\" data-i18n=\"naist.transport.native\"></option>\n                    </select>\n                    <div\n                        id=\"naist_refresh\"\n                        class=\"menu_button fa-solid fa-rotate\"\n                        data-i18n=\"[title]naist.panel.refresh\"\n                    ></div>\n                </div>\n                <div id=\"naist_transport_badge\" class=\"naist-badge\"></div>\n                <div id=\"naist_account\" class=\"naist-account\"></div>\n\n                <div id=\"naist_takeover_banner\" class=\"naist-banner naist-hidden\">\n                    <span data-i18n=\"naist.takeover.banner\"></span>\n                    <div id=\"naist_banner_open\" class=\"menu_button\" data-i18n=\"naist.takeover.bannerAction\"></div>\n                </div>\n\n                <div class=\"naist-tabs\" role=\"tablist\">\n                    <div\n                        class=\"naist-tab menu_button\"\n                        role=\"tab\"\n                        data-tab=\"generate\"\n                        data-i18n=\"naist.tab.generate\"\n                    ></div>\n                    <div\n                        class=\"naist-tab menu_button\"\n                        role=\"tab\"\n                        data-tab=\"prompts\"\n                        data-i18n=\"naist.tab.prompts\"\n                    ></div>\n                    <div class=\"naist-tab menu_button\" role=\"tab\" data-tab=\"chat\" data-i18n=\"naist.tab.chat\"></div>\n                    <div\n                        class=\"naist-tab menu_button\"\n                        role=\"tab\"\n                        data-tab=\"takeover\"\n                        data-i18n=\"naist.tab.takeover\"\n                    ></div>\n                </div>\n\n                <div class=\"naist-tabpanel\" data-tabpanel=\"generate\">\n                    <label for=\"naist_model\" data-i18n=\"naist.panel.model\"></label>\n                    <select id=\"naist_model\" class=\"text_pole\">\n                        {{#each models}}\n                        <option value=\"{{id}}\" data-i18n=\"{{nameKey}}\"></option>\n                        {{/each}}\n                    </select>\n\n                    <label for=\"naist_prompt\" data-i18n=\"naist.panel.prompt\"></label>\n                    <textarea\n                        id=\"naist_prompt\"\n                        class=\"text_pole textarea_compact\"\n                        rows=\"4\"\n                        data-i18n=\"[placeholder]naist.panel.promptPlaceholder\"\n                    ></textarea>\n\n                    <label for=\"naist_negative\" data-i18n=\"naist.panel.negative\"></label>\n                    <textarea id=\"naist_negative\" class=\"text_pole textarea_compact\" rows=\"2\"></textarea>\n\n                    <div class=\"naist-grid2\">\n                        <div>\n                            <label for=\"naist_uc_preset\" data-i18n=\"naist.panel.ucPreset\"></label>\n                            <select id=\"naist_uc_preset\" class=\"text_pole\"></select>\n                        </div>\n                        <div>\n                            <label for=\"naist_quality\" data-i18n=\"naist.panel.quality\"></label>\n                            <select id=\"naist_quality\" class=\"text_pole\"></select>\n                        </div>\n                    </div>\n\n                    <div\n                        id=\"naist_characters_block\"\n                        class=\"naist-block\"\n                        data-cap=\"characters\"\n                        data-feature=\"characters\"\n                    >\n                        <div class=\"naist-row\">\n                            <b data-i18n=\"naist.panel.characters\"></b>\n                            <span id=\"naist_characters_count\" class=\"naist-muted\"></span>\n                            <div\n                                id=\"naist_add_character\"\n                                class=\"menu_button fa-solid fa-user-plus\"\n                                data-i18n=\"[title]naist.panel.addCharacter\"\n                            ></div>\n                        </div>\n                        <label class=\"checkbox_label\"\n                            ><input type=\"checkbox\" id=\"naist_use_coords\" /><span\n                                data-i18n=\"naist.panel.useCoords\"\n                            ></span\n                        ></label>\n                        <div id=\"naist_characters\"></div>\n                        <div class=\"naist-feature-hint\" data-hint-for=\"characters\"></div>\n                    </div>\n\n                    <label for=\"naist_size_preset\" data-i18n=\"naist.panel.size\"></label>\n                    <div class=\"naist-grid3\">\n                        <select id=\"naist_size_preset\" class=\"text_pole\"></select>\n                        <input\n                            id=\"naist_width\"\n                            type=\"number\"\n                            class=\"text_pole\"\n                            step=\"64\"\n                            min=\"64\"\n                            data-i18n=\"[title]naist.panel.width\"\n                        />\n                        <input\n                            id=\"naist_height\"\n                            type=\"number\"\n                            class=\"text_pole\"\n                            step=\"64\"\n                            min=\"64\"\n                            data-i18n=\"[title]naist.panel.height\"\n                        />\n                    </div>\n\n                    <div class=\"naist-grid2\">\n                        <div>\n                            <label for=\"naist_sampler\" data-i18n=\"naist.panel.sampler\"></label>\n                            <select id=\"naist_sampler\" class=\"text_pole\"></select>\n                        </div>\n                        <div data-cap=\"noiseSchedule\">\n                            <label for=\"naist_schedule\" data-i18n=\"naist.panel.schedule\"></label>\n                            <select id=\"naist_schedule\" class=\"text_pole\"></select>\n                        </div>\n                    </div>\n                    <div class=\"naist-grid3\">\n                        <div>\n                            <label for=\"naist_steps\" data-i18n=\"naist.panel.steps\"></label>\n                            <input id=\"naist_steps\" type=\"number\" min=\"1\" max=\"50\" class=\"text_pole\" />\n                        </div>\n                        <div>\n                            <label for=\"naist_scale\" data-i18n=\"naist.panel.scale\"></label>\n                            <input id=\"naist_scale\" type=\"number\" step=\"0.1\" min=\"0\" max=\"10\" class=\"text_pole\" />\n                        </div>\n                        <div data-feature=\"cfgRescale\">\n                            <label for=\"naist_cfg_rescale\" data-i18n=\"naist.panel.cfgRescale\"></label>\n                            <input id=\"naist_cfg_rescale\" type=\"number\" step=\"0.02\" min=\"0\" max=\"1\" class=\"text_pole\" />\n                        </div>\n                    </div>\n                    <div class=\"naist-grid2\">\n                        <div>\n                            <label for=\"naist_seed\" data-i18n=\"naist.panel.seed\"></label>\n                            <input\n                                id=\"naist_seed\"\n                                type=\"number\"\n                                min=\"-1\"\n                                class=\"text_pole\"\n                                data-i18n=\"[title]naist.panel.seedHint\"\n                            />\n                        </div>\n                        <div data-feature=\"multipleSamples\">\n                            <label for=\"naist_samples\" data-i18n=\"naist.panel.samples\"></label>\n                            <input id=\"naist_samples\" type=\"number\" min=\"1\" max=\"8\" class=\"text_pole\" />\n                        </div>\n                    </div>\n                    <div class=\"naist-feature-hint\" data-hint-for=\"multipleSamples\"></div>\n\n                    <div class=\"naist-flags\">\n                        <label class=\"checkbox_label\" data-cap=\"smea\"\n                            ><input type=\"checkbox\" id=\"naist_smea\" /><span data-i18n=\"naist.panel.smea\"></span\n                        ></label>\n                        <label class=\"checkbox_label\" data-cap=\"smeaDyn\"\n                            ><input type=\"checkbox\" id=\"naist_smea_dyn\" /><span data-i18n=\"naist.panel.smeaDyn\"></span\n                        ></label>\n                        <label class=\"checkbox_label\" data-cap=\"autoSmea\"\n                            ><input type=\"checkbox\" id=\"naist_auto_smea\" /><span data-i18n=\"naist.panel.autoSmea\"></span\n                        ></label>\n                        <label class=\"checkbox_label\" data-cap=\"decrisper\"\n                            ><input type=\"checkbox\" id=\"naist_decrisper\" /><span\n                                data-i18n=\"naist.panel.decrisper\"\n                            ></span\n                        ></label>\n                        <label class=\"checkbox_label\" data-cap=\"varietyBoost\"\n                            ><input type=\"checkbox\" id=\"naist_variety\" /><span data-i18n=\"naist.panel.variety\"></span\n                        ></label>\n                        <label class=\"checkbox_label\" data-cap=\"transparency\" data-feature=\"transparency\"\n                            ><input type=\"checkbox\" id=\"naist_transparent\" /><span\n                                data-i18n=\"naist.panel.transparent\"\n                            ></span\n                        ></label>\n                        <label class=\"checkbox_label\" data-cap=\"legacyUc\"\n                            ><input type=\"checkbox\" id=\"naist_legacy_uc\" /><span data-i18n=\"naist.panel.legacyUc\"></span\n                        ></label>\n                    </div>\n                    <div class=\"naist-feature-hint\" data-hint-for=\"transparency\"></div>\n\n                    <hr />\n                    <label class=\"checkbox_label\"\n                        ><input type=\"checkbox\" id=\"naist_free_only\" /><span data-i18n=\"naist.panel.freeOnly\"></span\n                    ></label>\n                    <div id=\"naist_cost\" class=\"naist-cost\"></div>\n                    <div id=\"naist_lost\" class=\"naist-hint\"></div>\n\n                    <details class=\"naist-override\">\n                        <summary data-i18n=\"naist.panel.override\"></summary>\n                        <div class=\"naist-warning\" data-i18n=\"naist.panel.overrideWarning\"></div>\n                        <label class=\"checkbox_label\"\n                            ><input type=\"checkbox\" id=\"naist_override_enabled\" /><span\n                                data-i18n=\"naist.panel.overrideEnable\"\n                            ></span\n                        ></label>\n                        <textarea\n                            id=\"naist_override_json\"\n                            class=\"text_pole textarea_compact monospace\"\n                            rows=\"4\"\n                        ></textarea>\n                    </details>\n                </div>\n                <div class=\"naist-tabpanel naist-hidden\" data-tabpanel=\"prompts\"></div>\n                <div class=\"naist-tabpanel naist-hidden\" data-tabpanel=\"chat\"></div>\n                <div class=\"naist-tabpanel naist-hidden\" data-tabpanel=\"takeover\"></div>\n\n                <label class=\"checkbox_label\"\n                    ><input type=\"checkbox\" id=\"naist_inspect_before\" /><span\n                        data-i18n=\"naist.panel.inspectBeforeSend\"\n                    ></span\n                ></label>\n                <div class=\"naist-row naist-actions\">\n                    <div id=\"naist_inspect\" class=\"menu_button menu_button_icon\">\n                        <i class=\"fa-solid fa-magnifying-glass\"></i><span data-i18n=\"naist.panel.inspect\"></span>\n                    </div>\n                    <div id=\"naist_generate\" class=\"menu_button menu_button_icon\">\n                        <i class=\"fa-solid fa-paintbrush\"></i><span data-i18n=\"naist.panel.generate\"></span>\n                    </div>\n                    <div id=\"naist_cancel\" class=\"menu_button menu_button_icon naist-hidden\">\n                        <i class=\"fa-solid fa-stop\"></i><span data-i18n=\"naist.panel.cancel\"></span>\n                    </div>\n                </div>\n                <div id=\"naist_message\" class=\"naist-message\"></div>\n            </div>\n        </div>\n    </div>\n</div>\n";
+var panel_default = "<div class=\"naist-panel\" id=\"naist_panel\">\n    <div class=\"inline-drawer\">\n        <div class=\"inline-drawer-toggle inline-drawer-header\">\n            <b data-i18n=\"naist.panel.title\"></b>\n            <div class=\"inline-drawer-icon fa-solid fa-circle-chevron-down down\"></div>\n        </div>\n        <div class=\"inline-drawer-content\">\n            <div class=\"naist-content\">\n                <div class=\"naist-row naist-status\">\n                    <label for=\"naist_transport_mode\" data-i18n=\"naist.panel.transport\"></label>\n                    <select id=\"naist_transport_mode\" class=\"text_pole naist-grow\">\n                        <option value=\"auto\" data-i18n=\"naist.transport.auto\"></option>\n                        <option value=\"plugin\" data-i18n=\"naist.transport.plugin\"></option>\n                        <option value=\"native\" data-i18n=\"naist.transport.native\"></option>\n                    </select>\n                    <div\n                        id=\"naist_refresh\"\n                        class=\"menu_button fa-solid fa-rotate\"\n                        data-i18n=\"[title]naist.panel.refresh\"\n                    ></div>\n                </div>\n                <div id=\"naist_transport_badge\" class=\"naist-badge\"></div>\n                <div id=\"naist_account\" class=\"naist-account\"></div>\n\n                <div id=\"naist_takeover_banner\" class=\"naist-banner naist-hidden\">\n                    <span data-i18n=\"naist.takeover.banner\"></span>\n                    <div id=\"naist_banner_open\" class=\"menu_button\" data-i18n=\"naist.takeover.bannerAction\"></div>\n                </div>\n\n                <div class=\"naist-tabs\" role=\"tablist\">\n                    <div\n                        class=\"naist-tab menu_button\"\n                        role=\"tab\"\n                        data-tab=\"generate\"\n                        data-i18n=\"naist.tab.generate\"\n                    ></div>\n                    <div\n                        class=\"naist-tab menu_button\"\n                        role=\"tab\"\n                        data-tab=\"prompts\"\n                        data-i18n=\"naist.tab.prompts\"\n                    ></div>\n                    <div class=\"naist-tab menu_button\" role=\"tab\" data-tab=\"chat\" data-i18n=\"naist.tab.chat\"></div>\n                    <div class=\"naist-tab menu_button\" role=\"tab\" data-tab=\"images\" data-i18n=\"naist.tab.images\"></div>\n                    <div\n                        class=\"naist-tab menu_button\"\n                        role=\"tab\"\n                        data-tab=\"takeover\"\n                        data-i18n=\"naist.tab.takeover\"\n                    ></div>\n                </div>\n\n                <div class=\"naist-tabpanel\" data-tabpanel=\"generate\">\n                    <label for=\"naist_model\" data-i18n=\"naist.panel.model\"></label>\n                    <select id=\"naist_model\" class=\"text_pole\">\n                        {{#each models}}\n                        <option value=\"{{id}}\" data-i18n=\"{{nameKey}}\"></option>\n                        {{/each}}\n                    </select>\n\n                    <label for=\"naist_prompt\" data-i18n=\"naist.panel.prompt\"></label>\n                    <textarea\n                        id=\"naist_prompt\"\n                        class=\"text_pole textarea_compact\"\n                        rows=\"4\"\n                        data-i18n=\"[placeholder]naist.panel.promptPlaceholder\"\n                    ></textarea>\n\n                    <label for=\"naist_negative\" data-i18n=\"naist.panel.negative\"></label>\n                    <textarea id=\"naist_negative\" class=\"text_pole textarea_compact\" rows=\"2\"></textarea>\n\n                    <div class=\"naist-grid2\">\n                        <div>\n                            <label for=\"naist_uc_preset\" data-i18n=\"naist.panel.ucPreset\"></label>\n                            <select id=\"naist_uc_preset\" class=\"text_pole\"></select>\n                        </div>\n                        <div>\n                            <label for=\"naist_quality\" data-i18n=\"naist.panel.quality\"></label>\n                            <select id=\"naist_quality\" class=\"text_pole\"></select>\n                        </div>\n                    </div>\n\n                    <div\n                        id=\"naist_characters_block\"\n                        class=\"naist-block\"\n                        data-cap=\"characters\"\n                        data-feature=\"characters\"\n                    >\n                        <div class=\"naist-row\">\n                            <b data-i18n=\"naist.panel.characters\"></b>\n                            <span id=\"naist_characters_count\" class=\"naist-muted\"></span>\n                            <div\n                                id=\"naist_add_character\"\n                                class=\"menu_button fa-solid fa-user-plus\"\n                                data-i18n=\"[title]naist.panel.addCharacter\"\n                            ></div>\n                        </div>\n                        <label class=\"checkbox_label\"\n                            ><input type=\"checkbox\" id=\"naist_use_coords\" /><span\n                                data-i18n=\"naist.panel.useCoords\"\n                            ></span\n                        ></label>\n                        <div id=\"naist_characters\"></div>\n                        <div class=\"naist-feature-hint\" data-hint-for=\"characters\"></div>\n                    </div>\n\n                    <label for=\"naist_size_preset\" data-i18n=\"naist.panel.size\"></label>\n                    <div class=\"naist-grid3\">\n                        <select id=\"naist_size_preset\" class=\"text_pole\"></select>\n                        <input\n                            id=\"naist_width\"\n                            type=\"number\"\n                            class=\"text_pole\"\n                            step=\"64\"\n                            min=\"64\"\n                            data-i18n=\"[title]naist.panel.width\"\n                        />\n                        <input\n                            id=\"naist_height\"\n                            type=\"number\"\n                            class=\"text_pole\"\n                            step=\"64\"\n                            min=\"64\"\n                            data-i18n=\"[title]naist.panel.height\"\n                        />\n                    </div>\n\n                    <div class=\"naist-grid2\">\n                        <div>\n                            <label for=\"naist_sampler\" data-i18n=\"naist.panel.sampler\"></label>\n                            <select id=\"naist_sampler\" class=\"text_pole\"></select>\n                        </div>\n                        <div data-cap=\"noiseSchedule\">\n                            <label for=\"naist_schedule\" data-i18n=\"naist.panel.schedule\"></label>\n                            <select id=\"naist_schedule\" class=\"text_pole\"></select>\n                        </div>\n                    </div>\n                    <div class=\"naist-grid3\">\n                        <div>\n                            <label for=\"naist_steps\" data-i18n=\"naist.panel.steps\"></label>\n                            <input id=\"naist_steps\" type=\"number\" min=\"1\" max=\"50\" class=\"text_pole\" />\n                        </div>\n                        <div>\n                            <label for=\"naist_scale\" data-i18n=\"naist.panel.scale\"></label>\n                            <input id=\"naist_scale\" type=\"number\" step=\"0.1\" min=\"0\" max=\"10\" class=\"text_pole\" />\n                        </div>\n                        <div data-feature=\"cfgRescale\">\n                            <label for=\"naist_cfg_rescale\" data-i18n=\"naist.panel.cfgRescale\"></label>\n                            <input id=\"naist_cfg_rescale\" type=\"number\" step=\"0.02\" min=\"0\" max=\"1\" class=\"text_pole\" />\n                        </div>\n                    </div>\n                    <div class=\"naist-grid2\">\n                        <div>\n                            <label for=\"naist_seed\" data-i18n=\"naist.panel.seed\"></label>\n                            <input\n                                id=\"naist_seed\"\n                                type=\"number\"\n                                min=\"-1\"\n                                class=\"text_pole\"\n                                data-i18n=\"[title]naist.panel.seedHint\"\n                            />\n                        </div>\n                        <div data-feature=\"multipleSamples\">\n                            <label for=\"naist_samples\" data-i18n=\"naist.panel.samples\"></label>\n                            <input id=\"naist_samples\" type=\"number\" min=\"1\" max=\"8\" class=\"text_pole\" />\n                        </div>\n                    </div>\n                    <div class=\"naist-feature-hint\" data-hint-for=\"multipleSamples\"></div>\n\n                    <div class=\"naist-flags\">\n                        <label class=\"checkbox_label\" data-cap=\"smea\"\n                            ><input type=\"checkbox\" id=\"naist_smea\" /><span data-i18n=\"naist.panel.smea\"></span\n                        ></label>\n                        <label class=\"checkbox_label\" data-cap=\"smeaDyn\"\n                            ><input type=\"checkbox\" id=\"naist_smea_dyn\" /><span data-i18n=\"naist.panel.smeaDyn\"></span\n                        ></label>\n                        <label class=\"checkbox_label\" data-cap=\"autoSmea\"\n                            ><input type=\"checkbox\" id=\"naist_auto_smea\" /><span data-i18n=\"naist.panel.autoSmea\"></span\n                        ></label>\n                        <label class=\"checkbox_label\" data-cap=\"decrisper\"\n                            ><input type=\"checkbox\" id=\"naist_decrisper\" /><span\n                                data-i18n=\"naist.panel.decrisper\"\n                            ></span\n                        ></label>\n                        <label class=\"checkbox_label\" data-cap=\"varietyBoost\"\n                            ><input type=\"checkbox\" id=\"naist_variety\" /><span data-i18n=\"naist.panel.variety\"></span\n                        ></label>\n                        <label class=\"checkbox_label\" data-cap=\"transparency\" data-feature=\"transparency\"\n                            ><input type=\"checkbox\" id=\"naist_transparent\" /><span\n                                data-i18n=\"naist.panel.transparent\"\n                            ></span\n                        ></label>\n                        <label class=\"checkbox_label\" data-cap=\"legacyUc\"\n                            ><input type=\"checkbox\" id=\"naist_legacy_uc\" /><span data-i18n=\"naist.panel.legacyUc\"></span\n                        ></label>\n                    </div>\n                    <div class=\"naist-feature-hint\" data-hint-for=\"transparency\"></div>\n\n                    <hr />\n                    <label class=\"checkbox_label\"\n                        ><input type=\"checkbox\" id=\"naist_free_only\" /><span data-i18n=\"naist.panel.freeOnly\"></span\n                    ></label>\n                    <div id=\"naist_cost\" class=\"naist-cost\"></div>\n                    <div id=\"naist_lost\" class=\"naist-hint\"></div>\n\n                    <details class=\"naist-override\">\n                        <summary data-i18n=\"naist.panel.override\"></summary>\n                        <div class=\"naist-warning\" data-i18n=\"naist.panel.overrideWarning\"></div>\n                        <label class=\"checkbox_label\"\n                            ><input type=\"checkbox\" id=\"naist_override_enabled\" /><span\n                                data-i18n=\"naist.panel.overrideEnable\"\n                            ></span\n                        ></label>\n                        <textarea\n                            id=\"naist_override_json\"\n                            class=\"text_pole textarea_compact monospace\"\n                            rows=\"4\"\n                        ></textarea>\n                    </details>\n                </div>\n                <div class=\"naist-tabpanel naist-hidden\" data-tabpanel=\"prompts\"></div>\n                <div class=\"naist-tabpanel naist-hidden\" data-tabpanel=\"chat\"></div>\n                <div class=\"naist-tabpanel naist-hidden\" data-tabpanel=\"images\"></div>\n                <div class=\"naist-tabpanel naist-hidden\" data-tabpanel=\"takeover\"></div>\n\n                <label class=\"checkbox_label\"\n                    ><input type=\"checkbox\" id=\"naist_inspect_before\" /><span\n                        data-i18n=\"naist.panel.inspectBeforeSend\"\n                    ></span\n                ></label>\n                <div class=\"naist-row naist-actions\">\n                    <div id=\"naist_inspect\" class=\"menu_button menu_button_icon\">\n                        <i class=\"fa-solid fa-magnifying-glass\"></i><span data-i18n=\"naist.panel.inspect\"></span>\n                    </div>\n                    <div id=\"naist_generate\" class=\"menu_button menu_button_icon\">\n                        <i class=\"fa-solid fa-paintbrush\"></i><span data-i18n=\"naist.panel.generate\"></span>\n                    </div>\n                    <div id=\"naist_cancel\" class=\"menu_button menu_button_icon naist-hidden\">\n                        <i class=\"fa-solid fa-stop\"></i><span data-i18n=\"naist.panel.cancel\"></span>\n                    </div>\n                </div>\n                <div id=\"naist_message\" class=\"naist-message\"></div>\n            </div>\n        </div>\n    </div>\n</div>\n";
 //#endregion
 //#region src/ui/components/json-view.ts
 var BASE64_MIN = 256;
-function escapeHtml$2(text) {
+function escapeHtml$1(text) {
 	return text.replace(/[&<>"']/g, (ch) => ({
 		"&": "&amp;",
 		"<": "&lt;",
@@ -4379,7 +7325,7 @@ function renderValue(value, path, highlight, indent) {
 	let html;
 	if (value === null || typeof value !== "object") {
 		if (typeof value === "string" && value.length > BASE64_MIN && /^[A-Za-z0-9+/=]+$/.test(value)) html = `<span class="naist-json-b64">"&lt;base64 ${value.length}&gt;"</span>`;
-		else html = `<span class="naist-json-${value === null ? "null" : typeof value}">${escapeHtml$2(JSON.stringify(value))}</span>`;
+		else html = `<span class="naist-json-${value === null ? "null" : typeof value}">${escapeHtml$1(JSON.stringify(value))}</span>`;
 	} else if (Array.isArray(value)) {
 		if (value.length === 0) html = "[]";
 		else html = `[\n${value.map((item, i) => `${pad}  ${renderValue(item, `${path}[${i}]`, highlight, indent + 1)}`).join(",\n")}\n${pad}]`;
@@ -4388,7 +7334,7 @@ function renderValue(value, path, highlight, indent) {
 		if (entries.length === 0) html = "{}";
 		else html = `{\n${entries.map(([key, item]) => {
 			const childPath = path ? `${path}.${key}` : key;
-			return `${pad}  <span class="naist-json-key">${escapeHtml$2(JSON.stringify(key))}</span>: ${renderValue(item, childPath, highlight, indent + 1)}`;
+			return `${pad}  <span class="naist-json-key">${escapeHtml$1(JSON.stringify(key))}</span>: ${renderValue(item, childPath, highlight, indent + 1)}`;
 		}).join(",\n")}\n${pad}}`;
 	}
 	return highlight.has(path) ? `<span class="naist-json-override">${html}</span>` : html;
@@ -4398,24 +7344,24 @@ function renderJson(value, highlightPaths = []) {
 }
 //#endregion
 //#region src/ui/panel/inspector.ts
-function escapeHtml$1(text) {
+function escapeHtml(text) {
 	const div = document.createElement("div");
 	div.textContent = text;
 	return div.innerHTML;
 }
 function droppedList(prepared) {
 	if (prepared.build.dropped.length === 0) return `<p class="naist-muted" data-i18n="naist.inspector.nothingDropped"></p>`;
-	return `<ul class="naist-list">${[...prepared.build.dropped].sort((a, b) => Number(b.userSet) - Number(a.userSet)).map((d) => `<li class="${d.userSet ? "naist-dropped-user" : "naist-muted"}"><code>${escapeHtml$1(d.path)}</code> — ${escapeHtml$1(t(`naist.drop.${d.reason}`))}</li>`).join("")}</ul>`;
+	return `<ul class="naist-list">${[...prepared.build.dropped].sort((a, b) => Number(b.userSet) - Number(a.userSet)).map((d) => `<li class="${d.userSet ? "naist-dropped-user" : "naist-muted"}"><code>${escapeHtml(d.path)}</code> — ${escapeHtml(t(`naist.drop.${d.reason}`))}</li>`).join("")}</ul>`;
 }
 function warningsList(prepared) {
-	const warnings = prepared.build.warnings.map((w) => `<li>${escapeHtml$1(t(`naist.warning.${w.code}`, w.params))}</li>`);
-	const clamps = prepared.clampChanges.map((c) => `<li>${escapeHtml$1(t(`naist.clamp.${c.kind}`, c))}</li>`);
+	const warnings = prepared.build.warnings.map((w) => `<li>${escapeHtml(t(`naist.warning.${w.code}`, w.params))}</li>`);
+	const clamps = prepared.clampChanges.map((c) => `<li>${escapeHtml(t(`naist.clamp.${c.kind}`, c))}</li>`);
 	const all = [...warnings, ...clamps];
 	return all.length ? `<ul class="naist-list">${all.join("")}</ul>` : `<p class="naist-muted" data-i18n="naist.inspector.noWarnings"></p>`;
 }
 function lostList(prepared) {
 	if (prepared.effective.lost.length === 0) return "";
-	return `<h4 data-i18n="naist.inspector.lost"></h4><ul class="naist-list naist-dropped-user">${prepared.effective.lost.map((l) => `<li>${escapeHtml$1(t(`naist.lost.${l}`))}</li>`).join("")}</ul>`;
+	return `<h4 data-i18n="naist.inspector.lost"></h4><ul class="naist-list naist-dropped-user">${prepared.effective.lost.map((l) => `<li>${escapeHtml(t(`naist.lost.${l}`))}</li>`).join("")}</ul>`;
 }
 /** Opens the inspector popup. Resolves true when the user chose to send (confirmSend mode). */
 async function openInspector(prepared, options = { confirmSend: false }) {
@@ -4431,9 +7377,9 @@ async function openInspector(prepared, options = { confirmSend: false }) {
 	root.innerHTML = `
         <h3 data-i18n="naist.inspector.title"></h3>
         <div class="naist-row">
-            <span>${escapeHtml$1(t(`naist.transport.${prepared.transportId}`))}</span>
-            <span class="naist-muted">${escapeHtml$1(prepared.body.model)} · ${escapeHtml$1(prepared.body.action)}</span>
-            <span class="naist-cost-inline">${escapeHtml$1(costText)}</span>
+            <span>${escapeHtml(t(`naist.transport.${prepared.transportId}`))}</span>
+            <span class="naist-muted">${escapeHtml(prepared.body.model)} · ${escapeHtml(prepared.body.action)}</span>
+            <span class="naist-cost-inline">${escapeHtml(costText)}</span>
         </div>
         ${prepared.overridePaths.length ? `<div class="naist-warning" data-i18n="naist.inspector.overrideApplied"></div>` : ""}
         ${lostList(prepared)}
@@ -4516,33 +7462,6 @@ function bindSettings(root, onChange = () => {}) {
 	});
 }
 //#endregion
-//#region src/ui/components/dom.ts
-/** Handlebars template -> sanitized HTML (SillyTavern's own Handlebars and DOMPurify). */
-function render$1(template, data = {}) {
-	const html = libs().Handlebars.compile(template)(data);
-	return libs().DOMPurify.sanitize(html);
-}
-function $id$1(root, id) {
-	const el = root.querySelector(`#${id}`);
-	if (!el) throw new Error(`NAI Studio UI: missing #${id}`);
-	return el;
-}
-function fillSelect$1(select, options, current) {
-	select.innerHTML = "";
-	for (const option of options) {
-		const el = document.createElement("option");
-		el.value = option.value;
-		el.textContent = option.label;
-		select.append(el);
-	}
-	select.value = options.some((o) => o.value === current) ? current : options[0]?.value ?? "";
-}
-function escapeHtml(text) {
-	const div = document.createElement("div");
-	div.textContent = text;
-	return div.innerHTML;
-}
-//#endregion
 //#region src/ui/templates/tab-chat.html?raw
 var tab_chat_default = "<div class=\"naist-section\">\n    <b data-i18n=\"naist.chat.visibility\"></b>\n    <div class=\"naist-hint\" data-i18n=\"naist.chat.visibilityHint\"></div>\n    <div class=\"naist-flags\">\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"chat.visibility.panel\" /><span\n                data-i18n=\"naist.initiator.panel\"\n            ></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"chat.visibility.command\" /><span\n                data-i18n=\"naist.initiator.command\"\n            ></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"chat.visibility.wand\" /><span data-i18n=\"naist.initiator.wand\"></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"chat.visibility.interactive\" /><span\n                data-i18n=\"naist.initiator.interactive\"\n            ></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"chat.visibility.tool\" /><span data-i18n=\"naist.initiator.tool\"></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"chat.visibility.auto\" /><span data-i18n=\"naist.initiator.auto\"></span\n        ></label>\n    </div>\n    <div class=\"naist-grid2\">\n        <div>\n            <label for=\"naist_author\" data-i18n=\"naist.chat.author\"></label>\n            <select id=\"naist_author\" class=\"text_pole\" data-setting=\"chat.author\">\n                <option value=\"character\" data-i18n=\"naist.chat.authorCharacter\"></option>\n                <option value=\"user\" data-i18n=\"naist.chat.authorUser\"></option>\n            </select>\n        </div>\n        <div>\n            <label for=\"naist_confirm_above\" data-i18n=\"naist.chat.confirmAbove\"></label>\n            <input id=\"naist_confirm_above\" type=\"number\" min=\"0\" class=\"text_pole\" data-setting=\"anlas.confirmAbove\" />\n        </div>\n    </div>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"chat.hidePrompt\" /><span data-i18n=\"naist.chat.hidePrompt\"></span\n    ></label>\n</div>\n\n<div class=\"naist-section\">\n    <b data-i18n=\"naist.chat.prompting\"></b>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"modes.refine\" /><span data-i18n=\"naist.chat.refine\"></span\n    ></label>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"modes.multimodal\" /><span data-i18n=\"naist.chat.multimodal\"></span\n    ></label>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"modes.freeExtend\" /><span data-i18n=\"naist.chat.freeExtend\"></span\n    ></label>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"modes.snap\" /><span data-i18n=\"naist.chat.snap\"></span\n    ></label>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"modes.minimalProcessing\" /><span\n            data-i18n=\"naist.chat.minimalProcessing\"\n        ></span\n    ></label>\n</div>\n\n<div class=\"naist-section\">\n    <b data-i18n=\"naist.chat.llm\"></b>\n    <div class=\"naist-hint\" data-i18n=\"naist.chat.llmHint\"></div>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"chat.interactive\" /><span data-i18n=\"naist.chat.interactive\"></span\n    ></label>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"chat.functionTool\" /><span data-i18n=\"naist.chat.functionTool\"></span\n    ></label>\n    <label for=\"naist_tool_cooldown\" data-i18n=\"naist.chat.toolCooldown\"></label>\n    <input id=\"naist_tool_cooldown\" type=\"number\" min=\"0\" class=\"text_pole\" data-setting=\"chat.toolCooldownSeconds\" />\n</div>\n\n<div class=\"naist-section\">\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"auto.enabled\" /><b data-i18n=\"naist.auto.enabled\"></b\n    ></label>\n    <div class=\"naist-hint\" data-i18n=\"naist.auto.guardHint\"></div>\n    <label for=\"naist_auto_mode\" data-i18n=\"naist.auto.mode\"></label>\n    <select id=\"naist_auto_mode\" class=\"text_pole\" data-setting=\"auto.mode\" data-type=\"number\"></select>\n    <div class=\"naist-grid2\">\n        <div>\n            <label for=\"naist_auto_every\" data-i18n=\"naist.auto.everyMessages\"></label>\n            <input id=\"naist_auto_every\" type=\"number\" min=\"0\" class=\"text_pole\" data-setting=\"auto.everyMessages\" />\n        </div>\n        <div>\n            <label for=\"naist_auto_cooldown_messages\" data-i18n=\"naist.auto.cooldownMessages\"></label>\n            <input\n                id=\"naist_auto_cooldown_messages\"\n                type=\"number\"\n                min=\"1\"\n                class=\"text_pole\"\n                data-setting=\"auto.cooldownMessages\"\n            />\n        </div>\n    </div>\n    <label for=\"naist_auto_keywords\" data-i18n=\"naist.auto.keywords\"></label>\n    <input id=\"naist_auto_keywords\" type=\"text\" class=\"text_pole\" data-setting=\"auto.keywords\" />\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"auto.sceneChange\" /><span data-i18n=\"naist.auto.sceneChange\"></span\n    ></label>\n    <input\n        id=\"naist_auto_markers\"\n        type=\"text\"\n        class=\"text_pole\"\n        data-setting=\"auto.sceneMarkers\"\n        data-i18n=\"[title]naist.auto.sceneMarkers\"\n    />\n    <label for=\"naist_auto_cooldown_seconds\" data-i18n=\"naist.auto.cooldownSeconds\"></label>\n    <input\n        id=\"naist_auto_cooldown_seconds\"\n        type=\"number\"\n        min=\"0\"\n        class=\"text_pole\"\n        data-setting=\"auto.cooldownSeconds\"\n    />\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" id=\"naist_auto_allow_paid\" data-setting=\"auto.allowPaid\" /><span\n            data-i18n=\"naist.auto.allowPaid\"\n        ></span\n    ></label>\n</div>\n";
 //#endregion
@@ -4577,6 +7496,63 @@ var ChatTab = class {
 		const allowPaid = $id$1(this.root, "naist_auto_allow_paid");
 		allowPaid.disabled = settings().anlas.freeOnly;
 		allowPaid.closest("label")?.classList.toggle("naist-disabled", allowPaid.disabled);
+	}
+};
+//#endregion
+//#region src/ui/templates/tab-images.html?raw
+var tab_images_default = "<div class=\"naist-section\">\n    <b data-i18n=\"naist.images.inline\"></b>\n    <div class=\"naist-hint\" data-i18n=\"naist.images.inlineHint\"></div>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"inline.saveToServer\" /><span data-i18n=\"naist.images.saveToServer\"></span\n    ></label>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"inline.keepBrowserCopy\" /><span\n            data-i18n=\"naist.images.keepBrowserCopy\"\n        ></span\n    ></label>\n    <div class=\"naist-grid3\">\n        <div>\n            <label for=\"naist_img_width\" data-i18n=\"naist.inline.width\"></label>\n            <input id=\"naist_img_width\" type=\"number\" min=\"5\" class=\"text_pole\" data-setting=\"inline.defaultWidth\" />\n        </div>\n        <div>\n            <label for=\"naist_img_unit\" data-i18n=\"naist.inline.unit\"></label>\n            <select id=\"naist_img_unit\" class=\"text_pole\" data-setting=\"inline.defaultWidthUnit\">\n                <option value=\"%\">%</option>\n                <option value=\"px\">px</option>\n            </select>\n        </div>\n        <div>\n            <label for=\"naist_img_align\" data-i18n=\"naist.inline.align\"></label>\n            <select id=\"naist_img_align\" class=\"text_pole\" data-setting=\"inline.defaultAlign\">\n                <option value=\"center\" data-i18n=\"naist.inline.alignCenter\"></option>\n                <option value=\"left\" data-i18n=\"naist.inline.alignLeft\"></option>\n                <option value=\"right\" data-i18n=\"naist.inline.alignRight\"></option>\n            </select>\n        </div>\n        <div>\n            <label for=\"naist_img_radius\" data-i18n=\"naist.inline.radius\"></label>\n            <input id=\"naist_img_radius\" type=\"number\" min=\"0\" class=\"text_pole\" data-setting=\"inline.defaultRadius\" />\n        </div>\n        <div>\n            <label for=\"naist_img_layout\" data-i18n=\"naist.inline.layout\"></label>\n            <select id=\"naist_img_layout\" class=\"text_pole\" data-setting=\"inline.defaultLayout\">\n                <option value=\"grid\" data-i18n=\"naist.inline.layoutGrid\"></option>\n                <option value=\"carousel\" data-i18n=\"naist.inline.layoutCarousel\"></option>\n                <option value=\"list\" data-i18n=\"naist.inline.layoutList\"></option>\n            </select>\n        </div>\n        <div>\n            <label for=\"naist_img_llm\" data-i18n=\"naist.images.llmText\"></label>\n            <select id=\"naist_img_llm\" class=\"text_pole\" data-setting=\"inline.llmText\">\n                <option value=\"describe\" data-i18n=\"naist.images.llmDescribe\"></option>\n                <option value=\"remove\" data-i18n=\"naist.images.llmRemove\"></option>\n            </select>\n        </div>\n        <div>\n            <label for=\"naist_img_vstrength\" data-i18n=\"naist.images.variationStrength\"></label>\n            <input\n                id=\"naist_img_vstrength\"\n                type=\"number\"\n                min=\"0.01\"\n                max=\"0.99\"\n                step=\"0.01\"\n                class=\"text_pole\"\n                data-setting=\"inline.variationStrength\"\n            />\n        </div>\n        <div>\n            <label for=\"naist_img_vnoise\" data-i18n=\"naist.images.variationNoise\"></label>\n            <input\n                id=\"naist_img_vnoise\"\n                type=\"number\"\n                min=\"0\"\n                max=\"0.99\"\n                step=\"0.01\"\n                class=\"text_pole\"\n                data-setting=\"inline.variationNoise\"\n            />\n        </div>\n    </div>\n    <div class=\"naist-row\">\n        <div id=\"naist_img_toggle_chat\" class=\"menu_button\"></div>\n        <label class=\"checkbox_label\"\n            ><input id=\"naist_img_reading\" type=\"checkbox\" /><span data-i18n=\"naist.images.readingMode\"></span\n        ></label>\n    </div>\n</div>\n\n<div class=\"naist-section\">\n    <b data-i18n=\"naist.images.gallery\"></b>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"gallery.enabled\" /><span data-i18n=\"naist.images.galleryEnabled\"></span\n    ></label>\n    <div id=\"naist_img_open_gallery\" class=\"menu_button\" data-i18n=\"naist.images.openGallery\"></div>\n</div>\n\n<div class=\"naist-section\">\n    <b data-i18n=\"naist.images.png\"></b>\n    <div class=\"naist-hint\" data-i18n=\"naist.images.pngHint\"></div>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"png.stripMetadata\" /><span data-i18n=\"naist.images.stripMetadata\"></span\n    ></label>\n    <div class=\"naist-row\">\n        <div id=\"naist_img_import\" class=\"menu_button\" data-i18n=\"naist.images.importPng\"></div>\n        <input id=\"naist_img_import_file\" type=\"file\" accept=\"image/png,image/webp\" class=\"naist-hidden\" />\n    </div>\n</div>\n";
+//#endregion
+//#region src/ui/panel/tab-images.ts
+/** Reads NovelAI parameters from a dropped or chosen file and fills the panel. */
+async function importPngFile(file) {
+	try {
+		const params = await readImportedParams(file);
+		if (!params) {
+			toastr.warning(t("naist.images.importNone"));
+			return;
+		}
+		const applied = applyImportedParams(params);
+		toastr.success(t("naist.images.importDone", {
+			count: applied.length,
+			model: params.model ?? "—"
+		}));
+	} catch (error) {
+		reportGenerationError(error);
+	}
+}
+var ImagesTab = class {
+	actions;
+	root;
+	constructor(actions) {
+		this.actions = actions;
+	}
+	mount(container) {
+		container.innerHTML = render$1(tab_images_default);
+		this.root = container;
+		localize(container);
+		bindSettings(container);
+		const file = $id$1(container, "naist_img_import_file");
+		$id$1(container, "naist_img_import").addEventListener("click", () => file.click());
+		file.addEventListener("change", () => {
+			const chosen = file.files?.[0];
+			file.value = "";
+			if (chosen) importPngFile(chosen);
+		});
+		$id$1(container, "naist_img_open_gallery").addEventListener("click", () => this.actions.openGallery());
+		$id$1(container, "naist_img_toggle_chat").addEventListener("click", () => {
+			Promise.resolve(this.actions.setVisibility(this.actions.chatHidden() ? "show" : "hide")).then(() => this.refresh());
+		});
+		$id$1(container, "naist_img_reading").addEventListener("change", (event) => {
+			const on = event.target.checked;
+			Promise.resolve(this.actions.setVisibility(on ? "reading-on" : "reading-off"));
+		});
+		this.refresh();
+	}
+	refresh() {
+		if (!this.root) return;
+		readFromSettings(this.root);
+		$id$1(this.root, "naist_img_toggle_chat").textContent = t(this.actions.chatHidden() ? "naist.images.showChat" : "naist.images.hideChat");
+		$id$1(this.root, "naist_img_reading").checked = settings().inline.readingMode;
 	}
 };
 //#endregion
@@ -4721,7 +7697,7 @@ var PromptsTab = class {
 			return `<div class="naist-template" data-mode="${key}">
                 <div class="naist-row"><b data-i18n="naist.mode.${key}"></b>
                 <div class="menu_button fa-solid fa-rotate-left naist-template-reset" data-i18n="[title]naist.prompts.templateReset"></div></div>
-                <textarea class="text_pole textarea_compact naist-template-text" rows="3">${escapeHtml(overrides[key] ?? DEFAULT_TEMPLATES[key] ?? "")}</textarea>
+                <textarea class="text_pole textarea_compact naist-template-text" rows="3">${escapeHtml$2(overrides[key] ?? DEFAULT_TEMPLATES[key] ?? "")}</textarea>
             </div>`;
 		}).join("");
 		localize(container);
@@ -4845,16 +7821,44 @@ var Panel = class {
 	controller;
 	pipeline;
 	onSettingChange;
+	imageActions;
 	root;
 	refreshTimer = null;
 	lastPrepared = null;
 	promptsTab = null;
 	chatTab = null;
+	imagesTab = null;
 	takeoverTab = null;
-	constructor(controller, pipeline, onSettingChange = () => {}) {
+	constructor(controller, pipeline, onSettingChange = () => {}, imageActions = {
+		openGallery: () => {},
+		setVisibility: () => {},
+		chatHidden: () => false
+	}) {
 		this.controller = controller;
 		this.pipeline = pipeline;
 		this.onSettingChange = onSettingChange;
+		this.imageActions = imageActions;
+	}
+	/** Dropping a NovelAI PNG/WebP anywhere on the panel fills the parameters (TZ Phase 3). */
+	installPngDrop() {
+		const root = this.root;
+		root.addEventListener("dragover", (event) => {
+			if (!event.dataTransfer?.types.includes("Files")) return;
+			event.preventDefault();
+			event.stopPropagation();
+			root.classList.add("naist-drop-active");
+		});
+		root.addEventListener("dragleave", (event) => {
+			if (event.target === root) root.classList.remove("naist-drop-active");
+		});
+		root.addEventListener("drop", (event) => {
+			const file = event.dataTransfer?.files?.[0];
+			root.classList.remove("naist-drop-active");
+			if (!file) return;
+			event.preventDefault();
+			event.stopPropagation();
+			importPngFile(file);
+		});
 	}
 	mount(container) {
 		const html = render(panel_default, { models: MODELS });
@@ -4882,6 +7886,9 @@ var Panel = class {
 			this.scheduleRefresh();
 		});
 		this.chatTab.mount(this.tabPanel("chat"));
+		this.imagesTab = new ImagesTab(this.imageActions);
+		this.imagesTab.mount(this.tabPanel("images"));
+		this.installPngDrop();
 		this.takeoverTab = new TakeoverTab(() => this.scheduleRefresh());
 		this.takeoverTab.mount(this.tabPanel("takeover"));
 		this.root.querySelectorAll("[data-tab]").forEach((tab) => {
@@ -4896,6 +7903,7 @@ var Panel = class {
 		this.syncFromSettings();
 		this.promptsTab?.refresh();
 		this.chatTab?.refresh();
+		this.imagesTab?.refresh();
 		this.takeoverTab?.refresh();
 		this.scheduleRefresh();
 	}
@@ -4907,6 +7915,7 @@ var Panel = class {
 			tab.classList.toggle("naist-tab-active", tab.dataset.tab === name);
 		});
 		if (name === "takeover") this.takeoverTab?.refresh();
+		if (name === "images") this.imagesTab?.refresh();
 	}
 	syncFromSettings() {
 		const s = settings();
@@ -5358,7 +8367,11 @@ function mountPanel(studio, pipeline) {
 	const onSettingChange = (path) => {
 		if (path.startsWith("chat.functionTool") || path.startsWith("chat.toolCooldown") || path.startsWith("prompts.templates")) syncFunctionTool(pipeline, ownsCompatSurface());
 	};
-	new Panel(studio, pipeline, onSettingChange).mount(container);
+	new Panel(studio, pipeline, onSettingChange, {
+		openGallery: () => void openGalleryWindow(pipeline),
+		setVisibility: (state) => setInlineVisibility(state),
+		chatHidden: () => inlineRenderer()?.isChatHidden() ?? false
+	}).mount(container);
 }
 /** hooks.activate */
 async function onActivate() {
@@ -5372,8 +8385,10 @@ async function onActivate() {
 	});
 	controller = studio;
 	const pipeline = new Pipeline(studio, createPipelineUi(() => studio.state.account.anlas));
+	pipeline.onGenerated(recordGeneration);
 	mountPanel(studio, pipeline);
 	setupIntegrations(pipeline);
+	setupInline(pipeline, new InlineImages(pipeline));
 	new AutoGenerator(studio, pipeline).attach();
 	studio.refreshTransport();
 	for (const name of [

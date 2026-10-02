@@ -25,7 +25,8 @@ import {
     resolveMode,
     usesCharacterPrefix,
 } from '../../domain';
-import type { ModeId } from '../../domain';
+import type { GenerationRequest, InlineGenerationMeta, ModeId } from '../../domain';
+import type { GeneratedImage } from '../../transport';
 import {
     avatarKey,
     currentCharacterPrompt,
@@ -51,6 +52,13 @@ export interface CallOverrides {
 }
 
 export interface PictureRequest {
+    /** Request-level fields settings cannot express (img2img source, mask, vibes, references). */
+    requestPatch?: Partial<GenerationRequest>;
+    /**
+     * Use this scene prompt as is (regeneration of a stored image): no mode resolution, no LLM.
+     * `mode` still decides dimensions and the character prefix.
+     */
+    scene?: string;
     initiator: Initiator;
     /** Trigger word ("you", "face", ...) or free text. */
     trigger: string;
@@ -73,6 +81,26 @@ export interface PictureResult {
     messageId: number | null;
     cost: number;
 }
+
+/** Images and everything known about how they were made; nothing is saved or posted yet. */
+export interface Produced {
+    images: GeneratedImage[];
+    meta: InlineGenerationMeta;
+    legacy: GenerationMeta;
+    prepared: Prepared;
+    mode: ModeId;
+    chatId: string | undefined;
+}
+
+export interface GenerationOutcome {
+    target: 'message' | 'inline' | 'panel' | 'other';
+    paths: string[];
+    blobKeys?: string[];
+    inlineId?: string;
+}
+
+/** Observer of every finished generation (the gallery records them). */
+export type GenerationObserver = (produced: Produced, outcome: GenerationOutcome) => void;
 
 export interface RefineResult {
     prompt: string;
@@ -133,11 +161,66 @@ async function avatarUrl(mode: ModeId): Promise<string> {
     return `/characters/${encodeURIComponent(index === undefined ? '' : (c.characters[index]?.avatar ?? ''))}`;
 }
 
+/** Full parameter record of a prepared request (lightbox, gallery, PNG metadata, "repeat"). */
+export function metaFromPrepared(
+    prepared: Prepared,
+    extra: { scenePrompt: string; negative: string; mode: number; tool?: string },
+): InlineGenerationMeta {
+    const r = prepared.request;
+    const meta: InlineGenerationMeta = {
+        scenePrompt: extra.scenePrompt,
+        prompt: prepared.body.input,
+        negativePrompt: String(prepared.body.parameters.negative_prompt ?? ''),
+        negative: extra.negative,
+        mode: extra.mode,
+        model: prepared.body.model,
+        seed: r.seed,
+        width: r.width,
+        height: r.height,
+        steps: r.steps,
+        scale: r.scale,
+        cfgRescale: r.cfgRescale,
+        sampler: r.sampler,
+        noiseSchedule: r.noiseSchedule,
+        ucPreset: r.ucPreset,
+        qualityPreset: r.qualityPreset,
+        requestType: r.mode,
+        characters: r.characters
+            .filter((c) => c.enabled && c.prompt.trim())
+            .map((c) => ({ prompt: c.prompt, negative: c.negative, x: c.center.x, y: c.center.y })),
+        transport: prepared.transportId,
+        cost: prepared.cost.total,
+        createdAt: new Date().toISOString(),
+    };
+    if (extra.tool) meta.tool = extra.tool;
+    return meta;
+}
+
 export class Pipeline {
+    private readonly observers = new Set<GenerationObserver>();
+
     constructor(
         private readonly controller: StudioController,
         private readonly ui: PipelineUi,
     ) {}
+
+    onGenerated(observer: GenerationObserver): void {
+        this.observers.add(observer);
+    }
+
+    notify(produced: Produced, outcome: GenerationOutcome): void {
+        for (const observer of this.observers) {
+            try {
+                observer(produced, outcome);
+            } catch (error) {
+                log.warn('generation observer failed', error);
+            }
+        }
+    }
+
+    get studio(): StudioController {
+        return this.controller;
+    }
 
     /** Scene prompt for a mode (before prefix/suffix and character prompt). */
     private async scenePrompt(
@@ -190,7 +273,7 @@ export class Pipeline {
      * panel's Generate button will send (minus the random seed).
      */
     previewFree(trigger: string): Prepared {
-        const assembled = this.assemble(MODE.FREE, trigger, '', false);
+        const assembled = this.assemble(MODE.FREE, trigger, '', { isSwipe: false, expanded: false });
         return this.controller.prepare(assembled.overrides);
     }
 
@@ -198,7 +281,11 @@ export class Pipeline {
         mode: ModeId,
         scene: string,
         additionalNegative: string,
-        isSwipe: boolean,
+        /**
+         * isSwipe: built-in media swipe rule (character prefix always on in 1:1 chats).
+         * expanded: the scene already went through free-mode "char" expansion (stored prompt).
+         */
+        flags: { isSwipe: boolean; expanded: boolean },
         overrides: CallOverrides = {},
         forcedSize?: { width: number; height: number },
     ) {
@@ -210,7 +297,7 @@ export class Pipeline {
             forcedSize ?? modeDimensions(mode, g.width, g.height, overrides.snap ?? s.modes.snap, caps.sizePresets);
         let negativeExtra = additionalNegative;
         let sceneText = scene;
-        if (mode === MODE.FREE && !isSwipe) {
+        if (mode === MODE.FREE && !flags.isSwipe && !flags.expanded) {
             const free = applyFreeModeCharacter(scene, lastSpeakerPrompt());
             sceneText = free.prompt;
             if (free.negative) negativeExtra = combinePrefixes(negativeExtra, free.negative);
@@ -224,7 +311,7 @@ export class Pipeline {
             characterPositive: character.positive,
             characterNegative: character.negative,
             additionalNegative: negativeExtra,
-            useCharacterPrefix: usesCharacterPrefix(mode, isSwipe, soloCharacterIndex() !== undefined),
+            useCharacterPrefix: usesCharacterPrefix(mode, flags.isSwipe, soloCharacterIndex() !== undefined),
         });
         const generation: Partial<GenerationSettings> = {
             ...overrides.generation,
@@ -236,12 +323,16 @@ export class Pipeline {
         return { overrides: generation, sceneText, negativeExtra, dims };
     }
 
-    async generatePicture(req: PictureRequest): Promise<PictureResult | null> {
+    /**
+     * Everything up to the images: mode, scene prompt (LLM / raw / free / multimodal), optional
+     * edit, SD_PROMPT_PROCESSING, assembly, cost guard, transport. Returns null when cancelled.
+     */
+    async produce(req: PictureRequest): Promise<Produced | null> {
         const s = settings();
         const c = ctx();
         const o = req.overrides ?? {};
         const trigger = req.trigger.trim();
-        if (!trigger && !req.swipe) return null;
+        if (!trigger && !req.swipe && req.scene === undefined) return null;
 
         const refine = o.edit ?? s.modes.refine;
         const minimal = o.minimalProcessing ?? s.modes.minimalProcessing;
@@ -251,7 +342,17 @@ export class Pipeline {
         let forcedSize: { width: number; height: number } | undefined;
         const isSwipe = Boolean(req.swipe);
 
-        if (req.swipe) {
+        if (req.scene !== undefined) {
+            mode = req.mode ?? MODE.FREE;
+            scene = req.scene;
+            if (refine) {
+                const edited = await this.ui.refine(scene, { negative: additionalNegative });
+                if (!edited) return null;
+                scene = edited.prompt;
+                additionalNegative = edited.negative ?? additionalNegative;
+            }
+            if (!scene.trim()) return null;
+        } else if (req.swipe) {
             const attachment = req.swipe.attachment;
             mode = (attachment?.generation_type ?? MODE.FREE) as ModeId;
             scene = attachment?.title ?? req.swipe.text ?? '';
@@ -302,10 +403,19 @@ export class Pipeline {
         await c.eventSource.emit(c.eventTypes.SD_PROMPT_PROCESSING ?? 'sd_prompt_processing', eventData);
         scene = eventData.prompt;
 
-        const assembled = this.assemble(mode, scene, additionalNegative, isSwipe, o, forcedSize);
+        // A stored scene prompt is already final: free-mode "char" expansion must not run twice,
+        // and it keeps the character-prefix rule of its mode (not the media-swipe rule).
+        const assembled = this.assemble(
+            mode,
+            scene,
+            additionalNegative,
+            { isSwipe, expanded: req.scene !== undefined },
+            o,
+            forcedSize,
+        );
         // An image swipe with a fixed seed gets a random one, like the built-in.
         if (isSwipe && assembled.overrides.seed === undefined && s.generation.seed >= 0) assembled.overrides.seed = -1;
-        const prepared = this.controller.prepare(assembled.overrides);
+        const prepared = this.controller.prepare(assembled.overrides, req.requestPatch);
         if (req.maxCost !== undefined && prepared.cost.total > req.maxCost) {
             throw new NaiError('free-only-blocked', 'none', { cost: prepared.cost.total });
         }
@@ -333,12 +443,9 @@ export class Pipeline {
         try {
             const chatId = c.getCurrentChatId();
             const result = await this.controller.send(prepared, abort.signal);
-            const folder = o.gallery === false ? '' : imageFolder();
-            const saved = await saveImages(result.images, folder);
-            const first = saved[0];
-            if (!first) throw new NaiError('invalid-response', 'none', { preview: '' });
+            if (!result.images.length) throw new NaiError('invalid-response', 'none', { preview: '' });
             const generation = o.generation ?? {};
-            const meta: GenerationMeta = {
+            const legacy: GenerationMeta = {
                 scenePrompt: assembled.sceneText,
                 prompt: prepared.body.input,
                 negative: assembled.negativeExtra,
@@ -350,10 +457,42 @@ export class Pipeline {
                 correlationId: result.correlationId,
                 ...(forcedSize ?? (generation.width && generation.height ? assembled.dims : {})),
             };
+            const meta = metaFromPrepared(prepared, {
+                scenePrompt: assembled.sceneText,
+                negative: assembled.negativeExtra,
+                mode,
+            });
+            log.info('picture', req.initiator, `mode ${mode}`, prepared.body.model, `cost ${prepared.cost.total}`);
+            return { images: result.images, meta, legacy, prepared, mode, chatId };
+        } catch (error) {
+            throw toNaiError(error, {
+                model: prepared.request.model,
+                family: prepared.caps.family,
+                transport: prepared.transportId,
+            });
+        } finally {
+            await loader?.hide();
+        }
+    }
+
+    async generatePicture(req: PictureRequest): Promise<PictureResult | null> {
+        const s = settings();
+        const c = ctx();
+        const o = req.overrides ?? {};
+        const produced = await this.produce(req);
+        if (!produced) return null;
+        const { legacy: meta, mode, chatId } = produced;
+        const cost = produced.prepared.cost.total;
+        try {
+            const folder = o.gallery === false ? '' : imageFolder();
+            const saved = await saveImages(produced.images, folder);
+            const first = saved[0];
+            if (!first) throw new NaiError('invalid-response', 'none', { preview: '' });
+            this.notify(produced, { target: o.quiet ? 'other' : 'message', paths: saved.map((x) => x.path) });
             if (ctx().getCurrentChatId() !== chatId) {
                 // The built-in discards the image; we keep the file but do not post into another chat.
                 toastr.warning(t('naist.result.chatChanged', { count: saved.length }));
-                return { path: first.path, messageId: null, cost: prepared.cost.total };
+                return { path: first.path, messageId: null, cost };
             }
             let messageId: number | null = null;
             if (!o.quiet) {
@@ -371,20 +510,16 @@ export class Pipeline {
                         visible: s.chat.visibility[req.initiator] === true,
                         author: s.chat.author,
                         hidePrompt: s.chat.hidePrompt,
-                        text: messageText(templates()[String(MODE.MESSAGE)] ?? '{{prompt}}', assembled.sceneText),
+                        text: messageText(templates()[String(MODE.MESSAGE)] ?? '{{prompt}}', meta.scenePrompt),
                     });
                 }
             }
-            log.info('picture', req.initiator, `mode ${mode}`, prepared.body.model, `cost ${prepared.cost.total}`);
-            return { path: first.path, messageId, cost: prepared.cost.total };
+            return { path: first.path, messageId, cost };
         } catch (error) {
             throw toNaiError(error, {
-                model: prepared.request.model,
-                family: prepared.caps.family,
-                transport: prepared.transportId,
+                model: produced.prepared.request.model,
+                transport: produced.prepared.transportId,
             });
-        } finally {
-            await loader?.hide();
         }
     }
 }

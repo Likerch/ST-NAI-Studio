@@ -3,6 +3,7 @@ import { NaiError, toNaiError } from '../../core/errors';
 import { log } from '../../core/logger';
 import { settings } from '../../core/settings';
 import type { GenerationSettings } from '../../core/settings-schema';
+import type { GenerationRequest } from '../../domain';
 import { selectTransport } from '../../transport';
 import type { GenerateResult, TransportEnv, TransportSelection } from '../../transport';
 import { accountFromSubscription, UNKNOWN_ACCOUNT } from './account';
@@ -58,11 +59,17 @@ export class StudioController {
     }
 
     /** Builds everything the inspector shows. Throws NaiError for requests that cannot be built. */
-    prepare(overrides?: Partial<GenerationSettings>): Prepared {
+    prepare(overrides?: Partial<GenerationSettings>, requestPatch?: Partial<GenerationRequest>): Prepared {
         const transport = this.state.selection?.transport;
         if (!transport) throw new NaiError('plugin-unavailable', 'install-plugin');
         try {
-            return prepareGeneration({ settings: settings(), transport, account: this.state.account, overrides });
+            return prepareGeneration({
+                settings: settings(),
+                transport,
+                account: this.state.account,
+                overrides,
+                requestPatch,
+            });
         } catch (error) {
             throw toNaiError(error);
         }

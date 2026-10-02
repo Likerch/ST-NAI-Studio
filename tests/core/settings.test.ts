@@ -90,6 +90,21 @@ describe('settings schema', () => {
             expect(settings.takeover.migratedAt).toBeNull();
         });
 
+        it('v3: adds inline, gallery and PNG sections without touching older values', () => {
+            const { settings, migrated, fromVersion } = migrateAndFill(
+                { schemaVersion: 2, prompts: { prefix: 'p' }, anlas: { freeOnly: false } },
+                merge,
+            );
+            expect(migrated).toBe(true);
+            expect(fromVersion).toBe(2);
+            expect(settings.prompts.prefix).toBe('p');
+            expect(settings.anlas.freeOnly).toBe(false);
+            expect(settings.inline.saveToServer).toBe(true);
+            expect(settings.inline.llmText).toBe('describe');
+            expect(settings.gallery.enabled).toBe(true);
+            expect(settings.png.stripMetadata).toBe(false);
+        });
+
         it('keeps stored styles and the migration report arrays as they are', () => {
             const styles = [{ name: 'a', prefix: 'p', suffix: '', negative: '' }];
             const { settings } = migrateAndFill(

@@ -2,7 +2,7 @@
 // Lives in extensionSettings.nai_studio. Never store tokens or image blobs here (TZ rules 2 and 4).
 import type { LogLevel } from './logger';
 
-export const CURRENT_SCHEMA_VERSION = 2;
+export const CURRENT_SCHEMA_VERSION = 3;
 
 export type TransportMode = 'auto' | 'plugin' | 'native';
 
@@ -125,6 +125,35 @@ export interface NaiStudioSettings {
         /** Ask for confirmation when a request costs more than this (0 = always ask when paid). */
         confirmAbove: number;
     };
+    /** Inline images in message text (TZ Phase 3). */
+    inline: {
+        /** Save every inline image to /user/images too (needed for chat export and other browsers). */
+        saveToServer: boolean;
+        /** Keep the full image in IndexedDB (fast rendering, survives Data Maid cleaning the file). */
+        keepBrowserCopy: boolean;
+        defaultWidth: number;
+        defaultWidthUnit: '%' | 'px';
+        defaultAlign: 'left' | 'center' | 'right';
+        defaultRadius: number;
+        defaultLayout: 'grid' | 'carousel' | 'list';
+        /** How placeholders reach the LLM: a short "[image: …]" description or nothing. */
+        llmText: 'describe' | 'remove';
+        /** Reading mode: no inline images anywhere (global). */
+        readingMode: boolean;
+        variationStrength: number;
+        variationNoise: number;
+        /** Mode used by the insert dialog by default (free prompt or a trigger word). */
+        insertMode: string;
+    };
+    gallery: {
+        /** Record every generation in the gallery (thumbnail + parameters). */
+        enabled: boolean;
+        thumbSize: number;
+    };
+    png: {
+        /** Remove all metadata from images saved to the server and to disk. */
+        stripMetadata: boolean;
+    };
     inspector: { openBeforeSend: boolean };
     rawOverride: { enabled: boolean; json: string };
     log: { level: LogLevel };
@@ -196,6 +225,22 @@ export function defaultSettings(): NaiStudioSettings {
         },
         takeover: { migratedAt: null, migrationReport: [] },
         anlas: { freeOnly: true, confirmAbove: 0 },
+        inline: {
+            saveToServer: true,
+            keepBrowserCopy: true,
+            defaultWidth: 60,
+            defaultWidthUnit: '%',
+            defaultAlign: 'center',
+            defaultRadius: 8,
+            defaultLayout: 'grid',
+            llmText: 'describe',
+            readingMode: false,
+            variationStrength: 0.5,
+            variationNoise: 0.1,
+            insertMode: 'free',
+        },
+        gallery: { enabled: true, thumbSize: 256 },
+        png: { stripMetadata: false },
         inspector: { openBeforeSend: false },
         rawOverride: { enabled: false, json: '' },
         log: { level: 'info' },
@@ -239,6 +284,13 @@ export const MIGRATIONS: readonly Migration[] = [
                 };
             }
             return next;
+        },
+    },
+    {
+        // v3: inline images, gallery and PNG metadata sections; defaults are filled by the merge.
+        to: 3,
+        migrate(settings) {
+            return { ...settings, schemaVersion: 3 };
         },
     },
 ];

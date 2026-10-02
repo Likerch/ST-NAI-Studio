@@ -27,8 +27,9 @@ export function fillSelect(
     select.value = options.some((o) => o.value === current) ? current : (options[0]?.value ?? '');
 }
 
+const HTML_ESCAPES: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+
+/** Safe for text content and attribute values. */
 export function escapeHtml(text: string): string {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
+    return text.replace(/[&<>"']/g, (ch) => HTML_ESCAPES[ch] ?? ch);
 }

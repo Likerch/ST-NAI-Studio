@@ -50,13 +50,22 @@ export interface PrepareInput {
     account: AccountView;
     /** Per-call values (assembled prompt, mode dimensions, slash command arguments). Settings stay untouched. */
     overrides?: Partial<GenerationSettings>;
+    /** Request-level fields settings cannot express: img2img/inpaint source, mask, vibes, references. */
+    requestPatch?: Partial<GenerationRequest>;
     random?: () => number;
 }
 
-export function prepareGeneration({ settings, transport, account, overrides, random }: PrepareInput): Prepared {
+export function prepareGeneration({
+    settings,
+    transport,
+    account,
+    overrides,
+    requestPatch,
+    random,
+}: PrepareInput): Prepared {
     const generation: GenerationSettings = { ...settings.generation, ...overrides };
     const seed = resolveSeed(generation.seed, random);
-    let request = requestFromSettings(generation, seed);
+    let request: GenerationRequest = { ...requestFromSettings(generation, seed), ...requestPatch };
     const caps = getCapabilities(request.model);
     let clampChanges: FreeClampChange[] = [];
     if (settings.anlas.freeOnly) {

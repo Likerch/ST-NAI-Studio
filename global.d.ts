@@ -57,6 +57,14 @@ declare global {
         fromProps(props: Record<string, unknown>): unknown;
     }
 
+    interface STMessageFormattingInfo {
+        messageId: number;
+        isSystem: boolean;
+        isUser: boolean;
+        characterName?: string;
+        stage: string;
+    }
+
     interface STLoaderHandle {
         hide(): Promise<void>;
     }
@@ -125,6 +133,15 @@ declare global {
         writeExtensionField(characterId: number | string, key: string, value: unknown): Promise<void>;
         unshallowCharacter(characterId: number | string): Promise<void>;
         appendMediaToMessage(message: STChatMessage, element: unknown, scrollBehavior?: string): void;
+        updateMessageBlock(messageId: number, message: STChatMessage, options?: { rerenderMessage?: boolean }): void;
+        messageFormatter: {
+            addHook(
+                hook: (mes: string, info: STMessageFormattingInfo) => string,
+                options?: { stage?: 'beforeRegex' | 'afterRegex' | 'afterMarkdown'; order?: number },
+            ): void;
+        };
+        generateRaw(options: Record<string, unknown>): Promise<string>;
+        getTokenCountAsync(text: string, padding?: number): Promise<number>;
         generateQuietPrompt(options: { quietPrompt: string; [key: string]: unknown }): Promise<string>;
         executeSlashCommandsWithOptions(text: string, options?: Record<string, unknown>): Promise<unknown>;
         SlashCommandParser: { addCommandObject(command: unknown): void; commands: Record<string, unknown> };

@@ -16,3 +16,6 @@ export { varietyFactor } from './payload/sanitize';
 export * from './modes';
 export * from './prompt-assembly';
 export * from './autogen';
+export * from './inline';
+export * from './png-meta';
+export * from './gallery';

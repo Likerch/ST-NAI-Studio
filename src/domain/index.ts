@@ -13,3 +13,6 @@ export type { BuildResult } from './payload/build';
 export { applyOverride, parseOverride } from './payload/override';
 export type { OverrideResult } from './payload/override';
 export { varietyFactor } from './payload/sanitize';
+export * from './modes';
+export * from './prompt-assembly';
+export * from './autogen';

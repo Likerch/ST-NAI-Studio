@@ -164,3 +164,90 @@
 .naist-dropped-user {
     color: var(--warning, #d4a017);
 }
+
+/* ---- Phase 2: tabs, takeover banner, sections, templates, popups, wand ---- */
+
+.naist-banner {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 6px;
+    border-radius: 6px;
+    border: 1px solid var(--warning, #d4a017);
+    font-size: 0.9em;
+}
+
+.naist-banner .menu_button {
+    margin: 0;
+}
+
+.naist-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--SmartThemeBorderColor);
+}
+
+.naist-tab {
+    flex: 1 1 auto;
+    margin: 0;
+    padding: 3px 8px;
+    white-space: nowrap;
+    font-size: 0.9em;
+    opacity: 0.7;
+}
+
+.naist-tab-active {
+    opacity: 1;
+    border-color: var(--SmartThemeQuoteColor, #e6a);
+}
+
+.naist-tabpanel,
+.naist-section {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.naist-section {
+    padding-bottom: 8px;
+    border-bottom: 1px dashed var(--SmartThemeBorderColor);
+}
+
+.naist-section:last-child {
+    border-bottom: none;
+}
+
+.naist-template {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-bottom: 6px;
+}
+
+.naist-template .naist-row {
+    justify-content: space-between;
+}
+
+.naist-template-reset {
+    margin: 0;
+}
+
+.naist-refine {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    text-align: left;
+}
+
+.naist-report li {
+    margin: 2px 0;
+    text-align: left;
+}
+
+.naist-wand-dropdown {
+    z-index: 30000;
+    backdrop-filter: blur(var(--SmartThemeBlurStrength));
+}

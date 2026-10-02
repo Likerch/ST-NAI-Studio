@@ -38,6 +38,38 @@ declare global {
         name: string;
         avatar: string;
         data?: { extensions?: Record<string, unknown> };
+        description?: string;
+        scenario?: string;
+        shallow?: boolean;
+    }
+
+    interface STGroup {
+        id: string;
+        name: string;
+        members: string[];
+    }
+
+    interface STSlashCommandStatic {
+        fromProps(props: Record<string, unknown>): unknown;
+    }
+
+    interface STSlashCommandArgStatic {
+        fromProps(props: Record<string, unknown>): unknown;
+    }
+
+    interface STLoaderHandle {
+        hide(): Promise<void>;
+    }
+
+    interface STToolDefinition {
+        name: string;
+        displayName?: string;
+        description: string;
+        parameters: Record<string, unknown>;
+        action: (args: Record<string, unknown>) => Promise<unknown>;
+        formatMessage?: (args: Record<string, unknown>) => string;
+        shouldRegister?: () => boolean | Promise<boolean>;
+        stealth?: boolean;
     }
 
     interface STPopupStatic {
@@ -84,8 +116,36 @@ declare global {
         uuidv4(): string;
         humanizedDateTime(timestamp?: number): string;
         substituteParams(content: string): string;
+        substituteParamsExtended(content: string, additionalMacro?: Record<string, unknown>): string;
         getThumbnailUrl(type: string, file: string): string;
         isMobile(): boolean;
+        groups: STGroup[];
+        powerUserSettings: Record<string, unknown>;
+        accountStorage: { getItem(key: string): string | null; setItem(key: string, value: string): void };
+        writeExtensionField(characterId: number | string, key: string, value: unknown): Promise<void>;
+        unshallowCharacter(characterId: number | string): Promise<void>;
+        appendMediaToMessage(message: STChatMessage, element: unknown, scrollBehavior?: string): void;
+        generateQuietPrompt(options: { quietPrompt: string; [key: string]: unknown }): Promise<string>;
+        executeSlashCommandsWithOptions(text: string, options?: Record<string, unknown>): Promise<unknown>;
+        SlashCommandParser: { addCommandObject(command: unknown): void; commands: Record<string, unknown> };
+        SlashCommand: STSlashCommandStatic;
+        SlashCommandArgument: STSlashCommandArgStatic;
+        SlashCommandNamedArgument: STSlashCommandArgStatic;
+        ARGUMENT_TYPE: Record<string, string>;
+        registerFunctionTool(tool: STToolDefinition): void;
+        unregisterFunctionTool(name: string): void;
+        isToolCallingSupported(): boolean;
+        macros?: { register(name: string, options: Record<string, unknown>): void; category?: Record<string, string> };
+        registerMacro?(name: string, handler: () => string, description?: string): void;
+        loader?: {
+            show(options: {
+                blocking?: boolean;
+                slug?: string;
+                title?: string;
+                message?: string;
+                onStop?: () => void;
+            }): STLoaderHandle;
+        };
     }
 
     interface STLibs {
@@ -96,6 +156,13 @@ declare global {
         DOMPurify: { sanitize(dirty: string, config?: Record<string, unknown>): string };
         Handlebars: { compile(template: string): (data: unknown) => string };
         moment: (input?: unknown) => { format(fmt?: string): string; fromNow(): string };
+        Popper: {
+            createPopper(
+                reference: Element,
+                popper: HTMLElement,
+                options?: Record<string, unknown>,
+            ): { update(): Promise<unknown> };
+        };
     }
 
     interface STLocalForage {
@@ -114,10 +181,12 @@ declare global {
     }
 
     var SillyTavern: Window['SillyTavern'];
+    var jQuery: (selector: string | Element) => { length: number; get(index: number): HTMLElement | undefined };
     var toastr: {
         success(message: string, title?: string, options?: Record<string, unknown>): void;
         info(message: string, title?: string, options?: Record<string, unknown>): void;
         warning(message: string, title?: string, options?: Record<string, unknown>): void;
         error(message: string, title?: string, options?: Record<string, unknown>): void;
+        clear(toast?: unknown): void;
     };
 }

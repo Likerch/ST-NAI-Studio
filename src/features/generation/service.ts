@@ -1,7 +1,7 @@
 // Orchestrates one generation: settings -> request -> free-only clamp -> payload -> override ->
 // cost guard -> transport -> result. Everything shown in the inspector comes from `Prepared`.
 import { NaiError, toNaiError } from '../../core/errors';
-import type { NaiStudioSettings } from '../../core/settings-schema';
+import type { GenerationSettings, NaiStudioSettings } from '../../core/settings-schema';
 import { log } from '../../core/logger';
 import {
     applyOverride,
@@ -48,12 +48,15 @@ export interface PrepareInput {
     settings: NaiStudioSettings;
     transport: Transport;
     account: AccountView;
+    /** Per-call values (assembled prompt, mode dimensions, slash command arguments). Settings stay untouched. */
+    overrides?: Partial<GenerationSettings>;
     random?: () => number;
 }
 
-export function prepareGeneration({ settings, transport, account, random }: PrepareInput): Prepared {
-    const seed = resolveSeed(settings.generation.seed, random);
-    let request = requestFromSettings(settings.generation, seed);
+export function prepareGeneration({ settings, transport, account, overrides, random }: PrepareInput): Prepared {
+    const generation: GenerationSettings = { ...settings.generation, ...overrides };
+    const seed = resolveSeed(generation.seed, random);
+    let request = requestFromSettings(generation, seed);
     const caps = getCapabilities(request.model);
     let clampChanges: FreeClampChange[] = [];
     if (settings.anlas.freeOnly) {

@@ -4,3 +4,7 @@ node_modules/
 docs/captures/
 package-lock.json
 LICENSE
+# Handlebars blocks inside attributes are not valid HTML for Prettier
+src/ui/templates/character-row.html
+# Human-written reports; tables are kept as authored
+docs/

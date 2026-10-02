@@ -1,0 +1,56 @@
+<div class="naist-section">
+    <label for="naist_prefix" data-i18n="naist.prompts.prefix"></label>
+    <textarea id="naist_prefix" class="text_pole textarea_compact" rows="2" data-setting="prompts.prefix"></textarea>
+    <label for="naist_suffix" data-i18n="naist.prompts.suffix"></label>
+    <textarea id="naist_suffix" class="text_pole textarea_compact" rows="2" data-setting="prompts.suffix"></textarea>
+    <div class="naist-hint" data-i18n="naist.prompts.prefixHint"></div>
+</div>
+
+<div class="naist-section">
+    <b data-i18n="naist.prompts.styles"></b>
+    <div class="naist-row">
+        <select id="naist_style" class="text_pole naist-grow"></select>
+        <div
+            id="naist_style_save"
+            class="menu_button fa-solid fa-floppy-disk"
+            data-i18n="[title]naist.prompts.styleSave"
+        ></div>
+        <div
+            id="naist_style_rename"
+            class="menu_button fa-solid fa-pencil"
+            data-i18n="[title]naist.prompts.styleRename"
+        ></div>
+        <div
+            id="naist_style_delete"
+            class="menu_button fa-solid fa-trash-can"
+            data-i18n="[title]naist.prompts.styleDelete"
+        ></div>
+    </div>
+    <div class="naist-hint" data-i18n="naist.prompts.stylesHint"></div>
+</div>
+
+<div id="naist_char_prompt_block" class="naist-section">
+    <b data-i18n="naist.prompts.characterPrompt"></b> <span id="naist_char_prompt_name" class="naist-muted"></span>
+    <textarea
+        id="naist_char_positive"
+        class="text_pole textarea_compact"
+        rows="2"
+        data-i18n="[placeholder]naist.prompts.characterPositive"
+    ></textarea>
+    <textarea
+        id="naist_char_negative"
+        class="text_pole textarea_compact"
+        rows="2"
+        data-i18n="[placeholder]naist.prompts.characterNegative"
+    ></textarea>
+    <label class="checkbox_label"
+        ><input type="checkbox" id="naist_char_share" /><span data-i18n="naist.prompts.characterShare"></span
+    ></label>
+</div>
+<div id="naist_char_prompt_none" class="naist-hint naist-hidden" data-i18n="naist.prompts.characterNone"></div>
+
+<details class="naist-section">
+    <summary data-i18n="naist.prompts.templates"></summary>
+    <div class="naist-hint" data-i18n="naist.prompts.templatesHint"></div>
+    <div id="naist_templates"></div>
+</details>

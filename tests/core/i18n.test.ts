@@ -6,8 +6,18 @@ import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { localize, setTranslator, t } from '../../src/core/i18n';
 import type { NaiErrorCode } from '../../src/core/errors';
-import { MODELS, NOISE_SCHEDULES, QUALITY_PRESETS, SAMPLERS, UC_PRESETS } from '../../src/domain';
+import {
+    MODELS,
+    NOISE_SCHEDULES,
+    QUALITY_PRESETS,
+    SAMPLERS,
+    TEMPLATE_MODES,
+    UC_PRESETS,
+    WAND_MODES,
+} from '../../src/domain';
 import type { DropReason, NotFreeReason, WarningCode } from '../../src/domain';
+import type { MigrationKey } from '../../src/features/takeover/migration';
+import { IGNORED_ARGS } from '../../src/integration/command-args';
 import type { LostFeature } from '../../src/transport';
 import en from '../../src/i18n/en-us.json';
 import ru from '../../src/i18n/ru-ru.json';
@@ -89,6 +99,10 @@ describe('source code', () => {
             'invalid-response',
             'free-only-blocked',
             'price-too-high',
+            'busy',
+            'no-usable-message',
+            'multimodal-failed',
+            'prompt-generation-failed',
             'aborted',
             'size-too-large',
             'invalid-seed',
@@ -140,7 +154,34 @@ describe('source code', () => {
             'mode',
             'override',
         ];
+        const migration: MigrationKey[] = [
+            'nothing',
+            'prefix-moved',
+            'prefix-kept',
+            'prefix-default-skipped',
+            'negative-moved',
+            'negative-kept',
+            'negative-default-skipped',
+            'styles-moved',
+            'character-prompts-moved',
+            'character-prompts-kept',
+            'card-prompts-moved',
+            'templates-moved',
+            'behaviour-moved',
+            'generation-moved',
+            'generation-kept',
+            'free-only-kept',
+            'upscale-not-moved',
+            'generation-other-source',
+        ];
+        // Named /imagine arguments are declared in commands.ts; read their names from the source.
+        const commandsSource = fs.readFileSync(path.join(ROOT, 'src/integration/commands.ts'), 'utf8');
+        const commandArgs = [...commandsSource.matchAll(/named\('([\w.-]+)'/g)].map((m) => m[1]!).concat(IGNORED_ARGS);
+        expect(commandArgs.length).toBeGreaterThan(IGNORED_ARGS.length);
         const keys = [
+            ...[...TEMPLATE_MODES, ...WAND_MODES].map((m) => `naist.mode.${m}`),
+            ...migration.map((k) => `naist.migration.${k}`),
+            ...commandArgs.map((a) => `naist.command.arg.${a}`),
             ...errorCodes.flatMap((c) => [`naist.error.${c}.title`, `naist.error.${c}.text`]),
             ...drops.map((d) => `naist.drop.${d}`),
             ...warnings.map((w) => `naist.warning.${w}`),

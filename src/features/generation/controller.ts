@@ -1,13 +1,12 @@
 // UI-agnostic state of the studio: active transport, account balance, generation in flight.
-import { ctx } from '../../core/context';
 import { NaiError, toNaiError } from '../../core/errors';
 import { log } from '../../core/logger';
 import { settings } from '../../core/settings';
+import type { GenerationSettings } from '../../core/settings-schema';
 import { selectTransport } from '../../transport';
-import type { TransportEnv, TransportSelection } from '../../transport';
+import type { GenerateResult, TransportEnv, TransportSelection } from '../../transport';
 import { accountFromSubscription, UNKNOWN_ACCOUNT } from './account';
 import type { AccountView } from './account';
-import { imageFolder, postToChat, saveImages } from './output';
 import { prepareGeneration, sendPrepared } from './service';
 import type { Prepared } from './service';
 
@@ -19,13 +18,6 @@ export interface StudioState {
 }
 
 type Listener = (state: StudioState) => void;
-
-export interface GenerationOutcome {
-    messageId: number | null;
-    images: number;
-    /** The chat changed while the request was running: images were saved but not posted. */
-    chatChanged: boolean;
-}
 
 export class StudioController {
     readonly state: StudioState = { selection: null, account: UNKNOWN_ACCOUNT, accountError: null, busy: false };
@@ -45,11 +37,8 @@ export class StudioController {
 
     async refreshTransport(): Promise<void> {
         this.state.selection = await selectTransport(settings().transport.mode, this.env);
-        log.info(
-            'transport:',
-            this.state.selection.transport.id,
-            this.state.selection.health ? `plugin ${this.state.selection.health.version}` : 'no plugin',
-        );
+        const health = this.state.selection.health;
+        log.info('transport:', this.state.selection.transport.id, health ? `plugin ${health.version}` : 'no plugin');
         this.emit();
         await this.refreshAccount();
     }
@@ -69,42 +58,30 @@ export class StudioController {
     }
 
     /** Builds everything the inspector shows. Throws NaiError for requests that cannot be built. */
-    prepare(): Prepared {
+    prepare(overrides?: Partial<GenerationSettings>): Prepared {
         const transport = this.state.selection?.transport;
         if (!transport) throw new NaiError('plugin-unavailable', 'install-plugin');
         try {
-            return prepareGeneration({ settings: settings(), transport, account: this.state.account });
+            return prepareGeneration({ settings: settings(), transport, account: this.state.account, overrides });
         } catch (error) {
             throw toNaiError(error);
         }
     }
 
-    async generate(prepared: Prepared): Promise<GenerationOutcome> {
+    /** Sends a prepared request. One generation at a time; blocked requests never leave. */
+    async send(prepared: Prepared, signal?: AbortSignal): Promise<GenerateResult> {
         const transport = this.state.selection?.transport;
         if (!transport) throw new NaiError('plugin-unavailable', 'install-plugin');
-        if (this.state.busy) throw new NaiError('rate-limited', 'none');
-        const chatId = ctx().getCurrentChatId();
+        if (this.state.busy) throw new NaiError('busy', 'none');
         this.abort = new AbortController();
+        const onAbort = () => this.abort?.abort();
+        signal?.addEventListener('abort', onAbort, { once: true });
         this.state.busy = true;
         this.emit();
         try {
-            const result = await sendPrepared(prepared, transport, this.state.account, this.abort.signal);
-            const saved = await saveImages(result.images, imageFolder());
-            const meta = {
-                prompt: prepared.body.input,
-                model: prepared.body.model,
-                seed: prepared.request.seed,
-                transport: transport.id,
-                cost: prepared.cost.total,
-                correlationId: result.correlationId,
-            };
-            if (ctx().getCurrentChatId() !== chatId) {
-                return { messageId: null, images: saved.length, chatChanged: true };
-            }
-            const messageId = await postToChat(saved, meta, settings().output.hiddenFromPrompt);
-            log.info('generated', meta.model, `seed ${meta.seed}`, `cost ${meta.cost}`, result.correlationId ?? '');
-            return { messageId, images: saved.length, chatChanged: false };
+            return await sendPrepared(prepared, transport, this.state.account, this.abort.signal);
         } finally {
+            signal?.removeEventListener('abort', onAbort);
             this.state.busy = false;
             this.abort = null;
             this.emit();

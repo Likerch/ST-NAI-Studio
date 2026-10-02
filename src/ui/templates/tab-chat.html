@@ -1,0 +1,130 @@
+<div class="naist-section">
+    <b data-i18n="naist.chat.visibility"></b>
+    <div class="naist-hint" data-i18n="naist.chat.visibilityHint"></div>
+    <div class="naist-flags">
+        <label class="checkbox_label"
+            ><input type="checkbox" data-setting="chat.visibility.panel" /><span
+                data-i18n="naist.initiator.panel"
+            ></span
+        ></label>
+        <label class="checkbox_label"
+            ><input type="checkbox" data-setting="chat.visibility.command" /><span
+                data-i18n="naist.initiator.command"
+            ></span
+        ></label>
+        <label class="checkbox_label"
+            ><input type="checkbox" data-setting="chat.visibility.wand" /><span data-i18n="naist.initiator.wand"></span
+        ></label>
+        <label class="checkbox_label"
+            ><input type="checkbox" data-setting="chat.visibility.interactive" /><span
+                data-i18n="naist.initiator.interactive"
+            ></span
+        ></label>
+        <label class="checkbox_label"
+            ><input type="checkbox" data-setting="chat.visibility.tool" /><span data-i18n="naist.initiator.tool"></span
+        ></label>
+        <label class="checkbox_label"
+            ><input type="checkbox" data-setting="chat.visibility.auto" /><span data-i18n="naist.initiator.auto"></span
+        ></label>
+    </div>
+    <div class="naist-grid2">
+        <div>
+            <label for="naist_author" data-i18n="naist.chat.author"></label>
+            <select id="naist_author" class="text_pole" data-setting="chat.author">
+                <option value="character" data-i18n="naist.chat.authorCharacter"></option>
+                <option value="user" data-i18n="naist.chat.authorUser"></option>
+            </select>
+        </div>
+        <div>
+            <label for="naist_confirm_above" data-i18n="naist.chat.confirmAbove"></label>
+            <input id="naist_confirm_above" type="number" min="0" class="text_pole" data-setting="anlas.confirmAbove" />
+        </div>
+    </div>
+    <label class="checkbox_label"
+        ><input type="checkbox" data-setting="chat.hidePrompt" /><span data-i18n="naist.chat.hidePrompt"></span
+    ></label>
+</div>
+
+<div class="naist-section">
+    <b data-i18n="naist.chat.prompting"></b>
+    <label class="checkbox_label"
+        ><input type="checkbox" data-setting="modes.refine" /><span data-i18n="naist.chat.refine"></span
+    ></label>
+    <label class="checkbox_label"
+        ><input type="checkbox" data-setting="modes.multimodal" /><span data-i18n="naist.chat.multimodal"></span
+    ></label>
+    <label class="checkbox_label"
+        ><input type="checkbox" data-setting="modes.freeExtend" /><span data-i18n="naist.chat.freeExtend"></span
+    ></label>
+    <label class="checkbox_label"
+        ><input type="checkbox" data-setting="modes.snap" /><span data-i18n="naist.chat.snap"></span
+    ></label>
+    <label class="checkbox_label"
+        ><input type="checkbox" data-setting="modes.minimalProcessing" /><span
+            data-i18n="naist.chat.minimalProcessing"
+        ></span
+    ></label>
+</div>
+
+<div class="naist-section">
+    <b data-i18n="naist.chat.llm"></b>
+    <div class="naist-hint" data-i18n="naist.chat.llmHint"></div>
+    <label class="checkbox_label"
+        ><input type="checkbox" data-setting="chat.interactive" /><span data-i18n="naist.chat.interactive"></span
+    ></label>
+    <label class="checkbox_label"
+        ><input type="checkbox" data-setting="chat.functionTool" /><span data-i18n="naist.chat.functionTool"></span
+    ></label>
+    <label for="naist_tool_cooldown" data-i18n="naist.chat.toolCooldown"></label>
+    <input id="naist_tool_cooldown" type="number" min="0" class="text_pole" data-setting="chat.toolCooldownSeconds" />
+</div>
+
+<div class="naist-section">
+    <label class="checkbox_label"
+        ><input type="checkbox" data-setting="auto.enabled" /><b data-i18n="naist.auto.enabled"></b
+    ></label>
+    <div class="naist-hint" data-i18n="naist.auto.guardHint"></div>
+    <label for="naist_auto_mode" data-i18n="naist.auto.mode"></label>
+    <select id="naist_auto_mode" class="text_pole" data-setting="auto.mode" data-type="number"></select>
+    <div class="naist-grid2">
+        <div>
+            <label for="naist_auto_every" data-i18n="naist.auto.everyMessages"></label>
+            <input id="naist_auto_every" type="number" min="0" class="text_pole" data-setting="auto.everyMessages" />
+        </div>
+        <div>
+            <label for="naist_auto_cooldown_messages" data-i18n="naist.auto.cooldownMessages"></label>
+            <input
+                id="naist_auto_cooldown_messages"
+                type="number"
+                min="1"
+                class="text_pole"
+                data-setting="auto.cooldownMessages"
+            />
+        </div>
+    </div>
+    <label for="naist_auto_keywords" data-i18n="naist.auto.keywords"></label>
+    <input id="naist_auto_keywords" type="text" class="text_pole" data-setting="auto.keywords" />
+    <label class="checkbox_label"
+        ><input type="checkbox" data-setting="auto.sceneChange" /><span data-i18n="naist.auto.sceneChange"></span
+    ></label>
+    <input
+        id="naist_auto_markers"
+        type="text"
+        class="text_pole"
+        data-setting="auto.sceneMarkers"
+        data-i18n="[title]naist.auto.sceneMarkers"
+    />
+    <label for="naist_auto_cooldown_seconds" data-i18n="naist.auto.cooldownSeconds"></label>
+    <input
+        id="naist_auto_cooldown_seconds"
+        type="number"
+        min="0"
+        class="text_pole"
+        data-setting="auto.cooldownSeconds"
+    />
+    <label class="checkbox_label"
+        ><input type="checkbox" id="naist_auto_allow_paid" data-setting="auto.allowPaid" /><span
+            data-i18n="naist.auto.allowPaid"
+        ></span
+    ></label>
+</div>

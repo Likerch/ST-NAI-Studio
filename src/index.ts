@@ -7,12 +7,22 @@ import { setTranslator, t } from './core/i18n';
 import { log } from './core/logger';
 import { loadSettings, resetSettings } from './core/settings';
 import { clearStorage } from './core/storage';
+import { AutoGenerator } from './features/auto/auto-generation';
 import { StudioController } from './features/generation/controller';
+import { Pipeline } from './features/generation/pipeline';
+import { needsMigration, ownsCompatSurface, runMigration } from './features/takeover/takeover';
+import { setupIntegrations } from './integration/setup';
+import { syncFunctionTool } from './integration/tools';
 import { Panel } from './ui/panel/panel';
+import { createPipelineUi } from './ui/panel/pipeline-ui';
+import { showReport } from './ui/panel/tab-takeover';
+
+/** SECRET_KEYS.NOVEL in public/scripts/secrets.js. */
+const NOVEL_SECRET_KEY = 'api_key_novel';
 
 let controller: StudioController | null = null;
 
-function mountPanel(studio: StudioController): void {
+function mountPanel(studio: StudioController, pipeline: Pipeline): void {
     const container =
         document.querySelector<HTMLElement>('#extensions_settings2') ??
         document.querySelector<HTMLElement>('#extensions_settings');
@@ -21,7 +31,16 @@ function mountPanel(studio: StudioController): void {
         return;
     }
     if (document.querySelector('#naist_panel')) return;
-    new Panel(studio).mount(container);
+    const onSettingChange = (path: string) => {
+        if (
+            path.startsWith('chat.functionTool') ||
+            path.startsWith('chat.toolCooldown') ||
+            path.startsWith('prompts.templates')
+        ) {
+            syncFunctionTool(pipeline, ownsCompatSurface());
+        }
+    };
+    new Panel(studio, pipeline, onSettingChange).mount(container);
 }
 
 /** hooks.activate */
@@ -30,13 +49,36 @@ export async function onActivate(): Promise<void> {
     const c = ctx();
     setTranslator((text, key) => c.translate(text, key));
     await loadSettings();
-    controller = new StudioController({
+    const studio = new StudioController({
         fetch: (input, init) => fetch(input, init),
         headers: () => requestHeaders(),
     });
-    mountPanel(controller);
+    controller = studio;
+    const pipeline = new Pipeline(
+        studio,
+        createPipelineUi(() => studio.state.account.anlas),
+    );
+    mountPanel(studio, pipeline);
+    setupIntegrations(pipeline);
+    new AutoGenerator(studio, pipeline).attach();
     // Network probing must not hold the 5 s activation window.
-    void controller.refreshTransport();
+    void studio.refreshTransport();
+    // A NovelAI key written, deleted or rotated in SillyTavern changes the token source and balance.
+    for (const name of ['SECRET_WRITTEN', 'SECRET_DELETED', 'SECRET_ROTATED']) {
+        const event = c.eventTypes[name];
+        if (!event) continue;
+        c.eventSource.on(event, (key) => {
+            if (key === NOVEL_SECRET_KEY) void studio.refreshTransport();
+        });
+    }
+    // One-time migration from the built-in Image Generation, with a report (TZ Phase 2, task 9).
+    if (needsMigration()) {
+        c.eventSource.on(c.eventTypes.APP_READY ?? 'app_ready', () => {
+            void runMigration()
+                .then((report) => showReport(report))
+                .catch((error) => log.warn('migration failed', error));
+        });
+    }
     log.info(`${MODULE_NAME} activated`);
 }
 

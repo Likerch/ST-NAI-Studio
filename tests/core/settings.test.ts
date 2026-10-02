@@ -13,7 +13,11 @@ describe('settings schema', () => {
     });
 
     it('fills keys added in newer versions without touching user values', () => {
-        const stored = { schemaVersion: 1, generation: { prompt: 'cat', steps: 28 }, anlas: { freeOnly: false } };
+        const stored = {
+            schemaVersion: CURRENT_SCHEMA_VERSION,
+            generation: { prompt: 'cat', steps: 28 },
+            anlas: { freeOnly: false },
+        };
         const { settings, migrated } = migrateAndFill(stored, merge);
         expect(migrated).toBe(false);
         expect(settings.generation.prompt).toBe('cat');
@@ -62,6 +66,42 @@ describe('settings schema', () => {
                 generation: { prompt: 'p' },
                 schemaVersion: 1,
             });
+        });
+
+        it('v2: moves output.hiddenFromPrompt=false into chat.visibility.panel', () => {
+            const { settings, migrated, fromVersion } = migrateAndFill(
+                { schemaVersion: 1, output: { hiddenFromPrompt: false }, generation: { prompt: 'p' } },
+                merge,
+            );
+            expect(migrated).toBe(true);
+            expect(fromVersion).toBe(1);
+            expect(settings.chat.visibility.panel).toBe(true);
+            expect(settings.chat.visibility.command).toBe(false);
+            expect(settings).not.toHaveProperty('output');
+            expect(settings.generation.prompt).toBe('p');
+        });
+
+        it('v2: hidden panel output stays hidden and v2 sections get defaults', () => {
+            const { settings } = migrateAndFill({ schemaVersion: 1, output: { hiddenFromPrompt: true } }, merge);
+            expect(settings.chat.visibility.panel).toBe(false);
+            expect(settings.auto.enabled).toBe(false);
+            expect(settings.auto.allowPaid).toBe(false);
+            expect(settings.prompts.styles).toEqual([]);
+            expect(settings.takeover.migratedAt).toBeNull();
+        });
+
+        it('keeps stored styles and the migration report arrays as they are', () => {
+            const styles = [{ name: 'a', prefix: 'p', suffix: '', negative: '' }];
+            const { settings } = migrateAndFill(
+                {
+                    schemaVersion: 2,
+                    prompts: { styles },
+                    takeover: { migratedAt: '2026-01-01T00:00:00.000Z', migrationReport: ['x'] },
+                },
+                merge,
+            );
+            expect(settings.prompts.styles).toEqual(styles);
+            expect(settings.takeover.migrationReport).toEqual(['x']);
         });
     });
 });

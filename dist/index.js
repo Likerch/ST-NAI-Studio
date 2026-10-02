@@ -9,6 +9,16 @@ function libs() {
 function requestHeaders(omitContentType = false) {
 	return ctx().getRequestHeaders(omitContentType ? { omitContentType: true } : void 0);
 }
+/**
+* Imports a SillyTavern module by URL for the few APIs missing from getContext() (TZ rule 3 allows
+* direct imports only then). The URL is kept opaque to the bundler.
+*/
+async function importHost(path) {
+	return await import(
+		/* @vite-ignore */
+		new URL(path, window.location.origin).href
+);
+}
 //#endregion
 //#region src/core/i18n.ts
 var EN = {
@@ -234,7 +244,184 @@ var EN = {
 	"naist.result.chatChanged": "Chat changed during generation: {count} image(s) saved to the gallery but not posted.",
 	"naist.result.cancelled": "Generation cancelled.",
 	"naist.lifecycle.installed": "NAI Studio installed. Open Extensions → NAI Studio.",
-	"naist.lifecycle.cleaned": "NAI Studio settings and stored data removed."
+	"naist.lifecycle.cleaned": "NAI Studio settings and stored data removed.",
+	"naist.error.busy.title": "A generation is already running",
+	"naist.error.busy.text": "Wait for it to finish or cancel it.",
+	"naist.error.no-usable-message.title": "No usable message",
+	"naist.error.no-usable-message.text": "The chat has no non-system message to draw from.",
+	"naist.error.multimodal-failed.title": "Multimodal captioning failed",
+	"naist.error.multimodal-failed.text": "Could not describe the avatar. Check the Image Captioning extension settings, or turn multimodal mode off.",
+	"naist.error.prompt-generation-failed.title": "The LLM returned no prompt",
+	"naist.error.prompt-generation-failed.text": "Prompt generation produced no text. Check the connected API and the instruct template, then retry.",
+	"naist.loader.title": "NAI Studio",
+	"naist.loader.message": "Generating an image…",
+	"naist.panel.emptyPrompt": "Type a prompt first.",
+	"naist.tab.generate": "Generate",
+	"naist.tab.prompts": "Prompts",
+	"naist.tab.chat": "Chat",
+	"naist.tab.takeover": "Replace built-in",
+	"naist.takeover.banner": "The built-in Image Generation is enabled: /sd and /imagine still belong to it.",
+	"naist.takeover.bannerAction": "Replace",
+	"naist.takeover.status": "Built-in Image Generation",
+	"naist.takeover.builtInActive": "Enabled. NAI Studio answers only to /nai and its own buttons.",
+	"naist.takeover.builtInDisabled": "Disabled. NAI Studio has replaced it.",
+	"naist.takeover.commandsBuiltIn": "/sd, /imagine, {{charPrefix}}, the GenerateImage tool, interactive mode and image overswipe stay with the built-in.",
+	"naist.takeover.commandsOurs": "/sd, /imagine, /img, /image, {{charPrefix}}, the GenerateImage tool, interactive mode and image overswipe are handled by NAI Studio.",
+	"naist.takeover.disable": "Disable built-in and reload",
+	"naist.takeover.enable": "Bring the built-in back",
+	"naist.takeover.disableConfirm": "The built-in Image Generation will be disabled (it can be enabled again in Manage extensions) and the page will reload. Its settings are migrated first if that has not happened yet. Continue?",
+	"naist.takeover.disableOk": "Disable and reload",
+	"naist.takeover.enableConfirm": "Enable the built-in Image Generation again? The page will reload and /sd will go back to it.",
+	"naist.takeover.migration": "Settings migration",
+	"naist.takeover.migrate": "Migrate now",
+	"naist.takeover.migratedAt": "Migrated: {date}",
+	"naist.takeover.notMigrated": "Not migrated yet.",
+	"naist.takeover.reportTitle": "Migration from Image Generation",
+	"naist.migration.nothing": "Nothing to migrate.",
+	"naist.migration.prefix-moved": "Common prompt prefix moved.",
+	"naist.migration.prefix-kept": "Common prefix not moved: NAI Studio already has one.",
+	"naist.migration.prefix-default-skipped": "Default Stable Diffusion prefix skipped: NovelAI adds its own quality tags.",
+	"naist.migration.negative-moved": "Common negative prompt moved.",
+	"naist.migration.negative-kept": "Negative prompt not moved: NAI Studio already has one.",
+	"naist.migration.negative-default-skipped": "Default Stable Diffusion negative skipped: NovelAI has its own UC presets.",
+	"naist.migration.styles-moved": "Styles moved: {count}.",
+	"naist.migration.character-prompts-moved": "Character prompts moved: {count}.",
+	"naist.migration.character-prompts-kept": "Character prompts kept as they were in NAI Studio: {count}.",
+	"naist.migration.card-prompts-moved": "Character prompts taken from cards: {count}.",
+	"naist.migration.templates-moved": "Edited prompt templates moved: {count}.",
+	"naist.migration.behaviour-moved": "Switches moved: {names}.",
+	"naist.migration.generation-moved": "NovelAI generation settings moved (model {model}).",
+	"naist.migration.generation-kept": "Generation settings not moved: NAI Studio already has its own.",
+	"naist.migration.free-only-kept": "The built-in Anlas guard was off; NAI Studio keeps free-only mode on.",
+	"naist.migration.upscale-not-moved": "\"Upscale by {ratio}\" was not moved: upscaling arrives in a later phase.",
+	"naist.migration.generation-other-source": "Generation settings not moved: the built-in used \"{source}\", not NovelAI.",
+	"naist.prompts.prefix": "Common prefix",
+	"naist.prompts.suffix": "Common suffix",
+	"naist.prompts.prefixHint": "Put {prompt} into the prefix to place the scene prompt inside it. SillyTavern macros work. Undesired content is on the Generate tab.",
+	"naist.prompts.styles": "Styles",
+	"naist.prompts.styleNone": "— no style —",
+	"naist.prompts.styleSave": "Save prefix, suffix and undesired content as a style",
+	"naist.prompts.styleRename": "Rename style",
+	"naist.prompts.styleDelete": "Delete style",
+	"naist.prompts.stylesHint": "Choosing a style copies its prefix, suffix and undesired content into the fields.",
+	"naist.prompts.styleNamePrompt": "Style name:",
+	"naist.prompts.styleDeleteConfirm": "Delete style \"{name}\"?",
+	"naist.prompts.characterPrompt": "Character prompt",
+	"naist.prompts.characterPositive": "Tags added for this character",
+	"naist.prompts.characterNegative": "Undesired content for this character",
+	"naist.prompts.characterShare": "Store in the character card (travels with export)",
+	"naist.prompts.characterNone": "Open a 1:1 chat to edit the character prompt.",
+	"naist.prompts.templates": "Prompt templates by mode",
+	"naist.prompts.templatesHint": "Instructions sent to the LLM to write an image prompt for each mode. {0} is the trigger text.",
+	"naist.prompts.templateReset": "Restore default",
+	"naist.mode.-2": "Function tool prompt description",
+	"naist.mode.-1": "Chat message template",
+	"naist.mode.0": "Character (\"Yourself\")",
+	"naist.mode.1": "User (\"Me\")",
+	"naist.mode.2": "Scenario (\"The whole story\")",
+	"naist.mode.3": "Raw last message",
+	"naist.mode.4": "Last message",
+	"naist.mode.5": "Portrait (\"Your face\")",
+	"naist.mode.7": "Background",
+	"naist.mode.8": "Character (multimodal)",
+	"naist.mode.9": "User (multimodal)",
+	"naist.mode.10": "Portrait (multimodal)",
+	"naist.mode.11": "Free mode (LLM-extended)",
+	"naist.chat.visibility": "Who sees the result",
+	"naist.chat.visibilityHint": "Checked: the image message is visible to the LLM. Unchecked: system message, hidden from the prompt.",
+	"naist.initiator.panel": "Panel",
+	"naist.initiator.command": "Commands",
+	"naist.initiator.wand": "Wand menu",
+	"naist.initiator.interactive": "Interactive",
+	"naist.initiator.tool": "Function tool",
+	"naist.initiator.auto": "Auto generation",
+	"naist.chat.author": "Author of visible messages",
+	"naist.chat.authorCharacter": "Character",
+	"naist.chat.authorUser": "User",
+	"naist.chat.confirmAbove": "Ask before spending more than (Anlas)",
+	"naist.chat.hidePrompt": "Hide the prompt text, show only the image",
+	"naist.chat.prompting": "Prompt generation",
+	"naist.chat.refine": "Edit the prompt before every generation",
+	"naist.chat.multimodal": "Describe avatars with the multimodal model (\"you\", \"me\", \"face\")",
+	"naist.chat.freeExtend": "Let the LLM extend free prompts",
+	"naist.chat.snap": "Keep the pixel count when a mode changes the aspect ratio",
+	"naist.chat.minimalProcessing": "Minimal processing of LLM replies (keep JSON and punctuation)",
+	"naist.chat.llm": "LLM integration",
+	"naist.chat.llmHint": "Interactive mode and the function tool work after the built-in Image Generation is replaced.",
+	"naist.chat.interactive": "Interactive mode (\"send me a picture of …\")",
+	"naist.chat.functionTool": "GenerateImage function tool for the LLM",
+	"naist.chat.toolCooldown": "Tool cooldown (seconds)",
+	"naist.auto.enabled": "Automatic generation",
+	"naist.auto.guardHint": "Never spends Anlas in free-only mode. Paid auto generation needs the switch below and free-only off.",
+	"naist.auto.mode": "What to draw",
+	"naist.auto.everyMessages": "Every N AI messages (0 = off)",
+	"naist.auto.cooldownMessages": "At least N messages apart",
+	"naist.auto.keywords": "Keywords (comma-separated)",
+	"naist.auto.sceneChange": "On scene change (markers below)",
+	"naist.auto.sceneMarkers": "Scene change markers, comma-separated",
+	"naist.auto.cooldownSeconds": "At least N seconds apart",
+	"naist.auto.allowPaid": "Allow auto generation to spend Anlas",
+	"naist.wand.title": "NAI Studio",
+	"naist.wand.heading": "Send me a picture of:",
+	"naist.wand.free": "Free prompt…",
+	"naist.wand.freePrompt": "Image prompt:",
+	"naist.message.generate": "Generate an image (NAI Studio)",
+	"naist.card.portrait": "NAI Studio: full-body portrait",
+	"naist.card.face": "NAI Studio: face portrait",
+	"naist.command.trigger": "you, me, scene, last, raw_last, face, background — or free text",
+	"naist.command.returns": "path of the generated image, or an empty string on failure",
+	"naist.command.help": "Generates an image with NovelAI (NAI Studio) and posts it to the chat unless quiet=true. Accepts the built-in /sd arguments and NovelAI-specific ones.",
+	"naist.command.invalidArgs": "NAI Studio ignored invalid arguments: {args}",
+	"naist.command.styleMissing": "Style \"{name}\" not found",
+	"naist.command.styleReturns": "name of the active style",
+	"naist.command.styleName": "style name",
+	"naist.command.styleHelp": "Selects a NAI Studio style; without an argument returns the active one.",
+	"naist.command.sourceFixed": "NAI Studio always generates with NovelAI.",
+	"naist.command.sourceReturns": "always \"novel\"",
+	"naist.command.sourceName": "ignored",
+	"naist.command.sourceHelp": "Kept for script compatibility: the source is always NovelAI.",
+	"naist.command.arg.quiet": "do not post the image to the chat",
+	"naist.command.arg.gallery": "save into the character gallery folder",
+	"naist.command.arg.negative": "additional undesired content",
+	"naist.command.arg.extend": "let the LLM extend a free prompt",
+	"naist.command.arg.edit": "edit the prompt before generating",
+	"naist.command.arg.multimodal": "describe the avatar with the multimodal model",
+	"naist.command.arg.snap": "keep the pixel count for portrait/landscape modes",
+	"naist.command.arg.processing": "LLM reply processing: standard or minimal",
+	"naist.command.arg.seed": "seed (-1 = random)",
+	"naist.command.arg.width": "width",
+	"naist.command.arg.height": "height",
+	"naist.command.arg.steps": "steps",
+	"naist.command.arg.cfg": "guidance",
+	"naist.command.arg.cfgrescale": "CFG rescale",
+	"naist.command.arg.samples": "number of images",
+	"naist.command.arg.model": "model id or alias (v5, v5-curated, v4.5, v4, v3, furry)",
+	"naist.command.arg.sampler": "sampler",
+	"naist.command.arg.scheduler": "noise schedule",
+	"naist.command.arg.uc": "UC preset",
+	"naist.command.arg.quality": "quality tags preset",
+	"naist.command.arg.smea": "SMEA (V3)",
+	"naist.command.arg.dyn": "SMEA DYN (V3)",
+	"naist.command.arg.variety": "Variety Boost",
+	"naist.command.arg.decrisper": "Decrisper (V3)",
+	"naist.command.arg.transparent": "transparent background (V5)",
+	"naist.command.arg.skip": "ignored (CLIP skip has no meaning for NovelAI)",
+	"naist.command.arg.vae": "ignored (not applicable to NovelAI)",
+	"naist.command.arg.upscaler": "ignored (not applicable to NovelAI)",
+	"naist.command.arg.hires": "ignored (not applicable to NovelAI)",
+	"naist.command.arg.scale": "ignored (upscaling comes in a later phase)",
+	"naist.command.arg.denoise": "ignored (not applicable to NovelAI)",
+	"naist.command.arg.2ndpass": "ignored (not applicable to NovelAI)",
+	"naist.command.arg.faces": "ignored (not applicable to NovelAI)",
+	"naist.tool.displayName": "Generate Image (NAI Studio)",
+	"naist.tool.running": "Generating an image with NovelAI…",
+	"naist.macro.charPrefix": "Character's positive image prompt prefix (NAI Studio)",
+	"naist.macro.charNegativePrefix": "Character's negative image prompt prefix (NAI Studio)",
+	"naist.refine.title": "Review and edit the prompt",
+	"naist.refine.hint": "Cancel stops the generation.",
+	"naist.refine.negative": "Additional undesired content",
+	"naist.refine.resolution": "Use the saved resolution ({resolution})",
+	"naist.refine.continue": "Continue"
 };
 var translator = (text) => text;
 /** Wires the host translator (SillyTavern's translate). Called once on activation. */
@@ -304,36 +491,85 @@ var log = {
 		if (enabled("error")) console.error(PREFIX, ...args);
 	}
 };
+function defaultGeneration() {
+	return {
+		model: "nai-diffusion-4-5-full",
+		prompt: "",
+		negativePrompt: "",
+		ucPreset: "heavy",
+		qualityPreset: "standard",
+		dataset: "none",
+		width: 832,
+		height: 1216,
+		steps: 23,
+		scale: 5,
+		cfgRescale: 0,
+		sampler: "k_euler_ancestral",
+		noiseSchedule: "karras",
+		seed: -1,
+		samples: 1,
+		smea: false,
+		smeaDyn: false,
+		autoSmea: true,
+		decrisper: false,
+		varietyBoost: false,
+		legacyUc: false,
+		transparentBackground: false,
+		imageFormat: "webp",
+		useCoords: false,
+		characters: []
+	};
+}
 function defaultSettings() {
 	return {
-		schemaVersion: 1,
+		schemaVersion: 2,
 		transport: { mode: "auto" },
-		generation: {
-			model: "nai-diffusion-4-5-full",
-			prompt: "",
-			negativePrompt: "",
-			ucPreset: "heavy",
-			qualityPreset: "standard",
-			dataset: "none",
-			width: 832,
-			height: 1216,
-			steps: 23,
-			scale: 5,
-			cfgRescale: 0,
-			sampler: "k_euler_ancestral",
-			noiseSchedule: "karras",
-			seed: -1,
-			samples: 1,
-			smea: false,
-			smeaDyn: false,
-			autoSmea: true,
-			decrisper: false,
-			varietyBoost: false,
-			legacyUc: false,
-			transparentBackground: false,
-			imageFormat: "webp",
-			useCoords: false,
-			characters: []
+		generation: defaultGeneration(),
+		prompts: {
+			prefix: "",
+			suffix: "",
+			templates: {},
+			styles: [],
+			activeStyle: "",
+			characterPrompts: {}
+		},
+		modes: {
+			refine: false,
+			multimodal: false,
+			freeExtend: false,
+			snap: false,
+			minimalProcessing: false
+		},
+		chat: {
+			visibility: {
+				panel: false,
+				command: false,
+				wand: false,
+				interactive: false,
+				tool: false,
+				auto: false,
+				message: false
+			},
+			author: "character",
+			hidePrompt: true,
+			interactive: false,
+			functionTool: false,
+			toolCooldownSeconds: 30
+		},
+		auto: {
+			enabled: false,
+			mode: 4,
+			everyMessages: 0,
+			keywords: "",
+			sceneChange: false,
+			sceneMarkers: "***, ---, ⁂",
+			cooldownMessages: 3,
+			cooldownSeconds: 60,
+			allowPaid: false
+		},
+		takeover: {
+			migratedAt: null,
+			migrationReport: []
 		},
 		anlas: {
 			freeOnly: true,
@@ -344,13 +580,16 @@ function defaultSettings() {
 			enabled: false,
 			json: ""
 		},
-		output: { hiddenFromPrompt: true },
 		log: { level: "info" }
 	};
+}
+function isObject$1(value) {
+	return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 /**
 * Ordered migrations. Each one is a separate function with its own test (TZ "Versioning").
 * v1: first schema. Settings saved before versioning (no schemaVersion) start from here.
+* v2: `output.hiddenFromPrompt` became the per-initiator visibility map `chat.visibility`.
 */
 var MIGRATIONS = [{
 	to: 1,
@@ -360,28 +599,49 @@ var MIGRATIONS = [{
 			schemaVersion: 1
 		};
 	}
+}, {
+	to: 2,
+	migrate(settings) {
+		const { output, ...rest } = settings;
+		const next = {
+			...rest,
+			schemaVersion: 2
+		};
+		if (isObject$1(output) && output.hiddenFromPrompt === false) {
+			const chat = isObject$1(rest.chat) ? rest.chat : {};
+			next.chat = {
+				...chat,
+				visibility: {
+					...isObject$1(chat.visibility) ? chat.visibility : {},
+					panel: true
+				}
+			};
+		}
+		return next;
+	}
 }];
-function isObject(value) {
-	return typeof value === "object" && value !== null && !Array.isArray(value);
-}
 /** Applies pending migrations, then fills missing keys from defaults (lodash.merge in the host). */
 function migrateAndFill(stored, merge) {
-	let raw = isObject(stored) ? structuredClone(stored) : {};
+	let raw = isObject$1(stored) ? structuredClone(stored) : {};
 	const fromVersion = typeof raw.schemaVersion === "number" ? raw.schemaVersion : 0;
-	if (fromVersion > 1) return {
+	if (fromVersion > 2) return {
 		settings: merge(defaultSettings(), raw),
 		fromVersion,
 		migrated: false
 	};
 	for (const migration of MIGRATIONS) if (migration.to > fromVersion) raw = migration.migrate(raw);
 	const settings = merge(defaultSettings(), raw);
-	const storedChars = isObject(raw.generation) && Array.isArray(raw.generation.characters) ? raw.generation.characters : [];
-	settings.generation.characters = storedChars;
-	settings.schemaVersion = 1;
+	const generation = isObject$1(raw.generation) ? raw.generation : {};
+	settings.generation.characters = Array.isArray(generation.characters) ? generation.characters : [];
+	const prompts = isObject$1(raw.prompts) ? raw.prompts : {};
+	settings.prompts.styles = Array.isArray(prompts.styles) ? prompts.styles : [];
+	const takeover = isObject$1(raw.takeover) ? raw.takeover : {};
+	settings.takeover.migrationReport = Array.isArray(takeover.migrationReport) ? takeover.migrationReport : [];
+	settings.schemaVersion = 2;
 	return {
 		settings,
 		fromVersion,
-		migrated: fromVersion !== 1
+		migrated: fromVersion !== 2
 	};
 }
 //#endregion
@@ -408,6 +668,15 @@ async function clearStorage() {
 //#endregion
 //#region src/core/settings.ts
 var current = defaultSettings();
+var externalListeners = /* @__PURE__ */ new Set();
+/** The panel re-reads its controls when settings change outside of it (slash commands, migration). */
+function onExternalChange(listener) {
+	externalListeners.add(listener);
+	return () => externalListeners.delete(listener);
+}
+function notifyExternalChange() {
+	for (const listener of externalListeners) listener();
+}
 /** Loads extensionSettings.nai_studio, backs it up before a migration, fills new defaults. */
 async function loadSettings() {
 	const root = ctx().extensionSettings;
@@ -430,6 +699,13 @@ function settings() {
 }
 function saveSettings() {
 	ctx().saveSettingsDebounced();
+}
+/** Replaces the settings in place (the object referenced by extensionSettings stays the same). */
+function replaceSettings(next) {
+	for (const key of Object.keys(current)) delete current[key];
+	Object.assign(current, structuredClone(next));
+	ctx().saveSettingsDebounced();
+	notifyExternalChange();
 }
 /** Lifecycle "clean": drop our key from extensionSettings. */
 function resetSettings() {
@@ -509,433 +785,12 @@ function toNaiError(error, context = {}) {
 	return new NaiError("unknown", "none", { server: shape.message ?? String(error) });
 }
 //#endregion
-//#region src/transport/types.ts
-/** Transport failure. `serverMessage` is NovelAI's own text; tokens never pass through the client. */
-var TransportError = class extends Error {
-	kind;
-	status;
-	serverMessage;
-	bodyPreview;
-	constructor(kind, options = {}) {
-		super(options.message ?? `${kind}${options.status ? ` ${options.status}` : ""}`);
-		this.name = "TransportError";
-		this.kind = kind;
-		this.status = options.status;
-		this.serverMessage = options.serverMessage;
-		this.bodyPreview = options.bodyPreview;
-	}
-};
-function isAbort(error) {
-	return error instanceof DOMException ? error.name === "AbortError" : error?.name === "AbortError";
-}
-//#endregion
-//#region src/transport/st-native.ts
-var NATIVE_FEATURES = {
-	characters: false,
-	multipleSamples: false,
-	img2img: false,
-	inpaint: false,
-	vibes: false,
-	characterReference: false,
-	cfgRescale: false,
-	transparency: false,
-	stream: false,
-	upscale: false,
-	director: false,
-	diagnostics: false
-};
-function toStNativeRequest(body) {
-	const p = body.parameters;
-	return {
-		prompt: body.input,
-		model: body.model,
-		negative_prompt: p.negative_prompt,
-		width: p.width,
-		height: p.height,
-		scale: p.scale,
-		seed: p.seed,
-		sampler: p.sampler,
-		scheduler: typeof p.noise_schedule === "string" ? p.noise_schedule : "karras",
-		steps: p.steps,
-		sm: p.sm === true,
-		sm_dyn: p.sm_dyn === true,
-		decrisper: p.dynamic_thresholding === true,
-		variety_boost: typeof p.skip_cfg_above_sigma === "number" && p.skip_cfg_above_sigma > 0,
-		upscale_ratio: 1
-	};
-}
-/** ST's own Variety Boost formula (src/endpoints/novelai.js:120-129). */
-function stSkipCfg(width, height, model) {
-	const magic = model.includes("nai-diffusion-4-5") ? 58 : 19;
-	return Math.pow(width * height / 1011712, .5) * magic;
-}
-/** The exact body ST sends to image.novelai.net for a given request (verified against capture c08). */
-function stEffectiveBody(req) {
-	return {
-		action: "generate",
-		input: req.prompt,
-		model: req.model,
-		parameters: {
-			params_version: 3,
-			prefer_brownian: true,
-			negative_prompt: req.negative_prompt,
-			height: req.height,
-			width: req.width,
-			scale: req.scale,
-			seed: req.seed,
-			sampler: req.sampler,
-			noise_schedule: req.scheduler,
-			steps: req.steps,
-			n_samples: 1,
-			ucPreset: 0,
-			qualityToggle: false,
-			add_original_image: false,
-			controlnet_strength: 1,
-			deliberate_euler_ancestral_bug: false,
-			dynamic_thresholding: req.decrisper,
-			legacy: false,
-			legacy_v3_extend: false,
-			sm: req.sm,
-			sm_dyn: req.sm_dyn,
-			uncond_scale: 1,
-			skip_cfg_above_sigma: req.variety_boost ? stSkipCfg(req.width, req.height, req.model) : null,
-			use_coords: false,
-			characterPrompts: [],
-			reference_image_multiple: [],
-			reference_information_extracted_multiple: [],
-			reference_strength_multiple: [],
-			v4_negative_prompt: { caption: {
-				base_caption: req.negative_prompt,
-				char_captions: []
-			} },
-			v4_prompt: {
-				caption: {
-					base_caption: req.prompt,
-					char_captions: []
-				},
-				use_coords: false,
-				use_order: true
-			}
-		}
-	};
-}
-/** Requested features that ST's endpoint drops. */
-function lostOnNative(body, overridePaths) {
-	const p = body.parameters;
-	const lost = [];
-	if (body.action !== "generate") lost.push("mode");
-	if (Array.isArray(p.characterPrompts) && p.characterPrompts.length > 0) lost.push("characters");
-	if (p.use_coords === true) lost.push("coordinates");
-	if (p.n_samples > 1) lost.push("samples");
-	if (p.image) lost.push("source-image");
-	if (p.mask) lost.push("mask");
-	if (Array.isArray(p.reference_image_multiple) && p.reference_image_multiple.length > 0) lost.push("vibes");
-	if (Array.isArray(p.director_reference_images) && p.director_reference_images.length > 0) lost.push("character-reference");
-	if (typeof p.cfg_rescale === "number" && p.cfg_rescale !== 0) lost.push("cfg-rescale");
-	if (p.tag_hint_transparent_background === true) lost.push("transparency");
-	if (p.legacy_uc === true) lost.push("legacy-uc");
-	if (p.stream) lost.push("stream");
-	if (overridePaths.length > 0) lost.push("override");
-	return lost;
-}
-var PNG_BASE64_MAGIC = "iVBORw0KGgo";
-function createNativeTransport(env) {
-	async function post(path, payload, signal) {
-		try {
-			return await env.fetch(path, {
-				method: "POST",
-				headers: env.headers(),
-				body: JSON.stringify(payload),
-				signal
-			});
-		} catch (error) {
-			if (isAbort(error)) throw new TransportError("aborted");
-			throw new TransportError("network", { message: error instanceof Error ? error.message : String(error) });
-		}
-	}
-	return {
-		id: "native",
-		features: NATIVE_FEATURES,
-		async generate(body, options) {
-			const response = await post("/api/novelai/generate-image", toStNativeRequest(body), options.signal);
-			const text = await response.text();
-			if (response.status === 400) throw new TransportError("token-missing", { status: 400 });
-			if (!response.ok) throw new TransportError("http", {
-				status: response.status,
-				bodyPreview: text.slice(0, 200)
-			});
-			if (!text.startsWith(PNG_BASE64_MAGIC)) throw new TransportError("invalid-response", { bodyPreview: text.slice(0, 200) });
-			return { images: [{
-				base64: text,
-				mime: "image/png",
-				seed: body.parameters.seed,
-				index: 0
-			}] };
-		},
-		async subscription(signal) {
-			const response = await post("/api/novelai/status", {}, signal);
-			if (response.status === 400) throw new TransportError("token-missing", { status: 400 });
-			const text = await response.text();
-			let data;
-			try {
-				data = JSON.parse(text);
-			} catch {
-				throw new TransportError("invalid-response", {
-					status: response.status,
-					bodyPreview: text.slice(0, 200)
-				});
-			}
-			if (!response.ok || data?.error) throw new TransportError("invalid-response", {
-				status: response.status,
-				bodyPreview: text.slice(0, 200)
-			});
-			return data;
-		},
-		effectiveRequest(body, overridePaths) {
-			return {
-				body: stEffectiveBody(toStNativeRequest(body)),
-				lost: lostOnNative(body, overridePaths)
-			};
-		}
-	};
-}
-var PLUGIN_BASE = `/api/plugins/nai-studio`;
-var PLUGIN_FEATURES = {
-	characters: true,
-	multipleSamples: true,
-	img2img: true,
-	inpaint: true,
-	vibes: true,
-	characterReference: true,
-	cfgRescale: true,
-	transparency: true,
-	stream: false,
-	upscale: false,
-	director: false,
-	diagnostics: true
-};
-/** Returns plugin health or null when the plugin is not installed / ST was not restarted. */
-async function probePlugin(env, signal) {
-	try {
-		const response = await env.fetch(`${PLUGIN_BASE}/health`, {
-			method: "GET",
-			headers: env.headers(),
-			signal
-		});
-		if (!response.ok) return null;
-		const body = await response.json();
-		if (body?.ok !== true || typeof body.version !== "string") return null;
-		return {
-			ok: true,
-			version: body.version,
-			tokenSource: body.tokenSource ?? "none"
-		};
-	} catch {
-		return null;
-	}
-}
-async function toTransportError(response) {
-	if (response.status === 404) return new TransportError("plugin-unavailable", { status: 404 });
-	let body;
-	const text = await response.text();
-	try {
-		body = JSON.parse(text);
-	} catch {
-		return new TransportError("invalid-response", {
-			status: response.status,
-			bodyPreview: text.slice(0, 200)
-		});
-	}
-	const kind = body.error?.kind;
-	return new TransportError([
-		"http",
-		"network",
-		"timeout",
-		"aborted",
-		"invalid-response",
-		"token-missing"
-	].find((k) => k === kind) ?? "http", {
-		status: body.error?.status ?? response.status,
-		serverMessage: body.error?.message,
-		bodyPreview: body.error?.preview
-	});
-}
-function createPluginTransport(env) {
-	async function post(path, payload, signal) {
-		try {
-			return await env.fetch(`${PLUGIN_BASE}${path}`, {
-				method: "POST",
-				headers: env.headers(),
-				body: JSON.stringify(payload),
-				signal
-			});
-		} catch (error) {
-			if (isAbort(error)) throw new TransportError("aborted");
-			throw new TransportError("network", { message: error instanceof Error ? error.message : String(error) });
-		}
-	}
-	return {
-		id: "plugin",
-		features: PLUGIN_FEATURES,
-		async generate(body, options) {
-			const response = await post("/generate", {
-				request: body,
-				endpoint: options.endpoint,
-				retryable: options.retryable
-			}, options.signal);
-			if (!response.ok) throw await toTransportError(response);
-			const data = await response.json();
-			if (!Array.isArray(data.images) || data.images.length === 0) throw new TransportError("invalid-response", { bodyPreview: JSON.stringify(data).slice(0, 200) });
-			return {
-				images: data.images.map((img, i) => ({
-					base64: img.image,
-					mime: img.mime === "image/webp" ? "image/webp" : "image/png",
-					seed: img.seed,
-					index: img.index ?? i
-				})),
-				correlationId: data.correlationId
-			};
-		},
-		async subscription(signal) {
-			let response;
-			try {
-				response = await env.fetch(`${PLUGIN_BASE}/subscription`, {
-					method: "GET",
-					headers: env.headers(),
-					signal
-				});
-			} catch (error) {
-				if (isAbort(error)) throw new TransportError("aborted");
-				throw new TransportError("network", { message: error instanceof Error ? error.message : String(error) });
-			}
-			if (!response.ok) throw await toTransportError(response);
-			return await response.json();
-		},
-		effectiveRequest(body) {
-			return {
-				body,
-				lost: []
-			};
-		}
-	};
-}
-//#endregion
-//#region src/transport/index.ts
-async function selectTransport(preference, env, signal) {
-	const health = await probePlugin(env, signal);
-	if (preference === "native") return {
-		transport: createNativeTransport(env),
-		health,
-		degraded: false
-	};
-	if (health) return {
-		transport: createPluginTransport(env),
-		health,
-		degraded: false
-	};
-	if (preference === "plugin") return {
-		transport: createPluginTransport(env),
-		health: null,
-		degraded: false
-	};
-	return {
-		transport: createNativeTransport(env),
-		health: null,
-		degraded: true
-	};
-}
-//#endregion
-//#region src/features/generation/account.ts
-/** Subscription -> what the cost guard needs (RECON §3.11). */
-function accountFromSubscription(sub) {
-	const steps = sub.trainingStepsLeft;
-	const usage = sub.usage;
-	return {
-		tier: Number(sub.tier) || 0,
-		active: sub.active === true,
-		usageNegative: usage?.isNegative === true,
-		anlas: (steps?.fixedTrainingStepsLeft ?? 0) + (steps?.purchasedTrainingSteps ?? 0),
-		usagePercent: usage ? usage.isNegative ? 0 : Math.min(100, Math.max(0, usage.percent)) : null
-	};
-}
-/** Used before the balance is known: treat as a non-Opus account so nothing is assumed free. */
-var UNKNOWN_ACCOUNT = {
-	tier: 0,
-	active: false,
-	usageNegative: false,
-	anlas: 0,
-	usagePercent: null
-};
-//#endregion
-//#region src/features/generation/output.ts
-function safeName(text) {
-	return text.replace(/[^\p{L}\p{N}_-]+/gu, "_").slice(0, 40) || "nai";
-}
-async function saveImages(images, folder) {
-	const c = ctx();
-	const saved = [];
-	for (const image of images) {
-		const format = image.mime === "image/webp" ? "webp" : "png";
-		const filename = `${safeName(folder)}_${c.humanizedDateTime()}_${image.seed ?? image.index}`;
-		const response = await fetch("/api/images/upload", {
-			method: "POST",
-			headers: requestHeaders(),
-			body: JSON.stringify({
-				image: image.base64,
-				format,
-				ch_name: folder,
-				filename
-			})
-		});
-		if (!response.ok) throw new Error(`image upload failed: HTTP ${response.status}`);
-		const { path } = await response.json();
-		saved.push({
-			path,
-			seed: image.seed
-		});
-	}
-	return saved;
-}
-/** Folder in /user/images: character name in 1:1 chats, group id in groups (as the built-in does). */
-function imageFolder() {
-	const c = ctx();
-	return c.groupId ? String(c.groupId) : c.name2 || "";
-}
-async function postToChat(saved, meta, hiddenFromPrompt) {
-	const c = ctx();
-	const message = {
-		name: c.name2,
-		is_user: false,
-		is_system: hiddenFromPrompt,
-		send_date: (/* @__PURE__ */ new Date()).toISOString(),
-		mes: meta.prompt,
-		extra: {
-			media: saved.map((s) => ({
-				url: s.path,
-				type: "image",
-				title: meta.prompt,
-				source: "generated"
-			})),
-			media_display: "gallery",
-			media_index: 0,
-			inline_image: false,
-			nai_studio: {
-				model: meta.model,
-				seed: meta.seed,
-				seeds: saved.map((s) => s.seed),
-				transport: meta.transport,
-				cost: meta.cost,
-				correlationId: meta.correlationId
-			}
-		}
-	};
-	c.chat.push(message);
-	const id = c.chat.length - 1;
-	await c.eventSource.emit(c.eventTypes.MESSAGE_RECEIVED ?? "message_received", id, "extension");
-	c.addOneMessage(message);
-	await c.eventSource.emit(c.eventTypes.CHARACTER_MESSAGE_RENDERED ?? "character_message_rendered", id, "extension");
-	await c.saveChat();
-	return id;
+//#region src/core/notify.ts
+/** Shows a localized error toast; a user-initiated abort is not an error. */
+function reportGenerationError(error) {
+	const naiError = error instanceof NaiError ? error : toNaiError(error);
+	if (naiError.code !== "aborted") toastr.error(naiError.text, naiError.title);
+	return naiError;
 }
 //#endregion
 //#region src/domain/models.ts
@@ -2234,6 +2089,759 @@ function applyOverride(body, override) {
 	};
 }
 //#endregion
+//#region src/domain/modes.ts
+var MODE = {
+	TOOL: -2,
+	MESSAGE: -1,
+	CHARACTER: 0,
+	USER: 1,
+	SCENARIO: 2,
+	RAW_LAST: 3,
+	NOW: 4,
+	FACE: 5,
+	FREE: 6,
+	BACKGROUND: 7,
+	CHARACTER_MULTIMODAL: 8,
+	USER_MULTIMODAL: 9,
+	FACE_MULTIMODAL: 10,
+	FREE_EXTENDED: 11
+};
+/** Modes that have an editable template (everything except FREE). */
+var TEMPLATE_MODES = [
+	MODE.MESSAGE,
+	MODE.TOOL,
+	MODE.CHARACTER,
+	MODE.FACE,
+	MODE.USER,
+	MODE.SCENARIO,
+	MODE.NOW,
+	MODE.RAW_LAST,
+	MODE.BACKGROUND,
+	MODE.CHARACTER_MULTIMODAL,
+	MODE.FACE_MULTIMODAL,
+	MODE.USER_MULTIMODAL,
+	MODE.FREE_EXTENDED
+];
+/** Modes offered in the wand menu, with the trigger word each one answers to. */
+var TRIGGER_WORDS = {
+	[MODE.CHARACTER]: "you",
+	[MODE.USER]: "me",
+	[MODE.SCENARIO]: "scene",
+	[MODE.RAW_LAST]: "raw_last",
+	[MODE.NOW]: "last",
+	[MODE.FACE]: "face",
+	[MODE.BACKGROUND]: "background"
+};
+var WAND_MODES = [
+	MODE.CHARACTER,
+	MODE.FACE,
+	MODE.USER,
+	MODE.SCENARIO,
+	MODE.NOW,
+	MODE.RAW_LAST,
+	MODE.BACKGROUND
+];
+var MULTIMODAL = {
+	[MODE.CHARACTER]: MODE.CHARACTER_MULTIMODAL,
+	[MODE.USER]: MODE.USER_MULTIMODAL,
+	[MODE.FACE]: MODE.FACE_MULTIMODAL
+};
+/** Trigger text -> mode, as `/sd` resolves it (exact trigger word, case-insensitive; otherwise FREE). */
+function resolveMode(trigger, options) {
+	const word = trigger.trim().toLowerCase();
+	let mode = MODE.FREE;
+	for (const [id, value] of Object.entries(TRIGGER_WORDS)) if (value === word) {
+		mode = Number(id);
+		break;
+	}
+	const multimodal = MULTIMODAL[mode];
+	if (options.multimodal && multimodal !== void 0) mode = multimodal;
+	if (mode === MODE.FREE && options.freeExtend) mode = MODE.FREE_EXTENDED;
+	return mode;
+}
+function isMultimodal(mode) {
+	return mode === MODE.CHARACTER_MULTIMODAL || mode === MODE.USER_MULTIMODAL || mode === MODE.FACE_MULTIMODAL;
+}
+/** Interactive mode trigger ("send me a picture of ..."), built-in regex. */
+var ACTIVATION = /\b(send|mail|imagine|generate|make|create|draw|paint|render|show)\b.{0,10}\b(pic|picture|image|drawing|painting|photo|photograph)\b(?:\s+of)?(?:\s+(?:a|an|the|this|that|those|your)?\s+)?(.+)/i;
+var SPECIAL_CASES = [
+	[MODE.CHARACTER, ["you", "yourself"]],
+	[MODE.USER, ["me", "myself"]],
+	[MODE.SCENARIO, [
+		"story",
+		"scenario",
+		"whole story"
+	]],
+	[MODE.NOW, ["last message"]],
+	[MODE.FACE, [
+		"face",
+		"portrait",
+		"selfie"
+	]],
+	[MODE.BACKGROUND, [
+		"background",
+		"scene background",
+		"scene",
+		"scenery",
+		"surroundings",
+		"environment"
+	]]
+];
+/** Returns the trigger for a user message in interactive mode, or null when it does not ask for a picture. */
+function matchInteractiveTrigger(message) {
+	const subject = message.toLowerCase().match(ACTIVATION)?.[3]?.trim();
+	if (!subject) return null;
+	for (const [mode, phrases] of SPECIAL_CASES) if (phrases.includes(subject)) return TRIGGER_WORDS[mode] ?? subject;
+	return subject;
+}
+/** Modes that skip the character prompt prefix (except image swipes in 1:1 chats). */
+var NO_CHARACTER_PREFIX = [
+	MODE.FREE,
+	MODE.BACKGROUND,
+	MODE.USER,
+	MODE.USER_MULTIMODAL,
+	MODE.FREE_EXTENDED
+];
+function usesCharacterPrefix(mode, isSwipe, isCharacterChat) {
+	if (isSwipe && isCharacterChat) return true;
+	return !NO_CHARACTER_PREFIX.includes(mode);
+}
+/**
+* Faces are forced to portrait and backgrounds to landscape; with `snap` the pixel count is kept.
+* Mirrors setTypeSpecificDimensions() of the built-in extension.
+*/
+function modeDimensions(mode, width, height, snap, presets = []) {
+	let w = width;
+	let h = height;
+	const aspect = width / height;
+	if ((mode === MODE.FACE || mode === MODE.FACE_MULTIMODAL) && aspect >= 1) h = Math.round(w * 1.5 / 64) * 64;
+	else if (mode === MODE.BACKGROUND && aspect <= 1) w = Math.round(h * 1.8 / 64) * 64;
+	if (snap && w * h !== width * height) {
+		const ratio = Math.sqrt(width * height / (w * h));
+		w = Math.round(w * ratio / 64) * 64;
+		h = Math.round(h * ratio / 64) * 64;
+		const target = w / h;
+		let best = null;
+		for (const preset of presets) if (!best || Math.abs(preset.width / preset.height - target) < Math.abs(best.width / best.height - target)) best = preset;
+		if (best) {
+			w = best.width;
+			h = best.height;
+		}
+	}
+	return {
+		width: w,
+		height: h
+	};
+}
+/** Default prompt templates by mode (keys are mode ids as strings, like the built-in settings). */
+var DEFAULT_TEMPLATES = {
+	[MODE.MESSAGE]: "[{{char}} sends a picture that contains: {{prompt}}].",
+	[MODE.TOOL]: "The text prompt used to generate the image. Must represent an exhaustive description of the desired image that will allow an artist or a photographer to perfectly recreate it.",
+	[MODE.CHARACTER]: "In the next response I want you to provide only a detailed comma-delimited list of keywords and phrases which describe {{char}}. The list must include all of the following items in this order: name, species and race, gender, age, clothing, occupation, physical features and appearances. Do not include descriptions of non-visual qualities such as personality, movements, scents, mental traits, or anything which could not be seen in a still photograph. Do not write in full sentences. Prefix your description with the phrase 'full body portrait,'",
+	[MODE.FACE]: "In the next response I want you to provide only a detailed comma-delimited list of keywords and phrases which describe {{char}}. The list must include all of the following items in this order: name, species and race, gender, age, facial features and expressions, occupation, hair and hair accessories (if any), what they are wearing on their upper body (if anything). Do not describe anything below their neck. Do not include descriptions of non-visual qualities such as personality, movements, scents, mental traits, or anything which could not be seen in a still photograph. Do not write in full sentences. Prefix your description with the phrase 'close up facial portrait,'",
+	[MODE.USER]: "Ignore previous instructions and provide a detailed description of {{user}}'s physical appearance from the perspective of {{char}} in the form of a comma-delimited list of keywords and phrases. The list must include all of the following items in this order: name, species and race, gender, age, clothing, occupation, physical features and appearances. Do not include descriptions of non-visual qualities such as personality, movements, scents, mental traits, or anything which could not be seen in a still photograph. Do not write in full sentences. Prefix your description with the phrase 'full body portrait,'. Ignore the rest of the story when crafting this description. Do not reply as {{char}} when writing this description, and do not attempt to continue the story.",
+	[MODE.SCENARIO]: "Ignore previous instructions and provide a detailed description for all of the following: a brief recap of recent events in the story, {{char}}'s appearance, and {{char}}'s surroundings. Do not reply as {{char}} while writing this description.",
+	[MODE.NOW]: `Ignore previous instructions. Your next response must be formatted as a single comma-delimited list of concise keywords.  The list will describe of the visual details included in the last chat message.
+
+    Only mention characters by using pronouns ('he','his','she','her','it','its') or neutral nouns ('male', 'the man', 'female', 'the woman').
+
+    Ignore non-visible things such as feelings, personality traits, thoughts, and spoken dialog.
+
+    Add keywords in this precise order:
+    a keyword to describe the location of the scene,
+    a keyword to mention how many characters of each gender or type are present in the scene (minimum of two characters:
+    {{user}} and {{char}}, example: '2 men ' or '1 man 1 woman ', '1 man 3 robots'),
+
+    keywords to describe the relative physical positioning of the characters to each other (if a commonly known term for the positioning is known use it instead of describing the positioning in detail) + 'POV',
+
+    a single keyword or phrase to describe the primary act taking place in the last chat message,
+
+    keywords to describe {{char}}'s physical appearance and facial expression,
+    keywords to describe {{char}}'s actions,
+    keywords to describe {{user}}'s physical appearance and actions.
+
+    If character actions involve direct physical interaction with another character, mention specifically which body parts interacting and how.
+
+    A correctly formatted example response would be:
+    '(location),(character list by gender),(primary action), (relative character position) POV, (character 1's description and actions), (character 2's description and actions)'`,
+	[MODE.RAW_LAST]: "Ignore previous instructions and provide ONLY the last chat message string back to me verbatim. Do not write anything after the string. Do not reply as {{char}} when writing this description, and do not attempt to continue the story.",
+	[MODE.BACKGROUND]: "Ignore previous instructions and provide a detailed description of {{char}}'s surroundings in the form of a comma-delimited list of keywords and phrases. The list must include all of the following items in this order: location, time of day, weather, lighting, and any other relevant details. Do not include descriptions of characters and non-visual qualities such as names, personality, movements, scents, mental traits, or anything which could not be seen in a still photograph. Do not write in full sentences. Prefix your description with the phrase 'background,'. Ignore the rest of the story when crafting this description. Do not reply as {{char}} when writing this description, and do not attempt to continue the story.",
+	[MODE.FACE_MULTIMODAL]: "Provide an exhaustive comma-separated list of tags describing the appearance of the character on this image in great detail. Start with \"close-up portrait\".",
+	[MODE.CHARACTER_MULTIMODAL]: "Provide an exhaustive comma-separated list of tags describing the appearance of the character on this image in great detail. Start with \"full body portrait\".",
+	[MODE.USER_MULTIMODAL]: "Provide an exhaustive comma-separated list of tags describing the appearance of the character on this image in great detail. Start with \"full body portrait\".",
+	[MODE.FREE_EXTENDED]: "Ignore previous instructions and provide an exhaustive comma-separated list of tags describing the appearance of \"{0}\" in great detail. Start with {{charPrefix}} (sic) if the subject is associated with {{char}}."
+};
+/** Fills `{0}` with the trigger like the built-in stringFormat(); FREE returns the trigger itself. */
+function quietPromptFor(mode, trigger, templates) {
+	if (mode === MODE.FREE) return trigger;
+	return (templates[String(mode)] ?? DEFAULT_TEMPLATES[String(mode)] ?? "").replace(/\{0\}/g, trigger);
+}
+//#endregion
+//#region src/domain/prompt-assembly.ts
+/** Trims spaces and edge commas, joins with ", " or replaces `macro` in the first string. */
+function combinePrefixes(first, second, macro = "") {
+	const clean = (s) => s.trim().replace(/^,|,$/g, "").trim();
+	if (!second) return first;
+	const a = clean(first);
+	const b = clean(second);
+	return clean(macro && a.includes(macro) ? a.replace(macro, b) : `${a}, ${b},`);
+}
+/**
+* Chat-template tokens some models leak into replies (`<|eot_id|>`, `<|response_…|…>`). Not in the
+* built-in: their `|` would split the NovelAI prompt into segments, so they are always removed.
+*/
+var SPECIAL_TOKENS = /<\|[^>]*>/g;
+/** Cleans an LLM reply into a tag list (standard) or just collapses whitespace (minimal). */
+function processReply(text, minimal) {
+	if (!text) return "";
+	const cleaned = text.replace(SPECIAL_TOKENS, " ");
+	if (minimal) return cleaned.normalize("NFD").replace(/\s+/g, " ").trim();
+	return cleaned.replaceAll("\"", "").replaceAll("“", "").replaceAll("\n", ", ").normalize("NFD").replace(/[^a-zA-Z0-9.,:_(){}<>[\]/\-'|#]+/g, " ").replace(/\s+/g, " ").trim().split(",").map((part) => part.trim()).filter((part) => part).join(", ");
+}
+/** RAW_LAST without an LLM: the last message weighted above scenario and description. */
+function rawLastPrompt(message, character) {
+	const mes = processReply(message, false);
+	if (!character) return mes;
+	return `((${mes})), (${processReply(character.scenario ?? "", false)}:0.7), (${processReply(character.description ?? "", false)}:0.5)`;
+}
+/**
+* Free mode: a leading `char ` / `char,` or `{{charPrefix}}` is replaced by the character prompt.
+* Returns the prompt and the character negative that has to be added to the negatives.
+*/
+function applyFreeModeCharacter(trigger, character) {
+	let negative = "";
+	return {
+		prompt: trigger.replace(/^char(\s|,)|{{charPrefix}}/gi, (_match, suffix) => {
+			const value = character.positive.trim();
+			if (character.negative.trim()) negative = character.negative.trim();
+			return value ? combinePrefixes(value, suffix ?? "") : "";
+		}),
+		negative
+	};
+}
+/**
+* Final positive and negative strings before UC presets and quality tags are added by the payload
+* builder: prefix (+ character prefix) with `{prompt}` support, then suffix; negatives combined.
+*/
+function assemblePrompt(input) {
+	const prompt = combinePrefixes(combinePrefixes(input.useCharacterPrefix ? combinePrefixes(input.prefix, input.characterPositive) : input.prefix, input.scene, "{prompt}"), input.suffix);
+	const commonNegative = input.useCharacterPrefix ? combinePrefixes(input.negative, input.characterNegative) : input.negative;
+	return {
+		prompt,
+		negative: combinePrefixes(input.additionalNegative, commonNegative)
+	};
+}
+//#endregion
+//#region src/domain/autogen.ts
+function list(text) {
+	return text.split(",").map((s) => s.trim()).filter(Boolean);
+}
+function escapeRegExp(text) {
+	return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+function matchesKeyword(message, keywords) {
+	return list(keywords).some((word) => new RegExp(`(^|[^\\p{L}\\p{N}])${escapeRegExp(word)}($|[^\\p{L}\\p{N}])`, "iu").test(message));
+}
+function isSceneChange(message, markers) {
+	return list(markers).some((marker) => {
+		return (/^[\p{L}\p{N}]/u.test(marker) ? new RegExp(`(^|\\n)\\s*${escapeRegExp(marker)}\\b`, "iu") : new RegExp(escapeRegExp(marker))).test(message);
+	});
+}
+/** Called for every new AI message. Returns the decision and the updated counters. */
+function evaluateAuto(rules, state, message, now) {
+	const next = {
+		messagesSince: state.messagesSince + 1,
+		lastAt: state.lastAt
+	};
+	if (!rules.enabled) return {
+		fire: false,
+		state: next
+	};
+	let reason;
+	if (rules.everyMessages > 0 && next.messagesSince >= rules.everyMessages) reason = "every-messages";
+	else if (rules.keywords.trim() && matchesKeyword(message, rules.keywords)) reason = "keyword";
+	else if (rules.sceneChange && isSceneChange(message, rules.sceneMarkers)) reason = "scene-change";
+	if (!reason) return {
+		fire: false,
+		state: next
+	};
+	if (state.lastAt > 0 && next.messagesSince < Math.max(1, rules.cooldownMessages)) return {
+		fire: false,
+		reason,
+		blockedBy: "cooldown-messages",
+		state: next
+	};
+	if (state.lastAt > 0 && now - state.lastAt < rules.cooldownSeconds * 1e3) return {
+		fire: false,
+		reason,
+		blockedBy: "cooldown-seconds",
+		state: next
+	};
+	return {
+		fire: true,
+		reason,
+		state: {
+			messagesSince: 0,
+			lastAt: now
+		}
+	};
+}
+/**
+* Maximum Anlas an automatic generation may spend. Free-only mode always means 0, and paid
+* auto generation additionally needs an explicit opt-in (TZ Phase 2 acceptance).
+*/
+function autoBudget(freeOnly, allowPaid) {
+	return !freeOnly && allowPaid ? Number.POSITIVE_INFINITY : 0;
+}
+//#endregion
+//#region src/features/auto/auto-generation.ts
+var SKIPPED_TYPES = /* @__PURE__ */ new Set([
+	"extension",
+	"command",
+	"first_message",
+	"impersonate",
+	"quiet"
+]);
+var GUARD_CODES = /* @__PURE__ */ new Set([
+	"free-only-blocked",
+	"price-too-high",
+	"busy"
+]);
+function chatState() {
+	const metadata = ctx().chatMetadata;
+	const existing = metadata.nai_studio;
+	if (existing && typeof existing === "object") return existing;
+	const created = {};
+	metadata.nai_studio = created;
+	return created;
+}
+var AutoGenerator = class {
+	controller;
+	pipeline;
+	constructor(controller, pipeline) {
+		this.controller = controller;
+		this.pipeline = pipeline;
+	}
+	attach() {
+		const c = ctx();
+		c.eventSource.on(c.eventTypes.CHARACTER_MESSAGE_RENDERED ?? "character_message_rendered", (id, type) => {
+			this.onMessage(Number(id), String(type ?? ""));
+		});
+	}
+	async onMessage(id, type) {
+		const rules = settings().auto;
+		if (!rules.enabled || SKIPPED_TYPES.has(type)) return;
+		const message = ctx().chat[id];
+		if (!message || message.is_user || message.is_system || message.extra?.nai_studio) return;
+		const meta = chatState();
+		const previous = meta.auto ?? {
+			messagesSince: 0,
+			lastAt: 0
+		};
+		const decision = evaluateAuto(rules, previous, message.mes, Date.now());
+		meta.auto = decision.fire ? {
+			messagesSince: previous.messagesSince + 1,
+			lastAt: previous.lastAt
+		} : decision.state;
+		ctx().saveMetadata();
+		if (!decision.fire) {
+			if (decision.blockedBy) log.debug("auto generation held by", decision.blockedBy);
+			return;
+		}
+		if (this.controller.state.busy) {
+			log.info("auto generation skipped: another generation is running");
+			return;
+		}
+		const budget = autoBudget(settings().anlas.freeOnly, rules.allowPaid);
+		try {
+			const preview = this.controller.prepare();
+			if (preview.cost.total > budget) {
+				log.info(`auto generation skipped: would cost ${preview.cost.total} Anlas (budget ${budget})`);
+				return;
+			}
+		} catch (error) {
+			log.warn("auto generation skipped:", toNaiError(error).code);
+			return;
+		}
+		meta.auto = decision.state;
+		ctx().saveMetadata();
+		const mode = rules.mode;
+		const trigger = TRIGGER_WORDS[mode] ?? TRIGGER_WORDS[MODE.NOW] ?? "last";
+		try {
+			await this.pipeline.generatePicture({
+				initiator: "auto",
+				trigger,
+				message: mode === MODE.RAW_LAST ? message.mes : void 0,
+				maxCost: budget,
+				skipCostConfirm: true
+			});
+			log.info("auto generation fired by", decision.reason);
+		} catch (error) {
+			const naiError = toNaiError(error);
+			log.warn("auto generation failed:", naiError.code);
+			if (!GUARD_CODES.has(naiError.code)) reportGenerationError(naiError);
+		}
+	}
+};
+//#endregion
+//#region src/transport/types.ts
+/** Transport failure. `serverMessage` is NovelAI's own text; tokens never pass through the client. */
+var TransportError = class extends Error {
+	kind;
+	status;
+	serverMessage;
+	bodyPreview;
+	constructor(kind, options = {}) {
+		super(options.message ?? `${kind}${options.status ? ` ${options.status}` : ""}`);
+		this.name = "TransportError";
+		this.kind = kind;
+		this.status = options.status;
+		this.serverMessage = options.serverMessage;
+		this.bodyPreview = options.bodyPreview;
+	}
+};
+function isAbort(error) {
+	return error instanceof DOMException ? error.name === "AbortError" : error?.name === "AbortError";
+}
+//#endregion
+//#region src/transport/st-native.ts
+var NATIVE_FEATURES = {
+	characters: false,
+	multipleSamples: false,
+	img2img: false,
+	inpaint: false,
+	vibes: false,
+	characterReference: false,
+	cfgRescale: false,
+	transparency: false,
+	stream: false,
+	upscale: false,
+	director: false,
+	diagnostics: false
+};
+function toStNativeRequest(body) {
+	const p = body.parameters;
+	return {
+		prompt: body.input,
+		model: body.model,
+		negative_prompt: p.negative_prompt,
+		width: p.width,
+		height: p.height,
+		scale: p.scale,
+		seed: p.seed,
+		sampler: p.sampler,
+		scheduler: typeof p.noise_schedule === "string" ? p.noise_schedule : "karras",
+		steps: p.steps,
+		sm: p.sm === true,
+		sm_dyn: p.sm_dyn === true,
+		decrisper: p.dynamic_thresholding === true,
+		variety_boost: typeof p.skip_cfg_above_sigma === "number" && p.skip_cfg_above_sigma > 0,
+		upscale_ratio: 1
+	};
+}
+/** ST's own Variety Boost formula (src/endpoints/novelai.js:120-129). */
+function stSkipCfg(width, height, model) {
+	const magic = model.includes("nai-diffusion-4-5") ? 58 : 19;
+	return Math.pow(width * height / 1011712, .5) * magic;
+}
+/** The exact body ST sends to image.novelai.net for a given request (verified against capture c08). */
+function stEffectiveBody(req) {
+	return {
+		action: "generate",
+		input: req.prompt,
+		model: req.model,
+		parameters: {
+			params_version: 3,
+			prefer_brownian: true,
+			negative_prompt: req.negative_prompt,
+			height: req.height,
+			width: req.width,
+			scale: req.scale,
+			seed: req.seed,
+			sampler: req.sampler,
+			noise_schedule: req.scheduler,
+			steps: req.steps,
+			n_samples: 1,
+			ucPreset: 0,
+			qualityToggle: false,
+			add_original_image: false,
+			controlnet_strength: 1,
+			deliberate_euler_ancestral_bug: false,
+			dynamic_thresholding: req.decrisper,
+			legacy: false,
+			legacy_v3_extend: false,
+			sm: req.sm,
+			sm_dyn: req.sm_dyn,
+			uncond_scale: 1,
+			skip_cfg_above_sigma: req.variety_boost ? stSkipCfg(req.width, req.height, req.model) : null,
+			use_coords: false,
+			characterPrompts: [],
+			reference_image_multiple: [],
+			reference_information_extracted_multiple: [],
+			reference_strength_multiple: [],
+			v4_negative_prompt: { caption: {
+				base_caption: req.negative_prompt,
+				char_captions: []
+			} },
+			v4_prompt: {
+				caption: {
+					base_caption: req.prompt,
+					char_captions: []
+				},
+				use_coords: false,
+				use_order: true
+			}
+		}
+	};
+}
+/** Requested features that ST's endpoint drops. */
+function lostOnNative(body, overridePaths) {
+	const p = body.parameters;
+	const lost = [];
+	if (body.action !== "generate") lost.push("mode");
+	if (Array.isArray(p.characterPrompts) && p.characterPrompts.length > 0) lost.push("characters");
+	if (p.use_coords === true) lost.push("coordinates");
+	if (p.n_samples > 1) lost.push("samples");
+	if (p.image) lost.push("source-image");
+	if (p.mask) lost.push("mask");
+	if (Array.isArray(p.reference_image_multiple) && p.reference_image_multiple.length > 0) lost.push("vibes");
+	if (Array.isArray(p.director_reference_images) && p.director_reference_images.length > 0) lost.push("character-reference");
+	if (typeof p.cfg_rescale === "number" && p.cfg_rescale !== 0) lost.push("cfg-rescale");
+	if (p.tag_hint_transparent_background === true) lost.push("transparency");
+	if (p.legacy_uc === true) lost.push("legacy-uc");
+	if (p.stream) lost.push("stream");
+	if (overridePaths.length > 0) lost.push("override");
+	return lost;
+}
+var PNG_BASE64_MAGIC = "iVBORw0KGgo";
+function createNativeTransport(env) {
+	async function post(path, payload, signal) {
+		try {
+			return await env.fetch(path, {
+				method: "POST",
+				headers: env.headers(),
+				body: JSON.stringify(payload),
+				signal
+			});
+		} catch (error) {
+			if (isAbort(error)) throw new TransportError("aborted");
+			throw new TransportError("network", { message: error instanceof Error ? error.message : String(error) });
+		}
+	}
+	return {
+		id: "native",
+		features: NATIVE_FEATURES,
+		async generate(body, options) {
+			const response = await post("/api/novelai/generate-image", toStNativeRequest(body), options.signal);
+			const text = await response.text();
+			if (response.status === 400) throw new TransportError("token-missing", { status: 400 });
+			if (!response.ok) throw new TransportError("http", {
+				status: response.status,
+				bodyPreview: text.slice(0, 200)
+			});
+			if (!text.startsWith(PNG_BASE64_MAGIC)) throw new TransportError("invalid-response", { bodyPreview: text.slice(0, 200) });
+			return { images: [{
+				base64: text,
+				mime: "image/png",
+				seed: body.parameters.seed,
+				index: 0
+			}] };
+		},
+		async subscription(signal) {
+			const response = await post("/api/novelai/status", {}, signal);
+			if (response.status === 400) throw new TransportError("token-missing", { status: 400 });
+			const text = await response.text();
+			let data;
+			try {
+				data = JSON.parse(text);
+			} catch {
+				throw new TransportError("invalid-response", {
+					status: response.status,
+					bodyPreview: text.slice(0, 200)
+				});
+			}
+			if (!response.ok || data?.error) throw new TransportError("invalid-response", {
+				status: response.status,
+				bodyPreview: text.slice(0, 200)
+			});
+			return data;
+		},
+		effectiveRequest(body, overridePaths) {
+			return {
+				body: stEffectiveBody(toStNativeRequest(body)),
+				lost: lostOnNative(body, overridePaths)
+			};
+		}
+	};
+}
+var PLUGIN_BASE = `/api/plugins/nai-studio`;
+var PLUGIN_FEATURES = {
+	characters: true,
+	multipleSamples: true,
+	img2img: true,
+	inpaint: true,
+	vibes: true,
+	characterReference: true,
+	cfgRescale: true,
+	transparency: true,
+	stream: false,
+	upscale: false,
+	director: false,
+	diagnostics: true
+};
+/** Returns plugin health or null when the plugin is not installed / ST was not restarted. */
+async function probePlugin(env, signal) {
+	try {
+		const response = await env.fetch(`${PLUGIN_BASE}/health`, {
+			method: "GET",
+			headers: env.headers(),
+			signal
+		});
+		if (!response.ok) return null;
+		const body = await response.json();
+		if (body?.ok !== true || typeof body.version !== "string") return null;
+		return {
+			ok: true,
+			version: body.version,
+			tokenSource: body.tokenSource ?? "none"
+		};
+	} catch {
+		return null;
+	}
+}
+async function toTransportError(response) {
+	if (response.status === 404) return new TransportError("plugin-unavailable", { status: 404 });
+	let body;
+	const text = await response.text();
+	try {
+		body = JSON.parse(text);
+	} catch {
+		return new TransportError("invalid-response", {
+			status: response.status,
+			bodyPreview: text.slice(0, 200)
+		});
+	}
+	const kind = body.error?.kind;
+	return new TransportError([
+		"http",
+		"network",
+		"timeout",
+		"aborted",
+		"invalid-response",
+		"token-missing"
+	].find((k) => k === kind) ?? "http", {
+		status: body.error?.status ?? response.status,
+		serverMessage: body.error?.message,
+		bodyPreview: body.error?.preview
+	});
+}
+function createPluginTransport(env) {
+	async function post(path, payload, signal) {
+		try {
+			return await env.fetch(`${PLUGIN_BASE}${path}`, {
+				method: "POST",
+				headers: env.headers(),
+				body: JSON.stringify(payload),
+				signal
+			});
+		} catch (error) {
+			if (isAbort(error)) throw new TransportError("aborted");
+			throw new TransportError("network", { message: error instanceof Error ? error.message : String(error) });
+		}
+	}
+	return {
+		id: "plugin",
+		features: PLUGIN_FEATURES,
+		async generate(body, options) {
+			const response = await post("/generate", {
+				request: body,
+				endpoint: options.endpoint,
+				retryable: options.retryable
+			}, options.signal);
+			if (!response.ok) throw await toTransportError(response);
+			const data = await response.json();
+			if (!Array.isArray(data.images) || data.images.length === 0) throw new TransportError("invalid-response", { bodyPreview: JSON.stringify(data).slice(0, 200) });
+			return {
+				images: data.images.map((img, i) => ({
+					base64: img.image,
+					mime: img.mime === "image/webp" ? "image/webp" : "image/png",
+					seed: img.seed,
+					index: img.index ?? i
+				})),
+				correlationId: data.correlationId
+			};
+		},
+		async subscription(signal) {
+			let response;
+			try {
+				response = await env.fetch(`${PLUGIN_BASE}/subscription`, {
+					method: "GET",
+					headers: env.headers(),
+					signal
+				});
+			} catch (error) {
+				if (isAbort(error)) throw new TransportError("aborted");
+				throw new TransportError("network", { message: error instanceof Error ? error.message : String(error) });
+			}
+			if (!response.ok) throw await toTransportError(response);
+			return await response.json();
+		},
+		effectiveRequest(body) {
+			return {
+				body,
+				lost: []
+			};
+		}
+	};
+}
+//#endregion
+//#region src/transport/index.ts
+async function selectTransport(preference, env, signal) {
+	const health = await probePlugin(env, signal);
+	if (preference === "native") return {
+		transport: createNativeTransport(env),
+		health,
+		degraded: false
+	};
+	if (health) return {
+		transport: createPluginTransport(env),
+		health,
+		degraded: false
+	};
+	if (preference === "plugin") return {
+		transport: createPluginTransport(env),
+		health: null,
+		degraded: false
+	};
+	return {
+		transport: createNativeTransport(env),
+		health: null,
+		degraded: true
+	};
+}
+//#endregion
+//#region src/features/generation/account.ts
+/** Subscription -> what the cost guard needs (RECON §3.11). */
+function accountFromSubscription(sub) {
+	const steps = sub.trainingStepsLeft;
+	const usage = sub.usage;
+	return {
+		tier: Number(sub.tier) || 0,
+		active: sub.active === true,
+		usageNegative: usage?.isNegative === true,
+		anlas: (steps?.fixedTrainingStepsLeft ?? 0) + (steps?.purchasedTrainingSteps ?? 0),
+		usagePercent: usage ? usage.isNegative ? 0 : Math.min(100, Math.max(0, usage.percent)) : null
+	};
+}
+/** Used before the balance is known: treat as a non-Opus account so nothing is assumed free. */
+var UNKNOWN_ACCOUNT = {
+	tier: 0,
+	active: false,
+	usageNegative: false,
+	anlas: 0,
+	usagePercent: null
+};
+//#endregion
 //#region src/features/generation/form.ts
 var MAX_SEED = 2 ** 32 - 1;
 function pick(value, allowed, fallback) {
@@ -2294,9 +2902,12 @@ function requestFromSettings(g, seed) {
 }
 //#endregion
 //#region src/features/generation/service.ts
-function prepareGeneration({ settings, transport, account, random }) {
-	const seed = resolveSeed(settings.generation.seed, random);
-	let request = requestFromSettings(settings.generation, seed);
+function prepareGeneration({ settings, transport, account, overrides, random }) {
+	const generation = {
+		...settings.generation,
+		...overrides
+	};
+	let request = requestFromSettings(generation, resolveSeed(generation.seed, random));
 	const caps = getCapabilities(request.model);
 	let clampChanges = [];
 	if (settings.anlas.freeOnly) {
@@ -2386,7 +2997,8 @@ var StudioController = class {
 	}
 	async refreshTransport() {
 		this.state.selection = await selectTransport(settings().transport.mode, this.env);
-		log.info("transport:", this.state.selection.transport.id, this.state.selection.health ? `plugin ${this.state.selection.health.version}` : "no plugin");
+		const health = this.state.selection.health;
+		log.info("transport:", this.state.selection.transport.id, health ? `plugin ${health.version}` : "no plugin");
 		this.emit();
 		await this.refreshAccount();
 	}
@@ -2404,51 +3016,34 @@ var StudioController = class {
 		this.emit();
 	}
 	/** Builds everything the inspector shows. Throws NaiError for requests that cannot be built. */
-	prepare() {
+	prepare(overrides) {
 		const transport = this.state.selection?.transport;
 		if (!transport) throw new NaiError("plugin-unavailable", "install-plugin");
 		try {
 			return prepareGeneration({
 				settings: settings(),
 				transport,
-				account: this.state.account
+				account: this.state.account,
+				overrides
 			});
 		} catch (error) {
 			throw toNaiError(error);
 		}
 	}
-	async generate(prepared) {
+	/** Sends a prepared request. One generation at a time; blocked requests never leave. */
+	async send(prepared, signal) {
 		const transport = this.state.selection?.transport;
 		if (!transport) throw new NaiError("plugin-unavailable", "install-plugin");
-		if (this.state.busy) throw new NaiError("rate-limited", "none");
-		const chatId = ctx().getCurrentChatId();
+		if (this.state.busy) throw new NaiError("busy", "none");
 		this.abort = new AbortController();
+		const onAbort = () => this.abort?.abort();
+		signal?.addEventListener("abort", onAbort, { once: true });
 		this.state.busy = true;
 		this.emit();
 		try {
-			const result = await sendPrepared(prepared, transport, this.state.account, this.abort.signal);
-			const saved = await saveImages(result.images, imageFolder());
-			const meta = {
-				prompt: prepared.body.input,
-				model: prepared.body.model,
-				seed: prepared.request.seed,
-				transport: transport.id,
-				cost: prepared.cost.total,
-				correlationId: result.correlationId
-			};
-			if (ctx().getCurrentChatId() !== chatId) return {
-				messageId: null,
-				images: saved.length,
-				chatChanged: true
-			};
-			const messageId = await postToChat(saved, meta, settings().output.hiddenFromPrompt);
-			log.info("generated", meta.model, `seed ${meta.seed}`, `cost ${meta.cost}`, result.correlationId ?? "");
-			return {
-				messageId,
-				images: saved.length,
-				chatChanged: false
-			};
+			return await sendPrepared(prepared, transport, this.state.account, this.abort.signal);
 		} finally {
+			signal?.removeEventListener("abort", onAbort);
 			this.state.busy = false;
 			this.abort = null;
 			this.emit();
@@ -2460,15 +3055,1317 @@ var StudioController = class {
 	}
 };
 //#endregion
+//#region src/features/characters/character-prompts.ts
+var CARD_FIELD = "nai_studio";
+/** Card field the built-in writes when its "Shareable" box is checked (RECON §2.1.7). */
+var BUILTIN_CARD_FIELD = "sd_character_prompt";
+var EMPTY = {
+	positive: "",
+	negative: ""
+};
+/** Avatar file name without extension: the key the built-in uses (getCharaFilename). */
+function avatarKey(avatar) {
+	return (avatar ?? "").replace(/\.[^/.]+$/, "");
+}
+/** Index of the character of a 1:1 chat, undefined in groups or with no character selected. */
+function soloCharacterIndex() {
+	const c = ctx();
+	if (c.groupId || c.characterId === void 0 || c.characterId === null || c.characterId === "") return void 0;
+	const index = Number(c.characterId);
+	return Number.isInteger(index) && c.characters[index] ? index : void 0;
+}
+function asPrompt(value) {
+	if (!value || typeof value !== "object") return null;
+	const prompt = value;
+	return {
+		positive: String(prompt.positive ?? ""),
+		negative: String(prompt.negative ?? "")
+	};
+}
+/** The card's shared prompt: ours first, then the built-in's. `own` = stored in our field. */
+function cardPrompt(character) {
+	const extensions = character?.data?.extensions;
+	const own = asPrompt((extensions?.[CARD_FIELD])?.characterPrompt);
+	if (own) return {
+		prompt: own,
+		own: true
+	};
+	const builtIn = asPrompt(extensions?.[BUILTIN_CARD_FIELD]);
+	return builtIn ? {
+		prompt: builtIn,
+		own: false
+	} : null;
+}
+/** Local values win; empty local values fall back to the card (same precedence as the built-in). */
+function readCharacterPrompt(character) {
+	if (!character) return {
+		...EMPTY,
+		shared: false
+	};
+	const local = settings().prompts.characterPrompts[avatarKey(character.avatar)] ?? EMPTY;
+	const card = cardPrompt(character);
+	return {
+		positive: local.positive || card?.prompt.positive || "",
+		negative: local.negative || card?.prompt.negative || "",
+		shared: card?.own === true
+	};
+}
+/** Prompt of the current 1:1 character (empty in groups, like the built-in). */
+function currentCharacterPrompt() {
+	const index = soloCharacterIndex();
+	return index === void 0 ? EMPTY : readCharacterPrompt(ctx().characters[index]);
+}
+/** Free mode `char` prefix: current character, or in groups the last character who spoke. */
+function lastSpeakerPrompt() {
+	const c = ctx();
+	const index = soloCharacterIndex();
+	if (index !== void 0) return readCharacterPrompt(c.characters[index]);
+	for (let i = c.chat.length - 1; i >= 0; i--) {
+		const message = c.chat[i];
+		const avatar = message?.original_avatar;
+		if (message && !message.is_user && !message.is_system && typeof avatar === "string") return readCharacterPrompt(c.characters.find((ch) => ch.avatar === avatar));
+	}
+	return EMPTY;
+}
+async function saveCharacterPrompt(index, value, share) {
+	const c = ctx();
+	const character = c.characters[index];
+	if (!character) return;
+	settings().prompts.characterPrompts[avatarKey(character.avatar)] = { ...value };
+	saveSettings();
+	const existing = character.data?.extensions?.["nai_studio"] ?? {};
+	if (share) await c.writeExtensionField(index, CARD_FIELD, {
+		...existing,
+		characterPrompt: { ...value }
+	});
+	else if (existing.characterPrompt) await c.writeExtensionField(index, CARD_FIELD, {
+		...existing,
+		characterPrompt: null
+	});
+}
+//#endregion
+//#region src/features/generation/output.ts
+function safeName(text) {
+	return text.replace(/[^\p{L}\p{N}_-]+/gu, "_").slice(0, 40) || "nai";
+}
+async function saveImages(images, folder) {
+	const c = ctx();
+	const saved = [];
+	for (const image of images) {
+		const format = image.mime === "image/webp" ? "webp" : "png";
+		const filename = `${folder ? `${safeName(folder)}_` : ""}${c.humanizedDateTime()}_${image.seed ?? image.index}`;
+		const response = await fetch("/api/images/upload", {
+			method: "POST",
+			headers: requestHeaders(),
+			body: JSON.stringify({
+				image: image.base64,
+				format,
+				ch_name: folder,
+				filename
+			})
+		});
+		if (!response.ok) throw new Error(`image upload failed: HTTP ${response.status}`);
+		const { path } = await response.json();
+		saved.push({
+			path,
+			seed: image.seed
+		});
+	}
+	return saved;
+}
+/** systemUserName of script.js: the built-in posts images in group chats under this name. */
+var SYSTEM_USER_NAME = "SillyTavern System";
+/** Author of a result message and {{char}} of its text: the character, or the system user in groups. */
+function resultAuthorName() {
+	const c = ctx();
+	return c.groupId ? SYSTEM_USER_NAME : c.name2;
+}
+/** Folder in /user/images: character name in 1:1 chats, group id in groups (as the built-in does). */
+function imageFolder() {
+	const c = ctx();
+	return c.groupId ? String(c.groupId) : c.name2 || "";
+}
+function toAttachments(saved, meta) {
+	return saved.map((s) => ({
+		url: s.path,
+		type: "image",
+		title: meta.scenePrompt,
+		source: "generated",
+		generation_type: meta.mode,
+		negative: meta.negative,
+		...meta.width && meta.height ? {
+			width: meta.width,
+			height: meta.height
+		} : {},
+		nai_studio: {
+			seed: s.seed ?? meta.seed,
+			model: meta.model,
+			prompt: meta.prompt,
+			transport: meta.transport,
+			cost: meta.cost,
+			correlationId: meta.correlationId
+		}
+	}));
+}
+async function postToChat(saved, meta, options) {
+	const c = ctx();
+	const asUser = options.visible && options.author === "user";
+	const message = {
+		name: asUser ? c.name1 : resultAuthorName(),
+		is_user: asUser,
+		is_system: !options.visible,
+		send_date: (/* @__PURE__ */ new Date()).toISOString(),
+		mes: options.text,
+		extra: {
+			media: toAttachments(saved, meta),
+			media_display: "gallery",
+			media_index: 0,
+			inline_image: !options.hidePrompt,
+			nai_studio: {
+				model: meta.model,
+				seed: meta.seed,
+				mode: meta.mode,
+				transport: meta.transport,
+				cost: meta.cost
+			}
+		}
+	};
+	c.chat.push(message);
+	const id = c.chat.length - 1;
+	const sentEvent = asUser ? c.eventTypes.MESSAGE_SENT : c.eventTypes.MESSAGE_RECEIVED;
+	await c.eventSource.emit(sentEvent ?? "message_received", id, "extension");
+	c.addOneMessage(message);
+	const renderedEvent = asUser ? c.eventTypes.USER_MESSAGE_RENDERED : c.eventTypes.CHARACTER_MESSAGE_RENDERED;
+	await c.eventSource.emit(renderedEvent ?? "character_message_rendered", id, "extension");
+	await c.saveChat();
+	return id;
+}
+/** Adds images as new swipes of a message's media gallery (paintbrush / image overswipe). */
+async function appendToMessage(messageId, saved, meta) {
+	const c = ctx();
+	const message = c.chat[messageId];
+	if (!message) return;
+	message.extra ??= {};
+	const extra = message.extra;
+	const media = Array.isArray(extra.media) ? extra.media : [];
+	const hadMedia = media.length > 0;
+	if (!hadMedia && !extra.media_display) extra.media_display = "gallery";
+	extra.inline_image = !(hadMedia && !extra.inline_image);
+	media.push(...toAttachments(saved, meta));
+	extra.media = media;
+	extra.media_index = media.length - 1;
+	const element = jQuery(`#chat .mes[mesid="${messageId}"]`);
+	if (element.length) c.appendMediaToMessage(message, element, "keep");
+	await c.saveChat();
+}
+/** Text of the result message from the MESSAGE template ({{prompt}} plus ST macros). */
+function messageText(template, scenePrompt) {
+	const token = "\0NAIST_PROMPT\0";
+	const withToken = template.split("{{prompt}}").join(token);
+	return ctx().substituteParamsExtended(withToken, { char: resultAuthorName() }).split(token).join(scenePrompt);
+}
+//#endregion
+//#region src/features/generation/pipeline.ts
+function templates() {
+	return {
+		...DEFAULT_TEMPLATES,
+		...settings().prompts.templates
+	};
+}
+function lastUsableMessage() {
+	const chat = ctx().chat;
+	for (let i = chat.length - 1; i >= 0; i--) {
+		const message = chat[i];
+		if (message && !message.is_system) return message;
+	}
+	throw new NaiError("no-usable-message", "none");
+}
+async function blobToBase64(blob) {
+	return await new Promise((resolve, reject) => {
+		const reader = new FileReader();
+		reader.onload = () => resolve(String(reader.result));
+		reader.onerror = () => reject(reader.error);
+		reader.readAsDataURL(blob);
+	});
+}
+async function avatarUrl(mode) {
+	const c = ctx();
+	if (mode === MODE.USER_MULTIMODAL) {
+		const personas = await importHost("/scripts/personas.js");
+		return `/User Avatars/${encodeURIComponent(personas.user_avatar)}`;
+	}
+	if (c.groupId) {
+		const members = c.groups.find((g) => g.id === c.groupId)?.members ?? [];
+		const last = [...c.chat].reverse().find((m) => !m.is_system && !m.is_user)?.original_avatar;
+		const avatar = typeof last === "string" ? last : members[Math.floor(Math.random() * members.length)];
+		return `/characters/${encodeURIComponent(String(avatar ?? ""))}`;
+	}
+	const index = soloCharacterIndex();
+	return `/characters/${encodeURIComponent(index === void 0 ? "" : c.characters[index]?.avatar ?? "")}`;
+}
+var Pipeline = class {
+	controller;
+	ui;
+	constructor(controller, ui) {
+		this.controller = controller;
+		this.ui = ui;
+	}
+	/** Scene prompt for a mode (before prefix/suffix and character prompt). */
+	async scenePrompt(mode, trigger, message, minimal, addNegative) {
+		const c = ctx();
+		if (mode === MODE.RAW_LAST) {
+			if (message) return message;
+			const last = lastUsableMessage();
+			const character = c.groupId ? c.characters.find((ch) => ch.avatar === last.original_avatar) : c.characters[soloCharacterIndex() ?? -1];
+			return rawLastPrompt(last.mes, character ? {
+				scenario: character.scenario,
+				description: character.description
+			} : void 0);
+		}
+		if (mode === MODE.FREE) {
+			const free = applyFreeModeCharacter(trigger, lastSpeakerPrompt());
+			if (free.negative) addNegative(free.negative);
+			return free.prompt;
+		}
+		const quietPrompt = quietPromptFor(mode, trigger, templates());
+		if (isMultimodal(mode)) {
+			const response = await fetch(await avatarUrl(mode));
+			if (!response.ok) throw new NaiError("multimodal-failed", "none");
+			const base64 = await blobToBase64(await response.blob());
+			const caption = await (await importHost("/scripts/extensions/shared.js")).getMultimodalCaption(base64, quietPrompt);
+			if (!caption) throw new NaiError("multimodal-failed", "none");
+			return caption;
+		}
+		let prompt = processReply(await c.generateQuietPrompt({ quietPrompt }), minimal);
+		if (!prompt) throw new NaiError("prompt-generation-failed", "none");
+		if (mode === MODE.FREE_EXTENDED) {
+			const free = applyFreeModeCharacter(prompt.trim(), lastSpeakerPrompt());
+			if (free.negative) addNegative(free.negative);
+			prompt = free.prompt;
+		}
+		return prompt;
+	}
+	/**
+	* Synchronous FREE-mode preparation for the panel preview and inspector: the exact body the
+	* panel's Generate button will send (minus the random seed).
+	*/
+	previewFree(trigger) {
+		const assembled = this.assemble(MODE.FREE, trigger, "", false);
+		return this.controller.prepare(assembled.overrides);
+	}
+	assemble(mode, scene, additionalNegative, isSwipe, overrides = {}, forcedSize) {
+		const s = settings();
+		const c = ctx();
+		const g = {
+			...s.generation,
+			...overrides.generation
+		};
+		const caps = getCapabilities(isModelId(g.model) ? g.model : DEFAULT_MODEL);
+		const dims = forcedSize ?? modeDimensions(mode, g.width, g.height, overrides.snap ?? s.modes.snap, caps.sizePresets);
+		let negativeExtra = additionalNegative;
+		let sceneText = scene;
+		if (mode === MODE.FREE && !isSwipe) {
+			const free = applyFreeModeCharacter(scene, lastSpeakerPrompt());
+			sceneText = free.prompt;
+			if (free.negative) negativeExtra = combinePrefixes(negativeExtra, free.negative);
+		}
+		const character = currentCharacterPrompt();
+		const assembled = assemblePrompt({
+			scene: sceneText,
+			prefix: s.prompts.prefix,
+			suffix: s.prompts.suffix,
+			negative: g.negativePrompt,
+			characterPositive: character.positive,
+			characterNegative: character.negative,
+			additionalNegative: negativeExtra,
+			useCharacterPrefix: usesCharacterPrefix(mode, isSwipe, soloCharacterIndex() !== void 0)
+		});
+		return {
+			overrides: {
+				...overrides.generation,
+				prompt: c.substituteParams(assembled.prompt),
+				negativePrompt: c.substituteParams(assembled.negative),
+				width: dims.width,
+				height: dims.height
+			},
+			sceneText,
+			negativeExtra,
+			dims
+		};
+	}
+	async generatePicture(req) {
+		const s = settings();
+		const c = ctx();
+		const o = req.overrides ?? {};
+		const trigger = req.trigger.trim();
+		if (!trigger && !req.swipe) return null;
+		const refine = o.edit ?? s.modes.refine;
+		const minimal = o.minimalProcessing ?? s.modes.minimalProcessing;
+		let mode;
+		let scene;
+		let additionalNegative = o.negative ?? "";
+		let forcedSize;
+		const isSwipe = Boolean(req.swipe);
+		if (req.swipe) {
+			const attachment = req.swipe.attachment;
+			mode = attachment?.generation_type ?? MODE.FREE;
+			scene = attachment?.title ?? req.swipe.text ?? "";
+			additionalNegative = attachment?.negative ?? additionalNegative;
+			const saved = attachment?.width && attachment?.height ? {
+				width: attachment.width,
+				height: attachment.height
+			} : void 0;
+			if (refine) {
+				const edited = await this.ui.refine(scene, {
+					negative: additionalNegative,
+					resolution: saved ? `${saved.width}x${saved.height}` : void 0
+				});
+				if (!edited) return null;
+				scene = edited.prompt;
+				additionalNegative = edited.negative ?? additionalNegative;
+				forcedSize = edited.useSavedResolution ? saved : void 0;
+			} else forcedSize = saved;
+			if (!scene.trim()) return null;
+		} else {
+			mode = req.mode ?? resolveMode(trigger, {
+				multimodal: o.multimodal ?? s.modes.multimodal,
+				freeExtend: o.extend ?? s.modes.freeExtend
+			});
+			scene = mode === MODE.FREE ? trigger : await this.scenePrompt(mode, trigger, req.message, minimal, (neg) => additionalNegative = combinePrefixes(additionalNegative, neg));
+			if (mode !== MODE.FREE && refine) {
+				const edited = await this.ui.refine(scene, {});
+				if (!edited) return null;
+				scene = edited.prompt;
+			}
+		}
+		const eventData = {
+			prompt: scene,
+			generationType: mode,
+			message: req.message,
+			trigger
+		};
+		await c.eventSource.emit(c.eventTypes.SD_PROMPT_PROCESSING ?? "sd_prompt_processing", eventData);
+		scene = eventData.prompt;
+		const assembled = this.assemble(mode, scene, additionalNegative, isSwipe, o, forcedSize);
+		if (isSwipe && assembled.overrides.seed === void 0 && s.generation.seed >= 0) assembled.overrides.seed = -1;
+		const prepared = this.controller.prepare(assembled.overrides);
+		if (req.maxCost !== void 0 && prepared.cost.total > req.maxCost) throw new NaiError("free-only-blocked", "none", { cost: prepared.cost.total });
+		if (s.inspector.openBeforeSend) {
+			if (!await this.ui.inspect(prepared)) return null;
+		} else if (!req.skipCostConfirm && prepared.blockers.length === 0 && prepared.cost.total > 0 && prepared.cost.total > s.anlas.confirmAbove) {
+			if (!await this.ui.confirmCost(prepared)) return null;
+		}
+		const abort = new AbortController();
+		req.signal?.addEventListener("abort", () => abort.abort(), { once: true });
+		const loader = c.loader?.show({
+			blocking: false,
+			slug: "nai-studio-generation",
+			title: t("naist.loader.title"),
+			message: t("naist.loader.message"),
+			onStop: () => abort.abort()
+		});
+		try {
+			const chatId = c.getCurrentChatId();
+			const result = await this.controller.send(prepared, abort.signal);
+			const folder = o.gallery === false ? "" : imageFolder();
+			const saved = await saveImages(result.images, folder);
+			const first = saved[0];
+			if (!first) throw new NaiError("invalid-response", "none", { preview: "" });
+			const generation = o.generation ?? {};
+			const meta = {
+				scenePrompt: assembled.sceneText,
+				prompt: prepared.body.input,
+				negative: assembled.negativeExtra,
+				mode,
+				model: prepared.body.model,
+				seed: prepared.request.seed,
+				transport: prepared.transportId,
+				cost: prepared.cost.total,
+				correlationId: result.correlationId,
+				...forcedSize ?? (generation.width && generation.height ? assembled.dims : {})
+			};
+			if (ctx().getCurrentChatId() !== chatId) {
+				toastr.warning(t("naist.result.chatChanged", { count: saved.length }));
+				return {
+					path: first.path,
+					messageId: null,
+					cost: prepared.cost.total
+				};
+			}
+			let messageId = null;
+			if (!o.quiet) {
+				if (req.swipe) {
+					await appendToMessage(req.swipe.messageId, saved, meta);
+					messageId = req.swipe.messageId;
+				} else {
+					if (mode === MODE.BACKGROUND) await c.eventSource.emit(c.eventTypes.FORCE_SET_BACKGROUND ?? "force_set_background", {
+						url: `url("${encodeURI(first.path)}")`,
+						path: first.path
+					});
+					messageId = await postToChat(saved, meta, {
+						visible: s.chat.visibility[req.initiator] === true,
+						author: s.chat.author,
+						hidePrompt: s.chat.hidePrompt,
+						text: messageText(templates()[String(MODE.MESSAGE)] ?? "{{prompt}}", assembled.sceneText)
+					});
+				}
+			}
+			log.info("picture", req.initiator, `mode ${mode}`, prepared.body.model, `cost ${prepared.cost.total}`);
+			return {
+				path: first.path,
+				messageId,
+				cost: prepared.cost.total
+			};
+		} catch (error) {
+			throw toNaiError(error, {
+				model: prepared.request.model,
+				family: prepared.caps.family,
+				transport: prepared.transportId
+			});
+		} finally {
+			await loader?.hide();
+		}
+	}
+};
+//#endregion
+//#region src/features/takeover/migration.ts
+/** Defaults of the built-in extension (public/scripts/extensions/stable-diffusion/index.js:220-221). */
+var BUILTIN_DEFAULT_PREFIX = "best quality, absurdres, aesthetic,";
+/**
+* Stock values a new SillyTavern user gets from default/content/settings.json (extension_settings.sd).
+* They predate the current defaults but are not user edits either, so they must not be migrated.
+*/
+var SETTINGS_JSON_DEFAULT_PREFIX = "best quality, absurdres, masterpiece,";
+var SETTINGS_JSON_DEFAULT_TEMPLATES = {
+	"2": "Ignore previous instructions and provide a detailed description for all of the following: a brief recap of recent events in the story, {{char}}'s appearance, and {{char}}'s surroundings. Do not reply as {{char}} when writing this description, and do not attempt to continue the story.",
+	"7": "Ignore previous instructions and provide a detailed description of {{char}}'s surroundings in the form of a comma-delimited list of keywords and phrases. The list must include all of the following items in this order: location, time of day, weather, lighting, and any other relevant details. Do not include descriptions of characters and non-visual qualities such as names, personality, movements, scents, mental traits, or anything which could not be seen in a still photograph. Do not write in full sentences. Prefix your description with the phrase 'background,'. Ignore the rest of the story when crafting this description. Do not reply as {{user}} when writing this description, and do not attempt to continue the story."
+};
+var STOCK_PREFIXES = [BUILTIN_DEFAULT_PREFIX, SETTINGS_JSON_DEFAULT_PREFIX];
+var str = (value) => typeof value === "string" ? value : "";
+var num = (value) => typeof value === "number" && Number.isFinite(value) ? value : void 0;
+var same = (a, b) => a.trim() === b.trim();
+var isStockPrefix = (value) => STOCK_PREFIXES.some((stock) => same(value, stock));
+var isStockTemplate = (key, value) => [DEFAULT_TEMPLATES[key], SETTINGS_JSON_DEFAULT_TEMPLATES[key]].some((stock) => stock !== void 0 && same(value, stock));
+function isObject(value) {
+	return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+/** Prompt texts and character slots do not count: they are not generation parameters. */
+var NON_PARAMETER_KEYS = /* @__PURE__ */ new Set([
+	"prompt",
+	"negativePrompt",
+	"characters"
+]);
+function generationIsPristine(current) {
+	const defaults = defaultSettings().generation;
+	return Object.keys(defaults).every((key) => NON_PARAMETER_KEYS.has(key) || JSON.stringify(current.generation[key]) === JSON.stringify(defaults[key]));
+}
+var BEHAVIOUR = [
+	["refine_mode", (s) => ({
+		get: () => s.modes.refine,
+		set: (v) => s.modes.refine = v
+	})],
+	["multimodal_captioning", (s) => ({
+		get: () => s.modes.multimodal,
+		set: (v) => s.modes.multimodal = v
+	})],
+	["free_extend", (s) => ({
+		get: () => s.modes.freeExtend,
+		set: (v) => s.modes.freeExtend = v
+	})],
+	["snap", (s) => ({
+		get: () => s.modes.snap,
+		set: (v) => s.modes.snap = v
+	})],
+	["minimal_prompt_processing", (s) => ({
+		get: () => s.modes.minimalProcessing,
+		set: (v) => s.modes.minimalProcessing = v
+	})],
+	["interactive_mode", (s) => ({
+		get: () => s.chat.interactive,
+		set: (v) => s.chat.interactive = v
+	})],
+	["function_tool", (s) => ({
+		get: () => s.chat.functionTool,
+		set: (v) => s.chat.functionTool = v
+	})]
+];
+var VISIBILITY = [
+	["wand_visible", "wand"],
+	["command_visible", "command"],
+	["interactive_visible", "interactive"],
+	["tool_visible", "tool"]
+];
+function migrateFromBuiltIn(sd, cards, current) {
+	const next = structuredClone(current);
+	const lines = [];
+	if (!isObject(sd)) {
+		if (cards.length === 0) return {
+			settings: next,
+			lines: [{ key: "nothing" }]
+		};
+	}
+	const s = isObject(sd) ? sd : {};
+	const defaults = defaultSettings();
+	const prefix = str(s.prompt_prefix);
+	if (prefix && !isStockPrefix(prefix)) {
+		if (!next.prompts.prefix) {
+			next.prompts.prefix = prefix;
+			lines.push({ key: "prefix-moved" });
+		} else lines.push({ key: "prefix-kept" });
+	} else if (prefix) lines.push({ key: "prefix-default-skipped" });
+	const negative = str(s.negative_prompt);
+	if (negative && !same(negative, "lowres, bad anatomy, bad hands, text, error, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry")) {
+		if (!next.generation.negativePrompt) {
+			next.generation.negativePrompt = negative;
+			lines.push({ key: "negative-moved" });
+		} else lines.push({ key: "negative-kept" });
+	} else if (negative) lines.push({ key: "negative-default-skipped" });
+	const styles = Array.isArray(s.styles) ? s.styles.filter(isObject) : [];
+	let movedStyles = 0;
+	for (const style of styles) {
+		const item = {
+			name: str(style.name),
+			prefix: str(style.prefix),
+			suffix: "",
+			negative: str(style.negative)
+		};
+		if (!item.name) continue;
+		if (item.name === "Default" && isStockPrefix(item.prefix) && same(item.negative, "lowres, bad anatomy, bad hands, text, error, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry") || next.prompts.styles.some((x) => x.name === item.name)) continue;
+		next.prompts.styles.push(item);
+		movedStyles++;
+	}
+	if (movedStyles) lines.push({
+		key: "styles-moved",
+		params: { count: movedStyles }
+	});
+	const activeStyle = str(s.style);
+	if (!next.prompts.activeStyle && next.prompts.styles.some((x) => x.name === activeStyle)) next.prompts.activeStyle = activeStyle;
+	const local = /* @__PURE__ */ new Map();
+	const positives = isObject(s.character_prompts) ? s.character_prompts : {};
+	const negatives = isObject(s.character_negative_prompts) ? s.character_negative_prompts : {};
+	for (const key of /* @__PURE__ */ new Set([...Object.keys(positives), ...Object.keys(negatives)])) {
+		const value = {
+			positive: str(positives[key]),
+			negative: str(negatives[key])
+		};
+		if (value.positive || value.negative) local.set(key, value);
+	}
+	let movedLocal = 0;
+	let keptLocal = 0;
+	for (const [key, value] of local) {
+		if (next.prompts.characterPrompts[key]) {
+			keptLocal++;
+			continue;
+		}
+		next.prompts.characterPrompts[key] = value;
+		movedLocal++;
+	}
+	let movedCards = 0;
+	for (const card of cards) {
+		const existing = next.prompts.characterPrompts[card.key];
+		if (!card.positive && !card.negative || existing) continue;
+		next.prompts.characterPrompts[card.key] = {
+			positive: card.positive,
+			negative: card.negative
+		};
+		movedCards++;
+	}
+	if (movedLocal) lines.push({
+		key: "character-prompts-moved",
+		params: { count: movedLocal }
+	});
+	if (keptLocal) lines.push({
+		key: "character-prompts-kept",
+		params: { count: keptLocal }
+	});
+	if (movedCards) lines.push({
+		key: "card-prompts-moved",
+		params: { count: movedCards }
+	});
+	const templates = isObject(s.prompts) ? s.prompts : {};
+	let movedTemplates = 0;
+	for (const mode of TEMPLATE_MODES) {
+		const key = String(mode);
+		const value = str(templates[key]);
+		if (!value || isStockTemplate(key, value) || next.prompts.templates[key] !== void 0) continue;
+		next.prompts.templates[key] = value;
+		movedTemplates++;
+	}
+	if (movedTemplates) lines.push({
+		key: "templates-moved",
+		params: { count: movedTemplates }
+	});
+	const moved = [];
+	for (const [name, accessor] of BEHAVIOUR) {
+		if (typeof s[name] !== "boolean") continue;
+		const target = accessor(next);
+		if (target.get() === accessor(defaults).get() && target.get() !== s[name]) {
+			target.set(s[name]);
+			moved.push(name);
+		}
+	}
+	for (const [name, initiator] of VISIBILITY) {
+		if (typeof s[name] !== "boolean") continue;
+		if (next.chat.visibility[initiator] === defaults.chat.visibility[initiator] && next.chat.visibility[initiator] !== s[name]) {
+			next.chat.visibility[initiator] = s[name];
+			moved.push(name);
+		}
+	}
+	if (moved.length) lines.push({
+		key: "behaviour-moved",
+		params: { names: moved.join(", ") }
+	});
+	if (s.source === "novel") {
+		if (generationIsPristine(current)) {
+			const g = next.generation;
+			const model = str(s.model);
+			if (isModelId(model)) g.model = model;
+			const sampler = str(s.sampler);
+			if (SAMPLERS.includes(sampler)) g.sampler = sampler;
+			const schedule = str(s.scheduler);
+			if (NOISE_SCHEDULES.includes(schedule)) g.noiseSchedule = schedule;
+			const steps = num(s.steps);
+			if (steps !== void 0) g.steps = Math.min(50, Math.max(1, Math.round(steps)));
+			const scale = num(s.scale);
+			if (scale !== void 0) g.scale = Math.min(10, Math.max(0, scale));
+			const width = num(s.width);
+			const height = num(s.height);
+			if (width && height) {
+				g.width = Math.max(64, Math.round(width / 64) * 64);
+				g.height = Math.max(64, Math.round(height / 64) * 64);
+			}
+			const seed = num(s.seed);
+			if (seed !== void 0) g.seed = seed;
+			g.smea = s.novel_sm === true;
+			g.smeaDyn = s.novel_sm_dyn === true;
+			g.decrisper = s.novel_decrisper === true;
+			g.varietyBoost = s.novel_variety_boost === true;
+			lines.push({
+				key: "generation-moved",
+				params: { model: g.model }
+			});
+		} else lines.push({ key: "generation-kept" });
+		if (s.novel_anlas_guard !== true && next.anlas.freeOnly) lines.push({ key: "free-only-kept" });
+		const upscale = num(s.hr_scale);
+		if (upscale !== void 0 && upscale > 1) lines.push({
+			key: "upscale-not-moved",
+			params: { ratio: upscale }
+		});
+	} else if (typeof s.source === "string") lines.push({
+		key: "generation-other-source",
+		params: { source: s.source }
+	});
+	if (lines.length === 0) lines.push({ key: "nothing" });
+	return {
+		settings: next,
+		lines
+	};
+}
+//#endregion
+//#region src/features/takeover/takeover.ts
+/** Internal name of the built-in extension in extension_settings.disabledExtensions. */
+var BUILTIN_NAME = "stable-diffusion";
+function isBuiltInActive() {
+	const disabled = ctx().extensionSettings.disabledExtensions;
+	return !(Array.isArray(disabled) && disabled.includes("stable-diffusion"));
+}
+function builtInSettings() {
+	return ctx().extensionSettings.sd;
+}
+/** Built-in commands, macros, tool and interactive mode are owned by NAI Studio only after takeover. */
+function ownsCompatSurface() {
+	return !isBuiltInActive();
+}
+/** Shared per-character prompts of the built-in, read from every card (lazy cards are loaded). */
+async function collectCardPrompts() {
+	const c = ctx();
+	const result = [];
+	for (let i = 0; i < c.characters.length; i++) {
+		let character = c.characters[i];
+		if (!character) continue;
+		if (character.shallow) try {
+			await c.unshallowCharacter(i);
+			character = ctx().characters[i] ?? character;
+		} catch (error) {
+			log.warn("could not load character card", character.avatar, error);
+			continue;
+		}
+		const shared = character.data?.extensions?.sd_character_prompt;
+		if (shared && typeof shared === "object") result.push({
+			key: avatarKey(character.avatar),
+			positive: typeof shared.positive === "string" ? shared.positive : "",
+			negative: typeof shared.negative === "string" ? shared.negative : ""
+		});
+	}
+	return result;
+}
+function needsMigration() {
+	return !settings().takeover.migratedAt && builtInSettings() !== void 0;
+}
+function describe(lines) {
+	return lines.map((line) => t(`naist.migration.${line.key}`, line.params));
+}
+/** Runs the migration once and stores the localized report. Returns the report lines. */
+async function runMigration(now = /* @__PURE__ */ new Date()) {
+	const cards = await collectCardPrompts();
+	const result = migrateFromBuiltIn(builtInSettings(), cards, settings());
+	const report = describe(result.lines);
+	result.settings.takeover = {
+		migratedAt: now.toISOString(),
+		migrationReport: report
+	};
+	replaceSettings(result.settings);
+	log.info("migration from the built-in Image Generation done", report);
+	return report;
+}
+/** Disables the built-in extension; SillyTavern reloads the page. */
+async function disableBuiltIn() {
+	await ctx().executeSlashCommandsWithOptions(`/extension-disable ${BUILTIN_NAME}`);
+}
+async function enableBuiltIn() {
+	await ctx().executeSlashCommandsWithOptions(`/extension-enable ${BUILTIN_NAME}`);
+}
+//#endregion
+//#region src/integration/character-card.ts
+var OPTIONS = [[
+	"naist_char_portrait",
+	"you",
+	"naist.card.portrait"
+], [
+	"naist_char_face",
+	"face",
+	"naist.card.face"
+]];
+function installCharacterCardMenu(pipeline) {
+	const select = document.querySelector("#char-management-dropdown");
+	if (select && !select.querySelector("#naist_char_portrait")) for (const [id, , key] of OPTIONS) {
+		const option = document.createElement("option");
+		option.id = id;
+		option.setAttribute("data-i18n", key);
+		option.textContent = t(key);
+		select.append(option);
+	}
+	const c = ctx();
+	c.eventSource.on(c.eventTypes.CHARACTER_MANAGEMENT_DROPDOWN ?? "charManagementDropdown", (target) => {
+		const option = OPTIONS.find(([id]) => id === target);
+		if (!option) return;
+		pipeline.generatePicture({
+			initiator: "wand",
+			trigger: option[1]
+		}).catch(reportGenerationError);
+	});
+}
+//#endregion
+//#region src/integration/command-args.ts
+/** Built-in arguments without a NovelAI meaning (SD-WebUI/ComfyUI specific). */
+var IGNORED_ARGS = [
+	"skip",
+	"vae",
+	"upscaler",
+	"hires",
+	"scale",
+	"denoise",
+	"2ndpass",
+	"faces"
+];
+var MODEL_ALIASES = {
+	v5: "nai-diffusion-5-full",
+	"v5-full": "nai-diffusion-5-full",
+	"v5-curated": "nai-diffusion-5-curated",
+	"v4.5": "nai-diffusion-4-5-full",
+	"v4.5-full": "nai-diffusion-4-5-full",
+	"v4.5-curated": "nai-diffusion-4-5-curated",
+	v4: "nai-diffusion-4-full",
+	"v4-full": "nai-diffusion-4-full",
+	"v4-curated": "nai-diffusion-4-curated-preview",
+	v3: "nai-diffusion-3",
+	"anime-v3": "nai-diffusion-3",
+	furry: "nai-diffusion-furry-3",
+	"furry-v3": "nai-diffusion-furry-3"
+};
+/** Same coercion as the built-in: anything that is not explicitly false counts as true. */
+function boolArg(value) {
+	const text = String(value).trim().toLowerCase();
+	if (["on", "true"].includes(text)) return true;
+	return !["off", "false"].includes(text);
+}
+function numberArg(value) {
+	const n = Number(value);
+	return value === void 0 || value === "" || !Number.isFinite(n) ? void 0 : n;
+}
+function resolveModel(value) {
+	const key = value.trim().toLowerCase();
+	const id = MODEL_ALIASES[key] ?? key;
+	return isModelId(id) ? id : void 0;
+}
+function parseCommandArgs(args) {
+	const has = (name) => args[name] !== void 0 && !name.startsWith("_");
+	const overrides = {};
+	const generation = {};
+	const ignored = [];
+	const invalid = [];
+	if (has("quiet")) overrides.quiet = boolArg(args.quiet);
+	if (has("gallery")) overrides.gallery = boolArg(args.gallery);
+	if (has("negative")) overrides.negative = String(args.negative);
+	if (has("extend")) overrides.extend = boolArg(args.extend);
+	if (has("edit")) overrides.edit = boolArg(args.edit);
+	if (has("multimodal")) overrides.multimodal = boolArg(args.multimodal);
+	if (has("snap")) overrides.snap = boolArg(args.snap);
+	if (has("processing")) {
+		const value = String(args.processing).toLowerCase();
+		if (value.includes("minimal")) overrides.minimalProcessing = true;
+		else if (value.includes("standard")) overrides.minimalProcessing = false;
+		else invalid.push("processing");
+	}
+	for (const [name, key] of [
+		["seed", "seed"],
+		["width", "width"],
+		["height", "height"],
+		["steps", "steps"],
+		["cfg", "scale"],
+		["cfgrescale", "cfgRescale"],
+		["samples", "samples"]
+	]) {
+		if (!has(name)) continue;
+		const value = numberArg(args[name]);
+		if (value === void 0) invalid.push(name);
+		else generation[key] = value;
+	}
+	if (has("model")) {
+		const model = resolveModel(String(args.model));
+		if (model) generation.model = model;
+		else invalid.push("model");
+	}
+	const enums = [
+		[
+			"sampler",
+			"sampler",
+			SAMPLERS
+		],
+		[
+			"scheduler",
+			"noiseSchedule",
+			NOISE_SCHEDULES
+		],
+		[
+			"uc",
+			"ucPreset",
+			UC_PRESETS
+		],
+		[
+			"quality",
+			"qualityPreset",
+			QUALITY_PRESETS
+		]
+	];
+	for (const [name, key, allowed] of enums) {
+		if (!has(name)) continue;
+		const value = String(args[name]);
+		if (allowed.includes(value)) generation[key] = value;
+		else invalid.push(name);
+	}
+	for (const [name, key] of [
+		["smea", "smea"],
+		["dyn", "smeaDyn"],
+		["variety", "varietyBoost"],
+		["decrisper", "decrisper"],
+		["transparent", "transparentBackground"]
+	]) if (has(name)) generation[key] = boolArg(args[name]);
+	if (has("smea")) generation.autoSmea = false;
+	for (const name of IGNORED_ARGS) if (has(name)) ignored.push(name);
+	if (Object.keys(generation).length > 0) overrides.generation = generation;
+	return {
+		overrides,
+		ignored,
+		invalid
+	};
+}
+//#endregion
+//#region src/integration/commands.ts
+function namedArguments() {
+	const { SlashCommandNamedArgument: Arg, ARGUMENT_TYPE: T } = ctx();
+	const named = (name, type, enumList, defaultValue) => Arg.fromProps({
+		name,
+		description: t(`naist.command.arg.${name}`),
+		typeList: [type],
+		isRequired: false,
+		...enumList ? { enumList: [...enumList] } : {},
+		...defaultValue !== void 0 ? { defaultValue } : {}
+	});
+	return [
+		named("quiet", T.BOOLEAN ?? "bool", void 0, "false"),
+		named("gallery", T.BOOLEAN ?? "bool", void 0, "true"),
+		named("negative", T.STRING ?? "string"),
+		named("extend", T.BOOLEAN ?? "bool"),
+		named("edit", T.BOOLEAN ?? "bool"),
+		named("multimodal", T.BOOLEAN ?? "bool"),
+		named("snap", T.BOOLEAN ?? "bool"),
+		named("processing", T.STRING ?? "string", ["standard", "minimal"]),
+		named("seed", T.NUMBER ?? "number"),
+		named("width", T.NUMBER ?? "number"),
+		named("height", T.NUMBER ?? "number"),
+		named("steps", T.NUMBER ?? "number"),
+		named("cfg", T.NUMBER ?? "number"),
+		named("cfgrescale", T.NUMBER ?? "number"),
+		named("samples", T.NUMBER ?? "number"),
+		named("model", T.STRING ?? "string", [...MODEL_IDS, ...Object.keys(MODEL_ALIASES)]),
+		named("sampler", T.STRING ?? "string", SAMPLERS),
+		named("scheduler", T.STRING ?? "string", NOISE_SCHEDULES),
+		named("uc", T.STRING ?? "string", UC_PRESETS),
+		named("quality", T.STRING ?? "string", QUALITY_PRESETS),
+		named("smea", T.BOOLEAN ?? "bool"),
+		named("dyn", T.BOOLEAN ?? "bool"),
+		named("variety", T.BOOLEAN ?? "bool"),
+		named("decrisper", T.BOOLEAN ?? "bool"),
+		named("transparent", T.BOOLEAN ?? "bool"),
+		...IGNORED_ARGS.map((name) => named(name, T.STRING ?? "string"))
+	];
+}
+function imagineCallback(pipeline) {
+	return async (args, value) => {
+		const parsed = parseCommandArgs(args);
+		if (parsed.ignored.length) log.info("ignored (not applicable to NovelAI):", parsed.ignored.join(", "));
+		if (parsed.invalid.length) toastr.warning(t("naist.command.invalidArgs", { args: parsed.invalid.join(", ") }));
+		const controller = new AbortController();
+		args._abortController?.addEventListener?.("abort", () => controller.abort());
+		try {
+			return (await pipeline.generatePicture({
+				initiator: "command",
+				trigger: String(value ?? ""),
+				overrides: parsed.overrides,
+				signal: controller.signal
+			}))?.path ?? "";
+		} catch (error) {
+			reportGenerationError(error);
+			return "";
+		}
+	};
+}
+function styleCallback() {
+	return async (_args, value) => {
+		const name = String(value ?? "").trim();
+		const prompts = settings().prompts;
+		if (!name) return prompts.activeStyle;
+		const style = prompts.styles.find((s) => s.name.toLowerCase() === name.toLowerCase());
+		if (!style) {
+			toastr.warning(t("naist.command.styleMissing", { name }));
+			return prompts.activeStyle;
+		}
+		prompts.activeStyle = style.name;
+		prompts.prefix = style.prefix;
+		prompts.suffix = style.suffix;
+		settings().generation.negativePrompt = style.negative;
+		saveSettings();
+		notifyExternalChange();
+		return style.name;
+	};
+}
+function registerCommands(pipeline, compat) {
+	const { SlashCommandParser: parser, SlashCommand: Command, SlashCommandArgument: Arg, ARGUMENT_TYPE: T } = ctx();
+	const triggerArg = () => Arg.fromProps({
+		description: t("naist.command.trigger"),
+		typeList: [T.STRING ?? "string"],
+		isRequired: false,
+		enumList: Object.values(TRIGGER_WORDS)
+	});
+	const imagine = (name, aliases) => Command.fromProps({
+		name,
+		aliases,
+		callback: imagineCallback(pipeline),
+		returns: t("naist.command.returns"),
+		namedArgumentList: namedArguments(),
+		unnamedArgumentList: [triggerArg()],
+		helpString: t("naist.command.help")
+	});
+	parser.addCommandObject(imagine("nai", ["nai-imagine"]));
+	const styleAliases = compat ? [
+		"sd-style",
+		"img-style",
+		"nai-style"
+	] : [];
+	parser.addCommandObject(Command.fromProps({
+		name: compat ? "imagine-style" : "nai-style",
+		aliases: styleAliases,
+		callback: styleCallback(),
+		returns: t("naist.command.styleReturns"),
+		unnamedArgumentList: [Arg.fromProps({
+			description: t("naist.command.styleName"),
+			typeList: [T.STRING ?? "string"],
+			isRequired: false
+		})],
+		helpString: t("naist.command.styleHelp")
+	}));
+	if (!compat) return;
+	parser.addCommandObject(imagine("imagine", [
+		"sd",
+		"img",
+		"image"
+	]));
+	parser.addCommandObject(Command.fromProps({
+		name: "imagine-source",
+		aliases: ["sd-source", "img-source"],
+		callback: async (_args, value) => {
+			if (String(value ?? "").trim() && String(value).trim() !== "novel") toastr.info(t("naist.command.sourceFixed"));
+			return "novel";
+		},
+		returns: t("naist.command.sourceReturns"),
+		unnamedArgumentList: [Arg.fromProps({
+			description: t("naist.command.sourceName"),
+			typeList: [T.STRING ?? "string"],
+			isRequired: false
+		})],
+		helpString: t("naist.command.sourceHelp")
+	}));
+}
+//#endregion
+//#region src/integration/interceptor.ts
+var INTERCEPTOR_NAME = "NAIST_ProcessTriggers";
+function installInterceptor(pipeline) {
+	const interceptor = (chat, _contextSize, abort, type) => {
+		const s = settings();
+		if (type === "quiet" || !s.chat.interactive || !ownsCompatSurface()) return;
+		if (s.chat.functionTool && ctx().isToolCallingSupported()) return;
+		const last = chat[chat.length - 1];
+		if (!last?.mes || !last.is_user) return;
+		const trigger = matchInteractiveTrigger(last.mes);
+		if (!trigger) return;
+		log.info("interactive trigger:", trigger);
+		abort(true);
+		setTimeout(() => {
+			pipeline.generatePicture({
+				initiator: "interactive",
+				trigger,
+				message: last.mes
+			}).catch((error) => {
+				log.warn("interactive generation failed", error);
+				reportGenerationError(error);
+			});
+		}, 1);
+	};
+	globalThis[INTERCEPTOR_NAME] = interceptor;
+}
+//#endregion
+//#region src/integration/macros.ts
+function registerMacros() {
+	const c = ctx();
+	const positive = () => currentCharacterPrompt().positive;
+	const negative = () => currentCharacterPrompt().negative;
+	if (c.powerUserSettings.experimental_macro_engine !== false && c.macros) {
+		const category = c.macros.category?.PROMPTS;
+		c.macros.register("charPrefix", {
+			category,
+			description: t("naist.macro.charPrefix"),
+			handler: positive
+		});
+		c.macros.register("charNegativePrefix", {
+			category,
+			description: t("naist.macro.charNegativePrefix"),
+			handler: negative
+		});
+	} else if (c.registerMacro) {
+		c.registerMacro("charPrefix", positive, t("naist.macro.charPrefix"));
+		c.registerMacro("charNegativePrefix", negative, t("naist.macro.charNegativePrefix"));
+	}
+}
+//#endregion
+//#region src/integration/message-buttons.ts
+var BUTTON_CLASS = "naist-message-gen";
+var IDLE = "fa-palette";
+var BUSY = "fa-hourglass";
+function buttonElement() {
+	const button = document.createElement("div");
+	button.className = `mes_button ${BUTTON_CLASS} fa-solid ${IDLE}`;
+	button.setAttribute("data-i18n", "[title]naist.message.generate");
+	button.title = t("naist.message.generate");
+	return button;
+}
+function addToContainer(container) {
+	if (container && !container.querySelector(`.${BUTTON_CLASS}`)) container.prepend(buttonElement());
+}
+var running = /* @__PURE__ */ new WeakMap();
+async function regenerate(pipeline, button, animate) {
+	const existing = running.get(button);
+	if (existing) {
+		existing.abort();
+		return;
+	}
+	const messageElement = button.closest(".mes");
+	const messageId = Number(messageElement?.getAttribute("mesid"));
+	const message = ctx().chat[messageId];
+	if (!message) return;
+	const media = Array.isArray(message.extra?.media) ? message.extra?.media : [];
+	const attachment = media.length ? media[message.extra?.media_index ?? media.length - 1] ?? media[media.length - 1] : void 0;
+	const controller = new AbortController();
+	running.set(button, controller);
+	button.classList.replace(IDLE, BUSY);
+	const image = animate ? messageElement?.querySelector(".mes_img") : null;
+	image?.classList.add("fa-fade");
+	try {
+		await pipeline.generatePicture({
+			initiator: "message",
+			trigger: "",
+			swipe: {
+				messageId,
+				attachment,
+				text: attachment ? void 0 : message.mes
+			},
+			signal: controller.signal
+		});
+	} catch (error) {
+		reportGenerationError(error);
+	} finally {
+		running.delete(button);
+		button.classList.replace(BUSY, IDLE);
+		image?.classList.remove("fa-fade");
+	}
+}
+function installMessageButtons(pipeline) {
+	addToContainer(document.querySelector("#message_template .extraMesButtons"));
+	document.querySelectorAll("#chat .mes .extraMesButtons").forEach(addToContainer);
+	const template = document.querySelector("#message_template");
+	if (template) localize(template);
+	document.addEventListener("click", (event) => {
+		const button = event.target.closest(`.${BUTTON_CLASS}`);
+		if (button) regenerate(pipeline, button, false);
+	});
+	const c = ctx();
+	c.eventSource.on(c.eventTypes.IMAGE_SWIPED ?? "image_swiped", (payload) => {
+		if (!ownsCompatSurface()) return;
+		const { message, element, direction } = payload ?? {};
+		if (!message || direction !== "right" || ctx().powerUserSettings.image_overswipe !== "generate") return;
+		const media = message.extra?.media;
+		if (!Array.isArray(media) || media.length === 0 || message.extra?.media_index !== media.length - 1) return;
+		const button = element?.get(0)?.querySelector(`.${BUTTON_CLASS}`);
+		if (button) regenerate(pipeline, button, true);
+	});
+}
+//#endregion
+//#region src/integration/tools.ts
+var TOOL_NAME = "GenerateImage";
+var lastCall = 0;
+function syncFunctionTool(pipeline, compat) {
+	const c = ctx();
+	const s = settings();
+	if (!compat || !s.chat.functionTool) {
+		c.unregisterFunctionTool(TOOL_NAME);
+		return;
+	}
+	const description = s.prompts.templates[String(MODE.TOOL)] ?? DEFAULT_TEMPLATES[String(MODE.TOOL)] ?? "";
+	c.registerFunctionTool({
+		name: TOOL_NAME,
+		displayName: t("naist.tool.displayName"),
+		description: "Generate an image from a given text prompt. Use when a user asks to generate an image, imagine a concept or an item, send a picture of a scene, a selfie, etc.",
+		parameters: {
+			$schema: "http://json-schema.org/draft-04/schema#",
+			type: "object",
+			properties: { prompt: {
+				type: "string",
+				description
+			} },
+			required: ["prompt"]
+		},
+		formatMessage: () => t("naist.tool.running"),
+		action: async (args) => {
+			const prompt = typeof args?.prompt === "string" ? args.prompt : "";
+			if (!prompt) throw new Error("Missing prompt");
+			const cooldown = settings().chat.toolCooldownSeconds * 1e3;
+			if (Date.now() - lastCall < cooldown) throw new Error(`Image generation is on cooldown, try again in ${Math.ceil((cooldown - (Date.now() - lastCall)) / 1e3)} s.`);
+			lastCall = Date.now();
+			const result = await pipeline.generatePicture({
+				initiator: "tool",
+				trigger: prompt
+			});
+			return result ? encodeURI(result.path) : "";
+		}
+	});
+}
+//#endregion
+//#region src/integration/wand.ts
+function installWandMenu(pipeline) {
+	const menu = document.querySelector("#extensionsMenu");
+	if (!menu || document.querySelector("#naist_wand_container")) return;
+	const container = document.createElement("div");
+	container.id = "naist_wand_container";
+	container.className = "extension_container";
+	container.innerHTML = `
+        <div id="naist_wand_button" class="list-group-item flex-container flexGap5 interactable" tabindex="0">
+            <div class="fa-solid fa-palette extensionsMenuExtensionButton" data-i18n="[title]naist.wand.title"></div>
+            <span data-i18n="naist.wand.title"></span>
+        </div>`;
+	menu.append(container);
+	const dropdown = document.createElement("div");
+	dropdown.id = "naist_wand_dropdown";
+	dropdown.className = "naist-wand-dropdown";
+	dropdown.style.display = "none";
+	dropdown.innerHTML = `
+        <ul class="list-group">
+            <span data-i18n="naist.wand.heading"></span>
+            ${WAND_MODES.map((mode) => `<li class="list-group-item interactable" data-trigger="${TRIGGER_WORDS[mode] ?? ""}" data-i18n="naist.mode.${mode}"></li>`).join("")}
+            <li class="list-group-item interactable" data-trigger="__free" data-i18n="naist.wand.free"></li>
+        </ul>`;
+	document.body.append(dropdown);
+	localize(container);
+	localize(dropdown);
+	const button = container.querySelector("#naist_wand_button");
+	if (!button) return;
+	const popper = libs().Popper.createPopper(button, dropdown, { placement: "top" });
+	const hide = () => dropdown.style.display = "none";
+	document.addEventListener("click", (event) => {
+		const target = event.target;
+		if (dropdown.contains(target)) return;
+		if (button.contains(target) && dropdown.style.display === "none") {
+			dropdown.style.display = "block";
+			popper.update();
+		} else hide();
+	});
+	dropdown.addEventListener("click", async (event) => {
+		const item = event.target.closest("[data-trigger]");
+		if (!item) return;
+		hide();
+		let trigger = item.dataset.trigger ?? "";
+		if (trigger === "__free") {
+			const c = ctx();
+			const value = await c.callGenericPopup(t("naist.wand.freePrompt"), c.POPUP_TYPE.INPUT, "", { rows: 4 });
+			if (typeof value !== "string" || !value.trim()) return;
+			trigger = value;
+		}
+		try {
+			await pipeline.generatePicture({
+				initiator: "wand",
+				trigger,
+				mode: item.dataset.trigger === "__free" ? 6 : void 0
+			});
+		} catch (error) {
+			reportGenerationError(error);
+		}
+	});
+}
+//#endregion
+//#region src/integration/setup.ts
+function setupIntegrations(pipeline) {
+	const compat = ownsCompatSurface();
+	installInterceptor(pipeline);
+	installWandMenu(pipeline);
+	installMessageButtons(pipeline);
+	installCharacterCardMenu(pipeline);
+	const c = ctx();
+	c.eventSource.on(c.eventTypes.APP_READY ?? "app_ready", () => {
+		registerCommands(pipeline, compat);
+		if (compat) registerMacros();
+		syncFunctionTool(pipeline, compat);
+		log.info(compat ? "took over /sd, /imagine, macros and the GenerateImage tool" : "built-in Image Generation is active: only /nai is registered");
+	});
+}
+//#endregion
 //#region src/ui/templates/character-row.html?raw
 var character_row_default = "<div class=\"naist-character\" data-index=\"{{index}}\">\n    <div class=\"naist-row\">\n        <label class=\"checkbox_label\"><input type=\"checkbox\" class=\"naist-char-enabled\" {{#if enabled}}checked{{/if}}><span data-i18n=\"naist.character.enabled\"></span></label>\n        <span class=\"naist-muted\">#{{number}}</span>\n        <div class=\"menu_button fa-solid fa-trash-can naist-char-remove\" data-i18n=\"[title]naist.character.remove\"></div>\n    </div>\n    <textarea class=\"text_pole textarea_compact naist-char-prompt\" rows=\"2\" data-i18n=\"[placeholder]naist.character.prompt\">{{prompt}}</textarea>\n    <input type=\"text\" class=\"text_pole naist-char-negative\" value=\"{{negative}}\" data-i18n=\"[placeholder]naist.character.negative\">\n    <div class=\"naist-grid2 naist-char-position\">\n        <label><span data-i18n=\"naist.character.x\"></span> <input type=\"number\" class=\"text_pole naist-char-x\" min=\"0\" max=\"1\" step=\"0.1\" value=\"{{x}}\"></label>\n        <label><span data-i18n=\"naist.character.y\"></span> <input type=\"number\" class=\"text_pole naist-char-y\" min=\"0\" max=\"1\" step=\"0.1\" value=\"{{y}}\"></label>\n    </div>\n</div>\n";
 //#endregion
 //#region src/ui/templates/panel.html?raw
-var panel_default = "<div class=\"naist-panel\" id=\"naist_panel\">\n    <div class=\"inline-drawer\">\n        <div class=\"inline-drawer-toggle inline-drawer-header\">\n            <b data-i18n=\"naist.panel.title\"></b>\n            <div class=\"inline-drawer-icon fa-solid fa-circle-chevron-down down\"></div>\n        </div>\n        <div class=\"inline-drawer-content\">\n            <div class=\"naist-content\">\n                <div class=\"naist-row naist-status\">\n                    <label for=\"naist_transport_mode\" data-i18n=\"naist.panel.transport\"></label>\n                    <select id=\"naist_transport_mode\" class=\"text_pole naist-grow\">\n                        <option value=\"auto\" data-i18n=\"naist.transport.auto\"></option>\n                        <option value=\"plugin\" data-i18n=\"naist.transport.plugin\"></option>\n                        <option value=\"native\" data-i18n=\"naist.transport.native\"></option>\n                    </select>\n                    <div\n                        id=\"naist_refresh\"\n                        class=\"menu_button fa-solid fa-rotate\"\n                        data-i18n=\"[title]naist.panel.refresh\"\n                    ></div>\n                </div>\n                <div id=\"naist_transport_badge\" class=\"naist-badge\"></div>\n                <div id=\"naist_account\" class=\"naist-account\"></div>\n\n                <label for=\"naist_model\" data-i18n=\"naist.panel.model\"></label>\n                <select id=\"naist_model\" class=\"text_pole\">\n                    {{#each models}}\n                    <option value=\"{{id}}\" data-i18n=\"{{nameKey}}\"></option>\n                    {{/each}}\n                </select>\n\n                <label for=\"naist_prompt\" data-i18n=\"naist.panel.prompt\"></label>\n                <textarea\n                    id=\"naist_prompt\"\n                    class=\"text_pole textarea_compact\"\n                    rows=\"4\"\n                    data-i18n=\"[placeholder]naist.panel.promptPlaceholder\"\n                ></textarea>\n\n                <label for=\"naist_negative\" data-i18n=\"naist.panel.negative\"></label>\n                <textarea id=\"naist_negative\" class=\"text_pole textarea_compact\" rows=\"2\"></textarea>\n\n                <div class=\"naist-grid2\">\n                    <div>\n                        <label for=\"naist_uc_preset\" data-i18n=\"naist.panel.ucPreset\"></label>\n                        <select id=\"naist_uc_preset\" class=\"text_pole\"></select>\n                    </div>\n                    <div>\n                        <label for=\"naist_quality\" data-i18n=\"naist.panel.quality\"></label>\n                        <select id=\"naist_quality\" class=\"text_pole\"></select>\n                    </div>\n                </div>\n\n                <div id=\"naist_characters_block\" class=\"naist-block\" data-cap=\"characters\" data-feature=\"characters\">\n                    <div class=\"naist-row\">\n                        <b data-i18n=\"naist.panel.characters\"></b>\n                        <span id=\"naist_characters_count\" class=\"naist-muted\"></span>\n                        <div\n                            id=\"naist_add_character\"\n                            class=\"menu_button fa-solid fa-user-plus\"\n                            data-i18n=\"[title]naist.panel.addCharacter\"\n                        ></div>\n                    </div>\n                    <label class=\"checkbox_label\"\n                        ><input type=\"checkbox\" id=\"naist_use_coords\" /><span data-i18n=\"naist.panel.useCoords\"></span\n                    ></label>\n                    <div id=\"naist_characters\"></div>\n                    <div class=\"naist-feature-hint\" data-hint-for=\"characters\"></div>\n                </div>\n\n                <label for=\"naist_size_preset\" data-i18n=\"naist.panel.size\"></label>\n                <div class=\"naist-grid3\">\n                    <select id=\"naist_size_preset\" class=\"text_pole\"></select>\n                    <input\n                        id=\"naist_width\"\n                        type=\"number\"\n                        class=\"text_pole\"\n                        step=\"64\"\n                        min=\"64\"\n                        data-i18n=\"[title]naist.panel.width\"\n                    />\n                    <input\n                        id=\"naist_height\"\n                        type=\"number\"\n                        class=\"text_pole\"\n                        step=\"64\"\n                        min=\"64\"\n                        data-i18n=\"[title]naist.panel.height\"\n                    />\n                </div>\n\n                <div class=\"naist-grid2\">\n                    <div>\n                        <label for=\"naist_sampler\" data-i18n=\"naist.panel.sampler\"></label>\n                        <select id=\"naist_sampler\" class=\"text_pole\"></select>\n                    </div>\n                    <div data-cap=\"noiseSchedule\">\n                        <label for=\"naist_schedule\" data-i18n=\"naist.panel.schedule\"></label>\n                        <select id=\"naist_schedule\" class=\"text_pole\"></select>\n                    </div>\n                </div>\n                <div class=\"naist-grid3\">\n                    <div>\n                        <label for=\"naist_steps\" data-i18n=\"naist.panel.steps\"></label>\n                        <input id=\"naist_steps\" type=\"number\" min=\"1\" max=\"50\" class=\"text_pole\" />\n                    </div>\n                    <div>\n                        <label for=\"naist_scale\" data-i18n=\"naist.panel.scale\"></label>\n                        <input id=\"naist_scale\" type=\"number\" step=\"0.1\" min=\"0\" max=\"10\" class=\"text_pole\" />\n                    </div>\n                    <div data-feature=\"cfgRescale\">\n                        <label for=\"naist_cfg_rescale\" data-i18n=\"naist.panel.cfgRescale\"></label>\n                        <input id=\"naist_cfg_rescale\" type=\"number\" step=\"0.02\" min=\"0\" max=\"1\" class=\"text_pole\" />\n                    </div>\n                </div>\n                <div class=\"naist-grid2\">\n                    <div>\n                        <label for=\"naist_seed\" data-i18n=\"naist.panel.seed\"></label>\n                        <input\n                            id=\"naist_seed\"\n                            type=\"number\"\n                            min=\"-1\"\n                            class=\"text_pole\"\n                            data-i18n=\"[title]naist.panel.seedHint\"\n                        />\n                    </div>\n                    <div data-feature=\"multipleSamples\">\n                        <label for=\"naist_samples\" data-i18n=\"naist.panel.samples\"></label>\n                        <input id=\"naist_samples\" type=\"number\" min=\"1\" max=\"8\" class=\"text_pole\" />\n                    </div>\n                </div>\n                <div class=\"naist-feature-hint\" data-hint-for=\"multipleSamples\"></div>\n\n                <div class=\"naist-flags\">\n                    <label class=\"checkbox_label\" data-cap=\"smea\"\n                        ><input type=\"checkbox\" id=\"naist_smea\" /><span data-i18n=\"naist.panel.smea\"></span\n                    ></label>\n                    <label class=\"checkbox_label\" data-cap=\"smeaDyn\"\n                        ><input type=\"checkbox\" id=\"naist_smea_dyn\" /><span data-i18n=\"naist.panel.smeaDyn\"></span\n                    ></label>\n                    <label class=\"checkbox_label\" data-cap=\"autoSmea\"\n                        ><input type=\"checkbox\" id=\"naist_auto_smea\" /><span data-i18n=\"naist.panel.autoSmea\"></span\n                    ></label>\n                    <label class=\"checkbox_label\" data-cap=\"decrisper\"\n                        ><input type=\"checkbox\" id=\"naist_decrisper\" /><span data-i18n=\"naist.panel.decrisper\"></span\n                    ></label>\n                    <label class=\"checkbox_label\" data-cap=\"varietyBoost\"\n                        ><input type=\"checkbox\" id=\"naist_variety\" /><span data-i18n=\"naist.panel.variety\"></span\n                    ></label>\n                    <label class=\"checkbox_label\" data-cap=\"transparency\" data-feature=\"transparency\"\n                        ><input type=\"checkbox\" id=\"naist_transparent\" /><span\n                            data-i18n=\"naist.panel.transparent\"\n                        ></span\n                    ></label>\n                    <label class=\"checkbox_label\" data-cap=\"legacyUc\"\n                        ><input type=\"checkbox\" id=\"naist_legacy_uc\" /><span data-i18n=\"naist.panel.legacyUc\"></span\n                    ></label>\n                </div>\n                <div class=\"naist-feature-hint\" data-hint-for=\"transparency\"></div>\n\n                <hr />\n                <label class=\"checkbox_label\"\n                    ><input type=\"checkbox\" id=\"naist_free_only\" /><span data-i18n=\"naist.panel.freeOnly\"></span\n                ></label>\n                <div id=\"naist_cost\" class=\"naist-cost\"></div>\n                <div id=\"naist_lost\" class=\"naist-hint\"></div>\n\n                <details class=\"naist-override\">\n                    <summary data-i18n=\"naist.panel.override\"></summary>\n                    <div class=\"naist-warning\" data-i18n=\"naist.panel.overrideWarning\"></div>\n                    <label class=\"checkbox_label\"\n                        ><input type=\"checkbox\" id=\"naist_override_enabled\" /><span\n                            data-i18n=\"naist.panel.overrideEnable\"\n                        ></span\n                    ></label>\n                    <textarea id=\"naist_override_json\" class=\"text_pole textarea_compact monospace\" rows=\"4\"></textarea>\n                </details>\n\n                <label class=\"checkbox_label\"\n                    ><input type=\"checkbox\" id=\"naist_inspect_before\" /><span\n                        data-i18n=\"naist.panel.inspectBeforeSend\"\n                    ></span\n                ></label>\n                <div class=\"naist-row naist-actions\">\n                    <div id=\"naist_inspect\" class=\"menu_button menu_button_icon\">\n                        <i class=\"fa-solid fa-magnifying-glass\"></i><span data-i18n=\"naist.panel.inspect\"></span>\n                    </div>\n                    <div id=\"naist_generate\" class=\"menu_button menu_button_icon\">\n                        <i class=\"fa-solid fa-paintbrush\"></i><span data-i18n=\"naist.panel.generate\"></span>\n                    </div>\n                    <div id=\"naist_cancel\" class=\"menu_button menu_button_icon naist-hidden\">\n                        <i class=\"fa-solid fa-stop\"></i><span data-i18n=\"naist.panel.cancel\"></span>\n                    </div>\n                </div>\n                <div id=\"naist_message\" class=\"naist-message\"></div>\n            </div>\n        </div>\n    </div>\n</div>\n";
+var panel_default = "<div class=\"naist-panel\" id=\"naist_panel\">\n    <div class=\"inline-drawer\">\n        <div class=\"inline-drawer-toggle inline-drawer-header\">\n            <b data-i18n=\"naist.panel.title\"></b>\n            <div class=\"inline-drawer-icon fa-solid fa-circle-chevron-down down\"></div>\n        </div>\n        <div class=\"inline-drawer-content\">\n            <div class=\"naist-content\">\n                <div class=\"naist-row naist-status\">\n                    <label for=\"naist_transport_mode\" data-i18n=\"naist.panel.transport\"></label>\n                    <select id=\"naist_transport_mode\" class=\"text_pole naist-grow\">\n                        <option value=\"auto\" data-i18n=\"naist.transport.auto\"></option>\n                        <option value=\"plugin\" data-i18n=\"naist.transport.plugin\"></option>\n                        <option value=\"native\" data-i18n=\"naist.transport.native\"></option>\n                    </select>\n                    <div\n                        id=\"naist_refresh\"\n                        class=\"menu_button fa-solid fa-rotate\"\n                        data-i18n=\"[title]naist.panel.refresh\"\n                    ></div>\n                </div>\n                <div id=\"naist_transport_badge\" class=\"naist-badge\"></div>\n                <div id=\"naist_account\" class=\"naist-account\"></div>\n\n                <div id=\"naist_takeover_banner\" class=\"naist-banner naist-hidden\">\n                    <span data-i18n=\"naist.takeover.banner\"></span>\n                    <div id=\"naist_banner_open\" class=\"menu_button\" data-i18n=\"naist.takeover.bannerAction\"></div>\n                </div>\n\n                <div class=\"naist-tabs\" role=\"tablist\">\n                    <div\n                        class=\"naist-tab menu_button\"\n                        role=\"tab\"\n                        data-tab=\"generate\"\n                        data-i18n=\"naist.tab.generate\"\n                    ></div>\n                    <div\n                        class=\"naist-tab menu_button\"\n                        role=\"tab\"\n                        data-tab=\"prompts\"\n                        data-i18n=\"naist.tab.prompts\"\n                    ></div>\n                    <div class=\"naist-tab menu_button\" role=\"tab\" data-tab=\"chat\" data-i18n=\"naist.tab.chat\"></div>\n                    <div\n                        class=\"naist-tab menu_button\"\n                        role=\"tab\"\n                        data-tab=\"takeover\"\n                        data-i18n=\"naist.tab.takeover\"\n                    ></div>\n                </div>\n\n                <div class=\"naist-tabpanel\" data-tabpanel=\"generate\">\n                    <label for=\"naist_model\" data-i18n=\"naist.panel.model\"></label>\n                    <select id=\"naist_model\" class=\"text_pole\">\n                        {{#each models}}\n                        <option value=\"{{id}}\" data-i18n=\"{{nameKey}}\"></option>\n                        {{/each}}\n                    </select>\n\n                    <label for=\"naist_prompt\" data-i18n=\"naist.panel.prompt\"></label>\n                    <textarea\n                        id=\"naist_prompt\"\n                        class=\"text_pole textarea_compact\"\n                        rows=\"4\"\n                        data-i18n=\"[placeholder]naist.panel.promptPlaceholder\"\n                    ></textarea>\n\n                    <label for=\"naist_negative\" data-i18n=\"naist.panel.negative\"></label>\n                    <textarea id=\"naist_negative\" class=\"text_pole textarea_compact\" rows=\"2\"></textarea>\n\n                    <div class=\"naist-grid2\">\n                        <div>\n                            <label for=\"naist_uc_preset\" data-i18n=\"naist.panel.ucPreset\"></label>\n                            <select id=\"naist_uc_preset\" class=\"text_pole\"></select>\n                        </div>\n                        <div>\n                            <label for=\"naist_quality\" data-i18n=\"naist.panel.quality\"></label>\n                            <select id=\"naist_quality\" class=\"text_pole\"></select>\n                        </div>\n                    </div>\n\n                    <div\n                        id=\"naist_characters_block\"\n                        class=\"naist-block\"\n                        data-cap=\"characters\"\n                        data-feature=\"characters\"\n                    >\n                        <div class=\"naist-row\">\n                            <b data-i18n=\"naist.panel.characters\"></b>\n                            <span id=\"naist_characters_count\" class=\"naist-muted\"></span>\n                            <div\n                                id=\"naist_add_character\"\n                                class=\"menu_button fa-solid fa-user-plus\"\n                                data-i18n=\"[title]naist.panel.addCharacter\"\n                            ></div>\n                        </div>\n                        <label class=\"checkbox_label\"\n                            ><input type=\"checkbox\" id=\"naist_use_coords\" /><span\n                                data-i18n=\"naist.panel.useCoords\"\n                            ></span\n                        ></label>\n                        <div id=\"naist_characters\"></div>\n                        <div class=\"naist-feature-hint\" data-hint-for=\"characters\"></div>\n                    </div>\n\n                    <label for=\"naist_size_preset\" data-i18n=\"naist.panel.size\"></label>\n                    <div class=\"naist-grid3\">\n                        <select id=\"naist_size_preset\" class=\"text_pole\"></select>\n                        <input\n                            id=\"naist_width\"\n                            type=\"number\"\n                            class=\"text_pole\"\n                            step=\"64\"\n                            min=\"64\"\n                            data-i18n=\"[title]naist.panel.width\"\n                        />\n                        <input\n                            id=\"naist_height\"\n                            type=\"number\"\n                            class=\"text_pole\"\n                            step=\"64\"\n                            min=\"64\"\n                            data-i18n=\"[title]naist.panel.height\"\n                        />\n                    </div>\n\n                    <div class=\"naist-grid2\">\n                        <div>\n                            <label for=\"naist_sampler\" data-i18n=\"naist.panel.sampler\"></label>\n                            <select id=\"naist_sampler\" class=\"text_pole\"></select>\n                        </div>\n                        <div data-cap=\"noiseSchedule\">\n                            <label for=\"naist_schedule\" data-i18n=\"naist.panel.schedule\"></label>\n                            <select id=\"naist_schedule\" class=\"text_pole\"></select>\n                        </div>\n                    </div>\n                    <div class=\"naist-grid3\">\n                        <div>\n                            <label for=\"naist_steps\" data-i18n=\"naist.panel.steps\"></label>\n                            <input id=\"naist_steps\" type=\"number\" min=\"1\" max=\"50\" class=\"text_pole\" />\n                        </div>\n                        <div>\n                            <label for=\"naist_scale\" data-i18n=\"naist.panel.scale\"></label>\n                            <input id=\"naist_scale\" type=\"number\" step=\"0.1\" min=\"0\" max=\"10\" class=\"text_pole\" />\n                        </div>\n                        <div data-feature=\"cfgRescale\">\n                            <label for=\"naist_cfg_rescale\" data-i18n=\"naist.panel.cfgRescale\"></label>\n                            <input id=\"naist_cfg_rescale\" type=\"number\" step=\"0.02\" min=\"0\" max=\"1\" class=\"text_pole\" />\n                        </div>\n                    </div>\n                    <div class=\"naist-grid2\">\n                        <div>\n                            <label for=\"naist_seed\" data-i18n=\"naist.panel.seed\"></label>\n                            <input\n                                id=\"naist_seed\"\n                                type=\"number\"\n                                min=\"-1\"\n                                class=\"text_pole\"\n                                data-i18n=\"[title]naist.panel.seedHint\"\n                            />\n                        </div>\n                        <div data-feature=\"multipleSamples\">\n                            <label for=\"naist_samples\" data-i18n=\"naist.panel.samples\"></label>\n                            <input id=\"naist_samples\" type=\"number\" min=\"1\" max=\"8\" class=\"text_pole\" />\n                        </div>\n                    </div>\n                    <div class=\"naist-feature-hint\" data-hint-for=\"multipleSamples\"></div>\n\n                    <div class=\"naist-flags\">\n                        <label class=\"checkbox_label\" data-cap=\"smea\"\n                            ><input type=\"checkbox\" id=\"naist_smea\" /><span data-i18n=\"naist.panel.smea\"></span\n                        ></label>\n                        <label class=\"checkbox_label\" data-cap=\"smeaDyn\"\n                            ><input type=\"checkbox\" id=\"naist_smea_dyn\" /><span data-i18n=\"naist.panel.smeaDyn\"></span\n                        ></label>\n                        <label class=\"checkbox_label\" data-cap=\"autoSmea\"\n                            ><input type=\"checkbox\" id=\"naist_auto_smea\" /><span data-i18n=\"naist.panel.autoSmea\"></span\n                        ></label>\n                        <label class=\"checkbox_label\" data-cap=\"decrisper\"\n                            ><input type=\"checkbox\" id=\"naist_decrisper\" /><span\n                                data-i18n=\"naist.panel.decrisper\"\n                            ></span\n                        ></label>\n                        <label class=\"checkbox_label\" data-cap=\"varietyBoost\"\n                            ><input type=\"checkbox\" id=\"naist_variety\" /><span data-i18n=\"naist.panel.variety\"></span\n                        ></label>\n                        <label class=\"checkbox_label\" data-cap=\"transparency\" data-feature=\"transparency\"\n                            ><input type=\"checkbox\" id=\"naist_transparent\" /><span\n                                data-i18n=\"naist.panel.transparent\"\n                            ></span\n                        ></label>\n                        <label class=\"checkbox_label\" data-cap=\"legacyUc\"\n                            ><input type=\"checkbox\" id=\"naist_legacy_uc\" /><span data-i18n=\"naist.panel.legacyUc\"></span\n                        ></label>\n                    </div>\n                    <div class=\"naist-feature-hint\" data-hint-for=\"transparency\"></div>\n\n                    <hr />\n                    <label class=\"checkbox_label\"\n                        ><input type=\"checkbox\" id=\"naist_free_only\" /><span data-i18n=\"naist.panel.freeOnly\"></span\n                    ></label>\n                    <div id=\"naist_cost\" class=\"naist-cost\"></div>\n                    <div id=\"naist_lost\" class=\"naist-hint\"></div>\n\n                    <details class=\"naist-override\">\n                        <summary data-i18n=\"naist.panel.override\"></summary>\n                        <div class=\"naist-warning\" data-i18n=\"naist.panel.overrideWarning\"></div>\n                        <label class=\"checkbox_label\"\n                            ><input type=\"checkbox\" id=\"naist_override_enabled\" /><span\n                                data-i18n=\"naist.panel.overrideEnable\"\n                            ></span\n                        ></label>\n                        <textarea\n                            id=\"naist_override_json\"\n                            class=\"text_pole textarea_compact monospace\"\n                            rows=\"4\"\n                        ></textarea>\n                    </details>\n                </div>\n                <div class=\"naist-tabpanel naist-hidden\" data-tabpanel=\"prompts\"></div>\n                <div class=\"naist-tabpanel naist-hidden\" data-tabpanel=\"chat\"></div>\n                <div class=\"naist-tabpanel naist-hidden\" data-tabpanel=\"takeover\"></div>\n\n                <label class=\"checkbox_label\"\n                    ><input type=\"checkbox\" id=\"naist_inspect_before\" /><span\n                        data-i18n=\"naist.panel.inspectBeforeSend\"\n                    ></span\n                ></label>\n                <div class=\"naist-row naist-actions\">\n                    <div id=\"naist_inspect\" class=\"menu_button menu_button_icon\">\n                        <i class=\"fa-solid fa-magnifying-glass\"></i><span data-i18n=\"naist.panel.inspect\"></span>\n                    </div>\n                    <div id=\"naist_generate\" class=\"menu_button menu_button_icon\">\n                        <i class=\"fa-solid fa-paintbrush\"></i><span data-i18n=\"naist.panel.generate\"></span>\n                    </div>\n                    <div id=\"naist_cancel\" class=\"menu_button menu_button_icon naist-hidden\">\n                        <i class=\"fa-solid fa-stop\"></i><span data-i18n=\"naist.panel.cancel\"></span>\n                    </div>\n                </div>\n                <div id=\"naist_message\" class=\"naist-message\"></div>\n            </div>\n        </div>\n    </div>\n</div>\n";
 //#endregion
 //#region src/ui/components/json-view.ts
 var BASE64_MIN = 256;
-function escapeHtml$1(text) {
+function escapeHtml$2(text) {
 	return text.replace(/[&<>"']/g, (ch) => ({
 		"&": "&amp;",
 		"<": "&lt;",
@@ -2482,7 +4379,7 @@ function renderValue(value, path, highlight, indent) {
 	let html;
 	if (value === null || typeof value !== "object") {
 		if (typeof value === "string" && value.length > BASE64_MIN && /^[A-Za-z0-9+/=]+$/.test(value)) html = `<span class="naist-json-b64">"&lt;base64 ${value.length}&gt;"</span>`;
-		else html = `<span class="naist-json-${value === null ? "null" : typeof value}">${escapeHtml$1(JSON.stringify(value))}</span>`;
+		else html = `<span class="naist-json-${value === null ? "null" : typeof value}">${escapeHtml$2(JSON.stringify(value))}</span>`;
 	} else if (Array.isArray(value)) {
 		if (value.length === 0) html = "[]";
 		else html = `[\n${value.map((item, i) => `${pad}  ${renderValue(item, `${path}[${i}]`, highlight, indent + 1)}`).join(",\n")}\n${pad}]`;
@@ -2491,7 +4388,7 @@ function renderValue(value, path, highlight, indent) {
 		if (entries.length === 0) html = "{}";
 		else html = `{\n${entries.map(([key, item]) => {
 			const childPath = path ? `${path}.${key}` : key;
-			return `${pad}  <span class="naist-json-key">${escapeHtml$1(JSON.stringify(key))}</span>: ${renderValue(item, childPath, highlight, indent + 1)}`;
+			return `${pad}  <span class="naist-json-key">${escapeHtml$2(JSON.stringify(key))}</span>: ${renderValue(item, childPath, highlight, indent + 1)}`;
 		}).join(",\n")}\n${pad}}`;
 	}
 	return highlight.has(path) ? `<span class="naist-json-override">${html}</span>` : html;
@@ -2501,24 +4398,24 @@ function renderJson(value, highlightPaths = []) {
 }
 //#endregion
 //#region src/ui/panel/inspector.ts
-function escapeHtml(text) {
+function escapeHtml$1(text) {
 	const div = document.createElement("div");
 	div.textContent = text;
 	return div.innerHTML;
 }
 function droppedList(prepared) {
 	if (prepared.build.dropped.length === 0) return `<p class="naist-muted" data-i18n="naist.inspector.nothingDropped"></p>`;
-	return `<ul class="naist-list">${[...prepared.build.dropped].sort((a, b) => Number(b.userSet) - Number(a.userSet)).map((d) => `<li class="${d.userSet ? "naist-dropped-user" : "naist-muted"}"><code>${escapeHtml(d.path)}</code> — ${escapeHtml(t(`naist.drop.${d.reason}`))}</li>`).join("")}</ul>`;
+	return `<ul class="naist-list">${[...prepared.build.dropped].sort((a, b) => Number(b.userSet) - Number(a.userSet)).map((d) => `<li class="${d.userSet ? "naist-dropped-user" : "naist-muted"}"><code>${escapeHtml$1(d.path)}</code> — ${escapeHtml$1(t(`naist.drop.${d.reason}`))}</li>`).join("")}</ul>`;
 }
 function warningsList(prepared) {
-	const warnings = prepared.build.warnings.map((w) => `<li>${escapeHtml(t(`naist.warning.${w.code}`, w.params))}</li>`);
-	const clamps = prepared.clampChanges.map((c) => `<li>${escapeHtml(t(`naist.clamp.${c.kind}`, c))}</li>`);
+	const warnings = prepared.build.warnings.map((w) => `<li>${escapeHtml$1(t(`naist.warning.${w.code}`, w.params))}</li>`);
+	const clamps = prepared.clampChanges.map((c) => `<li>${escapeHtml$1(t(`naist.clamp.${c.kind}`, c))}</li>`);
 	const all = [...warnings, ...clamps];
 	return all.length ? `<ul class="naist-list">${all.join("")}</ul>` : `<p class="naist-muted" data-i18n="naist.inspector.noWarnings"></p>`;
 }
 function lostList(prepared) {
 	if (prepared.effective.lost.length === 0) return "";
-	return `<h4 data-i18n="naist.inspector.lost"></h4><ul class="naist-list naist-dropped-user">${prepared.effective.lost.map((l) => `<li>${escapeHtml(t(`naist.lost.${l}`))}</li>`).join("")}</ul>`;
+	return `<h4 data-i18n="naist.inspector.lost"></h4><ul class="naist-list naist-dropped-user">${prepared.effective.lost.map((l) => `<li>${escapeHtml$1(t(`naist.lost.${l}`))}</li>`).join("")}</ul>`;
 }
 /** Opens the inspector popup. Resolves true when the user chose to send (confirmSend mode). */
 async function openInspector(prepared, options = { confirmSend: false }) {
@@ -2534,9 +4431,9 @@ async function openInspector(prepared, options = { confirmSend: false }) {
 	root.innerHTML = `
         <h3 data-i18n="naist.inspector.title"></h3>
         <div class="naist-row">
-            <span>${escapeHtml(t(`naist.transport.${prepared.transportId}`))}</span>
-            <span class="naist-muted">${escapeHtml(prepared.body.model)} · ${escapeHtml(prepared.body.action)}</span>
-            <span class="naist-cost-inline">${escapeHtml(costText)}</span>
+            <span>${escapeHtml$1(t(`naist.transport.${prepared.transportId}`))}</span>
+            <span class="naist-muted">${escapeHtml$1(prepared.body.model)} · ${escapeHtml$1(prepared.body.action)}</span>
+            <span class="naist-cost-inline">${escapeHtml$1(costText)}</span>
         </div>
         ${prepared.overridePaths.length ? `<div class="naist-warning" data-i18n="naist.inspector.overrideApplied"></div>` : ""}
         ${lostList(prepared)}
@@ -2571,6 +4468,359 @@ async function openInspector(prepared, options = { confirmSend: false }) {
 	return options.confirmSend && result === c.POPUP_RESULT.AFFIRMATIVE;
 }
 //#endregion
+//#region src/ui/components/bind.ts
+function resolve(path) {
+	const parts = path.split(".");
+	const key = parts.pop();
+	let node = settings();
+	for (const part of parts) {
+		if (!node || typeof node !== "object") return null;
+		node = node[part];
+	}
+	return key && node && typeof node === "object" ? {
+		parent: node,
+		key
+	} : null;
+}
+function isNumeric(el) {
+	return el instanceof HTMLInputElement && el.type === "number" || el.dataset.type === "number";
+}
+function readFromSettings(root) {
+	root.querySelectorAll("[data-setting]").forEach((el) => {
+		const target = resolve(el.dataset.setting ?? "");
+		if (!target) return;
+		const value = target.parent[target.key];
+		if (el instanceof HTMLInputElement && el.type === "checkbox") el.checked = value === true;
+		else el.value = value === void 0 || value === null ? "" : String(value);
+	});
+}
+/** Binds every [data-setting] control under `root`; `onChange` receives the changed path. */
+function bindSettings(root, onChange = () => {}) {
+	readFromSettings(root);
+	root.querySelectorAll("[data-setting]").forEach((el) => {
+		const isCheckbox = el instanceof HTMLInputElement && el.type === "checkbox";
+		const isText = !isCheckbox && !(el instanceof HTMLSelectElement) && !isNumeric(el);
+		el.addEventListener(isText ? "input" : "change", () => {
+			const path = el.dataset.setting ?? "";
+			const target = resolve(path);
+			if (!target) return;
+			if (isCheckbox) target.parent[target.key] = el.checked;
+			else if (isNumeric(el)) {
+				const value = Number(el.value);
+				if (!Number.isFinite(value)) return;
+				target.parent[target.key] = value;
+			} else target.parent[target.key] = el.value;
+			saveSettings();
+			onChange(path);
+		});
+	});
+}
+//#endregion
+//#region src/ui/components/dom.ts
+/** Handlebars template -> sanitized HTML (SillyTavern's own Handlebars and DOMPurify). */
+function render$1(template, data = {}) {
+	const html = libs().Handlebars.compile(template)(data);
+	return libs().DOMPurify.sanitize(html);
+}
+function $id$1(root, id) {
+	const el = root.querySelector(`#${id}`);
+	if (!el) throw new Error(`NAI Studio UI: missing #${id}`);
+	return el;
+}
+function fillSelect$1(select, options, current) {
+	select.innerHTML = "";
+	for (const option of options) {
+		const el = document.createElement("option");
+		el.value = option.value;
+		el.textContent = option.label;
+		select.append(el);
+	}
+	select.value = options.some((o) => o.value === current) ? current : options[0]?.value ?? "";
+}
+function escapeHtml(text) {
+	const div = document.createElement("div");
+	div.textContent = text;
+	return div.innerHTML;
+}
+//#endregion
+//#region src/ui/templates/tab-chat.html?raw
+var tab_chat_default = "<div class=\"naist-section\">\n    <b data-i18n=\"naist.chat.visibility\"></b>\n    <div class=\"naist-hint\" data-i18n=\"naist.chat.visibilityHint\"></div>\n    <div class=\"naist-flags\">\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"chat.visibility.panel\" /><span\n                data-i18n=\"naist.initiator.panel\"\n            ></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"chat.visibility.command\" /><span\n                data-i18n=\"naist.initiator.command\"\n            ></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"chat.visibility.wand\" /><span data-i18n=\"naist.initiator.wand\"></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"chat.visibility.interactive\" /><span\n                data-i18n=\"naist.initiator.interactive\"\n            ></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"chat.visibility.tool\" /><span data-i18n=\"naist.initiator.tool\"></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"chat.visibility.auto\" /><span data-i18n=\"naist.initiator.auto\"></span\n        ></label>\n    </div>\n    <div class=\"naist-grid2\">\n        <div>\n            <label for=\"naist_author\" data-i18n=\"naist.chat.author\"></label>\n            <select id=\"naist_author\" class=\"text_pole\" data-setting=\"chat.author\">\n                <option value=\"character\" data-i18n=\"naist.chat.authorCharacter\"></option>\n                <option value=\"user\" data-i18n=\"naist.chat.authorUser\"></option>\n            </select>\n        </div>\n        <div>\n            <label for=\"naist_confirm_above\" data-i18n=\"naist.chat.confirmAbove\"></label>\n            <input id=\"naist_confirm_above\" type=\"number\" min=\"0\" class=\"text_pole\" data-setting=\"anlas.confirmAbove\" />\n        </div>\n    </div>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"chat.hidePrompt\" /><span data-i18n=\"naist.chat.hidePrompt\"></span\n    ></label>\n</div>\n\n<div class=\"naist-section\">\n    <b data-i18n=\"naist.chat.prompting\"></b>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"modes.refine\" /><span data-i18n=\"naist.chat.refine\"></span\n    ></label>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"modes.multimodal\" /><span data-i18n=\"naist.chat.multimodal\"></span\n    ></label>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"modes.freeExtend\" /><span data-i18n=\"naist.chat.freeExtend\"></span\n    ></label>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"modes.snap\" /><span data-i18n=\"naist.chat.snap\"></span\n    ></label>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"modes.minimalProcessing\" /><span\n            data-i18n=\"naist.chat.minimalProcessing\"\n        ></span\n    ></label>\n</div>\n\n<div class=\"naist-section\">\n    <b data-i18n=\"naist.chat.llm\"></b>\n    <div class=\"naist-hint\" data-i18n=\"naist.chat.llmHint\"></div>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"chat.interactive\" /><span data-i18n=\"naist.chat.interactive\"></span\n    ></label>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"chat.functionTool\" /><span data-i18n=\"naist.chat.functionTool\"></span\n    ></label>\n    <label for=\"naist_tool_cooldown\" data-i18n=\"naist.chat.toolCooldown\"></label>\n    <input id=\"naist_tool_cooldown\" type=\"number\" min=\"0\" class=\"text_pole\" data-setting=\"chat.toolCooldownSeconds\" />\n</div>\n\n<div class=\"naist-section\">\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"auto.enabled\" /><b data-i18n=\"naist.auto.enabled\"></b\n    ></label>\n    <div class=\"naist-hint\" data-i18n=\"naist.auto.guardHint\"></div>\n    <label for=\"naist_auto_mode\" data-i18n=\"naist.auto.mode\"></label>\n    <select id=\"naist_auto_mode\" class=\"text_pole\" data-setting=\"auto.mode\" data-type=\"number\"></select>\n    <div class=\"naist-grid2\">\n        <div>\n            <label for=\"naist_auto_every\" data-i18n=\"naist.auto.everyMessages\"></label>\n            <input id=\"naist_auto_every\" type=\"number\" min=\"0\" class=\"text_pole\" data-setting=\"auto.everyMessages\" />\n        </div>\n        <div>\n            <label for=\"naist_auto_cooldown_messages\" data-i18n=\"naist.auto.cooldownMessages\"></label>\n            <input\n                id=\"naist_auto_cooldown_messages\"\n                type=\"number\"\n                min=\"1\"\n                class=\"text_pole\"\n                data-setting=\"auto.cooldownMessages\"\n            />\n        </div>\n    </div>\n    <label for=\"naist_auto_keywords\" data-i18n=\"naist.auto.keywords\"></label>\n    <input id=\"naist_auto_keywords\" type=\"text\" class=\"text_pole\" data-setting=\"auto.keywords\" />\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"auto.sceneChange\" /><span data-i18n=\"naist.auto.sceneChange\"></span\n    ></label>\n    <input\n        id=\"naist_auto_markers\"\n        type=\"text\"\n        class=\"text_pole\"\n        data-setting=\"auto.sceneMarkers\"\n        data-i18n=\"[title]naist.auto.sceneMarkers\"\n    />\n    <label for=\"naist_auto_cooldown_seconds\" data-i18n=\"naist.auto.cooldownSeconds\"></label>\n    <input\n        id=\"naist_auto_cooldown_seconds\"\n        type=\"number\"\n        min=\"0\"\n        class=\"text_pole\"\n        data-setting=\"auto.cooldownSeconds\"\n    />\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" id=\"naist_auto_allow_paid\" data-setting=\"auto.allowPaid\" /><span\n            data-i18n=\"naist.auto.allowPaid\"\n        ></span\n    ></label>\n</div>\n";
+//#endregion
+//#region src/ui/panel/tab-chat.ts
+var ChatTab = class {
+	onChange;
+	root;
+	constructor(onChange) {
+		this.onChange = onChange;
+	}
+	mount(container) {
+		container.innerHTML = render$1(tab_chat_default);
+		this.root = container;
+		fillSelect$1($id$1(container, "naist_auto_mode"), WAND_MODES.map((mode) => ({
+			value: String(mode),
+			label: t(`naist.mode.${mode}`)
+		})), String(settings().auto.mode));
+		localize(container);
+		bindSettings(container, (path) => {
+			this.applyGuards();
+			this.onChange(path);
+		});
+		this.applyGuards();
+	}
+	/** Re-reads every control after settings changed outside of this tab. */
+	refresh() {
+		readFromSettings(this.root);
+		this.applyGuards();
+	}
+	/** Paid auto generation is meaningless while free-only is on: show it disabled. */
+	applyGuards() {
+		const allowPaid = $id$1(this.root, "naist_auto_allow_paid");
+		allowPaid.disabled = settings().anlas.freeOnly;
+		allowPaid.closest("label")?.classList.toggle("naist-disabled", allowPaid.disabled);
+	}
+};
+//#endregion
+//#region src/ui/templates/tab-prompts.html?raw
+var tab_prompts_default = "<div class=\"naist-section\">\n    <label for=\"naist_prefix\" data-i18n=\"naist.prompts.prefix\"></label>\n    <textarea id=\"naist_prefix\" class=\"text_pole textarea_compact\" rows=\"2\" data-setting=\"prompts.prefix\"></textarea>\n    <label for=\"naist_suffix\" data-i18n=\"naist.prompts.suffix\"></label>\n    <textarea id=\"naist_suffix\" class=\"text_pole textarea_compact\" rows=\"2\" data-setting=\"prompts.suffix\"></textarea>\n    <div class=\"naist-hint\" data-i18n=\"naist.prompts.prefixHint\"></div>\n</div>\n\n<div class=\"naist-section\">\n    <b data-i18n=\"naist.prompts.styles\"></b>\n    <div class=\"naist-row\">\n        <select id=\"naist_style\" class=\"text_pole naist-grow\"></select>\n        <div\n            id=\"naist_style_save\"\n            class=\"menu_button fa-solid fa-floppy-disk\"\n            data-i18n=\"[title]naist.prompts.styleSave\"\n        ></div>\n        <div\n            id=\"naist_style_rename\"\n            class=\"menu_button fa-solid fa-pencil\"\n            data-i18n=\"[title]naist.prompts.styleRename\"\n        ></div>\n        <div\n            id=\"naist_style_delete\"\n            class=\"menu_button fa-solid fa-trash-can\"\n            data-i18n=\"[title]naist.prompts.styleDelete\"\n        ></div>\n    </div>\n    <div class=\"naist-hint\" data-i18n=\"naist.prompts.stylesHint\"></div>\n</div>\n\n<div id=\"naist_char_prompt_block\" class=\"naist-section\">\n    <b data-i18n=\"naist.prompts.characterPrompt\"></b> <span id=\"naist_char_prompt_name\" class=\"naist-muted\"></span>\n    <textarea\n        id=\"naist_char_positive\"\n        class=\"text_pole textarea_compact\"\n        rows=\"2\"\n        data-i18n=\"[placeholder]naist.prompts.characterPositive\"\n    ></textarea>\n    <textarea\n        id=\"naist_char_negative\"\n        class=\"text_pole textarea_compact\"\n        rows=\"2\"\n        data-i18n=\"[placeholder]naist.prompts.characterNegative\"\n    ></textarea>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" id=\"naist_char_share\" /><span data-i18n=\"naist.prompts.characterShare\"></span\n    ></label>\n</div>\n<div id=\"naist_char_prompt_none\" class=\"naist-hint naist-hidden\" data-i18n=\"naist.prompts.characterNone\"></div>\n\n<details class=\"naist-section\">\n    <summary data-i18n=\"naist.prompts.templates\"></summary>\n    <div class=\"naist-hint\" data-i18n=\"naist.prompts.templatesHint\"></div>\n    <div id=\"naist_templates\"></div>\n</details>\n";
+//#endregion
+//#region src/ui/panel/tab-prompts.ts
+var PromptsTab = class {
+	onChange;
+	root;
+	constructor(onChange) {
+		this.onChange = onChange;
+	}
+	mount(container) {
+		container.innerHTML = render$1(tab_prompts_default);
+		this.root = container;
+		localize(container);
+		bindSettings(container, () => this.onChange());
+		this.renderStyles();
+		this.renderTemplates();
+		this.bindStyles();
+		this.bindCharacter();
+		this.refreshCharacter();
+		const c = ctx();
+		c.eventSource.on(c.eventTypes.CHAT_CHANGED ?? "chat_id_changed", () => this.refreshCharacter());
+	}
+	/** Re-reads every control after settings changed outside of this tab. */
+	refresh() {
+		readFromSettings(this.root);
+		this.renderStyles();
+		this.fillTemplates();
+		this.refreshCharacter();
+	}
+	renderStyles() {
+		const prompts = settings().prompts;
+		const options = [{
+			value: "",
+			label: t("naist.prompts.styleNone")
+		}, ...prompts.styles.map((s) => ({
+			value: s.name,
+			label: s.name
+		}))];
+		fillSelect$1($id$1(this.root, "naist_style"), options, prompts.activeStyle);
+	}
+	applyStyle(style) {
+		const s = settings();
+		s.prompts.activeStyle = style?.name ?? "";
+		if (style) {
+			s.prompts.prefix = style.prefix;
+			s.prompts.suffix = style.suffix;
+			s.generation.negativePrompt = style.negative;
+		}
+		saveSettings();
+		readFromSettings(this.root);
+		this.onChange();
+	}
+	bindStyles() {
+		const c = ctx();
+		const select = $id$1(this.root, "naist_style");
+		select.addEventListener("change", () => this.applyStyle(settings().prompts.styles.find((s) => s.name === select.value)));
+		$id$1(this.root, "naist_style_save").addEventListener("click", async () => {
+			const name = await c.callGenericPopup(t("naist.prompts.styleNamePrompt"), c.POPUP_TYPE.INPUT, settings().prompts.activeStyle);
+			if (typeof name !== "string" || !name.trim()) return;
+			const s = settings();
+			const style = {
+				name: name.trim(),
+				prefix: s.prompts.prefix,
+				suffix: s.prompts.suffix,
+				negative: s.generation.negativePrompt
+			};
+			const index = s.prompts.styles.findIndex((x) => x.name === style.name);
+			if (index >= 0) s.prompts.styles[index] = style;
+			else s.prompts.styles.push(style);
+			s.prompts.activeStyle = style.name;
+			saveSettings();
+			this.renderStyles();
+		});
+		$id$1(this.root, "naist_style_rename").addEventListener("click", async () => {
+			const s = settings();
+			const style = s.prompts.styles.find((x) => x.name === s.prompts.activeStyle);
+			if (!style) return;
+			const name = await c.callGenericPopup(t("naist.prompts.styleNamePrompt"), c.POPUP_TYPE.INPUT, style.name);
+			if (typeof name !== "string" || !name.trim() || s.prompts.styles.some((x) => x.name === name.trim())) return;
+			style.name = name.trim();
+			s.prompts.activeStyle = style.name;
+			saveSettings();
+			this.renderStyles();
+		});
+		$id$1(this.root, "naist_style_delete").addEventListener("click", async () => {
+			const s = settings();
+			const name = s.prompts.activeStyle;
+			if (!name) return;
+			if (await c.callGenericPopup(t("naist.prompts.styleDeleteConfirm", { name }), c.POPUP_TYPE.CONFIRM) !== c.POPUP_RESULT.AFFIRMATIVE) return;
+			s.prompts.styles = s.prompts.styles.filter((x) => x.name !== name);
+			s.prompts.activeStyle = "";
+			saveSettings();
+			this.renderStyles();
+		});
+	}
+	refreshCharacter() {
+		const index = soloCharacterIndex();
+		const character = index === void 0 ? void 0 : ctx().characters[index];
+		$id$1(this.root, "naist_char_prompt_block").classList.toggle("naist-hidden", !character);
+		$id$1(this.root, "naist_char_prompt_none").classList.toggle("naist-hidden", Boolean(character));
+		if (!character) return;
+		const prompt = readCharacterPrompt(character);
+		$id$1(this.root, "naist_char_prompt_name").textContent = character.name;
+		$id$1(this.root, "naist_char_positive").value = prompt.positive;
+		$id$1(this.root, "naist_char_negative").value = prompt.negative;
+		$id$1(this.root, "naist_char_share").checked = prompt.shared;
+	}
+	bindCharacter() {
+		let timer = null;
+		const save = () => {
+			const index = soloCharacterIndex();
+			if (index === void 0) return;
+			const value = {
+				positive: $id$1(this.root, "naist_char_positive").value,
+				negative: $id$1(this.root, "naist_char_negative").value
+			};
+			const share = $id$1(this.root, "naist_char_share").checked;
+			if (timer) clearTimeout(timer);
+			timer = setTimeout(() => void saveCharacterPrompt(index, value, share).then(() => this.onChange()), 500);
+		};
+		$id$1(this.root, "naist_char_positive").addEventListener("input", save);
+		$id$1(this.root, "naist_char_negative").addEventListener("input", save);
+		$id$1(this.root, "naist_char_share").addEventListener("change", save);
+	}
+	fillTemplates() {
+		const overrides = settings().prompts.templates;
+		this.root.querySelectorAll(".naist-template").forEach((block) => {
+			const key = block.dataset.mode ?? "";
+			const area = block.querySelector(".naist-template-text");
+			if (area) area.value = overrides[key] ?? DEFAULT_TEMPLATES[key] ?? "";
+		});
+	}
+	renderTemplates() {
+		const container = $id$1(this.root, "naist_templates");
+		const overrides = settings().prompts.templates;
+		container.innerHTML = TEMPLATE_MODES.map((mode) => {
+			const key = String(mode);
+			return `<div class="naist-template" data-mode="${key}">
+                <div class="naist-row"><b data-i18n="naist.mode.${key}"></b>
+                <div class="menu_button fa-solid fa-rotate-left naist-template-reset" data-i18n="[title]naist.prompts.templateReset"></div></div>
+                <textarea class="text_pole textarea_compact naist-template-text" rows="3">${escapeHtml(overrides[key] ?? DEFAULT_TEMPLATES[key] ?? "")}</textarea>
+            </div>`;
+		}).join("");
+		localize(container);
+		container.addEventListener("input", (event) => {
+			const area = event.target;
+			const key = area.closest(".naist-template")?.dataset.mode;
+			if (!key || !area.classList.contains("naist-template-text")) return;
+			const templates = settings().prompts.templates;
+			if (area.value === DEFAULT_TEMPLATES[key]) delete templates[key];
+			else templates[key] = area.value;
+			saveSettings();
+			this.onChange();
+		});
+		container.addEventListener("click", (event) => {
+			const button = event.target;
+			if (!button.classList.contains("naist-template-reset")) return;
+			const block = button.closest(".naist-template");
+			const key = block?.dataset.mode;
+			if (!key || !block) return;
+			delete settings().prompts.templates[key];
+			saveSettings();
+			const area = block.querySelector(".naist-template-text");
+			if (area) area.value = DEFAULT_TEMPLATES[key] ?? "";
+			this.onChange();
+		});
+	}
+};
+//#endregion
+//#region src/ui/templates/tab-takeover.html?raw
+var tab_takeover_default = "<div class=\"naist-section\">\n    <b data-i18n=\"naist.takeover.status\"></b>\n    <div id=\"naist_takeover_state\" class=\"naist-account\"></div>\n    <div id=\"naist_takeover_commands\" class=\"naist-hint\"></div>\n    <div class=\"naist-row\">\n        <div id=\"naist_takeover_disable\" class=\"menu_button menu_button_icon\">\n            <i class=\"fa-solid fa-right-left\"></i><span data-i18n=\"naist.takeover.disable\"></span>\n        </div>\n        <div id=\"naist_takeover_enable\" class=\"menu_button menu_button_icon naist-hidden\">\n            <i class=\"fa-solid fa-rotate-left\"></i><span data-i18n=\"naist.takeover.enable\"></span>\n        </div>\n    </div>\n</div>\n\n<div class=\"naist-section\">\n    <b data-i18n=\"naist.takeover.migration\"></b>\n    <div id=\"naist_migration_state\" class=\"naist-account\"></div>\n    <div class=\"naist-row\">\n        <div id=\"naist_migration_run\" class=\"menu_button menu_button_icon\">\n            <i class=\"fa-solid fa-file-import\"></i><span data-i18n=\"naist.takeover.migrate\"></span>\n        </div>\n    </div>\n    <ul id=\"naist_migration_report\" class=\"naist-list\"></ul>\n</div>\n";
+//#endregion
+//#region src/ui/panel/tab-takeover.ts
+var TakeoverTab = class {
+	onMigrated;
+	root;
+	constructor(onMigrated) {
+		this.onMigrated = onMigrated;
+	}
+	mount(container) {
+		container.innerHTML = render$1(tab_takeover_default);
+		this.root = container;
+		localize(container);
+		$id$1(container, "naist_takeover_disable").addEventListener("click", () => void this.disable());
+		$id$1(container, "naist_takeover_enable").addEventListener("click", () => void this.enable());
+		$id$1(container, "naist_migration_run").addEventListener("click", () => void this.migrate());
+		this.refresh();
+	}
+	refresh() {
+		const active = isBuiltInActive();
+		$id$1(this.root, "naist_takeover_state").textContent = t(active ? "naist.takeover.builtInActive" : "naist.takeover.builtInDisabled");
+		$id$1(this.root, "naist_takeover_commands").textContent = t(active ? "naist.takeover.commandsBuiltIn" : "naist.takeover.commandsOurs");
+		$id$1(this.root, "naist_takeover_disable").classList.toggle("naist-hidden", !active);
+		$id$1(this.root, "naist_takeover_enable").classList.toggle("naist-hidden", active);
+		const migratedAt = settings().takeover.migratedAt;
+		$id$1(this.root, "naist_migration_state").textContent = migratedAt ? t("naist.takeover.migratedAt", { date: new Date(migratedAt).toLocaleString() }) : t("naist.takeover.notMigrated");
+		$id$1(this.root, "naist_migration_run").classList.toggle("naist-hidden", Boolean(migratedAt));
+		const report = $id$1(this.root, "naist_migration_report");
+		report.innerHTML = "";
+		for (const line of settings().takeover.migrationReport) {
+			const li = document.createElement("li");
+			li.textContent = line;
+			report.append(li);
+		}
+	}
+	async migrate() {
+		const report = await runMigration();
+		this.refresh();
+		this.onMigrated();
+		await showReport(report);
+	}
+	async disable() {
+		const c = ctx();
+		if (await c.callGenericPopup(t("naist.takeover.disableConfirm"), c.POPUP_TYPE.CONFIRM, "", {
+			okButton: t("naist.takeover.disableOk"),
+			cancelButton: t("naist.inspector.cancel")
+		}) !== c.POPUP_RESULT.AFFIRMATIVE) return;
+		if (needsMigration()) await runMigration();
+		await disableBuiltIn();
+	}
+	async enable() {
+		const c = ctx();
+		if (await c.callGenericPopup(t("naist.takeover.enableConfirm"), c.POPUP_TYPE.CONFIRM) !== c.POPUP_RESULT.AFFIRMATIVE) return;
+		await enableBuiltIn();
+	}
+};
+async function showReport(lines) {
+	const c = ctx();
+	const root = document.createElement("div");
+	root.innerHTML = `<h3 data-i18n="naist.takeover.reportTitle"></h3><ul class="naist-list naist-report"></ul>`;
+	localize(root);
+	const list = root.querySelector("ul");
+	for (const line of lines) {
+		const li = document.createElement("li");
+		li.textContent = line;
+		list?.append(li);
+	}
+	await c.callGenericPopup(root, c.POPUP_TYPE.TEXT, "", { wide: true });
+}
+//#endregion
 //#region src/ui/panel/panel.ts
 function render(template, data) {
 	const html = libs().Handlebars.compile(template)(data);
@@ -2593,11 +4843,18 @@ function fillSelect(select, options, current) {
 }
 var Panel = class {
 	controller;
+	pipeline;
+	onSettingChange;
 	root;
 	refreshTimer = null;
 	lastPrepared = null;
-	constructor(controller) {
+	promptsTab = null;
+	chatTab = null;
+	takeoverTab = null;
+	constructor(controller, pipeline, onSettingChange = () => {}) {
 		this.controller = controller;
+		this.pipeline = pipeline;
+		this.onSettingChange = onSettingChange;
 	}
 	mount(container) {
 		const html = render(panel_default, { models: MODELS });
@@ -2608,8 +4865,48 @@ var Panel = class {
 		localize(this.root);
 		this.bind();
 		this.syncFromSettings();
+		this.mountTabs();
 		this.controller.subscribe((state) => this.onState(state));
 		this.onState(this.controller.state);
+	}
+	tabPanel(name) {
+		const panel = this.root.querySelector(`[data-tabpanel="${name}"]`);
+		if (!panel) throw new Error(`NAI Studio panel: missing tab ${name}`);
+		return panel;
+	}
+	mountTabs() {
+		this.promptsTab = new PromptsTab(() => this.scheduleRefresh());
+		this.promptsTab.mount(this.tabPanel("prompts"));
+		this.chatTab = new ChatTab((path) => {
+			this.onSettingChange(path);
+			this.scheduleRefresh();
+		});
+		this.chatTab.mount(this.tabPanel("chat"));
+		this.takeoverTab = new TakeoverTab(() => this.scheduleRefresh());
+		this.takeoverTab.mount(this.tabPanel("takeover"));
+		this.root.querySelectorAll("[data-tab]").forEach((tab) => {
+			tab.addEventListener("click", () => this.showTab(tab.dataset.tab ?? "generate"));
+		});
+		$id(this.root, "naist_banner_open").addEventListener("click", () => this.showTab("takeover"));
+		$id(this.root, "naist_takeover_banner").classList.toggle("naist-hidden", !isBuiltInActive());
+		onExternalChange(() => this.refreshAll());
+		this.showTab("generate");
+	}
+	refreshAll() {
+		this.syncFromSettings();
+		this.promptsTab?.refresh();
+		this.chatTab?.refresh();
+		this.takeoverTab?.refresh();
+		this.scheduleRefresh();
+	}
+	showTab(name) {
+		this.root.querySelectorAll("[data-tabpanel]").forEach((panel) => {
+			panel.classList.toggle("naist-hidden", panel.dataset.tabpanel !== name);
+		});
+		this.root.querySelectorAll("[data-tab]").forEach((tab) => {
+			tab.classList.toggle("naist-tab-active", tab.dataset.tab === name);
+		});
+		if (name === "takeover") this.takeoverTab?.refresh();
 	}
 	syncFromSettings() {
 		const s = settings();
@@ -2788,6 +5085,7 @@ var Panel = class {
 		$id(r, "naist_refresh").addEventListener("click", () => void this.controller.refreshTransport());
 		$id(r, "naist_free_only").addEventListener("change", (e) => {
 			settings().anlas.freeOnly = e.target.checked;
+			this.chatTab?.applyGuards();
 			changed();
 		});
 		$id(r, "naist_override_enabled").addEventListener("change", (e) => {
@@ -2897,7 +5195,7 @@ var Panel = class {
 		const costEl = $id(this.root, "naist_cost");
 		const lostEl = $id(this.root, "naist_lost");
 		try {
-			const prepared = this.controller.prepare();
+			const prepared = this.pipeline.previewFree(settings().generation.prompt);
 			this.lastPrepared = prepared;
 			const parts = [];
 			if (prepared.cost.total === 0) parts.push(t("naist.cost.free"));
@@ -2970,33 +5268,26 @@ var Panel = class {
 	}
 	async inspect() {
 		try {
-			await openInspector(this.controller.prepare());
+			await openInspector(this.pipeline.previewFree(settings().generation.prompt));
 		} catch (error) {
 			this.showError(error instanceof NaiError ? error : toNaiError(error));
 		}
 	}
 	async generate() {
 		if (this.controller.state.busy) return;
-		let prepared;
-		try {
-			prepared = this.controller.prepare();
-		} catch (error) {
-			this.showError(error instanceof NaiError ? error : toNaiError(error));
+		const prompt = settings().generation.prompt;
+		if (!prompt.trim()) {
+			this.showInfo(t("naist.panel.emptyPrompt"));
 			return;
-		}
-		const c = ctx();
-		if (settings().inspector.openBeforeSend) {
-			if (!await openInspector(prepared, { confirmSend: true })) return;
-		} else if (prepared.cost.total > 0 && prepared.cost.total > settings().anlas.confirmAbove && !prepared.blockers.length) {
-			if (await c.callGenericPopup(t("naist.cost.confirm", {
-				total: prepared.cost.total,
-				balance: this.controller.state.account.anlas
-			}), c.POPUP_TYPE.CONFIRM) !== c.POPUP_RESULT.AFFIRMATIVE) return;
 		}
 		this.showInfo(t("naist.panel.generating"));
 		try {
-			const outcome = await this.controller.generate(prepared);
-			this.showInfo(outcome.chatChanged ? t("naist.result.chatChanged", { count: outcome.images }) : t("naist.result.posted", { count: outcome.images }));
+			const result = await this.pipeline.generatePicture({
+				initiator: "panel",
+				trigger: prompt,
+				mode: MODE.FREE
+			});
+			this.showInfo(result ? t("naist.result.posted", { count: 1 }) : t("naist.result.cancelled"));
 		} catch (error) {
 			const naiError = error instanceof NaiError ? error : toNaiError(error);
 			if (naiError.code === "aborted") {
@@ -3009,16 +5300,65 @@ var Panel = class {
 	}
 };
 //#endregion
+//#region src/ui/panel/pipeline-ui.ts
+async function refine(prompt, options) {
+	const c = ctx();
+	const root = document.createElement("div");
+	root.className = "naist-refine";
+	root.innerHTML = `
+        <h3 data-i18n="naist.refine.title"></h3>
+        <div class="naist-hint" data-i18n="naist.refine.hint"></div>
+        <textarea class="text_pole naist-refine-prompt" rows="8"></textarea>
+        ${options.negative !== void 0 ? "<label data-i18n=\"naist.refine.negative\"></label><textarea class=\"text_pole naist-refine-negative\" rows=\"4\"></textarea>" : ""}
+        ${options.resolution ? "<label class=\"checkbox_label\"><input type=\"checkbox\" class=\"naist-refine-resolution\" checked><span data-i18n=\"naist.refine.resolution\"></span></label>" : ""}`;
+	localize(root);
+	const promptArea = root.querySelector(".naist-refine-prompt");
+	const negativeArea = root.querySelector(".naist-refine-negative");
+	const resolution = root.querySelector(".naist-refine-resolution");
+	if (promptArea) promptArea.value = prompt.trim();
+	if (negativeArea) negativeArea.value = options.negative ?? "";
+	const resolutionLabel = resolution?.nextElementSibling;
+	if (resolutionLabel) resolutionLabel.textContent = t("naist.refine.resolution", { resolution: options.resolution ?? "" });
+	if (await c.callGenericPopup(root, c.POPUP_TYPE.CONFIRM, "", {
+		okButton: t("naist.refine.continue"),
+		cancelButton: t("naist.inspector.cancel"),
+		wide: true
+	}) !== c.POPUP_RESULT.AFFIRMATIVE || !promptArea?.value.trim()) return null;
+	return {
+		prompt: promptArea.value,
+		negative: negativeArea ? negativeArea.value.trim() : void 0,
+		useSavedResolution: resolution ? resolution.checked : false
+	};
+}
+function createPipelineUi(balance) {
+	return {
+		refine,
+		confirmCost: async (prepared) => {
+			const c = ctx();
+			return await c.callGenericPopup(t("naist.cost.confirm", {
+				total: prepared.cost.total,
+				balance: balance()
+			}), c.POPUP_TYPE.CONFIRM) === c.POPUP_RESULT.AFFIRMATIVE;
+		},
+		inspect: (prepared) => openInspector(prepared, { confirmSend: true })
+	};
+}
+//#endregion
 //#region src/index.ts
+/** SECRET_KEYS.NOVEL in public/scripts/secrets.js. */
+var NOVEL_SECRET_KEY = "api_key_novel";
 var controller = null;
-function mountPanel(studio) {
+function mountPanel(studio, pipeline) {
 	const container = document.querySelector("#extensions_settings2") ?? document.querySelector("#extensions_settings");
 	if (!container) {
 		log.error("extensions settings container not found");
 		return;
 	}
 	if (document.querySelector("#naist_panel")) return;
-	new Panel(studio).mount(container);
+	const onSettingChange = (path) => {
+		if (path.startsWith("chat.functionTool") || path.startsWith("chat.toolCooldown") || path.startsWith("prompts.templates")) syncFunctionTool(pipeline, ownsCompatSurface());
+	};
+	new Panel(studio, pipeline, onSettingChange).mount(container);
 }
 /** hooks.activate */
 async function onActivate() {
@@ -3026,12 +5366,30 @@ async function onActivate() {
 	const c = ctx();
 	setTranslator((text, key) => c.translate(text, key));
 	await loadSettings();
-	controller = new StudioController({
+	const studio = new StudioController({
 		fetch: (input, init) => fetch(input, init),
 		headers: () => requestHeaders()
 	});
-	mountPanel(controller);
-	controller.refreshTransport();
+	controller = studio;
+	const pipeline = new Pipeline(studio, createPipelineUi(() => studio.state.account.anlas));
+	mountPanel(studio, pipeline);
+	setupIntegrations(pipeline);
+	new AutoGenerator(studio, pipeline).attach();
+	studio.refreshTransport();
+	for (const name of [
+		"SECRET_WRITTEN",
+		"SECRET_DELETED",
+		"SECRET_ROTATED"
+	]) {
+		const event = c.eventTypes[name];
+		if (!event) continue;
+		c.eventSource.on(event, (key) => {
+			if (key === NOVEL_SECRET_KEY) studio.refreshTransport();
+		});
+	}
+	if (needsMigration()) c.eventSource.on(c.eventTypes.APP_READY ?? "app_ready", () => {
+		runMigration().then((report) => showReport(report)).catch((error) => log.warn("migration failed", error));
+	});
 	log.info(`${MODULE_NAME} activated`);
 }
 /** hooks.install */

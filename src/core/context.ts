@@ -25,6 +25,15 @@ export function extensionFolder(moduleUrl: string = import.meta.url): string {
     return match?.[1] ?? 'SillyTavern-NAI-Studio';
 }
 
+/**
+ * Imports a SillyTavern module by URL for the few APIs missing from getContext() (TZ rule 3 allows
+ * direct imports only then). The URL is kept opaque to the bundler.
+ */
+export async function importHost<T>(path: string): Promise<T> {
+    const url = new URL(path, window.location.origin).href;
+    return (await import(/* @vite-ignore */ url)) as T;
+}
+
 export function extensionBaseUrl(moduleUrl?: string): string {
     return `/scripts/extensions/third-party/${extensionFolder(moduleUrl)}`;
 }

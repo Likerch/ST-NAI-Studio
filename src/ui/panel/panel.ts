@@ -4,16 +4,21 @@ import { ctx, libs } from '../../core/context';
 import { NaiError, toNaiError } from '../../core/errors';
 import { localize, t } from '../../core/i18n';
 import { log } from '../../core/logger';
-import { saveSettings, settings } from '../../core/settings';
+import { onExternalChange, saveSettings, settings } from '../../core/settings';
 import type { CharacterSlotSettings, TransportMode } from '../../core/settings-schema';
-import { defaultCenter, getCapabilities, isModelId, MODELS, NOISE_SCHEDULES } from '../../domain';
+import { defaultCenter, getCapabilities, isModelId, MODE, MODELS, NOISE_SCHEDULES } from '../../domain';
 import type { ModelCapabilities } from '../../domain';
 import type { StudioController, StudioState } from '../../features/generation/controller';
+import type { Pipeline } from '../../features/generation/pipeline';
+import { isBuiltInActive } from '../../features/takeover/takeover';
 import type { Prepared } from '../../features/generation/service';
 import type { TransportFeatures } from '../../transport';
 import characterRowTemplate from '../templates/character-row.html?raw';
 import panelTemplate from '../templates/panel.html?raw';
 import { openInspector } from './inspector';
+import { ChatTab } from './tab-chat';
+import { PromptsTab } from './tab-prompts';
+import { TakeoverTab } from './tab-takeover';
 
 type FieldKey = keyof ReturnType<typeof settings>['generation'];
 
@@ -43,8 +48,15 @@ export class Panel {
     private root!: HTMLElement;
     private refreshTimer: ReturnType<typeof setTimeout> | null = null;
     private lastPrepared: Prepared | null = null;
+    private promptsTab: PromptsTab | null = null;
+    private chatTab: ChatTab | null = null;
+    private takeoverTab: TakeoverTab | null = null;
 
-    constructor(private readonly controller: StudioController) {}
+    constructor(
+        private readonly controller: StudioController,
+        private readonly pipeline: Pipeline,
+        private readonly onSettingChange: (path: string) => void = () => {},
+    ) {}
 
     mount(container: HTMLElement): void {
         const html = render(panelTemplate, { models: MODELS });
@@ -55,8 +67,53 @@ export class Panel {
         localize(this.root);
         this.bind();
         this.syncFromSettings();
+        this.mountTabs();
         this.controller.subscribe((state) => this.onState(state));
         this.onState(this.controller.state);
+    }
+
+    private tabPanel(name: string): HTMLElement {
+        const panel = this.root.querySelector<HTMLElement>(`[data-tabpanel="${name}"]`);
+        if (!panel) throw new Error(`NAI Studio panel: missing tab ${name}`);
+        return panel;
+    }
+
+    private mountTabs(): void {
+        this.promptsTab = new PromptsTab(() => this.scheduleRefresh());
+        this.promptsTab.mount(this.tabPanel('prompts'));
+        this.chatTab = new ChatTab((path) => {
+            this.onSettingChange(path);
+            this.scheduleRefresh();
+        });
+        this.chatTab.mount(this.tabPanel('chat'));
+        // Migration replaces the settings, which already triggers refreshAll() below.
+        this.takeoverTab = new TakeoverTab(() => this.scheduleRefresh());
+        this.takeoverTab.mount(this.tabPanel('takeover'));
+        this.root.querySelectorAll<HTMLElement>('[data-tab]').forEach((tab) => {
+            tab.addEventListener('click', () => this.showTab(tab.dataset.tab ?? 'generate'));
+        });
+        $id(this.root, 'naist_banner_open').addEventListener('click', () => this.showTab('takeover'));
+        $id(this.root, 'naist_takeover_banner').classList.toggle('naist-hidden', !isBuiltInActive());
+        onExternalChange(() => this.refreshAll());
+        this.showTab('generate');
+    }
+
+    private refreshAll(): void {
+        this.syncFromSettings();
+        this.promptsTab?.refresh();
+        this.chatTab?.refresh();
+        this.takeoverTab?.refresh();
+        this.scheduleRefresh();
+    }
+
+    showTab(name: string): void {
+        this.root.querySelectorAll<HTMLElement>('[data-tabpanel]').forEach((panel) => {
+            panel.classList.toggle('naist-hidden', panel.dataset.tabpanel !== name);
+        });
+        this.root.querySelectorAll<HTMLElement>('[data-tab]').forEach((tab) => {
+            tab.classList.toggle('naist-tab-active', tab.dataset.tab === name);
+        });
+        if (name === 'takeover') this.takeoverTab?.refresh();
     }
 
     // ---- settings <-> controls -------------------------------------------------------------
@@ -261,6 +318,7 @@ export class Panel {
         $id(r, 'naist_refresh').addEventListener('click', () => void this.controller.refreshTransport());
         $id<HTMLInputElement>(r, 'naist_free_only').addEventListener('change', (e) => {
             settings().anlas.freeOnly = (e.target as HTMLInputElement).checked;
+            this.chatTab?.applyGuards();
             changed();
         });
         $id<HTMLInputElement>(r, 'naist_override_enabled').addEventListener('change', (e) => {
@@ -396,7 +454,7 @@ export class Panel {
         const costEl = $id(this.root, 'naist_cost');
         const lostEl = $id(this.root, 'naist_lost');
         try {
-            const prepared = this.controller.prepare();
+            const prepared = this.pipeline.previewFree(settings().generation.prompt);
             this.lastPrepared = prepared;
             const parts: string[] = [];
             if (prepared.cost.total === 0) {
@@ -491,7 +549,7 @@ export class Panel {
 
     private async inspect(): Promise<void> {
         try {
-            await openInspector(this.controller.prepare());
+            await openInspector(this.pipeline.previewFree(settings().generation.prompt));
         } catch (error) {
             this.showError(error instanceof NaiError ? error : toNaiError(error));
         }
@@ -499,35 +557,19 @@ export class Panel {
 
     private async generate(): Promise<void> {
         if (this.controller.state.busy) return;
-        let prepared: Prepared;
-        try {
-            prepared = this.controller.prepare();
-        } catch (error) {
-            this.showError(error instanceof NaiError ? error : toNaiError(error));
+        const prompt = settings().generation.prompt;
+        if (!prompt.trim()) {
+            this.showInfo(t('naist.panel.emptyPrompt'));
             return;
-        }
-        const c = ctx();
-        if (settings().inspector.openBeforeSend) {
-            if (!(await openInspector(prepared, { confirmSend: true }))) return;
-        } else if (
-            prepared.cost.total > 0 &&
-            prepared.cost.total > settings().anlas.confirmAbove &&
-            !prepared.blockers.length
-        ) {
-            const ok = await c.callGenericPopup(
-                t('naist.cost.confirm', { total: prepared.cost.total, balance: this.controller.state.account.anlas }),
-                c.POPUP_TYPE.CONFIRM,
-            );
-            if (ok !== c.POPUP_RESULT.AFFIRMATIVE) return;
         }
         this.showInfo(t('naist.panel.generating'));
         try {
-            const outcome = await this.controller.generate(prepared);
-            this.showInfo(
-                outcome.chatChanged
-                    ? t('naist.result.chatChanged', { count: outcome.images })
-                    : t('naist.result.posted', { count: outcome.images }),
-            );
+            const result = await this.pipeline.generatePicture({
+                initiator: 'panel',
+                trigger: prompt,
+                mode: MODE.FREE,
+            });
+            this.showInfo(result ? t('naist.result.posted', { count: 1 }) : t('naist.result.cancelled'));
         } catch (error) {
             const naiError = error instanceof NaiError ? error : toNaiError(error);
             if (naiError.code === 'aborted') {

@@ -5125,7 +5125,11 @@ var AFTER_CONSONANT = [
 	"ov",
 	"ami",
 	"ah",
-	"am"
+	"am",
+	"oi",
+	"oiu",
+	"ei",
+	"eiu"
 ];
 /** Every declined form of a name, as sounds. */
 function nameForms(name) {
@@ -5135,14 +5139,36 @@ function nameForms(name) {
 	return AFTER_CONSONANT.map((e) => sound + e);
 }
 /**
+* A looser sound for names spelled after their pronunciation in the other alphabet (v0.9.7): a soft
+* "c" is "s", "ch" is "sh", a silent final "e" after a consonant goes ("Florence" and its Russian
+* spelling give "florens", "Charlotte" gives "sharlot" and the Russian spelling its case form "sharlota").
+*/
+function looseNameSound(word) {
+	return nameSound(word).replace(/ch/g, "sh").replace(/c(?=[ei])/g, "s").replace(/c/g, "k").replace(/(.)\1+/g, "$1").replace(/(?<=..[^aeiou])e$/, "");
+}
+/** Case forms of the loose sound; a final "a" may also be missing in the other spelling. */
+function looseForms(name) {
+	const sound = looseNameSound(name);
+	if (sound.length < 4) return [];
+	if (!/[aeiou]$/.test(sound)) return AFTER_CONSONANT.map((e) => sound + e);
+	const stem = sound.slice(0, -1);
+	return [
+		sound,
+		...AFTER_VOWEL.map((e) => stem + e),
+		...sound.endsWith("a") && stem.length >= 5 ? [stem] : []
+	];
+}
+/**
 * Names written in another alphabet or declined (a Latin card name in a Russian text: "Brom" in
 * the Russian "Broma", "Lyra" in "Liru"): a word whose sound is one of the name's case forms.
 * One-word names only; exact forms, so "Anna" does not catch words that merely start alike.
 */
 function soundMentionIndex(text, names) {
-	const forms = new Set(names.map((n) => n.trim()).filter((n) => n && !/\s/.test(n)).flatMap((n) => nameForms(n)));
-	if (!forms.size) return -1;
-	for (const match of text.matchAll(/[\p{L}]+/gu)) if (forms.has(nameSound(match[0]))) return match.index ?? -1;
+	const single = names.map((n) => n.trim()).filter((n) => n && !/\s/.test(n));
+	const forms = new Set(single.flatMap((n) => nameForms(n)));
+	const loose = new Set(single.flatMap((n) => looseForms(n)));
+	if (!forms.size && !loose.size) return -1;
+	for (const match of text.matchAll(/[\p{L}]+/gu)) if (forms.has(nameSound(match[0])) || loose.has(looseNameSound(match[0]))) return match.index ?? -1;
 	return -1;
 }
 /**
@@ -7338,6 +7364,170 @@ function markerInstruction(preset, custom, vars) {
 	return template.replace(/\{\{(\w+)\}\}/g, (whole, key) => values[key] ?? whole).trim();
 }
 //#endregion
+//#region src/data/species-words.json
+var species_words_default = [
+	{
+		"evidence": [
+			"elf",
+			"elv",
+			"эльф",
+			"остроух"
+		],
+		"tags": [
+			"elf",
+			"elves",
+			"dark elf",
+			"high elf",
+			"wood elf",
+			"half-elf",
+			"half elf",
+			"pointy ears"
+		]
+	},
+	{
+		"evidence": [
+			"demon",
+			"devil",
+			"демон",
+			"дьявол",
+			"бес"
+		],
+		"tags": [
+			"demon",
+			"demon girl",
+			"demon boy",
+			"devil"
+		]
+	},
+	{
+		"evidence": ["succub", "суккуб"],
+		"tags": ["succubus"]
+	},
+	{
+		"evidence": ["angel", "ангел"],
+		"tags": ["angel"]
+	},
+	{
+		"evidence": ["vampir", "вампир"],
+		"tags": ["vampire"]
+	},
+	{
+		"evidence": [
+			"orc",
+			"ork",
+			"орк"
+		],
+		"tags": ["orc"]
+	},
+	{
+		"evidence": ["goblin", "гоблин"],
+		"tags": ["goblin"]
+	},
+	{
+		"evidence": [
+			"dwar",
+			"гном",
+			"дварф"
+		],
+		"tags": ["dwarf"]
+	},
+	{
+		"evidence": [
+			"fair",
+			"фея",
+			"фей"
+		],
+		"tags": ["fairy"]
+	},
+	{
+		"evidence": [
+			"kitsune",
+			"fox",
+			"кицунэ",
+			"лис"
+		],
+		"tags": [
+			"kitsune",
+			"fox girl",
+			"fox boy"
+		]
+	},
+	{
+		"evidence": [
+			"cat",
+			"neko",
+			"кош",
+			"кот",
+			"неко",
+			"нэко"
+		],
+		"tags": [
+			"cat girl",
+			"catgirl",
+			"cat boy",
+			"nekomimi"
+		]
+	},
+	{
+		"evidence": [
+			"wolf",
+			"wolv",
+			"волк",
+			"волч"
+		],
+		"tags": ["wolf girl", "wolf boy"]
+	},
+	{
+		"evidence": ["dragon", "дракон"],
+		"tags": ["dragon girl", "dragon boy"]
+	},
+	{
+		"evidence": [
+			"slime",
+			"слайм",
+			"слиз"
+		],
+		"tags": ["slime girl"]
+	},
+	{
+		"evidence": ["lamia", "ламия"],
+		"tags": ["lamia"]
+	},
+	{
+		"evidence": [
+			"mermaid",
+			"merman",
+			"русал"
+		],
+		"tags": ["mermaid", "merman"]
+	},
+	{
+		"evidence": [
+			"android",
+			"robot",
+			"cyborg",
+			"андроид",
+			"робот",
+			"киборг"
+		],
+		"tags": [
+			"android",
+			"robot",
+			"cyborg",
+			"robot girl"
+		]
+	},
+	{
+		"evidence": [
+			"ghost",
+			"spirit",
+			"призрак",
+			"дух"
+		],
+		"tags": ["ghost", "ghost girl"]
+	}
+];
+//#endregion
 //#region src/domain/passport-gen.ts
 var LIMITS = {
 	description: 6e3,
@@ -7362,19 +7552,19 @@ var SYSTEM_CARD = [
 	"- kind \"location\": a recurring named place, how it looks, in \"tags\".",
 	"- kind \"scenario\": only when the card is a scenario or a narrator rather than one character; the visual tags of the situation in \"tags\".",
 	"- kind \"object\": an important item or vehicle, how it looks, in \"tags\".",
-	"Rules: English Danbooru tags, lowercase, comma separated, spaces instead of underscores. Only what the text says or clearly implies, never invent; leave a field empty when unknown. Keep names as written in the card. No quality, art style or colour palette tags (pastel colors, vibrant colors, muted colors, monochrome). clothing is ONE default outfit (what they wear most): one item per body part, one colour per item, never alternatives (\"blue or grey coat\"); every other outfit of the text goes to \"outfits\"."
+	"Rules: English Danbooru tags, lowercase, comma separated, spaces instead of underscores. Only what the text says or clearly implies, never invent (a species or race only when the text names it, never from a name, a title or the setting); leave a field empty when unknown. Keep names as written in the card. No quality, art style or colour palette tags (pastel colors, vibrant colors, muted colors, monochrome). clothing is ONE default outfit (what they wear most): one item per body part, one colour per item, never alternatives (\"blue or grey coat\"); every other outfit of the text goes to \"outfits\"."
 ].join("\n");
 var SYSTEM_PERSONA = [
 	"You read the description of the player's persona in a roleplay and write one visual passport for an image generator (NovelAI, Danbooru tags).",
 	"Answer only with JSON: {\"passports\": [ one entry of kind \"character\" ]} with the fields name, aliases, base (count tag and what they are: \"1girl, adult\", \"1boy, elf\"), hair, eyes, body, skin, clothing, accessories, outfits ({\"name\",\"tags\"}), nsfw (explicit body details only if given), negative.",
-	"Rules: English Danbooru tags, lowercase, comma separated, spaces instead of underscores. Only what the text says or clearly implies, never invent; leave a field empty when unknown. No quality, art style or colour palette tags (pastel colors, vibrant colors, muted colors, monochrome). clothing is ONE default outfit (what they wear most): one item per body part, one colour per item, never alternatives (\"blue or grey coat\"); every other outfit of the text goes to \"outfits\"."
+	"Rules: English Danbooru tags, lowercase, comma separated, spaces instead of underscores. Only what the text says or clearly implies, never invent (a species or race only when the text names it, never from a name, a title or the setting); leave a field empty when unknown. No quality, art style or colour palette tags (pastel colors, vibrant colors, muted colors, monochrome). clothing is ONE default outfit (what they wear most): one item per body part, one colour per item, never alternatives (\"blue or grey coat\"); every other outfit of the text goes to \"outfits\"."
 ].join("\n");
 var SYSTEM_NPC = [
 	"You read how a roleplay scene tracker describes a character right now, and the story card they come from, and write one visual passport for an image generator (NovelAI, Danbooru tags).",
 	"Answer only with JSON: {\"passports\": [ one entry of kind \"character\" ]} with the fields name, aliases, base (count tag and what they are: \"1girl, elf, adult\", \"1boy, orc\"), hair, eyes, body, skin, clothing (what they wear in the tracker), accessories, outfits, nsfw (explicit body details only if given), negative.",
 	"Permanent features (species, body, face, hair, eyes, skin) go to their fields; temporary states (wet, wounded, blushing) are left out.",
 	"The story card describes the world and other characters: take from it only what it says about this character by name, never the traits of anyone else (race, hair, clothes).",
-	"Rules: English Danbooru tags, lowercase, comma separated, spaces instead of underscores. Only what the texts say or clearly imply about this character, never invent; leave a field empty when unknown. No quality, art style or colour palette tags (pastel colors, vibrant colors, muted colors, monochrome). clothing is ONE default outfit (what they wear most): one item per body part, one colour per item, never alternatives (\"blue or grey coat\"); every other outfit of the text goes to \"outfits\"."
+	"Rules: English Danbooru tags, lowercase, comma separated, spaces instead of underscores. Only what the texts say or clearly imply about this character, never invent (a species or race only when the text names it, never from a name, a title or the setting); leave a field empty when unknown. No quality, art style or colour palette tags (pastel colors, vibrant colors, muted colors, monochrome). clothing is ONE default outfit (what they wear most): one item per body part, one colour per item, never alternatives (\"blue or grey coat\"); every other outfit of the text goes to \"outfits\"."
 ].join("\n");
 var str$1 = { type: "string" };
 var PASSPORT_GEN_SCHEMA = {
@@ -7501,6 +7691,25 @@ function parseGeneratedPassports(raw, fallbackName = "") {
 /** Sentences of a text that name a character (any spelling the name matcher accepts), joined. */
 function sentencesNaming(text, names) {
 	return text.split(/(?<=[.!?…])\s+|\n+/).filter((sentence) => sentence.trim() && mentionIndex(sentence, names) >= 0).join(" ").trim();
+}
+var escapeRe = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+/**
+* Species tags the source text never mentions (v0.9.7): a language model sometimes makes a noble
+* of a fantasy-sounding country an elf. Tags of a species stay when the text names it anywhere.
+*/
+function withoutUnstatedSpecies(passports, sourceText) {
+	const unstated = /* @__PURE__ */ new Set();
+	for (const entry of species_words_default) if (!new RegExp(`(^|[^\\p{L}])(${entry.evidence.map(escapeRe).join("|")})`, "iu").test(sourceText)) for (const tag of entry.tags) unstated.add(tag);
+	const keep = (text) => splitTags(text).filter((tag) => !unstated.has(tag.toLowerCase())).join(", ");
+	for (const passport of passports) {
+		if (passport.kind !== "character") continue;
+		for (const slot of PASSPORT_SLOTS) passport.slots[slot] = keep(passport.slots[slot]);
+		passport.outfits = passport.outfits.map((o) => ({
+			...o,
+			tags: keep(o.tags)
+		}));
+	}
+	return passports;
 }
 var des_words_default = {
 	time: {
@@ -12610,7 +12819,7 @@ async function ask(source, target) {
 		schema: PASSPORT_GEN_SCHEMA,
 		maxTokens: target === "card" ? 3500 : 1200
 	});
-	const passports = parseGeneratedPassports(answer, source.name);
+	const passports = withoutUnstatedSpecies(parseGeneratedPassports(answer, source.name), user);
 	if (!passports.length) {
 		log.warn("passport generation: no usable passports in", answer.slice(0, 300));
 		throw new NaiError("translation-failed", "none", { message: "the answer had no usable passports" });
@@ -16527,7 +16736,7 @@ var ComicService = class {
 };
 //#endregion
 //#region package.json
-var version = "0.9.6";
+var version = "0.9.7";
 //#endregion
 //#region src/features/settings-io/settings-io.ts
 async function exportSettingsFile(includeImages) {

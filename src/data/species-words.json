@@ -1,0 +1,26 @@
+[
+  {
+    "evidence": ["elf", "elv", "эльф", "остроух"],
+    "tags": ["elf", "elves", "dark elf", "high elf", "wood elf", "half-elf", "half elf", "pointy ears"]
+  },
+  { "evidence": ["demon", "devil", "демон", "дьявол", "бес"], "tags": ["demon", "demon girl", "demon boy", "devil"] },
+  { "evidence": ["succub", "суккуб"], "tags": ["succubus"] },
+  { "evidence": ["angel", "ангел"], "tags": ["angel"] },
+  { "evidence": ["vampir", "вампир"], "tags": ["vampire"] },
+  { "evidence": ["orc", "ork", "орк"], "tags": ["orc"] },
+  { "evidence": ["goblin", "гоблин"], "tags": ["goblin"] },
+  { "evidence": ["dwar", "гном", "дварф"], "tags": ["dwarf"] },
+  { "evidence": ["fair", "фея", "фей"], "tags": ["fairy"] },
+  { "evidence": ["kitsune", "fox", "кицунэ", "лис"], "tags": ["kitsune", "fox girl", "fox boy"] },
+  { "evidence": ["cat", "neko", "кош", "кот", "неко", "нэко"], "tags": ["cat girl", "catgirl", "cat boy", "nekomimi"] },
+  { "evidence": ["wolf", "wolv", "волк", "волч"], "tags": ["wolf girl", "wolf boy"] },
+  { "evidence": ["dragon", "дракон"], "tags": ["dragon girl", "dragon boy"] },
+  { "evidence": ["slime", "слайм", "слиз"], "tags": ["slime girl"] },
+  { "evidence": ["lamia", "ламия"], "tags": ["lamia"] },
+  { "evidence": ["mermaid", "merman", "русал"], "tags": ["mermaid", "merman"] },
+  {
+    "evidence": ["android", "robot", "cyborg", "андроид", "робот", "киборг"],
+    "tags": ["android", "robot", "cyborg", "robot girl"]
+  },
+  { "evidence": ["ghost", "spirit", "призрак", "дух"], "tags": ["ghost", "ghost girl"] }
+]

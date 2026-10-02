@@ -8,6 +8,7 @@ import {
     parseGeneratedPassports,
     passportGenMessages,
     sceneFromInfoBox,
+    withoutUnstatedSpecies,
 } from '../../src/domain';
 import type { SceneParticipant, SceneSpec } from '../../src/domain';
 
@@ -112,5 +113,31 @@ describe('generated passports', () => {
         expect(passport?.slots.accessories).toBe('silver ring');
         expect(passport?.outfits[0]?.tags).toBe('linen shirt, loose trousers');
         expect(passport?.activeOutfit).toBe('everyday');
+    });
+});
+
+describe('species of generated passports (v0.9.7)', () => {
+    const passport = (base: string) => {
+        const p = defaultPassport('character', 'Florence Claymore');
+        p.slots.base = base;
+        p.slots.body = 'slim, pointy ears';
+        return p;
+    };
+
+    it('drops a species the text never names', () => {
+        const [p] = withoutUnstatedSpecies(
+            [passport('1girl, adult, noblewoman, elf')],
+            'A regency era nation called Flora. Florence is fond of charity work.',
+        );
+        expect(p?.slots.base).toBe('1girl, adult, noblewoman');
+        expect(p?.slots.body).toBe('slim');
+    });
+
+    it('keeps it when the text names it, in English or Russian, but not inside another word', () => {
+        expect(withoutUnstatedSpecies([passport('1girl, elf')], 'She is an elven archer.')[0]?.slots.base).toBe(
+            '1girl, elf',
+        );
+        expect(withoutUnstatedSpecies([passport('1girl, elf')], 'Она эльфийка.')[0]?.slots.base).toBe('1girl, elf');
+        expect(withoutUnstatedSpecies([passport('1girl, elf')], 'She keeps to herself.')[0]?.slots.base).toBe('1girl');
     });
 });

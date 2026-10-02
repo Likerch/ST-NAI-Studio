@@ -4,7 +4,13 @@
 import { ctx } from '../../core/context';
 import { NaiError } from '../../core/errors';
 import { log } from '../../core/logger';
-import { PASSPORT_GEN_SCHEMA, parseGeneratedPassports, passportGenMessages, sentencesNaming } from '../../domain';
+import {
+    PASSPORT_GEN_SCHEMA,
+    parseGeneratedPassports,
+    passportGenMessages,
+    sentencesNaming,
+    withoutUnstatedSpecies,
+} from '../../domain';
 import type { Passport, PassportSource, PassportTarget } from '../../domain';
 import { askLlm } from '../language/llm';
 import { loadCharacter } from './passport-store';
@@ -20,7 +26,7 @@ async function ask(source: PassportSource, target: PassportTarget): Promise<Pass
         schema: PASSPORT_GEN_SCHEMA,
         maxTokens: target === 'card' ? 3500 : 1200,
     });
-    const passports = parseGeneratedPassports(answer, source.name);
+    const passports = withoutUnstatedSpecies(parseGeneratedPassports(answer, source.name), user);
     if (!passports.length) {
         log.warn('passport generation: no usable passports in', answer.slice(0, 300));
         throw new NaiError('translation-failed', 'none', { message: 'the answer had no usable passports' });

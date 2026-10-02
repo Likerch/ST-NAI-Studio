@@ -140,7 +140,7 @@ export function nameSound(word: string): string {
 
 /** Russian case endings after a final vowel (Lira, Liry, Lire, Liru, Liroi) or a consonant (Brom, Broma, Bromom). */
 const AFTER_VOWEL = ['a', 'i', 'e', 'u', 'o', 'oi', 'oiu', 'ei', 'eiu'];
-const AFTER_CONSONANT = ['', 'a', 'u', 'e', 'i', 'om', 'em', 'ov', 'ami', 'ah', 'am'];
+const AFTER_CONSONANT = ['', 'a', 'u', 'e', 'i', 'om', 'em', 'ov', 'ami', 'ah', 'am', 'oi', 'oiu', 'ei', 'eiu'];
 
 /** Every declined form of a name, as sounds. */
 function nameForms(name: string): string[] {
@@ -151,20 +151,40 @@ function nameForms(name: string): string[] {
 }
 
 /**
+ * A looser sound for names spelled after their pronunciation in the other alphabet (v0.9.7): a soft
+ * "c" is "s", "ch" is "sh", a silent final "e" after a consonant goes ("Florence" and its Russian
+ * spelling give "florens", "Charlotte" gives "sharlot" and the Russian spelling its case form "sharlota").
+ */
+export function looseNameSound(word: string): string {
+    return nameSound(word)
+        .replace(/ch/g, 'sh')
+        .replace(/c(?=[ei])/g, 's')
+        .replace(/c/g, 'k')
+        .replace(/(.)\1+/g, '$1')
+        .replace(/(?<=..[^aeiou])e$/, '');
+}
+
+/** Case forms of the loose sound; a final "a" may also be missing in the other spelling. */
+function looseForms(name: string): string[] {
+    const sound = looseNameSound(name);
+    if (sound.length < 4) return [];
+    if (!/[aeiou]$/.test(sound)) return AFTER_CONSONANT.map((e) => sound + e);
+    const stem = sound.slice(0, -1);
+    return [sound, ...AFTER_VOWEL.map((e) => stem + e), ...(sound.endsWith('a') && stem.length >= 5 ? [stem] : [])];
+}
+
+/**
  * Names written in another alphabet or declined (a Latin card name in a Russian text: "Brom" in
  * the Russian "Broma", "Lyra" in "Liru"): a word whose sound is one of the name's case forms.
  * One-word names only; exact forms, so "Anna" does not catch words that merely start alike.
  */
 function soundMentionIndex(text: string, names: readonly string[]): number {
-    const forms = new Set(
-        names
-            .map((n) => n.trim())
-            .filter((n) => n && !/\s/.test(n))
-            .flatMap((n) => nameForms(n)),
-    );
-    if (!forms.size) return -1;
+    const single = names.map((n) => n.trim()).filter((n) => n && !/\s/.test(n));
+    const forms = new Set(single.flatMap((n) => nameForms(n)));
+    const loose = new Set(single.flatMap((n) => looseForms(n)));
+    if (!forms.size && !loose.size) return -1;
     for (const match of text.matchAll(/[\p{L}]+/gu)) {
-        if (forms.has(nameSound(match[0]))) return match.index ?? -1;
+        if (forms.has(nameSound(match[0])) || loose.has(looseNameSound(match[0]))) return match.index ?? -1;
     }
     return -1;
 }

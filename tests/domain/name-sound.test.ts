@@ -1,7 +1,7 @@
 // Names across alphabets and Russian cases (v0.8): a Latin card name is found in a Russian text,
 // declined forms count, words that only start alike do not.
 import { describe, expect, it } from 'vitest';
-import { mentionIndex, nameSound } from '../../src/domain';
+import { looseNameSound, mentionIndex, nameSound } from '../../src/domain';
 
 describe('name sounds', () => {
     it('gives Latin and Cyrillic spellings the same sound', () => {
@@ -26,5 +26,25 @@ describe('name sounds', () => {
         expect(mentionIndex('Боб и Стоун', ['Bob Stone'])).toBe(-1);
         expect(mentionIndex('Ли', ['Li'])).toBe(-1);
         expect(mentionIndex('Li', ['Li'])).toBe(0);
+    });
+});
+
+describe('names spelled after their pronunciation (v0.9.7)', () => {
+    it('matches Florence and Charlotte with their Russian spellings, both ways and declined', () => {
+        expect(looseNameSound('Florence')).toBe('florens');
+        expect(looseNameSound('Флоренс')).toBe('florens');
+        expect(mentionIndex('Флоренс', ['Florence'])).toBe(0);
+        expect(mentionIndex('Florence smiles', ['Флоренс'])).toBe(0);
+        expect(mentionIndex('Шарлотта', ['Charlotte'])).toBe(0);
+        expect(mentionIndex('Charlotte waves', ['Шарлотта'])).toBe(0);
+        expect(mentionIndex('рядом с Шарлоттой', ['Charlotte'])).toBe(8);
+        expect(mentionIndex('письмо Шарлотте', ['Charlotte'])).toBe(7);
+    });
+
+    it('does not join different names or short words', () => {
+        expect(mentionIndex('Флора', ['Florence'])).toBe(-1);
+        expect(mentionIndex('Charles', ['Charlotte'])).toBe(-1);
+        expect(mentionIndex('an apple', ['Anna'])).toBe(-1);
+        expect(mentionIndex('anal play', ['Anna'])).toBe(-1);
     });
 });

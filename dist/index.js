@@ -11755,6 +11755,9 @@ var InlineRenderer = class {
 		chat.addEventListener("dragover", (event) => this.onDragOver(event));
 		chat.addEventListener("drop", (event) => void this.onDrop(event));
 		chat.addEventListener("dragend", () => this.clearDropMarks());
+		chat.addEventListener("error", (event) => {
+			if (event.target instanceof HTMLImageElement) this.recover(event.target);
+		}, true);
 		this.service.onChange((messageId) => this.refreshMessage(messageId));
 		this.applyVisibility();
 		this.renderAll();
@@ -11773,10 +11776,39 @@ var InlineRenderer = class {
 		document.querySelectorAll("#chat .mes").forEach((m) => this.pending.add(m));
 		this.schedule();
 	}
-	/** Drops cached object URLs (new chat). */
+	/**
+	* Drops cached object URLs no picture on the page shows (new chat). SillyTavern renders the chat
+	* before CHAT_CHANGED, so the pictures of the new chat may already use some of them.
+	*/
 	reset() {
-		for (const url of this.urls.values()) URL.revokeObjectURL(url);
-		this.urls.clear();
+		const used = new Set([...document.querySelectorAll("img[src^=\"blob:\"]")].map((img) => img.getAttribute("src")));
+		for (const [key, url] of [...this.urls]) {
+			if (used.has(url)) continue;
+			URL.revokeObjectURL(url);
+			this.urls.delete(key);
+		}
+	}
+	/**
+	* A picture whose source stopped working (a copy another extension made of a message after its
+	* object URL was revoked) gets a fresh one, once; a second failure marks it missing.
+	*/
+	recover(img) {
+		const key = img.dataset.naistKey ?? "";
+		const path = img.dataset.naistPath ?? "";
+		if (!key && !path) return;
+		if (img.dataset.naistRecovered) {
+			img.closest(".naist-inline")?.classList.add("naist-inline-missing");
+			return;
+		}
+		img.dataset.naistRecovered = "1";
+		img.addEventListener("load", () => delete img.dataset.naistRecovered, { once: true });
+		const failed = img.getAttribute("src") ?? "";
+		if (key && this.urls.get(key) === failed) this.urls.delete(key);
+		this.resolveUrl(key, path).then((url) => {
+			const next = url && url !== failed ? url : path ? encodeURI(path) : "";
+			if (next && next !== failed) img.src = next;
+			else img.closest(".naist-inline")?.classList.add("naist-inline-missing");
+		});
 	}
 	refreshMessage(messageId) {
 		const mes = document.querySelector(`#chat .mes[mesid="${messageId}"]`);
@@ -16495,7 +16527,7 @@ var ComicService = class {
 };
 //#endregion
 //#region package.json
-var version = "0.9.5";
+var version = "0.9.6";
 //#endregion
 //#region src/features/settings-io/settings-io.ts
 async function exportSettingsFile(includeImages) {

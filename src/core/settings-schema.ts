@@ -37,7 +37,7 @@ export interface CustomPoseSettings {
     name: string;
 }
 
-export const CURRENT_SCHEMA_VERSION = 6;
+export const CURRENT_SCHEMA_VERSION = 7;
 
 export type TransportMode = 'auto' | 'plugin' | 'native';
 
@@ -181,6 +181,43 @@ export interface NaiStudioSettings {
         variationNoise: number;
         /** Mode used by the insert dialog by default (free prompt or a trigger word). */
         insertMode: string;
+        /** Show placeholders to display regexes as <img> (HTML widgets that embed an <img> keep working). */
+        regexCompat: boolean;
+    };
+    /** Image markers the chat model writes in its reply (TZ Phase 7). */
+    markers: {
+        enabled: boolean;
+        /** Add the instruction about markers to normal replies. */
+        inject: boolean;
+        preset: 'natural' | 'tags' | 'custom';
+        /** Instruction text of the custom preset. */
+        template: string;
+        depth: number;
+        role: 'system' | 'user' | 'assistant';
+        min: number;
+        max: number;
+        /** Start generating as soon as a marker is complete, while the reply is still streaming. */
+        earlyStart: boolean;
+        /** Language of image captions, written into the instruction. */
+        captionLanguage: string;
+        /** Accept older marker formats (microservice URL, sillyimages, Auto Illustrator). */
+        legacy: boolean;
+        /** Fewer markers than the minimum: illustrate the reply automatically. */
+        autoFill: boolean;
+        /** Paid marker images are allowed up to maxCost each (free-only mode still wins). */
+        allowPaid: boolean;
+        maxCost: number;
+    };
+    /** Human language (Russian / English prose) to NovelAI prompts (TZ Phase 7). */
+    language: {
+        mode: 'auto' | 'always' | 'off';
+        backend: 'main' | 'profile' | 'novelai';
+        /** Connection profile for the "profile" backend. */
+        profileId: string;
+        /** NovelAI text model for the "novelai" backend. */
+        novelaiModel: 'glm-4-6' | 'xialong-v1';
+        /** Send Russian to V5 as is (experimental: V5 officially supports English and Japanese). */
+        russianOnV5: boolean;
     };
     gallery: {
         /** Record every generation in the gallery (thumbnail + parameters). */
@@ -359,7 +396,25 @@ export function defaultSettings(): NaiStudioSettings {
             variationStrength: 0.5,
             variationNoise: 0.1,
             insertMode: 'free',
+            regexCompat: true,
         },
+        markers: {
+            enabled: false,
+            inject: true,
+            preset: 'natural',
+            template: '',
+            depth: 1,
+            role: 'system',
+            min: 1,
+            max: 3,
+            earlyStart: true,
+            captionLanguage: 'Russian',
+            legacy: true,
+            autoFill: false,
+            allowPaid: false,
+            maxCost: 5,
+        },
+        language: { mode: 'auto', backend: 'main', profileId: '', novelaiModel: 'glm-4-6', russianOnV5: false },
         gallery: { enabled: true, thumbSize: 256 },
         png: { stripMetadata: false },
         poses: { custom: [], favorites: [] },
@@ -467,6 +522,17 @@ export const MIGRATIONS: readonly Migration[] = [
         to: 6,
         migrate(settings) {
             return { ...settings, schemaVersion: 6 };
+        },
+    },
+    {
+        // v7: image markers and human language; "translate automatically" becomes the language mode.
+        to: 7,
+        migrate(settings) {
+            const translate = isObject(settings.translate) ? settings.translate : {};
+            const language = isObject(settings.language) ? settings.language : {};
+            const next: Raw = { ...settings, schemaVersion: 7 };
+            if (translate.auto === true && language.mode === undefined) next.language = { ...language, mode: 'auto' };
+            return next;
         },
     },
 ];

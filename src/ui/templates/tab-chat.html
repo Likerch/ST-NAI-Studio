@@ -128,3 +128,120 @@
         ></span
     ></label>
 </div>
+
+<div class="naist-section" id="naist_markers_section">
+    <b data-i18n="naist.markers.title"></b>
+    <div class="naist-hint" data-i18n="naist.markers.hint"></div>
+    <label class="checkbox_label"
+        ><input type="checkbox" data-setting="markers.enabled" /><span data-i18n="naist.markers.enabled"></span
+    ></label>
+    <div class="naist-markers-options">
+        <label class="checkbox_label"
+            ><input type="checkbox" data-setting="markers.inject" /><span data-i18n="naist.markers.inject"></span
+        ></label>
+        <div class="naist-grid2">
+            <div>
+                <label for="naist_markers_preset" data-i18n="naist.markers.preset"></label>
+                <select id="naist_markers_preset" class="text_pole" data-setting="markers.preset">
+                    <option value="natural" data-i18n="naist.markers.presetNatural"></option>
+                    <option value="tags" data-i18n="naist.markers.presetTags"></option>
+                    <option value="custom" data-i18n="naist.markers.presetCustom"></option>
+                </select>
+            </div>
+            <div>
+                <label for="naist_markers_caption_lang" data-i18n="naist.markers.captionLanguage"></label>
+                <input id="naist_markers_caption_lang" class="text_pole" data-setting="markers.captionLanguage" />
+            </div>
+        </div>
+        <div id="naist_markers_custom" class="naist-hidden">
+            <label for="naist_markers_template" data-i18n="naist.markers.template"></label>
+            <textarea
+                id="naist_markers_template"
+                class="text_pole textarea_compact"
+                rows="8"
+                data-setting="markers.template"
+            ></textarea>
+            <div class="naist-hint" data-i18n="naist.markers.templateHint"></div>
+            <div
+                id="naist_markers_template_default"
+                class="menu_button"
+                data-i18n="naist.markers.templateDefault"
+            ></div>
+        </div>
+        <div class="naist-grid2">
+            <div>
+                <label for="naist_markers_min" data-i18n="naist.markers.min"></label>
+                <input
+                    id="naist_markers_min"
+                    type="number"
+                    min="0"
+                    max="10"
+                    class="text_pole"
+                    data-setting="markers.min"
+                />
+            </div>
+            <div>
+                <label for="naist_markers_max" data-i18n="naist.markers.max"></label>
+                <input
+                    id="naist_markers_max"
+                    type="number"
+                    min="0"
+                    max="10"
+                    class="text_pole"
+                    data-setting="markers.max"
+                />
+            </div>
+            <div>
+                <label for="naist_markers_depth" data-i18n="naist.markers.depth"></label>
+                <input
+                    id="naist_markers_depth"
+                    type="number"
+                    min="0"
+                    max="100"
+                    class="text_pole"
+                    data-setting="markers.depth"
+                />
+            </div>
+            <div>
+                <label for="naist_markers_role" data-i18n="naist.markers.role"></label>
+                <select id="naist_markers_role" class="text_pole" data-setting="markers.role">
+                    <option value="system" data-i18n="naist.markers.roleSystem"></option>
+                    <option value="user" data-i18n="naist.markers.roleUser"></option>
+                    <option value="assistant" data-i18n="naist.markers.roleAssistant"></option>
+                </select>
+            </div>
+        </div>
+        <label class="checkbox_label"
+            ><input type="checkbox" data-setting="markers.earlyStart" /><span
+                data-i18n="naist.markers.earlyStart"
+            ></span
+        ></label>
+        <label class="checkbox_label"
+            ><input type="checkbox" data-setting="markers.autoFill" /><span data-i18n="naist.markers.autoFill"></span
+        ></label>
+        <label class="checkbox_label"
+            ><input type="checkbox" data-setting="markers.legacy" /><span data-i18n="naist.markers.legacy"></span
+        ></label>
+        <label class="checkbox_label"
+            ><input type="checkbox" data-setting="inline.regexCompat" /><span
+                data-i18n="naist.markers.regexCompat"
+            ></span
+        ></label>
+        <div class="naist-row">
+            <label class="checkbox_label"
+                ><input id="naist_markers_allow_paid" type="checkbox" data-setting="markers.allowPaid" /><span
+                    data-i18n="naist.markers.allowPaid"
+                ></span
+            ></label>
+            <input
+                id="naist_markers_max_cost"
+                type="number"
+                min="0"
+                class="text_pole naist-narrow"
+                data-setting="markers.maxCost"
+                data-i18n="[title]naist.markers.maxCost"
+            />
+        </div>
+        <div id="naist_markers_preview" class="menu_button" data-i18n="naist.markers.preview"></div>
+    </div>
+</div>

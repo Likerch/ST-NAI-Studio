@@ -1,11 +1,45 @@
 // Minimal NovelAI image client for the plugin: generation (JSON response, no ZIP), streaming,
 // vibe encoding, Director Tools (ZIP passed to the browser as base64; the browser unzips it with
-// SillyTavern's JSZip, RECON P-4), upscale and subscription.
+// SillyTavern's JSZip, RECON P-4), upscale and subscription; chat completions of NovelAI's text
+// models (GLM-4.6, Xialong) for the human-language prompt converter (TZ Phase 7).
 // Retries: 429 always (request was not processed); 5xx only when the caller marked it retryable
 // (free request), so a paid request is never sent twice.
 import { abortError } from './queue.js';
 
 export const DEFAULT_BASE_URL = 'https://image.novelai.net';
+export const DEFAULT_TEXT_URL = 'https://text.novelai.net';
+export const TEXT_MODELS = ['glm-4-6', 'xialong-v1'];
+
+/**
+ * Text of an OpenAI-style chat completion answer: a server-sent event stream of deltas (NovelAI
+ * streams even when asked not to) or one JSON body. Reasoning deltas are not part of the answer.
+ */
+export function chatCompletionText(raw) {
+    const text = String(raw ?? '').trim();
+    if (text.startsWith('{')) {
+        try {
+            const body = JSON.parse(text);
+            return String(body?.choices?.[0]?.message?.content ?? body?.choices?.[0]?.text ?? '');
+        } catch {
+            // fall through to the event stream reader
+        }
+    }
+    let out = '';
+    for (const line of text.split(/\r?\n/)) {
+        const trimmed = line.trim();
+        if (!trimmed.startsWith('data:')) continue;
+        const data = trimmed.slice(5).trim();
+        if (!data || data === '[DONE]') continue;
+        try {
+            const chunk = JSON.parse(data);
+            const choice = chunk?.choices?.[0];
+            out += String(choice?.delta?.content ?? choice?.text ?? choice?.message?.content ?? '');
+        } catch {
+            // a broken chunk is skipped
+        }
+    }
+    return out;
+}
 const CORRELATION_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz123456789';
 
 export function correlationId() {
@@ -61,6 +95,7 @@ function detectMime(base64) {
  * @param {object} options
  * @param {typeof fetch} options.fetch
  * @param {string} [options.baseUrl]
+ * @param {string} [options.textUrl]
  * @param {number} [options.timeoutMs]
  * @param {number} [options.maxRetries]
  * @param {number} [options.backoffMs]
@@ -68,17 +103,18 @@ function detectMime(base64) {
 export function createNovelAiClient({
     fetch,
     baseUrl = DEFAULT_BASE_URL,
+    textUrl = DEFAULT_TEXT_URL,
     timeoutMs = 120000,
     maxRetries = 3,
     backoffMs = 1000,
 }) {
-    async function once(path, init, token, signal) {
+    async function once(path, init, token, signal, base = baseUrl) {
         const controller = new AbortController();
         const onAbort = () => controller.abort();
         signal?.addEventListener('abort', onAbort, { once: true });
         const timer = setTimeout(() => controller.abort(new Error('timeout')), timeoutMs);
         try {
-            const response = await fetch(`${baseUrl}${path}`, {
+            const response = await fetch(`${base}${path}`, {
                 ...init,
                 headers: { Authorization: `Bearer ${token}`, ...init.headers },
                 signal: controller.signal,
@@ -292,6 +328,39 @@ export function createNovelAiClient({
                 throw error;
             } finally {
                 signal?.removeEventListener('abort', onAbort);
+            }
+        },
+
+        /**
+         * NovelAI text model answer (subscription, no Anlas). 429 is retried like image requests.
+         * @param {{token: string, model: string, messages: {role: string, content: string}[], maxTokens: number, signal?: AbortSignal}} args
+         */
+        async chat({ token, model, messages, maxTokens, signal }) {
+            for (let attempt = 0; ; attempt++) {
+                const response = await once(
+                    '/oa/v1/chat/completions',
+                    {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', Accept: 'text/event-stream, application/json' },
+                        body: JSON.stringify({
+                            model,
+                            messages,
+                            max_tokens: maxTokens,
+                            temperature: 0.3,
+                            stream: true,
+                        }),
+                    },
+                    token,
+                    signal,
+                    textUrl,
+                );
+                if (response.ok) return chatCompletionText(await response.text());
+                if (response.status === 429 && attempt < maxRetries) {
+                    await response.text().catch(() => '');
+                    await sleep(backoffMs * 2 ** attempt, signal);
+                    continue;
+                }
+                throw await failure(response, token);
             }
         },
 

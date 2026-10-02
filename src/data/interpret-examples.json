@@ -1,0 +1,23 @@
+[
+  {
+    "description": "рыжая девушка читает книгу у окна, на улице дождь, без очков",
+    "tags": "1girl, solo, red hair, reading, holding book, window, rain, indoors",
+    "sentence": "A red-haired girl reads a book by a rainy window.",
+    "text": "",
+    "negative": "glasses"
+  },
+  {
+    "description": "Two knights cross swords on a bridge at sunset, view from below",
+    "tags": "2boys, knight, armor, sword, fighting, bridge, sunset, from below",
+    "sentence": "Two armored knights clash with their swords on a stone bridge at sunset.",
+    "text": "",
+    "negative": ""
+  },
+  {
+    "description": "вывеска кафе с надписью «Открыто», вечер, неоновый свет",
+    "tags": "no humans, cafe, storefront, sign, evening, neon lights, text, english text",
+    "sentence": "A cafe storefront glows with neon light in the evening.",
+    "text": "OPEN",
+    "negative": ""
+  }
+]

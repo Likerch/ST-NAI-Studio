@@ -891,16 +891,9 @@ var EN = {
 	"naist.error.translation-failed.text": "The LLM did not return a usable English prompt: {message}",
 	"naist.error.import-failed.title": "Import failed",
 	"naist.error.import-failed.text": "{reason}",
-	"naist.translate.title": "RU → EN translation",
-	"naist.translate.hint": "NovelAI reads English tags. Russian prompts are translated by your current LLM; on Chat Completion with structured output. Results are cached, the original stays in the image metadata.",
-	"naist.translate.auto": "Translate Russian prompts before every generation",
 	"naist.translate.glossary": "Glossary",
 	"naist.translate.glossaryPlaceholder": "one per line: russian = english",
 	"naist.translate.glossaryHint": "Glossary terms are replaced before the LLM sees the text and are always translated the same way.",
-	"naist.translate.button": "RU → EN",
-	"naist.translate.buttonHint": "Translate this field to English tags",
-	"naist.translate.done": "Translated.",
-	"naist.translate.cached": "Translated (from the cache).",
 	"naist.tags.title": "Prompt helpers",
 	"naist.tags.autocomplete": "Tag suggestions while typing",
 	"naist.tags.remote": "Also ask NovelAI's tag suggestions (plugin)",
@@ -992,7 +985,72 @@ var EN = {
 	"naist.io.reason.not-json": "The file is not JSON.",
 	"naist.io.reason.wrong-format": "This is not a NAI Studio settings file.",
 	"naist.io.reason.newer-schema": "The file is from a newer NAI Studio (schema {version}, this one knows {current}). Update the extension first.",
-	"naist.io.reason.invalid": "The file is damaged: no settings or schema version."
+	"naist.io.reason.invalid": "The file is damaged: no settings or schema version.",
+	"naist.interpret.title": "Human language → prompt",
+	"naist.interpret.button": "→ Prompt",
+	"naist.interpret.buttonHint": "Turn this description (Russian or English) into tags for the selected model",
+	"naist.interpret.already": "This is already a tag prompt.",
+	"naist.interpret.done": "Converted.",
+	"naist.interpret.cached": "Converted (from the cache).",
+	"naist.interpret.unmatched": "Not known tags, kept as phrases: {tags}",
+	"naist.interpret.fallback": "The language model did not answer usefully: the prompt was assembled from the tag dictionary.",
+	"naist.command.promptHelp": "Turns a description in human language (Russian or English) into a NovelAI prompt for the current model.",
+	"naist.command.promptReturns": "the NovelAI prompt",
+	"naist.command.arg.promptText": "description of the picture",
+	"naist.markers.title": "Image markers in replies",
+	"naist.markers.hint": "The chat model writes an <img data-nai=...> marker with a description where a picture fits; NAI Studio generates it right in the message, already while the reply is streaming. Older formats (your microservice URL, sillyimages, Auto Illustrator) are understood too.",
+	"naist.markers.enabled": "Generate images from markers in replies",
+	"naist.markers.inject": "Add the instruction about markers to the prompt",
+	"naist.markers.preset": "Instruction",
+	"naist.markers.presetNatural": "Plain-language descriptions",
+	"naist.markers.presetTags": "Danbooru tags",
+	"naist.markers.presetCustom": "My own text",
+	"naist.markers.captionLanguage": "Caption language",
+	"naist.markers.template": "Instruction text",
+	"naist.markers.templateHint": "Variables: {{count}} (how many pictures), {{min}}, {{max}}, {{captionLanguage}}, {{chars}} (characters with passports), {{charsHint}}.",
+	"naist.markers.templateDefault": "Start from the standard text",
+	"naist.markers.min": "Pictures per reply: at least",
+	"naist.markers.max": "at most",
+	"naist.markers.depth": "Instruction depth",
+	"naist.markers.role": "Instruction role",
+	"naist.markers.roleSystem": "System",
+	"naist.markers.roleUser": "User",
+	"naist.markers.roleAssistant": "Assistant",
+	"naist.markers.earlyStart": "Start generating while the reply is still streaming",
+	"naist.markers.autoFill": "Fewer markers than the minimum: illustrate the reply automatically",
+	"naist.markers.legacy": "Understand older marker formats (microservice URL, sillyimages, Auto Illustrator)",
+	"naist.markers.regexCompat": "Show images to display regexes as <img> (keeps HTML widgets working)",
+	"naist.markers.allowPaid": "Allow paid marker images, Anlas each at most",
+	"naist.markers.maxCost": "Maximum Anlas per image",
+	"naist.markers.preview": "Show the instruction",
+	"naist.markers.previewHint": "This is what the chat model receives (character names are an example).",
+	"naist.markers.previewChars": "Alice, Bob",
+	"naist.markers.generating": "Generating the picture…",
+	"naist.markers.failed": "The picture was not generated",
+	"naist.markers.interrupted": "Generation was interrupted",
+	"naist.markers.cancelled": "Cancelled.",
+	"naist.markers.retry": "Try again",
+	"naist.language.title": "Human language",
+	"naist.language.hint": "Write prompts the way you would describe a picture, in Russian or English: before generation the description becomes tags (and short sentences for V4.5 / V5) for the selected model. Automatically: Russian always, English prose on every model except V5 (it reads prose itself). Tag prompts are used as they are; text after \"text:\" stays as typed.",
+	"naist.language.mode": "Convert",
+	"naist.language.modeAuto": "Automatically",
+	"naist.language.modeAlways": "Everything that is not tags",
+	"naist.language.modeOff": "Off",
+	"naist.language.backend": "Converted by",
+	"naist.language.backendMain": "The current chat model",
+	"naist.language.backendProfile": "A connection profile",
+	"naist.language.backendNovelai": "NovelAI text model (plugin)",
+	"naist.language.profile": "Connection profile",
+	"naist.language.profileHint": "A separate, cheap model keeps the chat model free (Connection Manager profiles).",
+	"naist.language.profileNone": "(choose a profile)",
+	"naist.language.novelaiModel": "NovelAI model",
+	"naist.language.novelaiHint": "Part of the subscription, no Anlas. Needs the plugin 0.4.0; Xialong needs Opus.",
+	"naist.language.russianOnV5": "Send Russian to V5 as is (experimental: V5 officially reads English and Japanese)",
+	"naist.language.test": "Try it",
+	"naist.language.testPlaceholder": "e.g. a red-haired girl reads a book by a rainy window",
+	"naist.language.testRun": "Convert",
+	"naist.language.testNegative": "Negative:",
+	"naist.markers.retryHint": "Click to generate this picture again"
 };
 var translator = (text) => text;
 /** Wires the host translator (SillyTavern's translate). Called once on activation. */
@@ -1094,7 +1152,7 @@ function defaultGeneration() {
 }
 function defaultSettings() {
 	return {
-		schemaVersion: 6,
+		schemaVersion: 7,
 		transport: { mode: "auto" },
 		generation: defaultGeneration(),
 		prompts: {
@@ -1159,7 +1217,31 @@ function defaultSettings() {
 			readingMode: false,
 			variationStrength: .5,
 			variationNoise: .1,
-			insertMode: "free"
+			insertMode: "free",
+			regexCompat: true
+		},
+		markers: {
+			enabled: false,
+			inject: true,
+			preset: "natural",
+			template: "",
+			depth: 1,
+			role: "system",
+			min: 1,
+			max: 3,
+			earlyStart: true,
+			captionLanguage: "Russian",
+			legacy: true,
+			autoFill: false,
+			allowPaid: false,
+			maxCost: 5
+		},
+		language: {
+			mode: "auto",
+			backend: "main",
+			profileId: "",
+			novelaiModel: "glm-4-6",
+			russianOnV5: false
 		},
 		gallery: {
 			enabled: true,
@@ -1310,13 +1392,29 @@ var MIGRATIONS = [
 				schemaVersion: 6
 			};
 		}
+	},
+	{
+		to: 7,
+		migrate(settings) {
+			const translate = isObject$2(settings.translate) ? settings.translate : {};
+			const language = isObject$2(settings.language) ? settings.language : {};
+			const next = {
+				...settings,
+				schemaVersion: 7
+			};
+			if (translate.auto === true && language.mode === void 0) next.language = {
+				...language,
+				mode: "auto"
+			};
+			return next;
+		}
 	}
 ];
 /** Applies pending migrations, then fills missing keys from defaults (lodash.merge in the host). */
 function migrateAndFill(stored, merge) {
 	let raw = isObject$2(stored) ? structuredClone(stored) : {};
 	const fromVersion = typeof raw.schemaVersion === "number" ? raw.schemaVersion : 0;
-	if (fromVersion > 6) return {
+	if (fromVersion > 7) return {
 		settings: merge(defaultSettings(), raw),
 		fromVersion,
 		migrated: false
@@ -1339,11 +1437,11 @@ function migrateAndFill(stored, merge) {
 	if (Array.isArray(sprites.labels)) settings.sprites.labels = sprites.labels;
 	const takeover = isObject$2(raw.takeover) ? raw.takeover : {};
 	settings.takeover.migrationReport = Array.isArray(takeover.migrationReport) ? takeover.migrationReport : [];
-	settings.schemaVersion = 6;
+	settings.schemaVersion = 7;
 	return {
 		settings,
 		fromVersion,
-		migrated: fromVersion !== 6
+		migrated: fromVersion !== 7
 	};
 }
 //#endregion
@@ -3202,17 +3300,17 @@ function assemblePrompt(input) {
 }
 //#endregion
 //#region src/domain/autogen.ts
-function list$1(text) {
+function list$2(text) {
 	return text.split(",").map((s) => s.trim()).filter(Boolean);
 }
 function escapeRegExp$4(text) {
 	return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 function matchesKeyword(message, keywords) {
-	return list$1(keywords).some((word) => new RegExp(`(^|[^\\p{L}\\p{N}])${escapeRegExp$4(word)}($|[^\\p{L}\\p{N}])`, "iu").test(message));
+	return list$2(keywords).some((word) => new RegExp(`(^|[^\\p{L}\\p{N}])${escapeRegExp$4(word)}($|[^\\p{L}\\p{N}])`, "iu").test(message));
 }
 function isSceneChange(message, markers) {
-	return list$1(markers).some((marker) => {
+	return list$2(markers).some((marker) => {
 		return (/^[\p{L}\p{N}]/u.test(marker) ? new RegExp(`(^|\\n)\\s*${escapeRegExp$4(marker)}\\b`, "iu") : new RegExp(escapeRegExp$4(marker))).test(message);
 	});
 }
@@ -3341,7 +3439,7 @@ function textForPrompt(text, entries, mode) {
 	return text.replace(new RegExp(PLACEHOLDER_PATTERN.source, "g"), (_m, id) => {
 		if (mode === "remove") return "";
 		const entry = byId.get(id);
-		const caption = entry?.display.caption.trim() || entry?.meta.scenePrompt.trim() || "";
+		const caption = entry?.display.caption.trim() || entry?.meta?.scenePrompt?.trim() || entry?.marker?.params.prompt.trim() || "";
 		return caption ? `[image: ${caption}]` : "";
 	}).replace(/[ \t]{2,}/g, " ").replace(/\n{3,}/g, "\n\n").trim();
 }
@@ -3382,6 +3480,47 @@ function createInlineImage(id, swipe, display) {
 		display
 	});
 }
+/** Meta of an image that is not generated yet (only the scene prompt is known). */
+function pendingMeta(scenePrompt, now = /* @__PURE__ */ new Date()) {
+	return {
+		scenePrompt,
+		prompt: "",
+		negativePrompt: "",
+		negative: "",
+		mode: 0,
+		model: "",
+		seed: 0,
+		width: 0,
+		height: 0,
+		steps: 0,
+		scale: 0,
+		cfgRescale: 0,
+		sampler: "",
+		noiseSchedule: "",
+		ucPreset: "",
+		qualityPreset: "",
+		requestType: "txt2img",
+		characters: [],
+		transport: "",
+		cost: 0,
+		createdAt: now.toISOString()
+	};
+}
+/** An image a marker asked for: no swipes until the generation finishes. */
+function createPendingImage(id, params, display) {
+	return {
+		id,
+		blobKey: "",
+		meta: pendingMeta(params.prompt),
+		swipes: [],
+		activeSwipe: 0,
+		display,
+		marker: {
+			params,
+			status: "pending"
+		}
+	};
+}
 /** Adds an alternative generation and makes it active. */
 function addSwipe(entry, swipe) {
 	entry.swipes.push(swipe);
@@ -3411,7 +3550,7 @@ function entryBlobKeys(entry) {
 function readEntries(extra) {
 	const list = extra?.nai_images;
 	if (!Array.isArray(list)) return [];
-	return list.filter((e) => typeof e === "object" && e !== null && typeof e.id === "string" && Array.isArray(e.swipes) && e.swipes.length > 0);
+	return list.filter((e) => typeof e === "object" && e !== null && typeof e.id === "string" && Array.isArray(e.swipes) && (e.swipes.length > 0 || typeof e.marker === "object"));
 }
 /** Inline CSS for the image container from its display options. */
 function displayStyle(display) {
@@ -3703,10 +3842,10 @@ function modelFromSource(source) {
 	if (/furry/i.test(source)) return "nai-diffusion-furry-3";
 	if (/Stable Diffusion XL|Diffusion V3/i.test(source)) return "nai-diffusion-3";
 }
-function num$1(value) {
+function num$2(value) {
 	return typeof value === "number" && Number.isFinite(value) ? value : void 0;
 }
-function str$2(value) {
+function str$3(value) {
 	return typeof value === "string" ? value : "";
 }
 function obj$1(value) {
@@ -3764,8 +3903,8 @@ function parseNovelAIMetadata(text, fallbackModel) {
 	const v4 = obj$1(comment.v4_prompt);
 	const v4Caption = obj$1(v4.caption);
 	const v4Negative = obj$1(obj$1(comment.v4_negative_prompt).caption);
-	const basePrompt = str$2(v4Caption.base_caption) || str$2(comment.prompt) || str$2(text.Description);
-	const baseNegative = str$2(v4Negative.base_caption) || str$2(comment.uc);
+	const basePrompt = str$3(v4Caption.base_caption) || str$3(comment.prompt) || str$3(text.Description);
+	const baseNegative = str$3(v4Negative.base_caption) || str$3(comment.uc);
 	const quality = model ? splitQualityTags(basePrompt, model) : {
 		prompt: basePrompt,
 		preset: void 0
@@ -3779,10 +3918,10 @@ function parseNovelAIMetadata(text, fallbackModel) {
 	const characters = charCaptions.map((caption, i) => {
 		const center = obj$1(Array.isArray(caption.centers) ? caption.centers[0] : void 0);
 		return {
-			prompt: str$2(caption.char_caption),
-			negative: str$2(charNegatives[i]?.char_caption),
-			x: num$1(center.x) ?? .5,
-			y: num$1(center.y) ?? .5
+			prompt: str$3(caption.char_caption),
+			negative: str$3(charNegatives[i]?.char_caption),
+			x: num$2(center.x) ?? .5,
+			y: num$2(center.y) ?? .5
 		};
 	});
 	const result = {
@@ -3798,19 +3937,19 @@ function parseNovelAIMetadata(text, fallbackModel) {
 	const assign = (key, value) => {
 		if (value !== void 0) result[key] = value;
 	};
-	assign("seed", num$1(comment.seed));
-	assign("steps", num$1(comment.steps));
-	assign("scale", num$1(comment.scale));
-	assign("cfgRescale", num$1(comment.cfg_rescale));
-	assign("width", num$1(comment.width));
-	assign("height", num$1(comment.height));
-	assign("sampler", str$2(comment.sampler) || void 0);
-	assign("noiseSchedule", str$2(comment.noise_schedule) || void 0);
+	assign("seed", num$2(comment.seed));
+	assign("steps", num$2(comment.steps));
+	assign("scale", num$2(comment.scale));
+	assign("cfgRescale", num$2(comment.cfg_rescale));
+	assign("width", num$2(comment.width));
+	assign("height", num$2(comment.height));
+	assign("sampler", str$3(comment.sampler) || void 0);
+	assign("noiseSchedule", str$3(comment.noise_schedule) || void 0);
 	if (typeof comment.sm === "boolean") result.smea = comment.sm;
 	if (typeof comment.sm_dyn === "boolean") result.smeaDyn = comment.sm_dyn;
 	if ("skip_cfg_above_sigma" in comment) result.varietyBoost = comment.skip_cfg_above_sigma !== null;
 	if (typeof v4.use_coords === "boolean") result.useCoords = v4.use_coords;
-	assign("requestType", str$2(comment.request_type) || void 0);
+	assign("requestType", str$3(comment.request_type) || void 0);
 	return result;
 }
 var SOURCE_NAMES = {
@@ -4010,7 +4149,7 @@ function defaultPassport() {
 		position: null
 	};
 }
-function str$1(value) {
+function str$2(value) {
 	return typeof value === "string" ? value : "";
 }
 function obj(value) {
@@ -4026,31 +4165,31 @@ function normalizePassport(raw) {
 	const source = obj(raw);
 	const result = defaultPassport();
 	const slots = obj(source.slots);
-	for (const slot of PASSPORT_SLOTS) result.slots[slot] = str$1(slots[slot]);
+	for (const slot of PASSPORT_SLOTS) result.slots[slot] = str$2(slots[slot]);
 	const nsfw = obj(source.nsfw);
 	result.nsfw = {
 		enabled: nsfw.enabled === true,
-		tags: str$1(nsfw.tags)
+		tags: str$2(nsfw.tags)
 	};
 	result.outfits = (Array.isArray(source.outfits) ? source.outfits : []).map(obj).map((o) => ({
-		name: str$1(o.name).trim(),
-		tags: str$1(o.tags)
+		name: str$2(o.name).trim(),
+		tags: str$2(o.tags)
 	})).filter((o) => o.name);
-	result.activeOutfit = result.outfits.some((o) => o.name === str$1(source.activeOutfit)) ? str$1(source.activeOutfit) : "";
+	result.activeOutfit = result.outfits.some((o) => o.name === str$2(source.activeOutfit)) ? str$2(source.activeOutfit) : "";
 	if (Array.isArray(source.states)) {
 		const stored = source.states.map(obj).map((s) => ({
-			id: str$1(s.id).trim(),
-			tags: str$1(s.tags),
+			id: str$2(s.id).trim(),
+			tags: str$2(s.tags),
 			enabled: s.enabled === true
 		}));
 		const byId = new Map(stored.filter((s) => s.id).map((s) => [s.id, s]));
 		result.states = [...result.states.map((preset) => byId.get(preset.id) ?? preset), ...stored.filter((s) => s.id && !(s.id in STATE_PRESETS))];
 	}
-	result.negative = str$1(source.negative);
+	result.negative = str$2(source.negative);
 	const pose = obj(source.pose);
 	result.pose = {
-		preset: str$1(pose.preset),
-		custom: str$1(pose.custom)
+		preset: str$2(pose.preset),
+		custom: str$2(pose.custom)
 	};
 	const position = obj(source.position);
 	result.position = source.position && typeof source.position === "object" ? {
@@ -5151,14 +5290,14 @@ function planVibes(sets, items, ctx) {
 			seen.add(item.id);
 			result.push({
 				item,
-				strength: clamp(entry.strength, -1, 1),
-				informationExtracted: clamp(entry.informationExtracted, .01, 1)
+				strength: clamp$1(entry.strength, -1, 1),
+				informationExtracted: clamp$1(entry.informationExtracted, .01, 1)
 			});
 		}
 	}
 	return result.slice(0, 16);
 }
-function clamp(value, min, max) {
+function clamp$1(value, min, max) {
 	const n = Number(value);
 	return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : max;
 }
@@ -6130,8 +6269,814 @@ var T5Tokenizer = class {
 	}
 };
 //#endregion
+//#region src/domain/markers.ts
+var ENTITIES = {
+	quot: "\"",
+	apos: "'",
+	amp: "&",
+	lt: "<",
+	gt: ">",
+	nbsp: " "
+};
+function decodeHtmlEntities(text) {
+	return text.replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (whole, body) => {
+		if (body[0] === "#") {
+			const code = body[1] === "x" || body[1] === "X" ? parseInt(body.slice(2), 16) : parseInt(body.slice(1), 10);
+			return Number.isFinite(code) && code > 0 && code <= 1114111 ? String.fromCodePoint(code) : whole;
+		}
+		return ENTITIES[body.toLowerCase()] ?? whole;
+	});
+}
+/** End index (exclusive) of an HTML tag starting at `start` (`<`), quotes respected; -1 if unfinished. */
+function tagEnd(text, start) {
+	let quote = "";
+	for (let i = start + 1; i < text.length; i++) {
+		const c = text[i];
+		if (quote) {
+			if (c === quote) quote = "";
+		} else if (c === "\"" || c === "'") quote = c;
+		else if (c === ">") return i + 1;
+		else if (c === "<") return -1;
+	}
+	return -1;
+}
+/** Attributes of a tag: name → raw value (entities decoded), lenient about quotes. */
+function parseAttributes(tag) {
+	const attrs = {};
+	const body = tag.replace(/^<\s*[\w-]+/, "").replace(/\/?>$/, "");
+	for (const m of body.matchAll(/([^\s=/>]+)(?:\s*=\s*("([^"]*)"|'([^']*)'|([^\s>]+)))?/g)) {
+		const name = m[1].toLowerCase();
+		attrs[name] = decodeHtmlEntities(m[3] ?? m[4] ?? m[5] ?? "");
+	}
+	return attrs;
+}
+/** JSON as models write it: strict first, then with single quotes and trailing commas fixed, then key: value scanning. */
+function parseLooseJson(text) {
+	const source = decodeHtmlEntities(text.trim());
+	const attempts = [
+		source,
+		source.replace(/,\s*([}\]])/g, "$1"),
+		source.replace(/'/g, "\"").replace(/,\s*([}\]])/g, "$1")
+	];
+	for (const attempt of attempts) try {
+		const value = JSON.parse(attempt);
+		if (value && typeof value === "object" && !Array.isArray(value)) return value;
+	} catch {}
+	const out = {};
+	for (const m of source.matchAll(/["']?([A-Za-z_][\w-]*)["']?\s*:\s*("((?:[^"\\]|\\.)*)"|'((?:[^'\\]|\\.)*)'|(-?\d+(?:\.\d+)?)|(true|false)|(\[[^\]]*\]))/g)) {
+		const key = m[1];
+		if (m[3] !== void 0 || m[4] !== void 0) out[key] = (m[3] ?? m[4] ?? "").replace(/\\(["'\\])/g, "$1");
+		else if (m[5] !== void 0) out[key] = Number(m[5]);
+		else if (m[6] !== void 0) out[key] = m[6] === "true";
+		else if (m[7] !== void 0) try {
+			out[key] = JSON.parse(m[7].replace(/'/g, "\""));
+		} catch {
+			out[key] = m[7].slice(1, -1).split(",").map((s) => s.trim().replace(/^["']|["']$/g, ""));
+		}
+	}
+	return Object.keys(out).length ? out : null;
+}
+var str$1 = (v) => typeof v === "string" && v.trim() ? v.trim() : typeof v === "number" ? String(v) : void 0;
+var num$1 = (v) => {
+	const n = typeof v === "number" ? v : typeof v === "string" && v.trim() ? Number(v) : NaN;
+	return Number.isFinite(n) ? n : void 0;
+};
+var bool = (v) => typeof v === "boolean" ? v : v === "true" || v === "1" ? true : v === "false" || v === "0" ? false : void 0;
+var pick$1 = (o, ...keys) => keys.map((k) => o[k]).find((v) => v !== void 0 && v !== null && v !== "");
+function characters(value) {
+	const list = typeof value === "string" ? value.split(/[,;]/) : Array.isArray(value) ? value : [];
+	const out = [];
+	for (const item of list) if (typeof item === "string" && item.trim()) out.push({ name: item.trim() });
+	else if (item && typeof item === "object") {
+		const o = item;
+		const name = str$1(pick$1(o, "name", "who", "character"));
+		if (!name) continue;
+		const ch = { name };
+		const pos = str$1(pick$1(o, "pos", "position"));
+		const pose = str$1(o.pose);
+		const action = str$1(o.action);
+		if (pos) ch.pos = pos;
+		if (pose) ch.pose = pose;
+		if (action) ch.action = action;
+		out.push(ch);
+	}
+	return out.length ? out : void 0;
+}
+/** Marker parameters from any key spelling models use; unknown keys are ignored. */
+function normalizeParams(o) {
+	const prompt = str$1(pick$1(o, "prompt", "description", "desc", "scene", "image"));
+	if (!prompt) return null;
+	const p = { prompt };
+	const set = (key, value) => {
+		if (value !== void 0) p[key] = value;
+	};
+	set("negative", str$1(pick$1(o, "negative", "neg", "uc", "undesired")));
+	set("chars", characters(pick$1(o, "chars", "characters", "who")));
+	set("ratio", str$1(pick$1(o, "ratio", "aspect", "aspect_ratio", "aspectRatio", "orientation")));
+	set("size", str$1(pick$1(o, "size", "image_size", "imageSize", "resolution")));
+	set("model", str$1(o.model));
+	set("style", str$1(pick$1(o, "style", "preset")));
+	set("text", str$1(pick$1(o, "text", "text_in_image", "sign")));
+	set("caption", str$1(pick$1(o, "caption", "title", "figcaption")));
+	set("spoiler", bool(o.spoiler));
+	set("align", str$1(o.align));
+	set("width", num$1(o.width));
+	set("seed", num$1(o.seed));
+	set("steps", num$1(o.steps));
+	set("scale", num$1(pick$1(o, "scale", "guidance", "cfg")));
+	set("sampler", str$1(o.sampler));
+	set("rescale", num$1(pick$1(o, "rescale", "cfg_rescale")));
+	set("variety", bool(pick$1(o, "variety", "variety_boost")));
+	set("quality", bool(pick$1(o, "quality", "quality_tags")));
+	set("uc", str$1(pick$1(o, "uc_preset", "ucPreset")));
+	set("transparent", bool(pick$1(o, "transparent", "transparency")));
+	set("location", str$1(pick$1(o, "location", "place")));
+	set("ref", str$1(pick$1(o, "ref", "base", "from")));
+	set("vibe", str$1(o.vibe));
+	set("count", num$1(pick$1(o, "count", "n", "variants")));
+	set("id", str$1(o.id));
+	return p;
+}
+/** Underscored URL tags (`white_hair,golden_eyes`) back to NovelAI's spelling (`white hair, golden eyes`). */
+function urlTags(text) {
+	return text.split(",").map((t) => t.trim().replace(/_/g, " ")).filter(Boolean).join(", ");
+}
+function fromLegacyUrl(src) {
+	const q = src.indexOf("?");
+	if (q < 0 || !/\/gen$/.test(src.slice(0, q).replace(/\/+$/, ""))) return null;
+	const query = new URLSearchParams(src.slice(q + 1));
+	const prompt = query.get("prompt");
+	if (!prompt) return null;
+	const style = query.get("style");
+	const o = { prompt: urlTags(prompt) };
+	if (style) o.style = urlTags(style);
+	for (const key of [
+		"negative",
+		"model",
+		"ratio",
+		"size",
+		"seed",
+		"steps",
+		"scale"
+	]) {
+		const v = query.get(key);
+		if (v) o[key] = key === "negative" ? urlTags(v) : v;
+	}
+	return normalizeParams(o);
+}
+/** `<figure>` that wraps [start, end) with only whitespace between; its range and figcaption text. */
+function figureAround(text, start, end) {
+	const open = text.slice(0, start).match(/<figure\b[^>]*>\s*$/i);
+	if (!open || open.index === void 0) return null;
+	const close = text.slice(end).match(/^\s*(?:<figcaption\b[^>]*>([\s\S]*?)<\/figcaption>\s*)?<\/figure>/i);
+	if (!close) return null;
+	const caption = close[1] ? decodeHtmlEntities(close[1].replace(/<[^>]+>/g, "")).trim() : void 0;
+	return {
+		start: open.index,
+		end: end + close[0].length,
+		...caption ? { caption } : {}
+	};
+}
+function withFigure(text, match) {
+	const figure = figureAround(text, match.start, match.end);
+	if (!figure) return match;
+	const params = figure.caption && !match.params.caption ? {
+		...match.params,
+		caption: figure.caption
+	} : match.params;
+	return {
+		...match,
+		start: figure.start,
+		end: figure.end,
+		params
+	};
+}
+/** Every complete marker in the text, in order. Plain `<img>` tags that are not markers are left alone. */
+function findMarkers(text) {
+	const found = [];
+	const imgTag = /<img\b/gi;
+	for (let m = imgTag.exec(text); m; m = imgTag.exec(text)) {
+		const end = tagEnd(text, m.index);
+		if (end < 0) continue;
+		const attrs = parseAttributes(text.slice(m.index, end));
+		let params = null;
+		let format = null;
+		if ("data-nai" in attrs) {
+			const json = parseLooseJson(attrs["data-nai"]);
+			params = json ? normalizeParams(json) : normalizeParams({ prompt: attrs["data-nai"] });
+			format = "nai";
+		} else if ("data-iig-instruction" in attrs) {
+			const json = parseLooseJson(attrs["data-iig-instruction"]);
+			params = json ? normalizeParams(json) : null;
+			format = "iig";
+		} else if (attrs.src && /\/gen\?/.test(attrs.src)) {
+			params = fromLegacyUrl(attrs.src);
+			format = "legacy-url";
+		}
+		if (params && format) found.push(withFigure(text, {
+			start: m.index,
+			end,
+			format,
+			params
+		}));
+		imgTag.lastIndex = end;
+	}
+	for (let i = text.indexOf("[IMG:GEN:"); i >= 0; i = text.indexOf("[IMG:GEN:", i + 1)) {
+		const open = i + 9;
+		if (text[open] !== "{") continue;
+		let depth = 0;
+		let quote = "";
+		let close = -1;
+		for (let j = open; j < text.length; j++) {
+			const c = text[j];
+			if (quote) {
+				if (c === "\\") j++;
+				else if (c === quote) quote = "";
+			} else if (c === "\"") quote = c;
+			else if (c === "{") depth++;
+			else if (c === "}" && --depth === 0) {
+				close = j;
+				break;
+			}
+		}
+		if (close < 0 || text[close + 1] !== "]") continue;
+		const json = parseLooseJson(text.slice(open, close + 1));
+		const params = json ? normalizeParams(json) : null;
+		if (params) found.push({
+			start: i,
+			end: close + 2,
+			format: "iig",
+			params
+		});
+	}
+	for (const m of text.matchAll(/<!--\s*img-prompt="((?:[^"\\]|\\.)*)"\s*-->/g)) {
+		const prompt = m[1].replace(/\\"/g, "\"");
+		if (prompt.trim() && m.index !== void 0) found.push(withFigure(text, {
+			start: m.index,
+			end: m.index + m[0].length,
+			format: "comment",
+			params: { prompt: prompt.trim() }
+		}));
+	}
+	found.sort((a, b) => a.start - b.start);
+	return found.filter((f, i) => i === 0 || f.start >= found[i - 1].end);
+}
+/**
+* Where an unfinished marker begins at the end of a streaming text (so it can be hidden until it
+* is complete), or -1: an open <figure>, an unclosed <img or comment, an unbalanced [IMG:GEN:,
+* or the first letters of one of them at the very end.
+*/
+function partialMarkerStart(text) {
+	const starts = [];
+	const lastFigure = text.toLowerCase().lastIndexOf("<figure");
+	if (lastFigure >= 0 && !/<\/figure>/i.test(text.slice(lastFigure))) starts.push(lastFigure);
+	const lastImg = text.toLowerCase().lastIndexOf("<img");
+	if (lastImg >= 0 && tagEnd(text, lastImg) < 0) starts.push(lastImg);
+	const lastComment = text.lastIndexOf("<!--");
+	if (lastComment >= 0 && !text.includes("-->", lastComment)) starts.push(lastComment);
+	const lastGen = text.lastIndexOf("[IMG:GEN:");
+	if (lastGen >= 0 && !findMarkers(text.slice(lastGen)).some((m) => m.start === 0)) starts.push(lastGen);
+	const tail = text.match(/(?:<|<i|<im|<f|<fi|<fig|<figu|<figur|<!|<!-|\[|\[I|\[IM|\[IMG|\[IMG:[A-Z:]*)$/i);
+	if (tail?.index !== void 0) starts.push(tail.index);
+	return starts.length ? Math.min(...starts) : -1;
+}
+/** Replaces marker ranges right to left (so earlier indices stay valid). */
+function replaceMarkers(text, markers, replacement) {
+	let out = text;
+	for (let i = markers.length - 1; i >= 0; i--) {
+		const m = markers[i];
+		out = out.slice(0, m.start) + replacement(m, i) + out.slice(m.end);
+	}
+	return out;
+}
+var MODEL_ALIASES$1 = {
+	v5: "nai-diffusion-5-full",
+	"v5-full": "nai-diffusion-5-full",
+	v5c: "nai-diffusion-5-curated",
+	"v5-curated": "nai-diffusion-5-curated",
+	"v4.5": "nai-diffusion-4-5-full",
+	v45: "nai-diffusion-4-5-full",
+	"v4.5-full": "nai-diffusion-4-5-full",
+	"v4.5c": "nai-diffusion-4-5-curated",
+	"v4.5-curated": "nai-diffusion-4-5-curated",
+	v4: "nai-diffusion-4-full",
+	"v4-full": "nai-diffusion-4-full",
+	v4c: "nai-diffusion-4-curated-preview",
+	"v4-curated": "nai-diffusion-4-curated-preview",
+	v3: "nai-diffusion-3",
+	anime: "nai-diffusion-3",
+	furry: "nai-diffusion-furry-3"
+};
+function markerModel(value) {
+	if (!value) return void 0;
+	const v = value.trim().toLowerCase();
+	if (isModelId(v)) return v;
+	return MODEL_ALIASES$1[v];
+}
+var RATIO_ALIASES = {
+	portrait: [2, 3],
+	vertical: [2, 3],
+	landscape: [3, 2],
+	horizontal: [3, 2],
+	square: [1, 1],
+	wide: [16, 9],
+	tall: [9, 16]
+};
+function parseRatio(value) {
+	const v = (value ?? "").trim().toLowerCase();
+	const alias = RATIO_ALIASES[v];
+	if (alias) return alias;
+	const m = v.match(/^(\d+(?:\.\d+)?)\s*[:x/]\s*(\d+(?:\.\d+)?)$/);
+	const a = m ? Number(m[1]) : 0;
+	const b = m ? Number(m[2]) : 0;
+	return a > 0 && b > 0 ? [a, b] : [2, 3];
+}
+/** Pixel budget of a size: 1K ≈ 1 MP (free on Opus), 2K ≈ 2 MP, 3K/4K = NovelAI's maximum. */
+function sizeArea(value) {
+	const v = (value ?? "").trim().toUpperCase();
+	if (!v || v === "1K" || v === "FREE" || v === "NORMAL") return FREE_MAX_PIXELS;
+	if (v === "2K" || v === "LARGE") return 2097152;
+	if (v === "3K" || v === "4K" || v === "WALLPAPER" || v === "MAX") return 3145728;
+	const dims = v.match(/^(\d+)\s*[X×*]\s*(\d+)$/);
+	if (dims) return {
+		width: Number(dims[1]),
+		height: Number(dims[2])
+	};
+	const edge = Number(v);
+	if (Number.isFinite(edge) && edge >= 64) return Math.min(3145728, edge * edge);
+	return FREE_MAX_PIXELS;
+}
+/**
+* Request size for a marker: the ratio within the size's pixel budget, multiples of 64, never above
+* 1 MP in free-only mode (rounded down, unlike the old microservice which could overshoot).
+*/
+function markerDimensions(ratio, size, freeOnly) {
+	const area = sizeArea(size);
+	const limit = freeOnly ? FREE_MAX_PIXELS : 3145728;
+	if (typeof area === "object") {
+		const round = (n) => Math.max(64, Math.round(n / 64) * 64);
+		const w = round(area.width);
+		const h = round(area.height);
+		return w * h <= limit ? {
+			width: w,
+			height: h
+		} : fitArea(w, h, limit);
+	}
+	const [a, b] = parseRatio(ratio);
+	return fitArea(Math.round(a * 4096), Math.round(b * 4096), Math.min(area, limit));
+}
+/** At most `max` markers per reply (the rest are dropped from the text). */
+function limitMarkers(markers, max) {
+	const n = Math.max(0, Math.floor(max));
+	return {
+		keep: markers.slice(0, n),
+		drop: markers.slice(n)
+	};
+}
+var AXIS = {
+	"far left": { x: .1 },
+	left: { x: .3 },
+	center: { x: .5 },
+	centre: { x: .5 },
+	middle: { x: .5 },
+	right: { x: .7 },
+	"far right": { x: .9 },
+	top: { y: .3 },
+	upper: { y: .3 },
+	bottom: { y: .7 },
+	lower: { y: .7 }
+};
+/**
+* A character position written in a marker: the NovelAI grid ("C3": columns A-E, rows 1-5),
+* words ("left", "top right", "far left") or "x,y" between 0 and 1. Null when not understood.
+*/
+function markerPosition(pos) {
+	const v = (pos ?? "").trim().toLowerCase();
+	if (!v) return null;
+	const grid = v.match(/^([a-e])\s*([1-5])$/);
+	if (grid) return {
+		x: .1 + .2 * (grid[1].charCodeAt(0) - 97),
+		y: .1 + .2 * (Number(grid[2]) - 1)
+	};
+	const xy = v.match(/^(0(?:\.\d+)?|1(?:\.0+)?)\s*[,;\s]\s*(0(?:\.\d+)?|1(?:\.0+)?)$/);
+	if (xy) return {
+		x: Number(xy[1]),
+		y: Number(xy[2])
+	};
+	const point = {
+		x: .5,
+		y: .5
+	};
+	let known = false;
+	let rest = v.replace(/[-_]/g, " ");
+	for (const word of Object.keys(AXIS).sort((a, b) => b.length - a.length)) {
+		if (!new RegExp(`(^|\\s)${word}(\\s|$)`).test(rest)) continue;
+		Object.assign(point, AXIS[word]);
+		rest = rest.replace(word, " ");
+		known = true;
+	}
+	return known ? {
+		x: Math.round(point.x * 10) / 10,
+		y: Math.round(point.y * 10) / 10
+	} : null;
+}
+/** Parameters that only change how an image is shown (not what is generated). */
+var DISPLAY_KEYS = /* @__PURE__ */ new Set([
+	"caption",
+	"spoiler",
+	"align",
+	"width",
+	"id"
+]);
+/**
+* Identity of what a marker generates: while a reply streams, a marker can grow (a figcaption
+* arrives after the <img>), and that must not start a second generation.
+*/
+function markerGenerationKey(params) {
+	const record = params;
+	return JSON.stringify(Object.keys(record).filter((k) => !DISPLAY_KEYS.has(k) && record[k] !== void 0).sort().map((k) => [k, record[k]]));
+}
+/** Display options a marker asks for (caption, spoiler, alignment, width in % up to 100, else px). */
+function markerDisplay(params) {
+	const display = {};
+	if (params.caption) display.caption = params.caption;
+	display.alt = (params.caption || params.prompt).slice(0, 200);
+	if (params.spoiler) display.spoiler = true;
+	const align = params.align?.trim().toLowerCase();
+	if (align === "left" || align === "right" || align === "center") display.align = align;
+	if (params.width !== void 0 && params.width > 0) {
+		if (params.width <= 100) {
+			display.width = params.width;
+			display.widthUnit = "%";
+		} else {
+			display.width = Math.min(Math.round(params.width), 2048);
+			display.widthUnit = "px";
+		}
+	}
+	return display;
+}
+/** Plain text of a reply for an automatic illustration: no HTML, placeholders or markers, cut to `max`. */
+function replyExcerpt(text, max = 800) {
+	const plain = replaceMarkers(text, findMarkers(text), () => " ").replace(/\[nai:img:[^\]]+\]/g, " ").replace(/<(style|script)\b[\s\S]*?<\/\1>/gi, " ").replace(/<[^>]+>/g, " ").replace(/[*_~`#>]+/g, " ").replace(/\s+/g, " ").trim();
+	if (plain.length <= max) return plain;
+	const cut = plain.slice(0, max);
+	const end = Math.max(cut.lastIndexOf(". "), cut.lastIndexOf("! "), cut.lastIndexOf("? "));
+	return (end > max / 2 ? cut.slice(0, end + 1) : cut).trim();
+}
+//#endregion
+//#region src/data/interpret-examples.json
+var interpret_examples_default = [
+	{
+		"description": "рыжая девушка читает книгу у окна, на улице дождь, без очков",
+		"tags": "1girl, solo, red hair, reading, holding book, window, rain, indoors",
+		"sentence": "A red-haired girl reads a book by a rainy window.",
+		"text": "",
+		"negative": "glasses"
+	},
+	{
+		"description": "Two knights cross swords on a bridge at sunset, view from below",
+		"tags": "2boys, knight, armor, sword, fighting, bridge, sunset, from below",
+		"sentence": "Two armored knights clash with their swords on a stone bridge at sunset.",
+		"text": "",
+		"negative": ""
+	},
+	{
+		"description": "вывеска кафе с надписью «Открыто», вечер, неоновый свет",
+		"tags": "no humans, cafe, storefront, sign, evening, neon lights, text, english text",
+		"sentence": "A cafe storefront glows with neon light in the evening.",
+		"text": "OPEN",
+		"negative": ""
+	}
+];
+//#endregion
+//#region src/domain/interpret.ts
+var INTERPRET_SCHEMA = {
+	name: "nai_image_prompt",
+	description: "NovelAI image prompt extracted from a description",
+	strict: true,
+	value: {
+		type: "object",
+		properties: {
+			tags: {
+				type: "array",
+				items: { type: "string" },
+				description: "English Danbooru tags"
+			},
+			sentence: {
+				type: "string",
+				description: "One to three short plain English sentences"
+			},
+			text: {
+				type: "string",
+				description: "Exact words written in the picture, or empty"
+			},
+			negative: {
+				type: "array",
+				items: { type: "string" },
+				description: "Things that must not appear"
+			}
+		},
+		required: [
+			"tags",
+			"sentence",
+			"text",
+			"negative"
+		],
+		additionalProperties: false
+	}
+};
+var RULES = [
+	"Convert an image description (Russian or English, prose or tags) into a NovelAI image prompt.",
+	"tags: English Danbooru tags in lowercase with spaces (not underscores): subject count (1girl, 2boys, 1boy 1girl, no humans), appearance, clothing, expression, pose and action, place, time and light, camera and framing; keep tags the user already wrote.",
+	"Count people by gender: a woman, girl, witch, queen or princess is a girl, a man or boy is a boy, unless the description says otherwise.",
+	"sentence: one to three short plain English sentences only for what tags cannot say (who is where, interactions, mood).",
+	"text: the exact words written in the picture (signs, speech), empty if none.",
+	"negative: things that must not appear (from \"no\", \"without\", \"без\", \"не\").",
+	"What must not appear goes only to negative, never to tags (no \"no ...\" tags for it).",
+	"Do not invent details. Do not add quality or style tags. Do not use names of original characters; use a Danbooru character tag only for well-known characters."
+].join("\n");
+function interpretMessages(description, glossary) {
+	const used = glossary.filter((g) => g.from.trim() && g.to.trim() && description.toLowerCase().includes(g.from.trim().toLowerCase()));
+	return {
+		system: `${RULES}${used.length ? `\nAlways translate these terms this way:\n${used.map((g) => `- ${g.from} => ${g.to}`).join("\n")}` : ""}\nAnswer only with JSON: {"tags": [...], "sentence": "...", "text": "...", "negative": [...]}`,
+		prompt: description
+	};
+}
+/** Few-shot continuation for text completion models (no JSON schema there). */
+function interpretCompletion(description, glossary) {
+	const shot = (e) => `Description: ${e.description}\nTags: ${e.tags}\nSentence: ${e.sentence}\nText: ${e.text}\nNegative: ${e.negative}`;
+	const used = glossary.filter((g) => g.from.trim() && g.to.trim() && description.toLowerCase().includes(g.from.trim().toLowerCase()));
+	return [
+		"{ Convert image descriptions into NovelAI prompts: English Danbooru tags, a short English sentence, in-image text and things to avoid. }",
+		...interpret_examples_default.map(shot),
+		...used.map((g) => `Description: ${g.from.trim()}\nTags: ${g.to.trim()}\nSentence:\nText:\nNegative:`),
+		`Description: ${description.replace(/\s*\n\s*/g, " ").trim()}`
+	].join("\n");
+}
+var COMPLETION_INTERPRET_PREFILL = "Tags:";
+var list$1 = (v) => (Array.isArray(v) ? v : typeof v === "string" ? v.split(",") : []).map((x) => String(x).trim()).filter(Boolean);
+/** Reads either the JSON answer or the "Tags: / Sentence: / Text: / Negative:" lines. */
+function parseInterpretation(raw) {
+	let source = raw;
+	if (typeof raw === "string") {
+		const trimmed = raw.trim();
+		const json = trimmed.match(/\{[\s\S]*\}/)?.[0];
+		if (json) try {
+			source = JSON.parse(json);
+		} catch {
+			source = trimmed;
+		}
+	}
+	if (source && typeof source === "object") {
+		const o = source;
+		const tags = list$1(o.tags);
+		if (!tags.length && !String(o.sentence ?? "").trim()) return null;
+		return {
+			tags,
+			sentence: String(o.sentence ?? "").trim(),
+			text: String(o.text ?? "").trim(),
+			negative: list$1(o.negative)
+		};
+	}
+	if (typeof source !== "string") return null;
+	const text = /^\s*tags\s*:/i.test(source) ? source : `Tags: ${source}`;
+	const field = (name) => {
+		return (text.match(new RegExp(`^\\s*${name}\\s*:[ \\t]*(.*)$`, "im"))?.[1] ?? "").trim();
+	};
+	const cut = text.split(/\n\s*description\s*:/i)[0];
+	const tags = list$1(cut.match(/^\s*tags\s*:[ \t]*(.*)$/im)?.[1] ?? "");
+	if (!tags.length) return null;
+	return {
+		tags,
+		sentence: field("sentence"),
+		text: field("text"),
+		negative: list$1(field("negative"))
+	};
+}
+var normalize = (t) => tagName(t).replace(/\s+/g, " ").trim();
+function lookup(index, candidate) {
+	return index.byName.get(candidate) ?? index.byAlias.get(candidate);
+}
+/** Simple English word forms: plurals, -ing, -ed (smiling → smile, holding → hold, boots → boot). */
+function wordForms(word) {
+	const forms = /* @__PURE__ */ new Set();
+	if (word.endsWith("ies")) forms.add(`${word.slice(0, -3)}y`);
+	if (word.endsWith("es")) forms.add(word.slice(0, -2));
+	if (word.endsWith("s") && !word.endsWith("ss")) forms.add(word.slice(0, -1));
+	if (word.endsWith("ing")) {
+		const stem = word.slice(0, -3);
+		forms.add(stem);
+		forms.add(`${stem}e`);
+		if (/(.)\1$/.test(stem)) forms.add(stem.slice(0, -1));
+	}
+	if (word.endsWith("ed")) {
+		forms.add(word.slice(0, -2));
+		forms.add(word.slice(0, -1));
+	}
+	return [...forms];
+}
+function editDistance(a, b, limit) {
+	if (Math.abs(a.length - b.length) > limit) return limit + 1;
+	let prev = Array.from({ length: b.length + 1 }, (_, i) => i);
+	for (let i = 1; i <= a.length; i++) {
+		const row = [i];
+		let best = i;
+		for (let j = 1; j <= b.length; j++) {
+			const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+			const value = Math.min(prev[j] + 1, row[j - 1] + 1, prev[j - 1] + cost);
+			row.push(value);
+			best = Math.min(best, value);
+		}
+		if (best > limit) return limit + 1;
+		prev = row;
+	}
+	return prev[b.length];
+}
+/** The known tag for a candidate, or null. Weighted or braced tags are passed through untouched. */
+function matchTag(index, raw) {
+	const candidate = normalize(raw);
+	if (!candidate) return null;
+	if (/::|[{}[\]]/.test(raw) || /^\d+(girl|boy|other)s?$/.test(candidate) || /^[a-z]+:/.test(candidate)) return {
+		tag: raw.trim(),
+		kind: "exact"
+	};
+	const direct = index.byName.get(candidate);
+	if (direct) return {
+		tag: direct.name,
+		kind: "exact"
+	};
+	const alias = index.byAlias.get(candidate);
+	if (alias) return {
+		tag: alias.name,
+		kind: "alias"
+	};
+	const words = candidate.split(" ");
+	const last = words.at(-1);
+	for (const form of wordForms(last)) {
+		const hit = lookup(index, [...words.slice(0, -1), form].join(" "));
+		if (hit) return {
+			tag: hit.name,
+			kind: "form"
+		};
+	}
+	for (let i = 1; i < words.length; i++) {
+		const hit = lookup(index, words.slice(i).join(" "));
+		if (hit) return {
+			tag: hit.name,
+			kind: "part",
+			rest: words.slice(0, i).join(" ")
+		};
+	}
+	if (candidate.length >= 5 && !hasCyrillic(candidate)) {
+		const limit = candidate.length >= 9 ? 2 : 1;
+		let best = null;
+		for (const entry of index.entries) {
+			if (entry.name[0] !== candidate[0] || Math.abs(entry.name.length - candidate.length) > limit) continue;
+			if (editDistance(entry.name, candidate, limit) <= limit && (!best || entry.count > best.count)) best = entry;
+		}
+		if (best) return {
+			tag: best.name,
+			kind: "fuzzy"
+		};
+	}
+	return null;
+}
+/**
+* A Danbooru alias that is the tag plus more words ("red apple" -> apple): the extra words are
+* lost in the tag, so the phrase is kept as well (V4+ reads it).
+*/
+function aliasAddsWords(raw, tag) {
+	if (hasCyrillic(raw)) return false;
+	const words = tagName(raw).split(/\s+/).filter(Boolean);
+	const tagWords = tag.split(/\s+/);
+	return words.length > tagWords.length && tagWords.every((w) => words.includes(w));
+}
+function matchTags(index, candidates) {
+	const tags = [];
+	const unmatched = [];
+	const seen = /* @__PURE__ */ new Set();
+	for (const raw of candidates) {
+		const hit = matchTag(index, raw);
+		if (!hit) {
+			if (raw.trim()) unmatched.push(raw.trim());
+			continue;
+		}
+		if (!seen.has(hit.tag)) {
+			seen.add(hit.tag);
+			tags.push(hit.tag);
+		}
+		if (hit.rest) unmatched.push(`${hit.rest} ${hit.tag}`);
+		else if (hit.kind === "alias" && aliasAddsWords(raw, hit.tag)) unmatched.push(tagName(raw));
+	}
+	return {
+		tags,
+		unmatched
+	};
+}
+/**
+* Tags that contradict the negative: the negated thing itself and "no X" / "without X" for it.
+* Real tags like "no humans" stay unless their subject is in the negative.
+*/
+function withoutNegated(matched, negative) {
+	const banned = new Set(negative.map((n) => tagName(n)).filter(Boolean));
+	if (!banned.size) return matched;
+	const keep = (tag) => {
+		const name = tagName(tag);
+		const subject = name.match(/^(?:no|without)\s+(.+)$/)?.[1];
+		return !banned.has(name) && !(subject && banned.has(subject));
+	};
+	return {
+		tags: matched.tags.filter(keep),
+		unmatched: matched.unmatched.filter(keep)
+	};
+}
+var sentenceCase = (s) => {
+	const t = s.trim();
+	if (!t) return "";
+	const capital = t[0].toUpperCase() + t.slice(1);
+	return /[.!?]$/.test(capital) ? capital : `${capital}.`;
+};
+/** The prompt for one model family; the in-image text block goes last. */
+function assembleInterpretation(p, matched, family) {
+	const tags = [...matched.tags];
+	if (family === "v3") return tags.join(", ");
+	const phrases = matched.unmatched.filter((u) => !hasCyrillic(u));
+	const head = [...tags, ...phrases].join(", ");
+	const sentence = sentenceCase(p.sentence);
+	let prompt = sentence ? head ? `${head}. ${sentence}` : sentence : head;
+	if (p.text) prompt = prompt ? `${/[.!?]$/.test(prompt) ? prompt : `${prompt}.`} Text: ${p.text}` : `Text: ${p.text}`;
+	return prompt;
+}
+/** True when the text is already a tag list the model reads as is (no LLM needed). */
+function looksLikeTags(index, text) {
+	if (hasCyrillic(text)) return false;
+	const pieces = text.split(/[,|\n]/).map((t) => t.replace(/-?\d*\.?\d+::|::|[{}[\]]/g, "").trim()).filter(Boolean);
+	if (!pieces.length) return true;
+	if (pieces.some((p) => p.split(/\s+/).length > 5)) return false;
+	if (!index) return pieces.every((p) => p.split(/\s+/).length <= 3);
+	return pieces.filter((p) => matchTag(index, p)?.kind === "exact" || matchTag(index, p)?.kind === "alias").length / pieces.length >= .6;
+}
+/**
+* Whether a text should go through the interpreter: Russian always (V4.x cannot read it, V5 does not
+* officially support it, unless the user allows Russian on V5); English prose on V3 and V4.x (tags
+* work better there); English prose on V5 is sent as is in auto mode.
+*/
+function needsInterpretation(text, family, mode, index, russianOnV5 = false) {
+	if (mode === "off" || !text.trim()) return false;
+	const tags = looksLikeTags(index, text);
+	if (mode === "always") return !tags;
+	if (hasCyrillic(text)) return !(family === "v5" && russianOnV5);
+	if (tags) return false;
+	return family !== "v5";
+}
+function interpretCacheSource(text, family, glossary) {
+	const terms = glossary.filter((g) => g.from.trim() && g.to.trim()).map((g) => `${g.from.trim().toLowerCase()}=${g.to.trim()}`).sort().join(";");
+	return `${family}\u0000${text.trim()}\u0000${terms}`;
+}
+//#endregion
+//#region src/domain/marker-instructions.ts
+var COMMON_TAIL = `- "caption": a few words in {{captionLanguage}} shown under the picture.
+- Optional keys: "chars": [{"name":"...","pos":"left|center|right","action":"..."}] for the characters in the picture{{charsHint}}; "ratio": "portrait", "landscape", "square", "wide" or "tall"; "negative": what must not be in the picture; "text": words written in the picture; "id": a short name for the picture and "ref": the id of an earlier picture to continue its scene; "spoiler": true for a picture that gives too much away.
+- Write the marker exactly in this form, inside the reply where the picture belongs. Never write image links or file names, and do not talk about the markers.`;
+var MARKER_TEMPLATES = {
+	natural: `[Illustrations]
+You can show pictures inside your reply. Where a picture really adds something (a new place, an important moment, how someone looks), put an image marker on its own line:
+<img data-nai='{"prompt":"what the picture shows, in plain words","caption":"short caption"}'>
+- {{count}}
+- "prompt": describe the picture in plain words, in any language: who is in it, their looks and clothes, pose and action, the place, the light, the mood and the camera angle. No tag lists, no quality words.
+${COMMON_TAIL}`,
+	tags: `[Illustrations]
+You can show pictures inside your reply. Where a picture really adds something (a new place, an important moment, how someone looks), put an image marker on its own line:
+<img data-nai='{"prompt":"1girl, red hair, school uniform, sitting, classroom, evening light","caption":"short caption"}'>
+- {{count}}
+- "prompt": Danbooru-style tags in English separated by commas (count of people, looks, clothes, pose, action, place, light, camera), optionally followed by one short sentence.
+${COMMON_TAIL}`
+};
+function countRule(min, max) {
+	const lo = Math.max(0, Math.floor(min));
+	const hi = Math.max(lo, Math.floor(max));
+	if (hi <= 0) return "Do not add pictures.";
+	if (lo === 0) return `Use at most ${hi} ${hi === 1 ? "picture" : "pictures"} per reply, none when nothing fits.`;
+	if (lo === hi) return `Use exactly ${hi} ${hi === 1 ? "picture" : "pictures"} per reply.`;
+	return `Use ${lo} to ${hi} pictures per reply.`;
+}
+/** The instruction text for a preset; an empty custom text falls back to "natural". */
+function markerInstruction(preset, custom, vars) {
+	const template = preset === "custom" && custom.trim() ? custom : MARKER_TEMPLATES[preset === "tags" ? "tags" : "natural"];
+	const names = vars.chars.map((n) => n.trim()).filter(Boolean);
+	const values = {
+		count: countRule(vars.min, vars.max),
+		min: String(vars.min),
+		max: String(vars.max),
+		captionLanguage: vars.captionLanguage.trim() || "the language of the reply",
+		chars: names.join(", "),
+		charsHint: names.length ? ` (known characters: ${names.join(", ")})` : ""
+	};
+	return template.replace(/\{\{(\w+)\}\}/g, (whole, key) => values[key] ?? whole).trim();
+}
+//#endregion
 //#region src/features/auto/auto-generation.ts
-var SKIPPED_TYPES = /* @__PURE__ */ new Set([
+var SKIPPED_TYPES$1 = /* @__PURE__ */ new Set([
 	"extension",
 	"command",
 	"first_message",
@@ -6166,7 +7111,7 @@ var AutoGenerator = class {
 	}
 	async onMessage(id, type) {
 		const rules = settings().auto;
-		if (!rules.enabled || SKIPPED_TYPES.has(type)) return;
+		if (!rules.enabled || SKIPPED_TYPES$1.has(type)) return;
 		const message = ctx().chat[id];
 		if (!message || message.is_user || message.is_system || message.extra?.nai_studio) return;
 		const meta = chatState();
@@ -6926,6 +7871,27 @@ async function fetchTagSuggestions(env, model, prompt, signal) {
 	}
 }
 //#endregion
+//#region src/transport/text.ts
+async function novelAiText(env, request, signal) {
+	const response = await env.fetch(`${PLUGIN_BASE}/text`, {
+		method: "POST",
+		headers: env.headers(),
+		body: JSON.stringify({
+			model: request.model,
+			messages: request.messages,
+			max_tokens: request.maxTokens
+		}),
+		signal
+	});
+	if (response.status === 404) throw new TransportError("plugin-unavailable", { status: 404 });
+	const body = await response.json().catch(() => ({}));
+	if (!response.ok || typeof body.content !== "string") throw new TransportError("http", {
+		status: body.error?.status ?? response.status,
+		serverMessage: body.error?.message
+	});
+	return body.content;
+}
+//#endregion
 //#region src/transport/index.ts
 async function selectTransport(preference, env, signal) {
 	const health = await probePlugin(env, signal);
@@ -7582,7 +8548,7 @@ var Pipeline = class {
 	ui;
 	observers = /* @__PURE__ */ new Set();
 	vibes = null;
-	translator = null;
+	interpreter = null;
 	continuity = null;
 	constructor(controller, ui) {
 		this.controller = controller;
@@ -7594,8 +8560,8 @@ var Pipeline = class {
 	setVibeProvider(provider) {
 		this.vibes = provider;
 	}
-	setTranslator(translator) {
-		this.translator = translator;
+	setInterpreter(interpreter) {
+		this.interpreter = interpreter;
 	}
 	setContinuityProvider(provider) {
 		this.continuity = provider;
@@ -7772,34 +8738,59 @@ var Pipeline = class {
 		};
 		await c.eventSource.emit(c.eventTypes.SD_PROMPT_PROCESSING ?? "sd_prompt_processing", eventData);
 		scene = eventData.prompt;
-		const translator = this.translator?.enabled() ? this.translator : null;
-		let sourcePrompt = this.translator?.original?.(scene);
-		if (translator) {
-			const english = await translator.translate(scene, req.signal);
-			if (english !== null && english !== scene) {
+		const interpreter = this.interpreter;
+		const interpretContext = {
+			model: String(o.generation?.model ?? s.generation.model),
+			cyrillicOnly: (req.interpret ?? (req.scene === void 0 ? "auto" : "cyrillic")) === "cyrillic",
+			signal: req.signal
+		};
+		let sourcePrompt = interpreter?.original?.(scene);
+		if (interpreter && scene.trim()) {
+			const result = await interpreter.interpret(scene, interpretContext);
+			if (result && result.prompt !== scene) {
 				sourcePrompt = scene;
-				scene = english;
+				scene = result.prompt;
+				if (result.negative) additionalNegative = combinePrefixes(additionalNegative, result.negative);
 			}
+		}
+		if (interpreter && hasCyrillic(additionalNegative)) {
+			const result = await interpreter.interpret(additionalNegative, {
+				...interpretContext,
+				negative: true
+			});
+			if (result) additionalNegative = result.prompt;
 		}
 		const assembled = this.assemble(mode, scene, additionalNegative, {
 			isSwipe,
 			expanded: req.scene !== void 0
 		}, o, forcedSize);
 		if (isSwipe && assembled.overrides.seed === void 0 && s.generation.seed >= 0) assembled.overrides.seed = -1;
-		if (translator) {
+		if (interpreter) {
 			const characters = assembled.overrides.characters ?? s.generation.characters;
-			if (characters.some((ch) => hasCyrillic(ch.prompt) || hasCyrillic(ch.negative))) assembled.overrides.characters = await Promise.all(characters.map(async (ch) => ({
-				...ch,
-				prompt: await translator.translate(ch.prompt, req.signal) ?? ch.prompt,
-				negative: await translator.translate(ch.negative, req.signal) ?? ch.negative
-			})));
+			let changed = false;
+			const converted = await Promise.all(characters.map(async (ch) => {
+				if (!ch.enabled) return ch;
+				const prompt = ch.prompt.trim() ? await interpreter.interpret(ch.prompt, interpretContext) : null;
+				const negative = hasCyrillic(ch.negative) ? await interpreter.interpret(ch.negative, {
+					...interpretContext,
+					negative: true
+				}) : null;
+				if (!prompt && !negative) return ch;
+				changed = true;
+				return {
+					...ch,
+					prompt: prompt?.prompt ?? ch.prompt,
+					negative: [negative?.prompt ?? ch.negative, prompt?.negative ?? ""].filter((n) => n.trim()).join(", ")
+				};
+			}));
+			if (changed) assembled.overrides.characters = converted;
 		}
 		const patch = { ...req.requestPatch };
 		const transport = this.controller.state.selection?.transport;
 		const model = String(assembled.overrides.model ?? s.generation.model);
 		const caps = getCapabilities(isModelId(model) ? model : DEFAULT_MODEL);
 		if (patch.vibes === void 0 && this.vibes && transport && patch.mode !== "inpaint") {
-			const vibes = await this.vibes.prepare(caps, transport, req.signal);
+			const vibes = await this.vibes.prepare(caps, transport, req.signal, req.vibes);
 			if (vibes.length) patch.vibes = vibes;
 		}
 		if (this.continuity && !req.noContinuity && !isSwipe && patch.mode === void 0 && patch.image === void 0) {
@@ -8131,6 +9122,74 @@ var InlineImages = class {
 		await commit(messageId);
 		settle(entryBlobKeys(entry));
 		return entry;
+	}
+	/** A finished reply: raw markers replaced with placeholders, pending entries added. */
+	async addPending(messageId, text, entries) {
+		const m = message(messageId);
+		m.mes = text;
+		entriesOf(m).push(...entries);
+		await commit(messageId);
+	}
+	/**
+	* Where an image lives now: the active text of a message (the hint first, messages may shift)
+	* or a swipe of it that is not shown. Null when it is gone (deleted, other chat).
+	*/
+	locate(imageId, hint) {
+		const chat = ctx().chat;
+		const order = [hint, ...chat.keys()].filter((i, n, all) => i >= 0 && i < chat.length && all.indexOf(i) === n);
+		for (const i of order) {
+			const m = chat[i];
+			const entry = readEntries(m.extra).find((e) => e.id === imageId);
+			if (entry) return {
+				messageId: i,
+				entry,
+				active: true
+			};
+			const infos = Array.isArray(m.swipe_info) ? m.swipe_info : [];
+			for (const info of infos) {
+				const other = readEntries(info?.extra).find((e) => e.id === imageId);
+				if (other) return {
+					messageId: i,
+					entry: other,
+					active: false
+				};
+			}
+		}
+		return null;
+	}
+	async commitLocated(found) {
+		if (found.active) await commit(found.messageId);
+		else await ctx().saveChat();
+	}
+	/** The generation of a pending image finished: its images become the swipes. */
+	async completePending(hint, imageId, produced) {
+		const found = this.locate(imageId, hint);
+		if (!found) return false;
+		const { entry } = found;
+		const swipes = [];
+		for (const image of produced.images) swipes.push(await this.storeImage(imageId, image, produced.meta));
+		if (!swipes.length) throw new NaiError("invalid-response", "none", { preview: "" });
+		const first = entry.swipes.length;
+		for (const swipe of swipes) addSwipe(entry, swipe);
+		setActiveSwipe(entry, first);
+		if (entry.marker) {
+			entry.marker.status = "done";
+			delete entry.marker.error;
+		}
+		await this.commitLocated(found);
+		settle(swipes.map((sw) => sw.blobKey));
+		this.record(produced, swipes, imageId);
+		return true;
+	}
+	/** Status of a marker image (pending again for a retry, error with the reason). */
+	async setMarkerStatus(hint, imageId, status, error) {
+		const found = this.locate(imageId, hint);
+		if (!found?.entry.marker) return false;
+		found.entry.marker.status = status;
+		if (error) found.entry.marker.error = error;
+		else delete found.entry.marker.error;
+		await this.commitLocated(found);
+		return true;
 	}
 	/** After an edit-mode insertion the placeholder lives in the textarea until ST saves it. */
 	async saveCreated(messageId, entry) {
@@ -8516,6 +9575,41 @@ var SceneService = class {
 			spec,
 			candidates
 		};
+	}
+	/**
+	* Characters named by an image marker (TZ Phase 7): passports by name or alias, positions and
+	* poses from the marker, the marker prompt as the shared part. Null when no name is known.
+	*/
+	async markerScene(prompt, chars) {
+		const { spec, candidates } = await this.emptySpec();
+		const caps = currentCaps();
+		const max = caps.maxCharacters > 0 ? caps.maxCharacters : 3;
+		const picked = [];
+		for (const ch of chars) {
+			if (picked.length >= max) break;
+			const candidate = candidates.find((c) => !picked.some((p) => p.candidate.key === c.key) && mentionIndex(ch.name, [c.name, ...c.aliases]) >= 0);
+			if (candidate) picked.push({
+				candidate,
+				ch
+			});
+		}
+		if (!picked.length) return null;
+		const wanted = picked.map(({ ch }) => markerPosition(ch.pos));
+		const positions = autoLayout(picked.length, caps, picked.map(({ candidate }, i) => wanted[i] ?? candidate.passport?.position ?? null));
+		const library = poseLibrary();
+		spec.participants = picked.map(({ candidate, ch }, i) => {
+			const pose = detectPose(`${ch.pose ?? ""} ${ch.action ?? ""}`, library);
+			const participant = participantFrom(candidate, positions[i] ?? {
+				x: .5,
+				y: .5
+			}, pose);
+			const extra = [pose ? "" : ch.pose ?? "", ch.action ?? ""].filter((x) => x.trim()).join(", ");
+			if (extra) participant.poseTags = [participant.poseTags, extra].filter((x) => x.trim()).join(", ");
+			return participant;
+		});
+		spec.base = prompt;
+		if (wanted.some(Boolean)) spec.useCoords = true;
+		return this.build(spec);
 	}
 	/** Location tags written by the LLM with the built-in "background" template. */
 	async describeLocation() {
@@ -9438,6 +10532,9 @@ async function openLightbox(item) {
 //#endregion
 //#region src/integration/inline-render.ts
 var IMG_ATTR = "data-naist-img";
+/** Transparent pixel used by placeholder and streaming <img> tags; the fragment carries the id. */
+var PIXEL = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
+var WIDGET_SRC_MARK = "#naist:";
 var MOUNTED_ATTR = "data-naist-mounted";
 var DRAG_TYPE = "application/x-naist-inline";
 function messageIdOf$1(element) {
@@ -9467,6 +10564,7 @@ var InlineRenderer = class {
 	/** Images waiting for their source; checked on scroll as well (IO needs a painting page). */
 	waiting = /* @__PURE__ */ new Set();
 	lazyTimer = null;
+	markers = null;
 	constructor(service, ui) {
 		this.service = service;
 		this.ui = ui;
@@ -9508,6 +10606,15 @@ var InlineRenderer = class {
 		this.service.onChange((messageId) => this.refreshMessage(messageId));
 		this.applyVisibility();
 		this.renderAll();
+	}
+	setMarkerHooks(hooks) {
+		this.markers = hooks;
+	}
+	/** Re-renders the message that shows an image (its generation started or ended). */
+	refreshImage(imageId) {
+		const span = document.querySelector(`#chat [${IMG_ATTR}="${imageId}"], #chat img[src$="${WIDGET_SRC_MARK}${imageId}"]`);
+		const id = span ? messageIdOf$1(span) : null;
+		if (id !== null) this.refreshMessage(id);
 	}
 	/** Re-renders every message (chat change, settings change). */
 	renderAll() {
@@ -9584,9 +10691,14 @@ var InlineRenderer = class {
 		const messageId = messageIdOf$1(mes);
 		if (messageId === null) return;
 		if (text.textContent?.includes("[nai:img:")) this.replaceTextPlaceholders(text);
+		text.querySelectorAll(`img[${IMG_ATTR}]`).forEach((img) => {
+			img.replaceWith(el("span", "", { [IMG_ATTR]: img.getAttribute("data-naist-img") ?? "" }));
+		});
+		const widgetImages = [...text.querySelectorAll(`img[src*="${WIDGET_SRC_MARK}"]`)];
 		const spans = [...text.querySelectorAll(`[${IMG_ATTR}]:not([${MOUNTED_ATTR}])`)];
-		if (!spans.length) return;
+		if (!spans.length && !widgetImages.length) return;
 		const entries = this.service.entries(messageId);
+		for (const img of widgetImages) this.fillWidgetImage(img, entries);
 		for (const span of spans) this.mount(span, messageId, entries);
 		this.groupRuns(text, entries);
 	}
@@ -9609,6 +10721,69 @@ var InlineRenderer = class {
 			node.replaceWith(fragment);
 		}
 	}
+	/** An <img> a widget regex rebuilt around a placeholder: only its source is set. */
+	fillWidgetImage(img, entries) {
+		const src = img.getAttribute("src") ?? "";
+		const id = src.slice(src.indexOf(WIDGET_SRC_MARK) + 7);
+		const entry = entries.find((e) => e.id === id);
+		const active = entry ? activeSwipe(entry) : void 0;
+		img.classList.add("naist-widget-img");
+		if (!active) {
+			const failed = entry?.marker !== void 0 && !(this.markers?.isRunning(id) ?? false);
+			img.classList.toggle("naist-marker-wait", !failed);
+			img.classList.toggle("naist-marker-failed", failed);
+			if (failed) {
+				img.dataset.naistRetry = id;
+				img.title = entry?.marker?.error || t("naist.markers.retryHint");
+			} else delete img.dataset.naistRetry;
+			return;
+		}
+		img.classList.remove("naist-marker-wait", "naist-marker-failed");
+		delete img.dataset.naistRetry;
+		img.dataset.naistKey = active.blobKey;
+		img.dataset.naistPath = active.filePath;
+		this.waiting.add(img);
+		this.intersection?.observe(img);
+	}
+	/** A marker image that does not exist yet: generating, interrupted or failed. */
+	mountMarker(span, entry) {
+		const marker = entry.marker;
+		const d = entry.display;
+		const running = this.markers?.isRunning(entry.id) ?? false;
+		const state = marker.status === "error" ? "error" : running ? "pending" : "interrupted";
+		span.className = `naist-inline naist-marker naist-marker-${state}`;
+		span.removeAttribute("style");
+		for (const [key, value] of Object.entries(displayStyle(d))) span.style.setProperty(key, value);
+		const box = el("span", "naist-marker-box");
+		const size = markerDimensions(marker.params.ratio, marker.params.size, true);
+		box.style.aspectRatio = `${size.width} / ${size.height}`;
+		const status = el("span", "naist-marker-status");
+		if (state === "pending") status.append(el("i", "fa-solid fa-spinner fa-spin"), document.createTextNode(` ${t("naist.markers.generating")}`));
+		else status.append(el("i", `fa-solid ${state === "error" ? "fa-triangle-exclamation" : "fa-circle-pause"}`), document.createTextNode(` ${state === "error" ? t("naist.markers.failed") : t("naist.markers.interrupted")}`));
+		box.append(status);
+		if (marker.error) {
+			const reason = el("span", "naist-marker-reason");
+			reason.textContent = marker.error;
+			box.append(reason);
+		}
+		const prompt = el("span", "naist-marker-prompt");
+		const text = marker.params.prompt;
+		prompt.textContent = text.length > 160 ? `${text.slice(0, 160)}...` : text;
+		box.append(prompt);
+		if (state !== "pending") {
+			const actions = el("span", "naist-marker-actions");
+			const retry = el("span", "menu_button naist-marker-retry", { "data-naist-action": "marker-retry" });
+			retry.append(el("i", "fa-solid fa-rotate"), document.createTextNode(` ${t("naist.markers.retry")}`));
+			actions.append(retry, icon("delete", "fa-trash-can", "naist.inline.delete"));
+			box.append(actions);
+		}
+		span.append(box);
+		if (d.caption) {
+			const caption = el("span", "naist-inline-caption");
+			caption.textContent = d.caption;
+			span.append(caption);
+		}
+	}
 	mount(span, messageId, entries) {
 		const id = span.getAttribute("data-naist-img") ?? "";
 		span.setAttribute(MOUNTED_ATTR, "1");
@@ -9620,6 +10795,10 @@ var InlineRenderer = class {
 			return;
 		}
 		const swipe = activeSwipe(entry);
+		if (!swipe && entry.marker) {
+			this.mountMarker(span, entry);
+			return;
+		}
 		const d = entry.display;
 		span.className = "naist-inline";
 		span.removeAttribute("style");
@@ -9731,6 +10910,14 @@ var InlineRenderer = class {
 	}
 	async onClick(event) {
 		const target = event.target;
+		const retryImage = target.closest("img[data-naist-retry]");
+		if (retryImage) {
+			event.preventDefault();
+			event.stopPropagation();
+			const messageId = messageIdOf$1(retryImage);
+			if (messageId !== null) await this.markers?.retry(messageId, retryImage.dataset.naistRetry ?? "");
+			return;
+		}
 		const span = target.closest(`[${IMG_ATTR}][${MOUNTED_ATTR}]`);
 		if (!span) return;
 		const messageId = messageIdOf$1(span);
@@ -9748,6 +10935,9 @@ var InlineRenderer = class {
 				return;
 			case "show-chat":
 				await this.setChatHidden(false);
+				return;
+			case "marker-retry":
+				await this.markers?.retry(messageId, imageId);
 				return;
 			case "prev":
 			case "next":
@@ -10146,44 +11336,6 @@ function registerInlineCommands(pipeline, service) {
 	}));
 	log.info("inline image commands registered");
 }
-//#endregion
-//#region src/features/prompt-tools/tag-db.ts
-var index = null;
-var loaded = null;
-var remoteCache = /* @__PURE__ */ new Map();
-async function fetchJson(path) {
-	const response = await fetch(`${extensionBaseUrl()}/${path}`);
-	if (!response.ok) throw new Error(`${path}: HTTP ${response.status}`);
-	return await response.json();
-}
-function tagIndex() {
-	if (!index) index = Promise.all([fetchJson("src/data/tags.json"), fetchJson("src/data/tags-ru.json")]).then(([rows, ru]) => {
-		loaded = buildTagIndex(rows, ru);
-		log.info("tag list ready:", rows.length, "tags");
-		return loaded;
-	}).catch((error) => {
-		log.warn("tag list unavailable:", error);
-		index = null;
-		return null;
-	});
-	return index;
-}
-function readyTagIndex() {
-	return loaded;
-}
-/** NovelAI suggestions for a fragment (cached per model and fragment). */
-async function remoteTagSuggestions(model, fragment, signal) {
-	const key = `${model}\u0000${fragment.toLowerCase()}`;
-	const cached = remoteCache.get(key);
-	if (cached) return cached;
-	const tags = await fetchTagSuggestions({
-		fetch: (input, init) => fetch(input, init),
-		headers: () => requestHeaders()
-	}, model, fragment, signal);
-	if (remoteCache.size > 500) remoteCache.clear();
-	remoteCache.set(key, tags);
-	return tags;
-}
 async function sha256Hex(text) {
 	const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
 	return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
@@ -10263,8 +11415,9 @@ var VibeLibraryProvider = class {
 		this.noticed.add(key);
 		this.notify(notice);
 	}
-	async prepare(caps, transport, signal) {
-		const planned = activeVibes();
+	async prepare(caps, transport, signal, extra = []) {
+		const active = activeVibes();
+		const planned = [...active, ...extra.filter((e) => !active.some((a) => a.item.id === e.item.id))];
 		if (!planned.length) return [];
 		const availability = vibeAvailability(caps, transport.features.vibes);
 		if (availability !== "ok") {
@@ -10370,83 +11523,758 @@ var VibeLibraryProvider = class {
 	}
 };
 //#endregion
-//#region src/features/translate/translate-service.ts
-var memory = /* @__PURE__ */ new Map();
-/** English text -> Russian original, for prompts translated by hand (kept for the session). */
-var originals = /* @__PURE__ */ new Map();
-function rememberOriginal(english, original) {
-	if (originals.size > 200) originals.clear();
-	originals.set(english.trim(), original);
+//#region src/features/continuity/continuity-service.ts
+var META_KEY = "nai_studio";
+function data() {
+	const meta = ctx().chatMetadata;
+	const root = meta[META_KEY] ??= {};
+	const value = root.continuity;
+	if (!value || typeof value !== "object") root.continuity = {
+		current: "",
+		locations: {}
+	};
+	else {
+		value.current ??= "";
+		value.locations ??= {};
+	}
+	return root.continuity;
 }
-async function translatePrompt(text) {
-	if (!needsTranslation(text)) return {
-		text,
-		cached: false
+function continuityData() {
+	return structuredClone(data());
+}
+async function setCurrentLocation(name) {
+	data().current = name.trim();
+	await ctx().saveMetadata();
+}
+async function forgetLocation(name) {
+	const d = data();
+	const key = locationKey(name);
+	const old = d.locations[key];
+	delete d.locations[key];
+	if (locationKey(d.current) === key) d.current = "";
+	await ctx().saveMetadata();
+	if (old?.vibeId) await removeVibe(old.vibeId);
+}
+/** Makes the image the reference of the location; in vibe mode also a vibe library item. */
+async function bindLocation(name, ref) {
+	const d = data();
+	const key = locationKey(name);
+	if (!key) return;
+	const previous = d.locations[key];
+	const stored = {
+		...ref,
+		name: name.trim(),
+		updatedAt: (/* @__PURE__ */ new Date()).toISOString()
 	};
-	const glossary = settings().translate.glossary;
-	const prepared = applyGlossary(text, glossary);
-	if (!needsTranslation(prepared)) return {
-		text: prepared,
-		cached: false
-	};
-	const key = `tr:${await sha256Hex(translationKeySource(prepared, glossary))}`;
-	const hit = memory.get(key) ?? await store().getItem(key);
-	if (hit && !needsTranslation(hit) && !looksLikeChatter(hit, prepared)) {
-		memory.set(key, hit);
+	if (settings().continuity.mode === "vibe") try {
+		const response = await fetch(ref.filePath);
+		if (response.ok) stored.vibeId = (await addVibe(await response.blob(), `@${name.trim()}`)).id;
+	} catch (error) {
+		log.warn("continuity vibe not created:", error);
+	}
+	d.locations[key] = stored;
+	d.current ||= name.trim();
+	await ctx().saveMetadata();
+	if (previous?.vibeId && previous.vibeId !== stored.vibeId) await removeVibe(previous.vibeId);
+}
+var ContinuityService = class {
+	follow(text) {
+		const d = data();
+		const detected = detectLocation(text, Object.values(d.locations).map((l) => l.name));
+		if (detected && locationKey(detected) !== locationKey(d.current)) {
+			d.current = detected;
+			ctx().saveMetadata();
+			log.info("continuity: location", detected);
+		}
+		return d;
+	}
+	async prepare(input) {
+		const s = settings().continuity;
+		if (!s.enabled) return null;
+		const d = this.follow(input.text);
+		if (s.mode !== "img2img" || !d.current) return null;
+		const ref = d.locations[locationKey(d.current)];
+		if (!ref?.filePath) return null;
+		const response = await fetch(ref.filePath, { signal: input.signal });
+		if (!response.ok) return null;
+		const png = await toPngBlob(await response.blob(), input.size);
+		log.info("continuity: img2img from", ref.name);
 		return {
-			text: hit,
-			cached: true
+			image: await blobToBase64$1(png),
+			strength: clampContinuityStrength(s.strength)
 		};
 	}
-	if (hit) {
-		memory.delete(key);
-		await store().removeItem(key);
+	/** Vibe mode: the reference of the current location as an extra vibe. */
+	vibes() {
+		const s = settings().continuity;
+		if (!s.enabled || s.mode !== "vibe" || !ctx().getCurrentChatId()) return [];
+		const d = data();
+		const vibeId = d.locations[locationKey(d.current)]?.vibeId;
+		const item = vibeId ? settings().vibes.items.find((i) => i.id === vibeId) : void 0;
+		return item ? [{
+			item,
+			strength: .6,
+			informationExtracted: 1
+		}] : [];
 	}
-	const c = ctx();
-	const structured = c.mainApi === "openai";
-	let raw;
-	try {
-		if (structured) {
-			const { system, prompt } = translationPrompt(prepared, glossary);
-			raw = await c.generateRaw({
-				prompt,
-				systemPrompt: system,
-				responseLength: 400,
-				jsonSchema: TRANSLATION_SCHEMA
-			});
-		} else raw = await c.generateRaw({
-			prompt: [{
-				role: "system",
-				content: completionPrompt(prepared, glossary)
-			}],
-			prefill: COMPLETION_PREFILL,
-			responseLength: 150
+	/** Auto-bind: plain generations (not tool results) become the reference of the current location. */
+	observe = (produced, outcome) => {
+		const s = settings().continuity;
+		if (!s.enabled || !s.autoBind || produced.meta.tool) return;
+		if (produced.meta.requestType !== "txt2img" && produced.meta.requestType !== "img2img") return;
+		if (produced.chatId !== ctx().getCurrentChatId()) return;
+		const d = data();
+		const path = outcome.paths[0];
+		if (!d.current || !path) return;
+		bindLocation(d.current, {
+			filePath: path,
+			width: produced.meta.width,
+			height: produced.meta.height,
+			model: produced.meta.model,
+			seed: produced.meta.seed,
+			prompt: produced.meta.scenePrompt
+		}).catch((error) => log.warn("continuity bind failed:", error));
+	};
+};
+//#endregion
+//#region src/features/markers/marker-service.ts
+/** Generation types that never carry markers to illustrate. */
+var SKIPPED_TYPES = /* @__PURE__ */ new Set(["impersonate", "quiet"]);
+/** Replies that may be illustrated automatically (not image messages, greetings, commands). */
+var AUTO_FILL_TYPES = /* @__PURE__ */ new Set([
+	"normal",
+	"swipe",
+	"regenerate"
+]);
+var clamp = (n, min, max) => Math.min(max, Math.max(min, n));
+var MarkerService = class {
+	pipeline;
+	inline;
+	scenes;
+	/** Jobs started while the current reply streams, by ordinal + generation key. */
+	early = /* @__PURE__ */ new Map();
+	generationType = "";
+	queue = Promise.resolve();
+	/** Images with a generation in flight (the renderer shows a spinner, not "interrupted"). */
+	running = /* @__PURE__ */ new Set();
+	listeners = /* @__PURE__ */ new Set();
+	lastScan = 0;
+	/** Messages already illustrated automatically during this generation. */
+	filled = /* @__PURE__ */ new Set();
+	/** A reply is being generated (the formatter hides a marker that is still being written). */
+	generating = false;
+	constructor(pipeline, inline, scenes) {
+		this.pipeline = pipeline;
+		this.inline = inline;
+		this.scenes = scenes;
+	}
+	isRunning(imageId) {
+		return this.running.has(imageId);
+	}
+	onRunningChange(listener) {
+		this.listeners.add(listener);
+	}
+	setRunning(imageId, on) {
+		if (on) this.running.add(imageId);
+		else this.running.delete(imageId);
+		for (const listener of this.listeners) listener(imageId);
+	}
+	/** Markers of a text that this configuration accepts. */
+	markersIn(text) {
+		const all = findMarkers(text);
+		return settings().markers.legacy ? all : all.filter((m) => m.format === "nai");
+	}
+	generationStarted(type, dryRun) {
+		if (dryRun || type === "quiet") return;
+		this.generationType = type || "normal";
+		this.generating = true;
+		this.filled.clear();
+		this.dropEarly();
+	}
+	get currentType() {
+		return this.generationType;
+	}
+	/** Generation ended or stopped: a reply that never got MESSAGE_RECEIVED is finalized here. */
+	async generationEnded() {
+		if (!this.generating) return;
+		this.generating = false;
+		const chat = ctx().chat;
+		const last = chat.length - 1;
+		const m = chat[last];
+		if (m && !m.is_user && !m.is_system && this.markersIn(m.mes).length) await this.finalize(last);
+		else this.dropEarly();
+	}
+	chatChanged() {
+		this.dropEarly();
+	}
+	dropEarly() {
+		for (const job of this.early.values()) job.abort.abort();
+		this.early.clear();
+	}
+	/** Streaming progress: start generating every complete marker of the reply so far. */
+	streamProgress() {
+		const s = settings().markers;
+		if (!s.enabled || !s.earlyStart || SKIPPED_TYPES.has(this.generationType)) return;
+		const now = Date.now();
+		if (now - this.lastScan < 250) return;
+		this.lastScan = now;
+		const chat = ctx().chat;
+		const m = chat[chat.length - 1];
+		if (!m || m.is_user || m.is_system) return;
+		const markers = this.markersIn(m.mes);
+		const allowed = Math.max(0, s.max - this.existingMarkers(m));
+		markers.slice(0, allowed).forEach((match, i) => {
+			const key = `${i}:${markerGenerationKey(match.params)}`;
+			if (!this.early.has(key)) {
+				log.info("marker complete while streaming, generation queued");
+				this.early.set(key, this.start(match.params));
+			}
 		});
-	} catch (error) {
-		throw new NaiError("translation-failed", "none", { message: String(error?.message ?? error) });
 	}
-	const result = structured ? parseTranslation(raw) : parseCompletion(raw);
-	if (!result || needsTranslation(result) || looksLikeChatter(result, prepared)) {
-		log.warn("translation answer not usable:", String(raw).slice(0, 200));
-		throw new NaiError("translation-failed", "none", { message: String(raw).slice(0, 120) });
+	/** Marker images already in a continued message count against the per-reply limit. */
+	existingMarkers(m) {
+		return this.generationType === "continue" ? readEntries(m.extra).filter((e) => e.marker).length : 0;
 	}
-	memory.set(key, result);
-	await store().setItem(key, result);
-	log.info("prompt translated", structured ? "(structured output)" : "(few-shot)");
-	return {
-		text: result,
-		cached: false
+	/** A finished reply: markers become pending inline images, generations are delivered. */
+	async finalize(messageId, type) {
+		const s = settings().markers;
+		const kind = type || this.generationType || "normal";
+		const early = this.early;
+		this.early = /* @__PURE__ */ new Map();
+		const c = ctx();
+		const m = c.chat[messageId];
+		if (!s.enabled || SKIPPED_TYPES.has(kind) || !m || m.is_user || m.is_system) {
+			for (const job of early.values()) job.abort.abort();
+			return;
+		}
+		const markers = this.markersIn(m.mes);
+		const existing = kind === "continue" ? readEntries(m.extra).filter((e) => e.marker).length : 0;
+		const { keep, drop } = limitMarkers(markers, Math.max(0, s.max - existing));
+		if (markers.length) {
+			const ids = keep.map(() => c.uuidv4());
+			const entries = keep.map((match, i) => createPendingImage(ids[i], match.params, this.inline.displayDefaults(markerDisplay(match.params))));
+			const text = replaceMarkers(m.mes, markers, (_match, i) => i < keep.length ? `[nai:img:${ids[i]}]` : "");
+			await this.inline.addPending(messageId, text, entries);
+			keep.forEach((match, i) => {
+				const key = `${i}:${markerGenerationKey(match.params)}`;
+				const job = early.get(key) ?? this.start(match.params);
+				early.delete(key);
+				this.deliver(messageId, ids[i], job);
+			});
+			if (drop.length) log.info(`${drop.length} marker(s) over the limit of ${s.max} removed`);
+		}
+		for (const job of early.values()) job.abort.abort();
+		const count = keep.length + existing;
+		const filledKey = `${messageId}:${m.swipe_id ?? 0}`;
+		if (s.autoFill && count < s.min && AUTO_FILL_TYPES.has(kind) && !this.filled.has(filledKey)) {
+			this.filled.add(filledKey);
+			await this.autoFill(messageId, s.min - count);
+		}
+	}
+	/** Fewer markers than the minimum: illustrations of the reply itself, appended at its end. */
+	async autoFill(messageId, missing) {
+		const m = ctx().chat[messageId];
+		const excerpt = m ? replyExcerpt(m.mes) : "";
+		if (!m || !excerpt) return;
+		const names = detectParticipants(excerpt, await sceneCandidates(), { max: 3 }).map((cand) => ({ name: cand.name }));
+		const params = {
+			prompt: excerpt,
+			...names.length ? { chars: names } : {}
+		};
+		const c = ctx();
+		const ids = Array.from({ length: Math.min(missing, 3) }, () => c.uuidv4());
+		const entries = ids.map((id) => createPendingImage(id, params, this.inline.displayDefaults(markerDisplay(params))));
+		await this.inline.addPending(messageId, `${m.mes}\n${ids.map((id) => `[nai:img:${id}]`).join("\n")}`, entries);
+		for (const id of ids) this.deliver(messageId, id, this.start(params));
+	}
+	/** Generates a marker image again (after an error or an interrupted generation). */
+	async retry(messageId, imageId) {
+		const entry = this.inline.entries(messageId).find((e) => e.id === imageId);
+		if (!entry?.marker || this.running.has(imageId)) return;
+		await this.inline.setMarkerStatus(messageId, imageId, "pending");
+		await this.deliver(messageId, imageId, this.start(entry.marker.params));
+	}
+	enqueue(task) {
+		const run = this.queue.then(task, task);
+		this.queue = run.catch(() => void 0);
+		return run;
+	}
+	start(params) {
+		const abort = new AbortController();
+		const promise = this.enqueue(async () => abort.signal.aborted ? null : await this.produce(params, abort.signal));
+		promise.catch(() => void 0);
+		return {
+			promise,
+			abort
+		};
+	}
+	async deliver(hint, imageId, job) {
+		const chatId = ctx().getCurrentChatId();
+		this.setRunning(imageId, true);
+		try {
+			const produced = await job.promise;
+			if (ctx().getCurrentChatId() !== chatId) return;
+			if (produced) await this.inline.completePending(hint, imageId, produced);
+			else await this.inline.setMarkerStatus(hint, imageId, "error", t("naist.markers.cancelled"));
+		} catch (error) {
+			const naiError = toNaiError(error);
+			log.warn("marker image failed:", naiError.code);
+			if (ctx().getCurrentChatId() === chatId) await this.inline.setMarkerStatus(hint, imageId, "error", naiError.code === "aborted" ? t("naist.markers.cancelled") : naiError.text);
+		} finally {
+			this.setRunning(imageId, false);
+		}
+	}
+	/** One marker as a generation request: every parameter it may carry. */
+	async produce(params, signal) {
+		const s = settings();
+		const freeOnly = s.anlas.freeOnly || !s.markers.allowPaid;
+		const model = markerModel(params.model) ?? s.generation.model;
+		const caps = getCapabilities(isModelId(model) ? model : DEFAULT_MODEL);
+		const dims = markerDimensions(params.ratio, params.size, freeOnly);
+		const generation = {
+			model,
+			width: dims.width,
+			height: dims.height
+		};
+		if (params.seed !== void 0) generation.seed = params.seed;
+		if (params.steps !== void 0) generation.steps = clamp(Math.round(params.steps), 1, freeOnly ? 28 : 50);
+		if (params.scale !== void 0) generation.scale = clamp(params.scale, 0, 10);
+		if (params.sampler) generation.sampler = params.sampler;
+		if (params.rescale !== void 0) generation.cfgRescale = clamp(params.rescale, 0, 1);
+		if (params.variety !== void 0) generation.varietyBoost = params.variety;
+		if (params.quality !== void 0) {
+			const current = s.generation.qualityPreset;
+			generation.qualityPreset = params.quality ? current === "none" ? "standard" : current : "none";
+		}
+		if (params.uc && UC_PRESETS.includes(params.uc)) generation.ucPreset = params.uc;
+		if (params.transparent !== void 0) generation.transparentBackground = params.transparent;
+		generation.samples = freeOnly ? 1 : clamp(Math.round(params.count ?? 1), 1, 4);
+		let scene = params.prompt;
+		let negative = params.negative ?? "";
+		const style = params.style?.trim();
+		if (style) {
+			const saved = s.prompts.styles.find((st) => st.name.trim().toLowerCase() === style.toLowerCase());
+			const join = (...parts) => parts.filter((p) => p.trim()).join(", ");
+			if (saved) {
+				scene = join(saved.prefix, scene, saved.suffix);
+				negative = join(negative, saved.negative);
+			} else scene = join(style, scene);
+		}
+		if (params.chars?.length) {
+			const built = await this.scenes.markerScene(scene, params.chars);
+			if (built) {
+				scene = built.prompt;
+				generation.characters = built.characters;
+				generation.useCoords = built.useCoords;
+			} else {
+				const actions = params.chars.map((ch) => [ch.pose, ch.action].filter(Boolean).join(" ")).filter(Boolean);
+				scene = [scene, ...actions].join(", ");
+			}
+		}
+		if (params.text && caps.family !== "v3") scene = `${scene}, text: ${params.text}`;
+		if (params.location && s.continuity.enabled) await setCurrentLocation(params.location).catch(() => void 0);
+		const requestPatch = params.ref ? await this.refPatch(params.ref, dims) : void 0;
+		const vibes = params.vibe ? this.namedVibe(params.vibe) : void 0;
+		const overrides = {
+			edit: false,
+			negative,
+			generation
+		};
+		return await this.pipeline.produce({
+			initiator: "message",
+			trigger: scene,
+			scene,
+			mode: MODE.FREE,
+			interpret: "auto",
+			overrides,
+			...requestPatch ? {
+				requestPatch,
+				noContinuity: true
+			} : {},
+			...vibes?.length ? { vibes } : {},
+			signal,
+			skipCostConfirm: true,
+			maxCost: freeOnly ? 0 : s.markers.maxCost
+		});
+	}
+	/** "ref": an earlier image of the chat (marker id or image id) as the img2img base. */
+	async refPatch(ref, size) {
+		if (!this.pipeline.studio.state.selection?.transport?.features.img2img) return void 0;
+		const chat = ctx().chat;
+		for (let i = chat.length - 1; i >= 0; i--) {
+			const entry = readEntries(chat[i]?.extra).find((e) => e.id === ref || e.marker?.params.id === ref);
+			const swipe = entry ? activeSwipe(entry) : void 0;
+			if (!swipe) continue;
+			try {
+				return {
+					mode: "img2img",
+					image: await blobToBase64$1(await toPngBlob(await this.inline.sourceBlob(swipe), size)),
+					strength: settings().continuity.strength
+				};
+			} catch (error) {
+				log.warn("marker ref image not available:", error);
+				return;
+			}
+		}
+	}
+	namedVibe(name) {
+		const wanted = name.trim().toLowerCase();
+		const item = vibeItems().find((v) => v.name.trim().toLowerCase() === wanted);
+		return item ? [{
+			item,
+			strength: .6,
+			informationExtracted: 1
+		}] : [];
+	}
+};
+//#endregion
+//#region src/integration/markers-setup.ts
+var PROMPT_KEY = "nai_studio_markers";
+/** extension_prompt_types.IN_CHAT and extension_prompt_roles in public/script.js. */
+var IN_CHAT = 1;
+var ROLES = {
+	system: 0,
+	user: 1,
+	assistant: 2
+};
+var NO_INSTRUCTION = /* @__PURE__ */ new Set(["impersonate", "quiet"]);
+var service = null;
+/** Placeholder as <img> for display regexes; the id is in the attribute and in the src fragment. */
+function compatImage(id) {
+	return `<img ${IMG_ATTR}="${id}" class="naist-compat" src="${PIXEL}${WIDGET_SRC_MARK}${id}" alt="">`;
+}
+/** A complete marker while the reply streams: an <img> box (widgets keep their layout). */
+function streamingImage(params) {
+	const size = markerDimensions(params.ratio, params.size, true);
+	const label = escapeHtml$2((params.caption || params.prompt).slice(0, 200));
+	return `<img class="naist-marker-stream" src="${PIXEL}#naist-stream" width="${size.width}" height="${size.height}" alt="${label}" title="${label}">`;
+}
+function formatHook(mes, info) {
+	const s = settings();
+	let out = mes;
+	if (s.markers.enabled && service && !info.isUser) {
+		if (service.generating && info.messageId === ctx().chat.length - 1) {
+			const cut = partialMarkerStart(out);
+			if (cut >= 0) out = out.slice(0, cut);
+		}
+		const markers = service.markersIn(out);
+		if (markers.length) out = replaceMarkers(out, markers, (m) => streamingImage(m.params));
+	}
+	if (s.inline.regexCompat && out.includes("[nai:img:")) out = out.replace(new RegExp(PLACEHOLDER_PATTERN.source, "g"), (_m, id) => compatImage(id));
+	return out;
+}
+/** Puts the current instruction in place (or clears it); called on settings and chat changes. */
+async function refreshMarkerInstruction() {
+	const c = ctx();
+	const s = settings().markers;
+	let value = "";
+	if (s.enabled && s.inject) {
+		let chars = [];
+		try {
+			chars = (await sceneCandidates()).filter((cand) => cand.passport).map((cand) => cand.name);
+		} catch (error) {
+			log.warn("marker instruction: characters not available", error);
+		}
+		value = markerInstruction(s.preset, s.template, {
+			min: s.min,
+			max: s.max,
+			captionLanguage: s.captionLanguage,
+			chars
+		});
+	}
+	c.setExtensionPrompt(PROMPT_KEY, value, IN_CHAT, Math.max(0, s.depth), false, ROLES[s.role] ?? 0, () => {
+		const now = settings().markers;
+		return now.enabled && now.inject && !NO_INSTRUCTION.has(service?.currentType ?? "");
+	});
+}
+function setupMarkers(pipeline, inline, scenes) {
+	const c = ctx();
+	const markers = new MarkerService(pipeline, inline, scenes);
+	service = markers;
+	c.messageFormatter.addHook(formatHook, { stage: "beforeRegex" });
+	const renderer = inlineRenderer();
+	renderer?.setMarkerHooks({
+		isRunning: (id) => markers.isRunning(id),
+		retry: (messageId, imageId) => markers.retry(messageId, imageId)
+	});
+	markers.onRunningChange((id) => renderer?.refreshImage(id));
+	const on = (name, handler) => {
+		const event = c.eventTypes[name];
+		if (event) c.eventSource.on(event, handler);
+	};
+	on("GENERATION_STARTED", async (type, _options, dryRun) => {
+		markers.generationStarted(String(type ?? ""), Boolean(dryRun));
+		if (!dryRun) await refreshMarkerInstruction();
+	});
+	on("STREAM_TOKEN_RECEIVED", () => markers.streamProgress());
+	on("MESSAGE_RECEIVED", (id, type) => {
+		markers.finalize(Number(id), typeof type === "string" ? type : void 0).catch((error) => log.warn("markers", error));
+	});
+	for (const name of ["GENERATION_ENDED", "GENERATION_STOPPED"]) on(name, () => {
+		setTimeout(() => void markers.generationEnded().catch((error) => log.warn("markers", error)), 150);
+	});
+	on("CHAT_CHANGED", () => {
+		markers.chatChanged();
+		refreshMarkerInstruction();
+	});
+	refreshMarkerInstruction();
+	return markers;
+}
+/** Settings that change how messages are formatted: re-render the chat. */
+function onMarkerSettingChange(path) {
+	if (path.startsWith("markers.")) refreshMarkerInstruction();
+	if (path === "markers.enabled" || path === "markers.legacy" || path === "inline.regexCompat") {
+		const c = ctx();
+		c.chat.forEach((m, id) => {
+			if (document.querySelector(`#chat .mes[mesid="${id}"]`)) c.updateMessageBlock(id, m);
+		});
+	}
+}
+//#endregion
+//#region src/features/prompt-tools/tag-db.ts
+var index = null;
+var loaded = null;
+var remoteCache = /* @__PURE__ */ new Map();
+async function fetchJson(path) {
+	const response = await fetch(`${extensionBaseUrl()}/${path}`);
+	if (!response.ok) throw new Error(`${path}: HTTP ${response.status}`);
+	return await response.json();
+}
+function tagIndex() {
+	if (!index) index = Promise.all([fetchJson("src/data/tags.json"), fetchJson("src/data/tags-ru.json")]).then(([rows, ru]) => {
+		loaded = buildTagIndex(rows, ru);
+		log.info("tag list ready:", rows.length, "tags");
+		return loaded;
+	}).catch((error) => {
+		log.warn("tag list unavailable:", error);
+		index = null;
+		return null;
+	});
+	return index;
+}
+function readyTagIndex() {
+	return loaded;
+}
+/** NovelAI suggestions for a fragment (cached per model and fragment). */
+async function remoteTagSuggestions(model, fragment, signal) {
+	const key = `${model}\u0000${fragment.toLowerCase()}`;
+	const cached = remoteCache.get(key);
+	if (cached) return cached;
+	const tags = await fetchTagSuggestions({
+		fetch: (input, init) => fetch(input, init),
+		headers: () => requestHeaders()
+	}, model, fragment, signal);
+	if (remoteCache.size > 500) remoteCache.clear();
+	remoteCache.set(key, tags);
+	return tags;
+}
+//#endregion
+//#region src/features/language/interpreter.ts
+var memory$1 = /* @__PURE__ */ new Map();
+var warnedFallback = false;
+async function callMain(text) {
+	const c = ctx();
+	const glossary = settings().translate.glossary;
+	if (c.mainApi === "openai") {
+		const { system, prompt } = interpretMessages(text, glossary);
+		return await c.generateRaw({
+			prompt,
+			systemPrompt: system,
+			responseLength: 500,
+			jsonSchema: INTERPRET_SCHEMA
+		});
+	}
+	return await c.generateRaw({
+		prompt: [{
+			role: "system",
+			content: interpretCompletion(text, glossary)
+		}],
+		prefill: COMPLETION_INTERPRET_PREFILL,
+		responseLength: 250
+	});
+}
+async function callProfile(text) {
+	const service = ctx().ConnectionManagerRequestService;
+	const id = settings().language.profileId;
+	if (!id) throw new NaiError("translation-failed", "none", { message: "no connection profile selected" });
+	const glossary = settings().translate.glossary;
+	const profile = service.getProfile(id);
+	const result = service.validateProfile(profile).selected === "openai" ? await service.sendRequest(id, [{
+		role: "system",
+		content: interpretMessages(text, glossary).system
+	}, {
+		role: "user",
+		content: text
+	}], 500, {
+		stream: false,
+		extractData: true,
+		includePreset: false
+	}, { json_schema: INTERPRET_SCHEMA }) : await service.sendRequest(id, `${interpretCompletion(text, glossary)}\n${COMPLETION_INTERPRET_PREFILL}`, 250, {
+		stream: false,
+		extractData: true,
+		includePreset: true,
+		includeInstruct: false
+	});
+	return result && typeof result === "object" && "content" in result ? result.content : result;
+}
+async function callNovelAi(text) {
+	const { system } = interpretMessages(text, settings().translate.glossary);
+	return await novelAiText({
+		fetch: (input, init) => fetch(input, init),
+		headers: () => requestHeaders()
+	}, {
+		model: settings().language.novelaiModel,
+		messages: [{
+			role: "system",
+			content: system
+		}, {
+			role: "user",
+			content: text
+		}],
+		maxTokens: 500
+	});
+}
+var BACKENDS = {
+	main: callMain,
+	profile: callProfile,
+	novelai: callNovelAi
+};
+function matchAll(index, tags) {
+	return index ? matchTags(index, tags) : {
+		tags: tags.map((t) => tagName(t)).filter(Boolean),
+		unmatched: []
 	};
 }
-/** Pipeline hook: translates Cyrillic prompts before every generation when auto mode is on. */
-var autoTranslator = {
-	enabled: () => settings().translate.auto,
-	async translate(text) {
-		return needsTranslation(text) ? (await translatePrompt(text)).text : null;
+/** Without an LLM: every comma-separated piece through the tag list and the Russian aliases. */
+function dictionaryInterpretation(index, text) {
+	const pieces = text.split(/[,.;\n]/).map((p) => p.trim()).filter(Boolean);
+	const tags = [];
+	const rest = [];
+	for (const piece of pieces) {
+		const hit = index ? matchTag(index, piece) : null;
+		if (hit) tags.push(hit.tag);
+		else if (!hasCyrillic(piece)) rest.push(piece);
+	}
+	return {
+		tags: [...tags, ...rest],
+		sentence: "",
+		text: "",
+		negative: []
+	};
+}
+function finish(interp, index, family, block, asNegative = false) {
+	const matched = matchAll(index, interp.tags);
+	const negative = matchAll(index, interp.negative);
+	const negativeTags = [...negative.tags, ...negative.unmatched.filter((n) => !hasCyrillic(n))];
+	if (asNegative) {
+		const all = [
+			...matched.tags,
+			...matched.unmatched.filter((n) => !hasCyrillic(n)),
+			...negativeTags
+		];
+		return {
+			prompt: [...new Set(all)].join(", "),
+			negative: "",
+			unmatched: matched.unmatched
+		};
+	}
+	const withText = block && !interp.text ? {
+		...interp,
+		text: block
+	} : interp;
+	const kept = withoutNegated(matched, negativeTags);
+	return {
+		prompt: assembleInterpretation(withText, kept, family),
+		negative: negativeTags.join(", "),
+		unmatched: kept.unmatched
+	};
+}
+/**
+* The NovelAI prompt for a text and model, or null when the text needs no interpretation (already
+* tags, or prose the model reads as is). `force` interprets anything that is not a tag list.
+*/
+async function interpretForModel(text, model, options = {}) {
+	const s = settings().language;
+	const id = isModelId(model) ? model : DEFAULT_MODEL;
+	const asNegative = options.negative === true;
+	const family = asNegative ? "v3" : getCapabilities(id).family;
+	if (options.cyrillicOnly && !hasCyrillic(text)) return null;
+	const index = await tagIndex();
+	if (!needsInterpretation(text, family, options.force ? "always" : s.mode, index, s.russianOnV5)) return null;
+	const glossary = settings().translate.glossary;
+	const block = textBlockOf(text);
+	const prepared = applyGlossary(block === null ? text : withoutTextBlocks(text), glossary).trim();
+	if (!prepared) return null;
+	if (!hasCyrillic(prepared) && looksLikeTags(index, prepared)) return {
+		...finish(dictionaryInterpretation(index, prepared), index, family, block, asNegative),
+		cached: false,
+		via: "dictionary"
+	};
+	const key = `int:${await sha256Hex(interpretCacheSource(prepared, family, glossary))}`;
+	const hit = memory$1.get(key) ?? await store().getItem(key);
+	if (hit) {
+		memory$1.set(key, hit);
+		return {
+			...finish(hit, index, family, block, asNegative),
+			cached: true,
+			via: s.backend
+		};
+	}
+	let interp = null;
+	try {
+		const raw = await BACKENDS[s.backend](prepared);
+		interp = parseInterpretation(raw);
+		const flat = interp ? [...interp.tags, interp.sentence].join(" ") : "";
+		if (!interp || looksLikeChatter(flat, prepared) || hasCyrillic(interp.tags.join(" "))) {
+			log.warn("interpretation not usable:", String(typeof raw === "string" ? raw : JSON.stringify(raw)).slice(0, 200));
+			interp = null;
+		}
+	} catch (error) {
+		log.warn("interpretation failed:", error);
+		if (options.strict) throw error instanceof NaiError ? error : new NaiError("translation-failed", "none", { message: String(error?.message ?? error) });
+	}
+	if (!interp) {
+		if (options.strict) throw new NaiError("translation-failed", "none", { message: "the answer was not usable" });
+		if (!warnedFallback) {
+			warnedFallback = true;
+			toastr.warning(t("naist.interpret.fallback"), t("naist.interpret.title"));
+		}
+		return {
+			...finish(dictionaryInterpretation(index, prepared), index, family, block, asNegative),
+			cached: false,
+			via: "dictionary"
+		};
+	}
+	memory$1.set(key, interp);
+	await store().setItem(key, interp);
+	log.info("prompt interpreted via", s.backend, "for", family);
+	return {
+		...finish(interp, index, family, block, asNegative),
+		cached: false,
+		via: s.backend
+	};
+}
+/** English text → Russian original, for prompts converted by hand in a field (kept for the session). */
+var originals = /* @__PURE__ */ new Map();
+function rememberSource(prompt, original) {
+	if (originals.size > 200) originals.clear();
+	originals.set(prompt.trim(), original);
+}
+/** Pipeline hook: every generation's scene and character prompts. */
+var languageInterpreter = {
+	async interpret(text, context) {
+		const result = await interpretForModel(text, context.model, {
+			cyrillicOnly: context.cyrillicOnly,
+			negative: context.negative
+		});
+		return result ? {
+			prompt: result.prompt,
+			negative: result.negative
+		} : null;
 	},
 	original(text) {
 		const trimmed = text.trim();
-		for (const [english, original] of originals) if (english && trimmed.includes(english)) return original;
+		for (const [prompt, original] of originals) if (prompt && trimmed.includes(prompt)) return original;
 	}
 };
 //#endregion
@@ -10564,11 +12392,17 @@ function line(field) {
 	field.after(el);
 	return el;
 }
-function refreshLine(field) {
+/** Negative prompt fields get tags only. */
+function isNegativeField(field) {
+	return /negative|(^|[-_\s])uc($|[-_\s])/i.test(`${field.className} ${field.id} ${field.dataset.naistRole ?? ""}`);
+}
+function refreshLine(field, model) {
 	const el = line(field);
 	const parts = [];
-	if (hasCyrillic(field.value)) parts.push(`<span class="menu_button naist-assist-translate" title="${escapeHtml$2(t("naist.translate.buttonHint"))}">${escapeHtml$2(t("naist.translate.button"))}</span>`);
 	const index = readyTagIndex();
+	const id = modelOf(field, model);
+	const family = getCapabilities(isModelId(id) ? id : DEFAULT_MODEL).family;
+	if (field.value.trim() && needsInterpretation(field.value, family, "always", index)) parts.push(`<span class="menu_button naist-assist-translate" title="${escapeHtml$2(t("naist.interpret.buttonHint"))}">${escapeHtml$2(t("naist.interpret.button"))}</span>`);
 	if (index && settings().promptTools.warnUnknown && !hasCyrillic(field.value)) {
 		const unknown = unknownTags(index, field.value).slice(0, 8);
 		if (unknown.length) parts.push(`<span class="naist-muted">${escapeHtml$2(t("naist.tags.unknown", { tags: unknown.join(", ") }))}</span>`);
@@ -10576,20 +12410,30 @@ function refreshLine(field) {
 	el.innerHTML = parts.join(" ");
 	el.classList.toggle("naist-hidden", parts.length === 0);
 }
-async function translateField(field, button) {
+async function convertField(field, button, model) {
 	button.classList.add("disabled");
 	try {
 		const original = field.value;
-		const result = await translatePrompt(original);
-		rememberOriginal(result.text, original);
-		field.value = result.text;
+		const result = await interpretForModel(original, modelOf(field, model), {
+			force: true,
+			strict: true,
+			negative: isNegativeField(field)
+		});
+		if (!result) {
+			toastr.info(t("naist.interpret.already"), t("naist.interpret.title"));
+			return;
+		}
+		rememberSource(result.prompt, original);
+		field.value = result.prompt;
 		field.dispatchEvent(new Event("input", { bubbles: true }));
-		toastr.info(t(result.cached ? "naist.translate.cached" : "naist.translate.done"), t("naist.translate.title"));
+		const done = t(result.cached ? "naist.interpret.cached" : "naist.interpret.done");
+		const extra = result.unmatched.length ? ` ${t("naist.interpret.unmatched", { tags: result.unmatched.slice(0, 6).join(", ") })}` : "";
+		toastr.info(done + extra, t("naist.interpret.title"));
 	} catch (error) {
 		reportGenerationError(error);
 	} finally {
 		button.classList.remove("disabled");
-		refreshLine(field);
+		refreshLine(field, model);
 	}
 }
 /**
@@ -10607,13 +12451,13 @@ function attachPromptAssist(root, selector, model) {
 		if (!field) return;
 		suggest(field, model);
 		if (lineTimer) clearTimeout(lineTimer);
-		lineTimer = setTimeout(() => refreshLine(field), 400);
+		lineTimer = setTimeout(() => refreshLine(field, model), 400);
 	});
 	root.addEventListener("focusin", (event) => {
 		const field = fieldOf(event.target);
 		if (field) {
 			tagIndex();
-			refreshLine(field);
+			refreshLine(field, model);
 		}
 	});
 	root.addEventListener("focusout", (event) => {
@@ -10622,7 +12466,7 @@ function attachPromptAssist(root, selector, model) {
 	root.addEventListener("click", (event) => {
 		const button = event.target.closest(".naist-assist-translate");
 		const field = button?.parentElement?.previousElementSibling;
-		if (button && field && fieldOf(field)) translateField(field, button);
+		if (button && field && fieldOf(field)) convertField(field, button, model);
 	});
 	root.addEventListener("keydown", (event) => {
 		const field = fieldOf(event.target);
@@ -11568,122 +13412,8 @@ var ComicService = class {
 	}
 };
 //#endregion
-//#region src/features/continuity/continuity-service.ts
-var META_KEY = "nai_studio";
-function data() {
-	const meta = ctx().chatMetadata;
-	const root = meta[META_KEY] ??= {};
-	const value = root.continuity;
-	if (!value || typeof value !== "object") root.continuity = {
-		current: "",
-		locations: {}
-	};
-	else {
-		value.current ??= "";
-		value.locations ??= {};
-	}
-	return root.continuity;
-}
-function continuityData() {
-	return structuredClone(data());
-}
-async function setCurrentLocation(name) {
-	data().current = name.trim();
-	await ctx().saveMetadata();
-}
-async function forgetLocation(name) {
-	const d = data();
-	const key = locationKey(name);
-	const old = d.locations[key];
-	delete d.locations[key];
-	if (locationKey(d.current) === key) d.current = "";
-	await ctx().saveMetadata();
-	if (old?.vibeId) await removeVibe(old.vibeId);
-}
-/** Makes the image the reference of the location; in vibe mode also a vibe library item. */
-async function bindLocation(name, ref) {
-	const d = data();
-	const key = locationKey(name);
-	if (!key) return;
-	const previous = d.locations[key];
-	const stored = {
-		...ref,
-		name: name.trim(),
-		updatedAt: (/* @__PURE__ */ new Date()).toISOString()
-	};
-	if (settings().continuity.mode === "vibe") try {
-		const response = await fetch(ref.filePath);
-		if (response.ok) stored.vibeId = (await addVibe(await response.blob(), `@${name.trim()}`)).id;
-	} catch (error) {
-		log.warn("continuity vibe not created:", error);
-	}
-	d.locations[key] = stored;
-	d.current ||= name.trim();
-	await ctx().saveMetadata();
-	if (previous?.vibeId && previous.vibeId !== stored.vibeId) await removeVibe(previous.vibeId);
-}
-var ContinuityService = class {
-	follow(text) {
-		const d = data();
-		const detected = detectLocation(text, Object.values(d.locations).map((l) => l.name));
-		if (detected && locationKey(detected) !== locationKey(d.current)) {
-			d.current = detected;
-			ctx().saveMetadata();
-			log.info("continuity: location", detected);
-		}
-		return d;
-	}
-	async prepare(input) {
-		const s = settings().continuity;
-		if (!s.enabled) return null;
-		const d = this.follow(input.text);
-		if (s.mode !== "img2img" || !d.current) return null;
-		const ref = d.locations[locationKey(d.current)];
-		if (!ref?.filePath) return null;
-		const response = await fetch(ref.filePath, { signal: input.signal });
-		if (!response.ok) return null;
-		const png = await toPngBlob(await response.blob(), input.size);
-		log.info("continuity: img2img from", ref.name);
-		return {
-			image: await blobToBase64$1(png),
-			strength: clampContinuityStrength(s.strength)
-		};
-	}
-	/** Vibe mode: the reference of the current location as an extra vibe. */
-	vibes() {
-		const s = settings().continuity;
-		if (!s.enabled || s.mode !== "vibe" || !ctx().getCurrentChatId()) return [];
-		const d = data();
-		const vibeId = d.locations[locationKey(d.current)]?.vibeId;
-		const item = vibeId ? settings().vibes.items.find((i) => i.id === vibeId) : void 0;
-		return item ? [{
-			item,
-			strength: .6,
-			informationExtracted: 1
-		}] : [];
-	}
-	/** Auto-bind: plain generations (not tool results) become the reference of the current location. */
-	observe = (produced, outcome) => {
-		const s = settings().continuity;
-		if (!s.enabled || !s.autoBind || produced.meta.tool) return;
-		if (produced.meta.requestType !== "txt2img" && produced.meta.requestType !== "img2img") return;
-		if (produced.chatId !== ctx().getCurrentChatId()) return;
-		const d = data();
-		const path = outcome.paths[0];
-		if (!d.current || !path) return;
-		bindLocation(d.current, {
-			filePath: path,
-			width: produced.meta.width,
-			height: produced.meta.height,
-			model: produced.meta.model,
-			seed: produced.meta.seed,
-			prompt: produced.meta.scenePrompt
-		}).catch((error) => log.warn("continuity bind failed:", error));
-	};
-};
-//#endregion
 //#region package.json
-var version = "0.6.0";
+var version = "0.7.0";
 //#endregion
 //#region src/features/settings-io/settings-io.ts
 async function exportSettingsFile(includeImages) {
@@ -11693,16 +13423,16 @@ async function exportSettingsFile(includeImages) {
 		const blob = await imageStore().getItem(key);
 		if (blob) images[key] = await blobToBase64$1(blob);
 	}
-	const data = buildSettingsExport(s, 6, version, images);
+	const data = buildSettingsExport(s, 7, version, images);
 	const name = `nai-studio-settings-${data.exportedAt.slice(0, 10)}.json`;
 	downloadBlob(new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }), name);
 	return name;
 }
 async function importSettingsText(text) {
-	const check = checkSettingsImport(text, 6);
+	const check = checkSettingsImport(text, 7);
 	if (!check.ok) throw new NaiError("import-failed", "none", { reason: t(`naist.io.reason.${check.reason}`, {
 		version: check.schemaVersion ?? "",
-		current: 6
+		current: 7
 	}) });
 	try {
 		const key = await backupSettings(settings(), settings().schemaVersion);
@@ -12026,6 +13756,69 @@ var SpriteService = class {
 		return await this.draw(appearance, job.label, options, seed, source);
 	}
 };
+//#endregion
+//#region src/features/translate/translate-service.ts
+var memory = /* @__PURE__ */ new Map();
+async function translatePrompt(text) {
+	if (!needsTranslation(text)) return {
+		text,
+		cached: false
+	};
+	const glossary = settings().translate.glossary;
+	const prepared = applyGlossary(text, glossary);
+	if (!needsTranslation(prepared)) return {
+		text: prepared,
+		cached: false
+	};
+	const key = `tr:${await sha256Hex(translationKeySource(prepared, glossary))}`;
+	const hit = memory.get(key) ?? await store().getItem(key);
+	if (hit && !needsTranslation(hit) && !looksLikeChatter(hit, prepared)) {
+		memory.set(key, hit);
+		return {
+			text: hit,
+			cached: true
+		};
+	}
+	if (hit) {
+		memory.delete(key);
+		await store().removeItem(key);
+	}
+	const c = ctx();
+	const structured = c.mainApi === "openai";
+	let raw;
+	try {
+		if (structured) {
+			const { system, prompt } = translationPrompt(prepared, glossary);
+			raw = await c.generateRaw({
+				prompt,
+				systemPrompt: system,
+				responseLength: 400,
+				jsonSchema: TRANSLATION_SCHEMA
+			});
+		} else raw = await c.generateRaw({
+			prompt: [{
+				role: "system",
+				content: completionPrompt(prepared, glossary)
+			}],
+			prefill: COMPLETION_PREFILL,
+			responseLength: 150
+		});
+	} catch (error) {
+		throw new NaiError("translation-failed", "none", { message: String(error?.message ?? error) });
+	}
+	const result = structured ? parseTranslation(raw) : parseCompletion(raw);
+	if (!result || needsTranslation(result) || looksLikeChatter(result, prepared)) {
+		log.warn("translation answer not usable:", String(raw).slice(0, 200));
+		throw new NaiError("translation-failed", "none", { message: String(raw).slice(0, 120) });
+	}
+	memory.set(key, result);
+	await store().setItem(key, result);
+	log.info("prompt translated", structured ? "(structured output)" : "(few-shot)");
+	return {
+		text: result,
+		cached: false
+	};
+}
 //#endregion
 //#region src/features/prompt-tools/tokenizers.ts
 var env = {
@@ -12568,6 +14361,24 @@ function registerCommands$1() {
 		}
 	}));
 	parser.addCommandObject(Command.fromProps({
+		name: "nai-prompt",
+		returns: t("naist.command.promptReturns"),
+		helpString: t("naist.command.promptHelp"),
+		unnamedArgumentList: text(t("naist.command.arg.promptText")),
+		callback: async (_args, value) => {
+			const input = String(value ?? "");
+			try {
+				return (await interpretForModel(input, settings().generation.model, {
+					force: true,
+					strict: true
+				}))?.prompt ?? input;
+			} catch (error) {
+				reportGenerationError(error);
+				return "";
+			}
+		}
+	}));
+	parser.addCommandObject(Command.fromProps({
 		name: "nai-location",
 		returns: t("naist.command.locationReturns"),
 		helpString: t("naist.command.locationHelp"),
@@ -12610,7 +14421,7 @@ function installMenuOption() {
 	}
 }
 function setupPhase6(pipeline, scenes) {
-	pipeline.setTranslator(autoTranslator);
+	pipeline.setInterpreter(languageInterpreter);
 	const continuity = new ContinuityService();
 	pipeline.setContinuityProvider(continuity);
 	pipeline.onGenerated(continuity.observe);
@@ -14354,7 +16165,7 @@ function bindSettings(root, onChange = () => {}) {
 }
 //#endregion
 //#region src/ui/templates/tab-chat.html?raw
-var tab_chat_default = "<div class=\"naist-section\">\n    <b data-i18n=\"naist.chat.visibility\"></b>\n    <div class=\"naist-hint\" data-i18n=\"naist.chat.visibilityHint\"></div>\n    <div class=\"naist-flags\">\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"chat.visibility.panel\" /><span\n                data-i18n=\"naist.initiator.panel\"\n            ></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"chat.visibility.command\" /><span\n                data-i18n=\"naist.initiator.command\"\n            ></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"chat.visibility.wand\" /><span data-i18n=\"naist.initiator.wand\"></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"chat.visibility.interactive\" /><span\n                data-i18n=\"naist.initiator.interactive\"\n            ></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"chat.visibility.tool\" /><span data-i18n=\"naist.initiator.tool\"></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"chat.visibility.auto\" /><span data-i18n=\"naist.initiator.auto\"></span\n        ></label>\n    </div>\n    <div class=\"naist-grid2\">\n        <div>\n            <label for=\"naist_author\" data-i18n=\"naist.chat.author\"></label>\n            <select id=\"naist_author\" class=\"text_pole\" data-setting=\"chat.author\">\n                <option value=\"character\" data-i18n=\"naist.chat.authorCharacter\"></option>\n                <option value=\"user\" data-i18n=\"naist.chat.authorUser\"></option>\n            </select>\n        </div>\n        <div>\n            <label for=\"naist_confirm_above\" data-i18n=\"naist.chat.confirmAbove\"></label>\n            <input id=\"naist_confirm_above\" type=\"number\" min=\"0\" class=\"text_pole\" data-setting=\"anlas.confirmAbove\" />\n        </div>\n    </div>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"chat.hidePrompt\" /><span data-i18n=\"naist.chat.hidePrompt\"></span\n    ></label>\n</div>\n\n<div class=\"naist-section\">\n    <b data-i18n=\"naist.chat.prompting\"></b>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"modes.refine\" /><span data-i18n=\"naist.chat.refine\"></span\n    ></label>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"modes.multimodal\" /><span data-i18n=\"naist.chat.multimodal\"></span\n    ></label>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"modes.freeExtend\" /><span data-i18n=\"naist.chat.freeExtend\"></span\n    ></label>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"modes.snap\" /><span data-i18n=\"naist.chat.snap\"></span\n    ></label>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"modes.minimalProcessing\" /><span\n            data-i18n=\"naist.chat.minimalProcessing\"\n        ></span\n    ></label>\n</div>\n\n<div class=\"naist-section\">\n    <b data-i18n=\"naist.chat.llm\"></b>\n    <div class=\"naist-hint\" data-i18n=\"naist.chat.llmHint\"></div>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"chat.interactive\" /><span data-i18n=\"naist.chat.interactive\"></span\n    ></label>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"chat.functionTool\" /><span data-i18n=\"naist.chat.functionTool\"></span\n    ></label>\n    <label for=\"naist_tool_cooldown\" data-i18n=\"naist.chat.toolCooldown\"></label>\n    <input id=\"naist_tool_cooldown\" type=\"number\" min=\"0\" class=\"text_pole\" data-setting=\"chat.toolCooldownSeconds\" />\n</div>\n\n<div class=\"naist-section\">\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"auto.enabled\" /><b data-i18n=\"naist.auto.enabled\"></b\n    ></label>\n    <div class=\"naist-hint\" data-i18n=\"naist.auto.guardHint\"></div>\n    <label for=\"naist_auto_mode\" data-i18n=\"naist.auto.mode\"></label>\n    <select id=\"naist_auto_mode\" class=\"text_pole\" data-setting=\"auto.mode\" data-type=\"number\"></select>\n    <div class=\"naist-grid2\">\n        <div>\n            <label for=\"naist_auto_every\" data-i18n=\"naist.auto.everyMessages\"></label>\n            <input id=\"naist_auto_every\" type=\"number\" min=\"0\" class=\"text_pole\" data-setting=\"auto.everyMessages\" />\n        </div>\n        <div>\n            <label for=\"naist_auto_cooldown_messages\" data-i18n=\"naist.auto.cooldownMessages\"></label>\n            <input\n                id=\"naist_auto_cooldown_messages\"\n                type=\"number\"\n                min=\"1\"\n                class=\"text_pole\"\n                data-setting=\"auto.cooldownMessages\"\n            />\n        </div>\n    </div>\n    <label for=\"naist_auto_keywords\" data-i18n=\"naist.auto.keywords\"></label>\n    <input id=\"naist_auto_keywords\" type=\"text\" class=\"text_pole\" data-setting=\"auto.keywords\" />\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"auto.sceneChange\" /><span data-i18n=\"naist.auto.sceneChange\"></span\n    ></label>\n    <input\n        id=\"naist_auto_markers\"\n        type=\"text\"\n        class=\"text_pole\"\n        data-setting=\"auto.sceneMarkers\"\n        data-i18n=\"[title]naist.auto.sceneMarkers\"\n    />\n    <label for=\"naist_auto_cooldown_seconds\" data-i18n=\"naist.auto.cooldownSeconds\"></label>\n    <input\n        id=\"naist_auto_cooldown_seconds\"\n        type=\"number\"\n        min=\"0\"\n        class=\"text_pole\"\n        data-setting=\"auto.cooldownSeconds\"\n    />\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" id=\"naist_auto_allow_paid\" data-setting=\"auto.allowPaid\" /><span\n            data-i18n=\"naist.auto.allowPaid\"\n        ></span\n    ></label>\n</div>\n";
+var tab_chat_default = "<div class=\"naist-section\">\n    <b data-i18n=\"naist.chat.visibility\"></b>\n    <div class=\"naist-hint\" data-i18n=\"naist.chat.visibilityHint\"></div>\n    <div class=\"naist-flags\">\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"chat.visibility.panel\" /><span\n                data-i18n=\"naist.initiator.panel\"\n            ></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"chat.visibility.command\" /><span\n                data-i18n=\"naist.initiator.command\"\n            ></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"chat.visibility.wand\" /><span data-i18n=\"naist.initiator.wand\"></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"chat.visibility.interactive\" /><span\n                data-i18n=\"naist.initiator.interactive\"\n            ></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"chat.visibility.tool\" /><span data-i18n=\"naist.initiator.tool\"></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"chat.visibility.auto\" /><span data-i18n=\"naist.initiator.auto\"></span\n        ></label>\n    </div>\n    <div class=\"naist-grid2\">\n        <div>\n            <label for=\"naist_author\" data-i18n=\"naist.chat.author\"></label>\n            <select id=\"naist_author\" class=\"text_pole\" data-setting=\"chat.author\">\n                <option value=\"character\" data-i18n=\"naist.chat.authorCharacter\"></option>\n                <option value=\"user\" data-i18n=\"naist.chat.authorUser\"></option>\n            </select>\n        </div>\n        <div>\n            <label for=\"naist_confirm_above\" data-i18n=\"naist.chat.confirmAbove\"></label>\n            <input id=\"naist_confirm_above\" type=\"number\" min=\"0\" class=\"text_pole\" data-setting=\"anlas.confirmAbove\" />\n        </div>\n    </div>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"chat.hidePrompt\" /><span data-i18n=\"naist.chat.hidePrompt\"></span\n    ></label>\n</div>\n\n<div class=\"naist-section\">\n    <b data-i18n=\"naist.chat.prompting\"></b>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"modes.refine\" /><span data-i18n=\"naist.chat.refine\"></span\n    ></label>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"modes.multimodal\" /><span data-i18n=\"naist.chat.multimodal\"></span\n    ></label>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"modes.freeExtend\" /><span data-i18n=\"naist.chat.freeExtend\"></span\n    ></label>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"modes.snap\" /><span data-i18n=\"naist.chat.snap\"></span\n    ></label>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"modes.minimalProcessing\" /><span\n            data-i18n=\"naist.chat.minimalProcessing\"\n        ></span\n    ></label>\n</div>\n\n<div class=\"naist-section\">\n    <b data-i18n=\"naist.chat.llm\"></b>\n    <div class=\"naist-hint\" data-i18n=\"naist.chat.llmHint\"></div>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"chat.interactive\" /><span data-i18n=\"naist.chat.interactive\"></span\n    ></label>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"chat.functionTool\" /><span data-i18n=\"naist.chat.functionTool\"></span\n    ></label>\n    <label for=\"naist_tool_cooldown\" data-i18n=\"naist.chat.toolCooldown\"></label>\n    <input id=\"naist_tool_cooldown\" type=\"number\" min=\"0\" class=\"text_pole\" data-setting=\"chat.toolCooldownSeconds\" />\n</div>\n\n<div class=\"naist-section\">\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"auto.enabled\" /><b data-i18n=\"naist.auto.enabled\"></b\n    ></label>\n    <div class=\"naist-hint\" data-i18n=\"naist.auto.guardHint\"></div>\n    <label for=\"naist_auto_mode\" data-i18n=\"naist.auto.mode\"></label>\n    <select id=\"naist_auto_mode\" class=\"text_pole\" data-setting=\"auto.mode\" data-type=\"number\"></select>\n    <div class=\"naist-grid2\">\n        <div>\n            <label for=\"naist_auto_every\" data-i18n=\"naist.auto.everyMessages\"></label>\n            <input id=\"naist_auto_every\" type=\"number\" min=\"0\" class=\"text_pole\" data-setting=\"auto.everyMessages\" />\n        </div>\n        <div>\n            <label for=\"naist_auto_cooldown_messages\" data-i18n=\"naist.auto.cooldownMessages\"></label>\n            <input\n                id=\"naist_auto_cooldown_messages\"\n                type=\"number\"\n                min=\"1\"\n                class=\"text_pole\"\n                data-setting=\"auto.cooldownMessages\"\n            />\n        </div>\n    </div>\n    <label for=\"naist_auto_keywords\" data-i18n=\"naist.auto.keywords\"></label>\n    <input id=\"naist_auto_keywords\" type=\"text\" class=\"text_pole\" data-setting=\"auto.keywords\" />\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"auto.sceneChange\" /><span data-i18n=\"naist.auto.sceneChange\"></span\n    ></label>\n    <input\n        id=\"naist_auto_markers\"\n        type=\"text\"\n        class=\"text_pole\"\n        data-setting=\"auto.sceneMarkers\"\n        data-i18n=\"[title]naist.auto.sceneMarkers\"\n    />\n    <label for=\"naist_auto_cooldown_seconds\" data-i18n=\"naist.auto.cooldownSeconds\"></label>\n    <input\n        id=\"naist_auto_cooldown_seconds\"\n        type=\"number\"\n        min=\"0\"\n        class=\"text_pole\"\n        data-setting=\"auto.cooldownSeconds\"\n    />\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" id=\"naist_auto_allow_paid\" data-setting=\"auto.allowPaid\" /><span\n            data-i18n=\"naist.auto.allowPaid\"\n        ></span\n    ></label>\n</div>\n\n<div class=\"naist-section\" id=\"naist_markers_section\">\n    <b data-i18n=\"naist.markers.title\"></b>\n    <div class=\"naist-hint\" data-i18n=\"naist.markers.hint\"></div>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"markers.enabled\" /><span data-i18n=\"naist.markers.enabled\"></span\n    ></label>\n    <div class=\"naist-markers-options\">\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"markers.inject\" /><span data-i18n=\"naist.markers.inject\"></span\n        ></label>\n        <div class=\"naist-grid2\">\n            <div>\n                <label for=\"naist_markers_preset\" data-i18n=\"naist.markers.preset\"></label>\n                <select id=\"naist_markers_preset\" class=\"text_pole\" data-setting=\"markers.preset\">\n                    <option value=\"natural\" data-i18n=\"naist.markers.presetNatural\"></option>\n                    <option value=\"tags\" data-i18n=\"naist.markers.presetTags\"></option>\n                    <option value=\"custom\" data-i18n=\"naist.markers.presetCustom\"></option>\n                </select>\n            </div>\n            <div>\n                <label for=\"naist_markers_caption_lang\" data-i18n=\"naist.markers.captionLanguage\"></label>\n                <input id=\"naist_markers_caption_lang\" class=\"text_pole\" data-setting=\"markers.captionLanguage\" />\n            </div>\n        </div>\n        <div id=\"naist_markers_custom\" class=\"naist-hidden\">\n            <label for=\"naist_markers_template\" data-i18n=\"naist.markers.template\"></label>\n            <textarea\n                id=\"naist_markers_template\"\n                class=\"text_pole textarea_compact\"\n                rows=\"8\"\n                data-setting=\"markers.template\"\n            ></textarea>\n            <div class=\"naist-hint\" data-i18n=\"naist.markers.templateHint\"></div>\n            <div\n                id=\"naist_markers_template_default\"\n                class=\"menu_button\"\n                data-i18n=\"naist.markers.templateDefault\"\n            ></div>\n        </div>\n        <div class=\"naist-grid2\">\n            <div>\n                <label for=\"naist_markers_min\" data-i18n=\"naist.markers.min\"></label>\n                <input\n                    id=\"naist_markers_min\"\n                    type=\"number\"\n                    min=\"0\"\n                    max=\"10\"\n                    class=\"text_pole\"\n                    data-setting=\"markers.min\"\n                />\n            </div>\n            <div>\n                <label for=\"naist_markers_max\" data-i18n=\"naist.markers.max\"></label>\n                <input\n                    id=\"naist_markers_max\"\n                    type=\"number\"\n                    min=\"0\"\n                    max=\"10\"\n                    class=\"text_pole\"\n                    data-setting=\"markers.max\"\n                />\n            </div>\n            <div>\n                <label for=\"naist_markers_depth\" data-i18n=\"naist.markers.depth\"></label>\n                <input\n                    id=\"naist_markers_depth\"\n                    type=\"number\"\n                    min=\"0\"\n                    max=\"100\"\n                    class=\"text_pole\"\n                    data-setting=\"markers.depth\"\n                />\n            </div>\n            <div>\n                <label for=\"naist_markers_role\" data-i18n=\"naist.markers.role\"></label>\n                <select id=\"naist_markers_role\" class=\"text_pole\" data-setting=\"markers.role\">\n                    <option value=\"system\" data-i18n=\"naist.markers.roleSystem\"></option>\n                    <option value=\"user\" data-i18n=\"naist.markers.roleUser\"></option>\n                    <option value=\"assistant\" data-i18n=\"naist.markers.roleAssistant\"></option>\n                </select>\n            </div>\n        </div>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"markers.earlyStart\" /><span\n                data-i18n=\"naist.markers.earlyStart\"\n            ></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"markers.autoFill\" /><span data-i18n=\"naist.markers.autoFill\"></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"markers.legacy\" /><span data-i18n=\"naist.markers.legacy\"></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"inline.regexCompat\" /><span\n                data-i18n=\"naist.markers.regexCompat\"\n            ></span\n        ></label>\n        <div class=\"naist-row\">\n            <label class=\"checkbox_label\"\n                ><input id=\"naist_markers_allow_paid\" type=\"checkbox\" data-setting=\"markers.allowPaid\" /><span\n                    data-i18n=\"naist.markers.allowPaid\"\n                ></span\n            ></label>\n            <input\n                id=\"naist_markers_max_cost\"\n                type=\"number\"\n                min=\"0\"\n                class=\"text_pole naist-narrow\"\n                data-setting=\"markers.maxCost\"\n                data-i18n=\"[title]naist.markers.maxCost\"\n            />\n        </div>\n        <div id=\"naist_markers_preview\" class=\"menu_button\" data-i18n=\"naist.markers.preview\"></div>\n    </div>\n</div>\n";
 //#endregion
 //#region src/ui/panel/tab-chat.ts
 var ChatTab = class {
@@ -14375,7 +16186,29 @@ var ChatTab = class {
 			this.applyGuards();
 			this.onChange(path);
 		});
+		this.bindMarkers();
 		this.applyGuards();
+	}
+	bindMarkers() {
+		$id$1(this.root, "naist_markers_template_default").addEventListener("click", () => {
+			settings().markers.template = MARKER_TEMPLATES.natural;
+			saveSettings();
+			readFromSettings(this.root);
+			this.onChange("markers.template");
+		});
+		$id$1(this.root, "naist_markers_preview").addEventListener("click", () => {
+			const m = settings().markers;
+			const text = markerInstruction(m.preset, m.template, {
+				min: m.min,
+				max: m.max,
+				captionLanguage: m.captionLanguage,
+				chars: [t("naist.markers.previewChars")]
+			});
+			ctx().callGenericPopup(`<div class="naist-hint">${escapeHtml$2(t("naist.markers.previewHint"))}</div><pre class="naist-pre">${escapeHtml$2(text)}</pre>`, ctx().POPUP_TYPE.TEXT, "", {
+				wide: true,
+				allowVerticalScrolling: true
+			});
+		});
 	}
 	/** Re-reads every control after settings changed outside of this tab. */
 	refresh() {
@@ -14384,9 +16217,18 @@ var ChatTab = class {
 	}
 	/** Paid auto generation is meaningless while free-only is on: show it disabled. */
 	applyGuards() {
-		const allowPaid = $id$1(this.root, "naist_auto_allow_paid");
-		allowPaid.disabled = settings().anlas.freeOnly;
-		allowPaid.closest("label")?.classList.toggle("naist-disabled", allowPaid.disabled);
+		const s = settings();
+		for (const id of [
+			"naist_auto_allow_paid",
+			"naist_markers_allow_paid",
+			"naist_markers_max_cost"
+		]) {
+			const control = $id$1(this.root, id);
+			control.disabled = s.anlas.freeOnly;
+			control.closest("label")?.classList.toggle("naist-disabled", control.disabled);
+		}
+		$id$1(this.root, "naist_markers_custom").classList.toggle("naist-hidden", s.markers.preset !== "custom");
+		this.root.querySelector(".naist-markers-options")?.classList.toggle("naist-disabled", !s.markers.enabled);
 	}
 };
 //#endregion
@@ -14448,7 +16290,7 @@ var ImagesTab = class {
 };
 //#endregion
 //#region src/ui/templates/tab-prompts.html?raw
-var tab_prompts_default = "<div class=\"naist-section\">\n    <b data-i18n=\"naist.scene.title\"></b>\n    <div class=\"naist-hint\" data-i18n=\"naist.scene.hint\"></div>\n    <div class=\"naist-row\">\n        <div id=\"naist_open_composer\" class=\"menu_button\" data-i18n=\"naist.scene.openComposer\"></div>\n        <div id=\"naist_edit_char_passport\" class=\"menu_button\" data-i18n=\"naist.scene.charPassport\"></div>\n        <div id=\"naist_edit_persona_passport\" class=\"menu_button\" data-i18n=\"naist.scene.personaPassport\"></div>\n        <div id=\"naist_open_pose_library\" class=\"menu_button\" data-i18n=\"naist.scene.poseLibrary\"></div>\n    </div>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"scene.allowNsfw\" /><span data-i18n=\"naist.composer.allowNsfw\"></span\n    ></label>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"scene.llmBase\" /><span data-i18n=\"naist.scene.llmBase\"></span\n    ></label>\n</div>\n\n<div class=\"naist-section\">\n    <label for=\"naist_prefix\" data-i18n=\"naist.prompts.prefix\"></label>\n    <textarea id=\"naist_prefix\" class=\"text_pole textarea_compact\" rows=\"2\" data-setting=\"prompts.prefix\"></textarea>\n    <label for=\"naist_suffix\" data-i18n=\"naist.prompts.suffix\"></label>\n    <textarea id=\"naist_suffix\" class=\"text_pole textarea_compact\" rows=\"2\" data-setting=\"prompts.suffix\"></textarea>\n    <div class=\"naist-hint\" data-i18n=\"naist.prompts.prefixHint\"></div>\n</div>\n\n<div class=\"naist-section\">\n    <b data-i18n=\"naist.translate.title\"></b>\n    <div class=\"naist-hint\" data-i18n=\"naist.translate.hint\"></div>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"translate.auto\" /><span data-i18n=\"naist.translate.auto\"></span\n    ></label>\n    <label for=\"naist_glossary\" data-i18n=\"naist.translate.glossary\"></label>\n    <textarea\n        id=\"naist_glossary\"\n        class=\"text_pole textarea_compact\"\n        rows=\"4\"\n        data-i18n=\"[placeholder]naist.translate.glossaryPlaceholder\"\n    ></textarea>\n    <div class=\"naist-hint\" data-i18n=\"naist.translate.glossaryHint\"></div>\n</div>\n\n<div class=\"naist-section\">\n    <b data-i18n=\"naist.tags.title\"></b>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"promptTools.autocomplete\" /><span\n            data-i18n=\"naist.tags.autocomplete\"\n        ></span\n    ></label>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"promptTools.remoteSuggest\" /><span data-i18n=\"naist.tags.remote\"></span\n    ></label>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"promptTools.warnUnknown\" /><span data-i18n=\"naist.tags.warnUnknown\"></span\n    ></label>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"promptTools.counter\" /><span data-i18n=\"naist.tokens.enable\"></span\n    ></label>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"promptTools.convertWeights\" /><span data-i18n=\"naist.weights.auto\"></span\n    ></label>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"generation.autoText\" /><span data-i18n=\"naist.tokens.autoText\"></span\n    ></label>\n    <div class=\"naist-hint\" data-i18n=\"naist.weights.hint\"></div>\n</div>\n\n<div class=\"naist-section\">\n    <b data-i18n=\"naist.prompts.styles\"></b>\n    <div class=\"naist-row\">\n        <select id=\"naist_style\" class=\"text_pole naist-grow\"></select>\n        <div\n            id=\"naist_style_save\"\n            class=\"menu_button fa-solid fa-floppy-disk\"\n            data-i18n=\"[title]naist.prompts.styleSave\"\n        ></div>\n        <div\n            id=\"naist_style_rename\"\n            class=\"menu_button fa-solid fa-pencil\"\n            data-i18n=\"[title]naist.prompts.styleRename\"\n        ></div>\n        <div\n            id=\"naist_style_delete\"\n            class=\"menu_button fa-solid fa-trash-can\"\n            data-i18n=\"[title]naist.prompts.styleDelete\"\n        ></div>\n    </div>\n    <div class=\"naist-hint\" data-i18n=\"naist.prompts.stylesHint\"></div>\n</div>\n\n<div id=\"naist_char_prompt_block\" class=\"naist-section\">\n    <b data-i18n=\"naist.prompts.characterPrompt\"></b> <span id=\"naist_char_prompt_name\" class=\"naist-muted\"></span>\n    <textarea\n        id=\"naist_char_positive\"\n        class=\"text_pole textarea_compact\"\n        rows=\"2\"\n        data-i18n=\"[placeholder]naist.prompts.characterPositive\"\n    ></textarea>\n    <textarea\n        id=\"naist_char_negative\"\n        class=\"text_pole textarea_compact\"\n        rows=\"2\"\n        data-i18n=\"[placeholder]naist.prompts.characterNegative\"\n    ></textarea>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" id=\"naist_char_share\" /><span data-i18n=\"naist.prompts.characterShare\"></span\n    ></label>\n</div>\n<div id=\"naist_char_prompt_none\" class=\"naist-hint naist-hidden\" data-i18n=\"naist.prompts.characterNone\"></div>\n\n<details class=\"naist-section\">\n    <summary data-i18n=\"naist.prompts.templates\"></summary>\n    <div class=\"naist-hint\" data-i18n=\"naist.prompts.templatesHint\"></div>\n    <div id=\"naist_templates\"></div>\n</details>\n\n<div class=\"naist-section\">\n    <b data-i18n=\"naist.io.title\"></b>\n    <div class=\"naist-hint\" data-i18n=\"naist.io.hint\"></div>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" id=\"naist_settings_images\" checked /><span data-i18n=\"naist.io.includeImages\"></span\n    ></label>\n    <div class=\"naist-row\">\n        <div id=\"naist_settings_export\" class=\"menu_button\" data-i18n=\"naist.io.export\"></div>\n        <div id=\"naist_settings_import\" class=\"menu_button\" data-i18n=\"naist.io.import\"></div>\n        <input id=\"naist_settings_file\" type=\"file\" accept=\".json,application/json\" class=\"naist-hidden\" />\n    </div>\n</div>\n";
+var tab_prompts_default = "<div class=\"naist-section\">\n    <b data-i18n=\"naist.scene.title\"></b>\n    <div class=\"naist-hint\" data-i18n=\"naist.scene.hint\"></div>\n    <div class=\"naist-row\">\n        <div id=\"naist_open_composer\" class=\"menu_button\" data-i18n=\"naist.scene.openComposer\"></div>\n        <div id=\"naist_edit_char_passport\" class=\"menu_button\" data-i18n=\"naist.scene.charPassport\"></div>\n        <div id=\"naist_edit_persona_passport\" class=\"menu_button\" data-i18n=\"naist.scene.personaPassport\"></div>\n        <div id=\"naist_open_pose_library\" class=\"menu_button\" data-i18n=\"naist.scene.poseLibrary\"></div>\n    </div>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"scene.allowNsfw\" /><span data-i18n=\"naist.composer.allowNsfw\"></span\n    ></label>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"scene.llmBase\" /><span data-i18n=\"naist.scene.llmBase\"></span\n    ></label>\n</div>\n\n<div class=\"naist-section\">\n    <label for=\"naist_prefix\" data-i18n=\"naist.prompts.prefix\"></label>\n    <textarea id=\"naist_prefix\" class=\"text_pole textarea_compact\" rows=\"2\" data-setting=\"prompts.prefix\"></textarea>\n    <label for=\"naist_suffix\" data-i18n=\"naist.prompts.suffix\"></label>\n    <textarea id=\"naist_suffix\" class=\"text_pole textarea_compact\" rows=\"2\" data-setting=\"prompts.suffix\"></textarea>\n    <div class=\"naist-hint\" data-i18n=\"naist.prompts.prefixHint\"></div>\n</div>\n\n<div class=\"naist-section\">\n    <b data-i18n=\"naist.language.title\"></b>\n    <div class=\"naist-hint\" data-i18n=\"naist.language.hint\"></div>\n    <div class=\"naist-grid2\">\n        <div>\n            <label for=\"naist_language_mode\" data-i18n=\"naist.language.mode\"></label>\n            <select id=\"naist_language_mode\" class=\"text_pole\" data-setting=\"language.mode\">\n                <option value=\"auto\" data-i18n=\"naist.language.modeAuto\"></option>\n                <option value=\"always\" data-i18n=\"naist.language.modeAlways\"></option>\n                <option value=\"off\" data-i18n=\"naist.language.modeOff\"></option>\n            </select>\n        </div>\n        <div>\n            <label for=\"naist_language_backend\" data-i18n=\"naist.language.backend\"></label>\n            <select id=\"naist_language_backend\" class=\"text_pole\" data-setting=\"language.backend\">\n                <option value=\"main\" data-i18n=\"naist.language.backendMain\"></option>\n                <option value=\"profile\" data-i18n=\"naist.language.backendProfile\"></option>\n                <option value=\"novelai\" data-i18n=\"naist.language.backendNovelai\"></option>\n            </select>\n        </div>\n    </div>\n    <div id=\"naist_language_profile_row\" class=\"naist-hidden\">\n        <label for=\"naist_language_profile\" data-i18n=\"naist.language.profile\"></label>\n        <select id=\"naist_language_profile\" class=\"text_pole\" data-setting=\"language.profileId\"></select>\n        <div class=\"naist-hint\" data-i18n=\"naist.language.profileHint\"></div>\n    </div>\n    <div id=\"naist_language_novelai_row\" class=\"naist-hidden\">\n        <label for=\"naist_language_novelai_model\" data-i18n=\"naist.language.novelaiModel\"></label>\n        <select id=\"naist_language_novelai_model\" class=\"text_pole\" data-setting=\"language.novelaiModel\">\n            <option value=\"glm-4-6\">GLM-4.6</option>\n            <option value=\"xialong-v1\">Xialong (Opus)</option>\n        </select>\n        <div class=\"naist-hint\" data-i18n=\"naist.language.novelaiHint\"></div>\n    </div>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"language.russianOnV5\" /><span\n            data-i18n=\"naist.language.russianOnV5\"\n        ></span\n    ></label>\n    <label for=\"naist_language_test\" data-i18n=\"naist.language.test\"></label>\n    <textarea\n        id=\"naist_language_test\"\n        class=\"text_pole textarea_compact\"\n        rows=\"2\"\n        data-i18n=\"[placeholder]naist.language.testPlaceholder\"\n    ></textarea>\n    <div class=\"naist-row\">\n        <div id=\"naist_language_test_run\" class=\"menu_button\" data-i18n=\"naist.language.testRun\"></div>\n    </div>\n    <pre id=\"naist_language_test_result\" class=\"naist-pre naist-hidden\"></pre>\n    <label for=\"naist_glossary\" data-i18n=\"naist.translate.glossary\"></label>\n    <textarea\n        id=\"naist_glossary\"\n        class=\"text_pole textarea_compact\"\n        rows=\"4\"\n        data-i18n=\"[placeholder]naist.translate.glossaryPlaceholder\"\n    ></textarea>\n    <div class=\"naist-hint\" data-i18n=\"naist.translate.glossaryHint\"></div>\n</div>\n\n<div class=\"naist-section\">\n    <b data-i18n=\"naist.tags.title\"></b>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"promptTools.autocomplete\" /><span\n            data-i18n=\"naist.tags.autocomplete\"\n        ></span\n    ></label>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"promptTools.remoteSuggest\" /><span data-i18n=\"naist.tags.remote\"></span\n    ></label>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"promptTools.warnUnknown\" /><span data-i18n=\"naist.tags.warnUnknown\"></span\n    ></label>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"promptTools.counter\" /><span data-i18n=\"naist.tokens.enable\"></span\n    ></label>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"promptTools.convertWeights\" /><span data-i18n=\"naist.weights.auto\"></span\n    ></label>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"generation.autoText\" /><span data-i18n=\"naist.tokens.autoText\"></span\n    ></label>\n    <div class=\"naist-hint\" data-i18n=\"naist.weights.hint\"></div>\n</div>\n\n<div class=\"naist-section\">\n    <b data-i18n=\"naist.prompts.styles\"></b>\n    <div class=\"naist-row\">\n        <select id=\"naist_style\" class=\"text_pole naist-grow\"></select>\n        <div\n            id=\"naist_style_save\"\n            class=\"menu_button fa-solid fa-floppy-disk\"\n            data-i18n=\"[title]naist.prompts.styleSave\"\n        ></div>\n        <div\n            id=\"naist_style_rename\"\n            class=\"menu_button fa-solid fa-pencil\"\n            data-i18n=\"[title]naist.prompts.styleRename\"\n        ></div>\n        <div\n            id=\"naist_style_delete\"\n            class=\"menu_button fa-solid fa-trash-can\"\n            data-i18n=\"[title]naist.prompts.styleDelete\"\n        ></div>\n    </div>\n    <div class=\"naist-hint\" data-i18n=\"naist.prompts.stylesHint\"></div>\n</div>\n\n<div id=\"naist_char_prompt_block\" class=\"naist-section\">\n    <b data-i18n=\"naist.prompts.characterPrompt\"></b> <span id=\"naist_char_prompt_name\" class=\"naist-muted\"></span>\n    <textarea\n        id=\"naist_char_positive\"\n        class=\"text_pole textarea_compact\"\n        rows=\"2\"\n        data-i18n=\"[placeholder]naist.prompts.characterPositive\"\n    ></textarea>\n    <textarea\n        id=\"naist_char_negative\"\n        class=\"text_pole textarea_compact\"\n        rows=\"2\"\n        data-i18n=\"[placeholder]naist.prompts.characterNegative\"\n    ></textarea>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" id=\"naist_char_share\" /><span data-i18n=\"naist.prompts.characterShare\"></span\n    ></label>\n</div>\n<div id=\"naist_char_prompt_none\" class=\"naist-hint naist-hidden\" data-i18n=\"naist.prompts.characterNone\"></div>\n\n<details class=\"naist-section\">\n    <summary data-i18n=\"naist.prompts.templates\"></summary>\n    <div class=\"naist-hint\" data-i18n=\"naist.prompts.templatesHint\"></div>\n    <div id=\"naist_templates\"></div>\n</details>\n\n<div class=\"naist-section\">\n    <b data-i18n=\"naist.io.title\"></b>\n    <div class=\"naist-hint\" data-i18n=\"naist.io.hint\"></div>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" id=\"naist_settings_images\" checked /><span data-i18n=\"naist.io.includeImages\"></span\n    ></label>\n    <div class=\"naist-row\">\n        <div id=\"naist_settings_export\" class=\"menu_button\" data-i18n=\"naist.io.export\"></div>\n        <div id=\"naist_settings_import\" class=\"menu_button\" data-i18n=\"naist.io.import\"></div>\n        <input id=\"naist_settings_file\" type=\"file\" accept=\".json,application/json\" class=\"naist-hidden\" />\n    </div>\n</div>\n";
 //#endregion
 //#region src/ui/panel/tab-prompts.ts
 var PromptsTab = class {
@@ -14461,7 +16303,13 @@ var PromptsTab = class {
 		container.innerHTML = render$2(tab_prompts_default);
 		this.root = container;
 		localize(container);
-		bindSettings(container, () => this.onChange());
+		this.fillProfiles();
+		bindSettings(container, () => {
+			this.applyLanguage();
+			this.onChange();
+		});
+		this.bindLanguage();
+		this.applyLanguage();
 		this.renderStyles();
 		this.renderTemplates();
 		this.bindStyles();
@@ -14472,10 +16320,62 @@ var PromptsTab = class {
 	}
 	/** Re-reads every control after settings changed outside of this tab. */
 	refresh() {
+		this.fillProfiles();
 		readFromSettings(this.root);
+		this.applyLanguage();
 		this.renderStyles();
 		this.fillTemplates();
 		this.refreshCharacter();
+	}
+	/** Connection profiles that can answer a request (Connection Manager, ST 1.19). */
+	fillProfiles() {
+		let profiles;
+		try {
+			profiles = ctx().ConnectionManagerRequestService.getSupportedProfiles();
+		} catch {
+			profiles = [];
+		}
+		const current = settings().language.profileId;
+		const options = [{
+			value: "",
+			label: t("naist.language.profileNone")
+		}, ...profiles.map((p) => ({
+			value: p.id,
+			label: p.name || p.id
+		}))];
+		if (current && !profiles.some((p) => p.id === current)) options.push({
+			value: current,
+			label: current
+		});
+		fillSelect$1($id$1(this.root, "naist_language_profile"), options, current);
+	}
+	applyLanguage() {
+		const backend = settings().language.backend;
+		$id$1(this.root, "naist_language_profile_row").classList.toggle("naist-hidden", backend !== "profile");
+		$id$1(this.root, "naist_language_novelai_row").classList.toggle("naist-hidden", backend !== "novelai");
+	}
+	bindLanguage() {
+		const button = $id$1(this.root, "naist_language_test_run");
+		const output = $id$1(this.root, "naist_language_test_result");
+		button.addEventListener("click", async () => {
+			const text = $id$1(this.root, "naist_language_test").value;
+			if (!text.trim() || button.classList.contains("disabled")) return;
+			button.classList.add("disabled");
+			try {
+				const result = await interpretForModel(text, settings().generation.model, {
+					force: true,
+					strict: true
+				});
+				const lines = result ? [result.prompt, result.negative ? `${t("naist.language.testNegative")} ${result.negative}` : ""] : [t("naist.interpret.already")];
+				if (result?.unmatched.length) lines.push(t("naist.interpret.unmatched", { tags: result.unmatched.join(", ") }));
+				output.textContent = lines.filter(Boolean).join("\n");
+				output.classList.remove("naist-hidden");
+			} catch (error) {
+				reportGenerationError(error);
+			} finally {
+				button.classList.remove("disabled");
+			}
+		});
 	}
 	renderStyles() {
 		const prompts = settings().prompts;
@@ -15397,6 +17297,7 @@ function mountPanel(studio, pipeline) {
 	}
 	if (document.querySelector("#naist_panel")) return;
 	const onSettingChange = (path) => {
+		onMarkerSettingChange(path);
 		if (path.startsWith("chat.functionTool") || path.startsWith("chat.toolCooldown") || path.startsWith("prompts.templates")) syncFunctionTool(pipeline, ownsCompatSurface());
 	};
 	new Panel(studio, pipeline, onSettingChange, {
@@ -15426,6 +17327,7 @@ async function onActivate() {
 	setupScenes(pipeline, scenes);
 	setupTools(pipeline, inline);
 	setupPhase6(pipeline, scenes);
+	setupMarkers(pipeline, inline, scenes);
 	new AutoGenerator(studio, pipeline).attach();
 	studio.refreshTransport();
 	for (const name of [

@@ -2,14 +2,14 @@
 
 **English** · [Русский](README.ru.md)
 
-A NovelAI image studio for [SillyTavern](https://github.com/SillyTavern/SillyTavern). It replaces the built-in Image Generation with a client built specifically for NovelAI: every model from V3 to V5, multi-character scenes with positions, Director Tools, inpainting, vibes, live previews, an Anlas guard — and it keeps working with the commands, scripts and habits you already have.
+A NovelAI image studio for [SillyTavern](https://github.com/SillyTavern/SillyTavern). It replaces the built-in Image Generation with a client built specifically for NovelAI: every model from V3 to V5, multi-character scenes with positions, Director Tools, inpainting, vibes, live previews, an Anlas guard, pictures the chat model asks for right inside its replies, prompts in plain Russian or English — and it keeps working with the commands, scripts and habits you already have.
 
 |                      |                                            |
 | -------------------- | ------------------------------------------ |
 | SillyTavern          | 1.19.0 or newer                            |
 | NovelAI subscription | any; free generations are tracked for Opus |
 | Interface            | English, Russian                           |
-| Server plugin        | optional, recommended (0.3.0)              |
+| Server plugin        | optional, recommended (0.4.0)              |
 | License              | AGPL-3.0                                   |
 
 ## Why
@@ -41,6 +41,15 @@ The built-in Image Generation treats NovelAI as one backend among many. NAI Stud
 - Auto-generation rules (every N messages, keywords, scene change) with a mandatory cooldown — never spends Anlas in free-only mode.
 - `GenerateImage` tool for the LLM with structured arguments: who is in the frame, action, mood, framing, location.
 
+### Pictures in the chat model's replies
+
+- The chat model writes an image marker where a picture fits — `<img data-nai='{"prompt": "...", "caption": "..."}'>` — and the picture appears in its place. The instruction is added to the prompt for you (plain-language or tag descriptions, or your own text), with a configurable number of pictures per reply.
+- **Generation starts while the reply is still streaming**, as soon as a marker is complete; one generation at a time.
+- Every marker parameter: description, undesired content, characters by name (their appearance passports, position, pose, action), aspect ratio and size, model, style, in-image text, seed, steps, guidance, rescale, sampler, quality and UC presets, Variety+, transparency, location, an earlier picture as the base (`ref`), a vibe by name, number of variants, caption, spoiler, alignment, width.
+- Older formats are understood too: image URLs of a self-hosted generation microservice, sillyimages and Auto Illustrator markers.
+- HTML widgets made with regex scripts keep working: they receive every picture as an `<img>`.
+- Free-only by default; paid marker pictures only with your permission and a price cap. Failed or interrupted pictures can be generated again with one click.
+
 ### Characters and scenes
 
 - **Appearance passport** stored in the character card: base, hair, eyes, body, outfits, states, personal undesired content, default pose and position.
@@ -56,7 +65,7 @@ The built-in Image Generation treats NovelAI as one backend among many. NAI Stud
 
 ### Prompt helpers
 
-- **RU → EN translation** with your own LLM (structured output on Chat Completion, few-shot elsewhere), glossary, cache; the original prompt is kept in the image metadata.
+- **Plain language everywhere:** describe a picture in Russian or English — in the panel, the composer, markers, anywhere — and it becomes tags (plus short sentences for V4.5 / V5) for the selected model before generation. Converted by your chat model, a separate connection profile or NovelAI's own text model (GLM-4.6, part of the subscription, no Anlas); tags are checked against the Danbooru list, a glossary keeps names consistent, results are cached, the original stays in the image metadata. A "→ Prompt" button converts a field by hand.
 - **Tag suggestions** while typing: 20 000 most used Danbooru tags with counts and aliases, ~400 Russian aliases, NovelAI's own suggestions; a hint about unknown tags.
 - **Weights** with Ctrl + ↑ / Ctrl + ↓ in the syntax of the model (`1.05::tag::` on V4+, `{tag}` / `[tag]` on V3); numeric weights are converted when you switch to V3.
 - **Token counter** using NovelAI's own tokenizers (Qwen for V5, T5 for V4.x, CLIP for V3) with the website's limits; in-image text of V5 is shown separately; a warning about characters T5 cannot read.
@@ -75,7 +84,7 @@ The built-in Image Generation treats NovelAI as one backend among many. NAI Stud
 3. **Server plugin (recommended):**
    - copy the plugin with `install-server.ps1 -SillyTavern "C:\path\to\SillyTavern"` (Windows) or `./install-server.sh /path/to/SillyTavern` (Linux, macOS, Docker host);
    - enable plugins: `enableServerPlugins: true` in `config.yaml` (or env `SILLYTAVERN_ENABLESERVERPLUGINS=true`);
-   - restart SillyTavern. The panel shows "Server plugin 0.3.0".
+   - restart SillyTavern. The panel shows "Server plugin 0.4.0".
 
 Details, Docker notes and uninstalling — [docs/DEPLOY.md](docs/DEPLOY.md).
 
@@ -89,6 +98,7 @@ Details, Docker notes and uninstalling — [docs/DEPLOY.md](docs/DEPLOY.md).
 | Director Tools, upscale, vibes (V4/V4.5)                                      | ✅     | —                                                   |
 | Live step previews                                                            | ✅     | progress estimate                                   |
 | Exact token counter, NovelAI tag suggestions                                  | ✅     | estimate; local tags only                           |
+| NovelAI text model for plain-language prompts                                 | ✅     | — (chat model or a connection profile instead)      |
 | Inline images, gallery, passports, composer, translation, sprites (seed mode) | ✅     | ✅                                                  |
 
 Features that need the plugin stay visible in the interface with the reason they are unavailable.
@@ -96,10 +106,11 @@ Features that need the plugin stay visible in the interface with the reason they
 ## Getting started
 
 1. Open **Extensions → NAI Studio**. "Free generations only" is on: nothing will spend Anlas.
-2. Pick a model, write a prompt (tags or plain English), press **Generate** — the image is posted to the chat.
+2. Pick a model, write a prompt (tags, or simply describe the picture in Russian or English), press **Generate** — the image is posted to the chat.
 3. Try `/nai a cat on a windowsill, sunlight` in the chat, or the wand menu → NAI Studio.
-4. On the **Images** tab you will find the vibe library, sprites, comics and scene continuity; on **Prompts** — styles, translation and the prompt helpers.
-5. When you are ready to drop the built-in extension: **Replace built-in** tab → migrate the settings (done automatically on first start) → "Disable built-in and reload". It can be turned back on at any time.
+4. On the **Images** tab you will find the vibe library, sprites, comics and scene continuity; on **Prompts** — styles, plain-language settings and the prompt helpers.
+5. To let the chat model illustrate its replies: **Chat** tab → "Image markers in replies" → turn it on. The instruction is added to the prompt automatically.
+6. When you are ready to drop the built-in extension: **Replace built-in** tab → migrate the settings (done automatically on first start) → "Disable built-in and reload". It can be turned back on at any time.
 
 ## Slash commands
 
@@ -113,6 +124,7 @@ Features that need the plugin stay visible in the interface with the reason they
 | `/nai-gallery`                                            | Open the gallery                                                                   |
 | `/nai-scene [edit=false] [target=message\|inline] [text]` | Assemble a scene from the last message (or text)                                   |
 | `/nai-vibes`                                              | Open the vibe library                                                              |
+| `/nai-prompt [text]`                                      | Turn a description in Russian or English into a NovelAI prompt for the model       |
 | `/nai-translate [text]`                                   | Translate a Russian prompt to English tags                                         |
 | `/nai-sprites`                                            | Open the Expressions sprite generator                                              |
 | `/nai-comic`                                              | Open the comic page builder (V5)                                                   |
@@ -123,7 +135,7 @@ Features that need the plugin stay visible in the interface with the reason they
 - The NovelAI token never reaches the browser and is never stored in the extension settings.
 - Network traffic goes only to NovelAI (and to your SillyTavern server). The tag list ships with the extension; tokenizer files are fetched from novelai.net once and cached.
 - Paid actions (vibe encoding, upscale, background removal, anything above the free limits) always show the price and ask for confirmation; free-only mode blocks them entirely.
-- Translation uses the LLM you already have configured in SillyTavern; nothing is sent anywhere else.
+- Plain-language conversion uses the LLM you choose (your chat model, a connection profile you configured in SillyTavern, or NovelAI through the plugin); nothing is sent anywhere else.
 
 ## Development
 

@@ -119,8 +119,14 @@ export class VibeLibraryProvider implements VibeProvider {
         this.notify(notice);
     }
 
-    async prepare(caps: ModelCapabilities, transport: Transport, signal?: AbortSignal): Promise<VibeReference[]> {
-        const planned = activeVibes();
+    async prepare(
+        caps: ModelCapabilities,
+        transport: Transport,
+        signal?: AbortSignal,
+        extra: PlannedVibe[] = [],
+    ): Promise<VibeReference[]> {
+        const active = activeVibes();
+        const planned = [...active, ...extra.filter((e) => !active.some((a) => a.item.id === e.item.id))];
         if (!planned.length) return [];
         const availability = vibeAvailability(caps, transport.features.vibes);
         if (availability !== 'ok') {

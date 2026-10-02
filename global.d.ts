@@ -145,6 +145,29 @@ declare global {
             ): void;
         };
         generateRaw(options: Record<string, unknown>): Promise<string>;
+        /** Extension prompt slot (position 1 = in chat at depth; role 0 system, 1 user, 2 assistant). */
+        setExtensionPrompt(
+            key: string,
+            value: string,
+            position: number,
+            depth: number,
+            scan?: boolean,
+            role?: number,
+            filter?: (() => boolean | Promise<boolean>) | null,
+        ): void;
+        /** Background requests through a saved connection profile (ST 1.19, extensions/shared.js). */
+        ConnectionManagerRequestService: {
+            sendRequest(
+                profileId: string,
+                prompt: string | { role: string; content: string }[],
+                maxTokens: number,
+                custom?: Record<string, unknown>,
+                overridePayload?: Record<string, unknown>,
+            ): Promise<unknown>;
+            getProfile(profileId: string): Record<string, unknown> | undefined;
+            validateProfile(profile: Record<string, unknown> | undefined): { selected: string };
+            getSupportedProfiles(): { id: string; name: string }[];
+        };
         getTokenCountAsync(text: string, padding?: number): Promise<number>;
         generateQuietPrompt(options: { quietPrompt: string; [key: string]: unknown }): Promise<string>;
         executeSlashCommandsWithOptions(text: string, options?: Record<string, unknown>): Promise<unknown>;

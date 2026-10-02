@@ -1,14 +1,17 @@
-// "Prompts" tab: common prefix/suffix, styles, the current character's prompt, mode templates.
+// "Prompts" tab: common prefix/suffix, styles, the current character's prompt, mode templates and
+// the human-language converter (TZ Phase 7).
 import { ctx } from '../../core/context';
 import { localize, t } from '../../core/i18n';
 import { saveSettings, settings } from '../../core/settings';
 import type { StyleSettings } from '../../core/settings-schema';
+import { reportGenerationError } from '../../core/notify';
 import { DEFAULT_TEMPLATES, TEMPLATE_MODES } from '../../domain';
 import {
     readCharacterPrompt,
     saveCharacterPrompt,
     soloCharacterIndex,
 } from '../../features/characters/character-prompts';
+import { interpretForModel } from '../../features/language/interpreter';
 import { bindSettings, readFromSettings } from '../components/bind';
 import { $id, escapeHtml, fillSelect, render } from '../components/dom';
 import template from '../templates/tab-prompts.html?raw';
@@ -22,7 +25,13 @@ export class PromptsTab {
         container.innerHTML = render(template);
         this.root = container;
         localize(container);
-        bindSettings(container, () => this.onChange());
+        this.fillProfiles();
+        bindSettings(container, () => {
+            this.applyLanguage();
+            this.onChange();
+        });
+        this.bindLanguage();
+        this.applyLanguage();
         this.renderStyles();
         this.renderTemplates();
         this.bindStyles();
@@ -34,10 +43,64 @@ export class PromptsTab {
 
     /** Re-reads every control after settings changed outside of this tab. */
     refresh(): void {
+        this.fillProfiles();
         readFromSettings(this.root);
+        this.applyLanguage();
         this.renderStyles();
         this.fillTemplates();
         this.refreshCharacter();
+    }
+
+    // ---- human language --------------------------------------------------------------------
+
+    /** Connection profiles that can answer a request (Connection Manager, ST 1.19). */
+    private fillProfiles(): void {
+        let profiles: { id: string; name?: string }[];
+        try {
+            profiles = ctx().ConnectionManagerRequestService.getSupportedProfiles();
+        } catch {
+            profiles = [];
+        }
+        const current = settings().language.profileId;
+        const options = [
+            { value: '', label: t('naist.language.profileNone') },
+            ...profiles.map((p) => ({ value: p.id, label: p.name || p.id })),
+        ];
+        if (current && !profiles.some((p) => p.id === current)) options.push({ value: current, label: current });
+        fillSelect($id(this.root, 'naist_language_profile'), options, current);
+    }
+
+    private applyLanguage(): void {
+        const backend = settings().language.backend;
+        $id(this.root, 'naist_language_profile_row').classList.toggle('naist-hidden', backend !== 'profile');
+        $id(this.root, 'naist_language_novelai_row').classList.toggle('naist-hidden', backend !== 'novelai');
+    }
+
+    private bindLanguage(): void {
+        const button = $id(this.root, 'naist_language_test_run');
+        const output = $id(this.root, 'naist_language_test_result');
+        button.addEventListener('click', async () => {
+            const text = $id<HTMLTextAreaElement>(this.root, 'naist_language_test').value;
+            if (!text.trim() || button.classList.contains('disabled')) return;
+            button.classList.add('disabled');
+            try {
+                const result = await interpretForModel(text, settings().generation.model, {
+                    force: true,
+                    strict: true,
+                });
+                const lines = result
+                    ? [result.prompt, result.negative ? `${t('naist.language.testNegative')} ${result.negative}` : '']
+                    : [t('naist.interpret.already')];
+                if (result?.unmatched.length)
+                    lines.push(t('naist.interpret.unmatched', { tags: result.unmatched.join(', ') }));
+                output.textContent = lines.filter(Boolean).join('\n');
+                output.classList.remove('naist-hidden');
+            } catch (error) {
+                reportGenerationError(error);
+            } finally {
+                button.classList.remove('disabled');
+            }
+        });
     }
 
     // ---- styles ----------------------------------------------------------------------------

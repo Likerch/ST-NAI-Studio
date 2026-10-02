@@ -2,7 +2,7 @@
 // Every handler catches its own errors: a rejected promise in an Express 4 handler would crash ST.
 // Upstream failures are answered with 502 (never 401, which would reset the browser's Basic auth
 // on servers with basicAuthMode) and the real NovelAI status inside the JSON body.
-import { UpstreamError, redact } from './lib/novelai.js';
+import { TEXT_MODELS, UpstreamError, redact } from './lib/novelai.js';
 import { loadTokenizer, suggestTags } from './lib/static-files.js';
 import { sha256Hex, vibeKey } from './lib/vibe-cache.js';
 import { PLUGIN_VERSION } from './lib/version.js';
@@ -277,6 +277,28 @@ export function registerRoutes(router, deps) {
             send(res, 502, { error: errorBody(error) });
         }
     });
+
+    /** NovelAI text model for the human-language prompt converter (TZ Phase 7). */
+    router.post(
+        '/text',
+        handler('text', async (req, res, token, signal) => {
+            const { model, messages, max_tokens: maxTokens = 500 } = req.body ?? {};
+            const valid =
+                TEXT_MODELS.includes(model) &&
+                Array.isArray(messages) &&
+                messages.length > 0 &&
+                messages.length <= 32 &&
+                messages.every(
+                    (m) => m && ['system', 'user', 'assistant'].includes(m.role) && typeof m.content === 'string',
+                );
+            if (!valid)
+                return send(res, 400, { error: { kind: 'http', status: 400, message: 'Malformed text request' } });
+            const limit = Math.min(2000, Math.max(16, Number(maxTokens) || 500));
+            const content = await client.chat({ token, model, messages, maxTokens: limit, signal });
+            log('text', model, `${content.length} chars`);
+            send(res, 200, { content });
+        }),
+    );
 
     router.get('/subscription', async (req, res) => {
         let token = null;

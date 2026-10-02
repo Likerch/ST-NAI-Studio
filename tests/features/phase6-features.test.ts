@@ -1,5 +1,5 @@
 // Phase 6 features with mocked SillyTavern: RU -> EN translation (glossary, structured output on
-// Chat Completion, instruction elsewhere, cache, failures, originals) and settings import on a
+// Chat Completion, instruction elsewhere, cache, failures) and settings import on a
 // clean install (migration, backup, vibe images).
 import merge from 'lodash/merge';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -54,8 +54,7 @@ vi.mock('../../src/features/images/image-utils', () => ({
     thumbnail: async (blob: Blob) => blob,
 }));
 
-const { autoTranslator, rememberOriginal, translatePrompt } =
-    await import('../../src/features/translate/translate-service');
+const { translatePrompt } = await import('../../src/features/translate/translate-service');
 const { importSettingsText } = await import('../../src/features/settings-io/settings-io');
 
 const RU_GIRL = 'девушка';
@@ -109,17 +108,6 @@ describe('translatePrompt', () => {
             throw new Error('API down');
         };
         await expect(translatePrompt(`${RU_GIRL} 3`)).rejects.toMatchObject({ code: 'translation-failed' });
-    });
-
-    it('auto mode follows the setting; hand translations remember their original', async () => {
-        state.generateRaw = async () => '{"prompt":"cat"}';
-        expect(autoTranslator.enabled()).toBe(false);
-        state.settings.translate.auto = true;
-        expect(autoTranslator.enabled()).toBe(true);
-        expect(await autoTranslator.translate('cat')).toBeNull();
-        rememberOriginal('red hair, smile', RU_RED_HAIR);
-        expect(autoTranslator.original?.('masterpiece, red hair, smile, best quality')).toBe(RU_RED_HAIR);
-        expect(autoTranslator.original?.('dog')).toBeUndefined();
     });
 });
 

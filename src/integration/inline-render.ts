@@ -4,17 +4,23 @@
 // 2. A MutationObserver mounts the image component into every new span (ST rewrites .mes_text
 //    on every update, so mounting has to be repeatable).
 // 3. Images load lazily through an IntersectionObserver: blobs only for visible images.
+// 4. Marker images (TZ Phase 7) show progress, errors and a retry button until they exist; with
+//    regex compatibility placeholders reach display regexes as <img> (HTML widgets embed them):
+//    an untouched one becomes the normal component, one rebuilt by a widget just gets its source.
 import { ctx } from '../core/context';
 import { t } from '../core/i18n';
 import { log } from '../core/logger';
 import { reportGenerationError } from '../core/notify';
 import { settings } from '../core/settings';
-import { activeSwipe, displayStyle, PLACEHOLDER_PATTERN } from '../domain';
+import { activeSwipe, displayStyle, markerDimensions, PLACEHOLDER_PATTERN } from '../domain';
 import type { InlineImage, InlineSwipe } from '../domain';
 import type { InlineImages } from '../features/inline/inline-service';
 import { getBlob } from '../features/inline/inline-store';
 
 export const IMG_ATTR = 'data-naist-img';
+/** Transparent pixel used by placeholder and streaming <img> tags; the fragment carries the id. */
+export const PIXEL = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+export const WIDGET_SRC_MARK = '#naist:';
 const MOUNTED_ATTR = 'data-naist-mounted';
 const DRAG_TYPE = 'application/x-naist-inline';
 
@@ -24,6 +30,12 @@ export interface InlineUi {
     display(messageId: number, imageId: string): void;
     tools(messageId: number, imageId: string): void;
     confirmDelete(): Promise<boolean>;
+}
+
+/** Marker generation state, supplied by the marker service. */
+export interface MarkerHooks {
+    isRunning(imageId: string): boolean;
+    retry(messageId: number, imageId: string): Promise<void>;
 }
 
 function messageIdOf(element: Element): number | null {
@@ -58,6 +70,7 @@ export class InlineRenderer {
     /** Images waiting for their source; checked on scroll as well (IO needs a painting page). */
     private readonly waiting = new Set<HTMLImageElement>();
     private lazyTimer: ReturnType<typeof setTimeout> | null = null;
+    private markers: MarkerHooks | null = null;
 
     constructor(
         private readonly service: InlineImages,
@@ -110,6 +123,19 @@ export class InlineRenderer {
         this.service.onChange((messageId) => this.refreshMessage(messageId));
         this.applyVisibility();
         this.renderAll();
+    }
+
+    setMarkerHooks(hooks: MarkerHooks): void {
+        this.markers = hooks;
+    }
+
+    /** Re-renders the message that shows an image (its generation started or ended). */
+    refreshImage(imageId: string): void {
+        const span = document.querySelector(
+            `#chat [${IMG_ATTR}="${imageId}"], #chat img[src$="${WIDGET_SRC_MARK}${imageId}"]`,
+        );
+        const id = span ? messageIdOf(span) : null;
+        if (id !== null) this.refreshMessage(id);
     }
 
     /** Re-renders every message (chat change, settings change). */
@@ -198,9 +224,15 @@ export class InlineRenderer {
         const messageId = messageIdOf(mes);
         if (messageId === null) return;
         if (text.textContent?.includes('[nai:img:')) this.replaceTextPlaceholders(text);
+        // Placeholders shown to display regexes as <img>: untouched ones get the full component.
+        text.querySelectorAll(`img[${IMG_ATTR}]`).forEach((img) => {
+            img.replaceWith(el('span', '', { [IMG_ATTR]: img.getAttribute(IMG_ATTR) ?? '' }));
+        });
+        const widgetImages = [...text.querySelectorAll<HTMLImageElement>(`img[src*="${WIDGET_SRC_MARK}"]`)];
         const spans = [...text.querySelectorAll<HTMLElement>(`[${IMG_ATTR}]:not([${MOUNTED_ATTR}])`)];
-        if (!spans.length) return;
+        if (!spans.length && !widgetImages.length) return;
         const entries = this.service.entries(messageId);
+        for (const img of widgetImages) this.fillWidgetImage(img, entries);
         for (const span of spans) this.mount(span, messageId, entries);
         this.groupRuns(text, entries);
     }
@@ -227,6 +259,83 @@ export class InlineRenderer {
         }
     }
 
+    /** An <img> a widget regex rebuilt around a placeholder: only its source is set. */
+    private fillWidgetImage(img: HTMLImageElement, entries: InlineImage[]): void {
+        const src = img.getAttribute('src') ?? '';
+        const id = src.slice(src.indexOf(WIDGET_SRC_MARK) + WIDGET_SRC_MARK.length);
+        const entry = entries.find((e) => e.id === id);
+        const active = entry ? activeSwipe(entry) : undefined;
+        img.classList.add('naist-widget-img');
+        if (!active) {
+            // A widget has no room for buttons: a failed or interrupted picture retries on click.
+            const failed = entry?.marker !== undefined && !(this.markers?.isRunning(id) ?? false);
+            img.classList.toggle('naist-marker-wait', !failed);
+            img.classList.toggle('naist-marker-failed', failed);
+            if (failed) {
+                img.dataset.naistRetry = id;
+                img.title = entry?.marker?.error || t('naist.markers.retryHint');
+            } else delete img.dataset.naistRetry;
+            return;
+        }
+        img.classList.remove('naist-marker-wait', 'naist-marker-failed');
+        delete img.dataset.naistRetry;
+        img.dataset.naistKey = active.blobKey;
+        img.dataset.naistPath = active.filePath;
+        this.waiting.add(img);
+        this.intersection?.observe(img);
+    }
+
+    /** A marker image that does not exist yet: generating, interrupted or failed. */
+    private mountMarker(span: HTMLElement, entry: InlineImage): void {
+        const marker = entry.marker!;
+        const d = entry.display;
+        const running = this.markers?.isRunning(entry.id) ?? false;
+        const state = marker.status === 'error' ? 'error' : running ? 'pending' : 'interrupted';
+        span.className = `naist-inline naist-marker naist-marker-${state}`;
+        span.removeAttribute('style');
+        for (const [key, value] of Object.entries(displayStyle(d))) span.style.setProperty(key, value);
+        const box = el('span', 'naist-marker-box');
+        const size = markerDimensions(marker.params.ratio, marker.params.size, true);
+        box.style.aspectRatio = `${size.width} / ${size.height}`;
+        const status = el('span', 'naist-marker-status');
+        if (state === 'pending') {
+            status.append(
+                el('i', 'fa-solid fa-spinner fa-spin'),
+                document.createTextNode(` ${t('naist.markers.generating')}`),
+            );
+        } else {
+            status.append(
+                el('i', `fa-solid ${state === 'error' ? 'fa-triangle-exclamation' : 'fa-circle-pause'}`),
+                document.createTextNode(
+                    ` ${state === 'error' ? t('naist.markers.failed') : t('naist.markers.interrupted')}`,
+                ),
+            );
+        }
+        box.append(status);
+        if (marker.error) {
+            const reason = el('span', 'naist-marker-reason');
+            reason.textContent = marker.error;
+            box.append(reason);
+        }
+        const prompt = el('span', 'naist-marker-prompt');
+        const text = marker.params.prompt;
+        prompt.textContent = text.length > 160 ? `${text.slice(0, 160)}...` : text;
+        box.append(prompt);
+        if (state !== 'pending') {
+            const actions = el('span', 'naist-marker-actions');
+            const retry = el('span', 'menu_button naist-marker-retry', { 'data-naist-action': 'marker-retry' });
+            retry.append(el('i', 'fa-solid fa-rotate'), document.createTextNode(` ${t('naist.markers.retry')}`));
+            actions.append(retry, icon('delete', 'fa-trash-can', 'naist.inline.delete'));
+            box.append(actions);
+        }
+        span.append(box);
+        if (d.caption) {
+            const caption = el('span', 'naist-inline-caption');
+            caption.textContent = d.caption;
+            span.append(caption);
+        }
+    }
+
     private mount(span: HTMLElement, messageId: number, entries: InlineImage[]): void {
         const id = span.getAttribute(IMG_ATTR) ?? '';
         span.setAttribute(MOUNTED_ATTR, '1');
@@ -238,6 +347,10 @@ export class InlineRenderer {
             return;
         }
         const swipe = activeSwipe(entry);
+        if (!swipe && entry.marker) {
+            this.mountMarker(span, entry);
+            return;
+        }
         const d = entry.display;
         span.className = 'naist-inline';
         span.removeAttribute('style');
@@ -373,6 +486,14 @@ export class InlineRenderer {
 
     private async onClick(event: Event): Promise<void> {
         const target = event.target as HTMLElement;
+        const retryImage = target.closest<HTMLElement>('img[data-naist-retry]');
+        if (retryImage) {
+            event.preventDefault();
+            event.stopPropagation();
+            const messageId = messageIdOf(retryImage);
+            if (messageId !== null) await this.markers?.retry(messageId, retryImage.dataset.naistRetry ?? '');
+            return;
+        }
         const span = target.closest<HTMLElement>(`[${IMG_ATTR}][${MOUNTED_ATTR}]`);
         if (!span) return;
         const messageId = messageIdOf(span);
@@ -392,6 +513,9 @@ export class InlineRenderer {
                 return;
             case 'show-chat':
                 await this.setChatHidden(false);
+                return;
+            case 'marker-retry':
+                await this.markers?.retry(messageId, imageId);
                 return;
             case 'prev':
             case 'next':

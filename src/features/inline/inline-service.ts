@@ -1,6 +1,8 @@
 // Inline images (TZ Phase 3): generate into a message at a position, image-level swipes,
 // regenerate / variation / edit-and-regenerate, display options, moving between messages, and
-// keeping text and entries consistent after edits, swipes and deletions.
+// keeping text and entries consistent after edits, swipes and deletions. Images asked for by a
+// marker (TZ Phase 7) start as pending entries and get their swipes when the generation ends, even
+// if the message was swiped meanwhile.
 import { ctx } from '../../core/context';
 import { NaiError } from '../../core/errors';
 import { log } from '../../core/logger';
@@ -104,7 +106,7 @@ export class InlineImages {
         return m ? readEntries(m.extra) : [];
     }
 
-    private displayDefaults(partial: Partial<DisplayOptions> = {}): DisplayOptions {
+    displayDefaults(partial: Partial<DisplayOptions> = {}): DisplayOptions {
         const s = settings().inline;
         return defaultDisplay({
             width: s.defaultWidth,
@@ -176,6 +178,76 @@ export class InlineImages {
         await commit(messageId);
         settle(entryBlobKeys(entry));
         return entry;
+    }
+
+    /** A finished reply: raw markers replaced with placeholders, pending entries added. */
+    async addPending(messageId: number, text: string, entries: InlineImage[]): Promise<void> {
+        const m = message(messageId);
+        m.mes = text;
+        entriesOf(m).push(...entries);
+        await commit(messageId);
+    }
+
+    /**
+     * Where an image lives now: the active text of a message (the hint first, messages may shift)
+     * or a swipe of it that is not shown. Null when it is gone (deleted, other chat).
+     */
+    private locate(imageId: string, hint: number): { messageId: number; entry: InlineImage; active: boolean } | null {
+        const chat = ctx().chat;
+        const order = [hint, ...chat.keys()].filter((i, n, all) => i >= 0 && i < chat.length && all.indexOf(i) === n);
+        for (const i of order) {
+            const m = chat[i]!;
+            const entry = readEntries(m.extra).find((e) => e.id === imageId);
+            if (entry) return { messageId: i, entry, active: true };
+            const infos = Array.isArray(m.swipe_info) ? (m.swipe_info as { extra?: unknown }[]) : [];
+            for (const info of infos) {
+                const other = readEntries(info?.extra).find((e) => e.id === imageId);
+                if (other) return { messageId: i, entry: other, active: false };
+            }
+        }
+        return null;
+    }
+
+    private async commitLocated(found: { messageId: number; active: boolean }): Promise<void> {
+        if (found.active) await commit(found.messageId);
+        else await ctx().saveChat();
+    }
+
+    /** The generation of a pending image finished: its images become the swipes. */
+    async completePending(hint: number, imageId: string, produced: ProducedImages): Promise<boolean> {
+        const found = this.locate(imageId, hint);
+        if (!found) return false;
+        const { entry } = found;
+        const swipes: InlineSwipe[] = [];
+        for (const image of produced.images) swipes.push(await this.storeImage(imageId, image, produced.meta));
+        if (!swipes.length) throw new NaiError('invalid-response', 'none', { preview: '' });
+        const first = entry.swipes.length;
+        for (const swipe of swipes) addSwipe(entry, swipe);
+        setActiveSwipe(entry, first);
+        if (entry.marker) {
+            entry.marker.status = 'done';
+            delete entry.marker.error;
+        }
+        await this.commitLocated(found);
+        settle(swipes.map((sw) => sw.blobKey));
+        this.record(produced, swipes, imageId);
+        return true;
+    }
+
+    /** Status of a marker image (pending again for a retry, error with the reason). */
+    async setMarkerStatus(
+        hint: number,
+        imageId: string,
+        status: 'pending' | 'error',
+        error?: string,
+    ): Promise<boolean> {
+        const found = this.locate(imageId, hint);
+        if (!found?.entry.marker) return false;
+        found.entry.marker.status = status;
+        if (error) found.entry.marker.error = error;
+        else delete found.entry.marker.error;
+        await this.commitLocated(found);
+        return true;
     }
 
     /** After an edit-mode insertion the placeholder lives in the textarea until ST saves it. */

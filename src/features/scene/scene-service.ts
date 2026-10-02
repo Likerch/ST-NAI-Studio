@@ -16,11 +16,20 @@ import {
     getCapabilities,
     isModelId,
     MODE,
+    markerPosition,
+    mentionIndex,
     participantFrom,
     POSES,
     processReply,
 } from '../../domain';
-import type { BuiltScene, ModelCapabilities, PosePreset, SceneCandidate, SceneSpec } from '../../domain';
+import type {
+    BuiltScene,
+    MarkerCharacter,
+    ModelCapabilities,
+    PosePreset,
+    SceneCandidate,
+    SceneSpec,
+} from '../../domain';
 import { avatarKey, readCharacterPrompt } from '../characters/character-prompts';
 import { cardPassport, currentPersonaKey, loadCharacter, personaPassport } from '../characters/passport-store';
 import type { Pipeline, PictureResult } from '../generation/pipeline';
@@ -177,6 +186,44 @@ export class SceneService {
             spec.base = await this.describeLocation();
         }
         return { spec, candidates };
+    }
+
+    /**
+     * Characters named by an image marker (TZ Phase 7): passports by name or alias, positions and
+     * poses from the marker, the marker prompt as the shared part. Null when no name is known.
+     */
+    async markerScene(prompt: string, chars: MarkerCharacter[]): Promise<BuiltScene | null> {
+        const { spec, candidates } = await this.emptySpec();
+        const caps = currentCaps();
+        const max = caps.maxCharacters > 0 ? caps.maxCharacters : 3;
+        const picked: { candidate: SceneCandidate; ch: MarkerCharacter }[] = [];
+        for (const ch of chars) {
+            if (picked.length >= max) break;
+            const candidate = candidates.find(
+                (c) =>
+                    !picked.some((p) => p.candidate.key === c.key) &&
+                    mentionIndex(ch.name, [c.name, ...c.aliases]) >= 0,
+            );
+            if (candidate) picked.push({ candidate, ch });
+        }
+        if (!picked.length) return null;
+        const wanted = picked.map(({ ch }) => markerPosition(ch.pos));
+        const positions = autoLayout(
+            picked.length,
+            caps,
+            picked.map(({ candidate }, i) => wanted[i] ?? candidate.passport?.position ?? null),
+        );
+        const library = poseLibrary();
+        spec.participants = picked.map(({ candidate, ch }, i) => {
+            const pose = detectPose(`${ch.pose ?? ''} ${ch.action ?? ''}`, library);
+            const participant = participantFrom(candidate, positions[i] ?? { x: 0.5, y: 0.5 }, pose);
+            const extra = [pose ? '' : (ch.pose ?? ''), ch.action ?? ''].filter((x) => x.trim()).join(', ');
+            if (extra) participant.poseTags = [participant.poseTags, extra].filter((x) => x.trim()).join(', ');
+            return participant;
+        });
+        spec.base = prompt;
+        if (wanted.some(Boolean)) spec.useCoords = true;
+        return this.build(spec);
     }
 
     /** Location tags written by the LLM with the built-in "background" template. */

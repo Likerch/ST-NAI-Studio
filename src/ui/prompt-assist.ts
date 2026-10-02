@@ -1,7 +1,8 @@
 // Prompt field helpers (TZ Phase 6), attached by delegation to every matching field of a root:
 // tag suggestions while typing (local list, Russian aliases, NovelAI's suggestions through the
 // plugin), Ctrl+Up / Ctrl+Down to change the weight of the tag under the cursor in the syntax of
-// the model, a warning about unknown tags and a RU -> EN button when the text has Cyrillic.
+// the model, a warning about unknown tags and a "to prompt" button when the text is human language
+// (Russian or English prose; TZ Phase 7) that converts it to tags for the model of the field.
 import { t } from '../core/i18n';
 import { reportGenerationError } from '../core/notify';
 import { settings } from '../core/settings';
@@ -12,6 +13,7 @@ import {
     hasCyrillic,
     insertTag,
     isModelId,
+    needsInterpretation,
     suggestTags,
     TAG_CATEGORIES,
     unknownTags,
@@ -19,7 +21,7 @@ import {
 } from '../domain';
 import type { TagSuggestion } from '../domain';
 import { readyTagIndex, remoteTagSuggestions, tagIndex } from '../features/prompt-tools/tag-db';
-import { rememberOriginal, translatePrompt } from '../features/translate/translate-service';
+import { interpretForModel, rememberSource } from '../features/language/interpreter';
 import { escapeHtml } from './components/dom';
 
 type Field = HTMLTextAreaElement | HTMLInputElement;
@@ -156,15 +158,22 @@ function line(field: Field): HTMLElement {
     return el;
 }
 
-function refreshLine(field: Field): void {
+/** Negative prompt fields get tags only. */
+function isNegativeField(field: Field): boolean {
+    return /negative|(^|[-_\s])uc($|[-_\s])/i.test(`${field.className} ${field.id} ${field.dataset.naistRole ?? ''}`);
+}
+
+function refreshLine(field: Field, model: () => string): void {
     const el = line(field);
     const parts: string[] = [];
-    if (hasCyrillic(field.value)) {
+    const index = readyTagIndex();
+    const id = modelOf(field, model);
+    const family = getCapabilities(isModelId(id) ? id : DEFAULT_MODEL).family;
+    if (field.value.trim() && needsInterpretation(field.value, family, 'always', index)) {
         parts.push(
-            `<span class="menu_button naist-assist-translate" title="${escapeHtml(t('naist.translate.buttonHint'))}">${escapeHtml(t('naist.translate.button'))}</span>`,
+            `<span class="menu_button naist-assist-translate" title="${escapeHtml(t('naist.interpret.buttonHint'))}">${escapeHtml(t('naist.interpret.button'))}</span>`,
         );
     }
-    const index = readyTagIndex();
     if (index && settings().promptTools.warnUnknown && !hasCyrillic(field.value)) {
         const unknown = unknownTags(index, field.value).slice(0, 8);
         if (unknown.length)
@@ -176,20 +185,32 @@ function refreshLine(field: Field): void {
     el.classList.toggle('naist-hidden', parts.length === 0);
 }
 
-async function translateField(field: Field, button: HTMLElement): Promise<void> {
+async function convertField(field: Field, button: HTMLElement, model: () => string): Promise<void> {
     button.classList.add('disabled');
     try {
         const original = field.value;
-        const result = await translatePrompt(original);
-        rememberOriginal(result.text, original);
-        field.value = result.text;
+        const result = await interpretForModel(original, modelOf(field, model), {
+            force: true,
+            strict: true,
+            negative: isNegativeField(field),
+        });
+        if (!result) {
+            toastr.info(t('naist.interpret.already'), t('naist.interpret.title'));
+            return;
+        }
+        rememberSource(result.prompt, original);
+        field.value = result.prompt;
         field.dispatchEvent(new Event('input', { bubbles: true }));
-        toastr.info(t(result.cached ? 'naist.translate.cached' : 'naist.translate.done'), t('naist.translate.title'));
+        const done = t(result.cached ? 'naist.interpret.cached' : 'naist.interpret.done');
+        const extra = result.unmatched.length
+            ? ` ${t('naist.interpret.unmatched', { tags: result.unmatched.slice(0, 6).join(', ') })}`
+            : '';
+        toastr.info(done + extra, t('naist.interpret.title'));
     } catch (error) {
         reportGenerationError(error);
     } finally {
         button.classList.remove('disabled');
-        refreshLine(field);
+        refreshLine(field, model);
     }
 }
 
@@ -208,13 +229,13 @@ export function attachPromptAssist(root: HTMLElement, selector: string, model: (
         if (!field) return;
         suggest(field, model);
         if (lineTimer) clearTimeout(lineTimer);
-        lineTimer = setTimeout(() => refreshLine(field), 400);
+        lineTimer = setTimeout(() => refreshLine(field, model), 400);
     });
     root.addEventListener('focusin', (event) => {
         const field = fieldOf(event.target);
         if (field) {
             void tagIndex();
-            refreshLine(field);
+            refreshLine(field, model);
         }
     });
     root.addEventListener('focusout', (event) => {
@@ -223,7 +244,7 @@ export function attachPromptAssist(root: HTMLElement, selector: string, model: (
     root.addEventListener('click', (event) => {
         const button = (event.target as HTMLElement).closest<HTMLElement>('.naist-assist-translate');
         const field = button?.parentElement?.previousElementSibling as Field | null;
-        if (button && field && fieldOf(field)) void translateField(field, button);
+        if (button && field && fieldOf(field)) void convertField(field, button, model);
     });
     root.addEventListener('keydown', (event) => {
         const field = fieldOf(event.target);

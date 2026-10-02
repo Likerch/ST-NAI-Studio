@@ -39,8 +39,10 @@ export const PLUGIN_FEATURES: TransportFeatures = {
 
 /** Routes added in plugin 0.2.0: streaming, vibe encoding, Director Tools, upscale. */
 export const PHASE5_PLUGIN_VERSION = '0.2.0';
+/** Route added in plugin 0.4.0: NovelAI text models for the human-language converter. */
+export const TEXT_PLUGIN_VERSION = '0.4.0';
 
-function versionAtLeast(version: string, minimum: string): boolean {
+export function versionAtLeast(version: string, minimum: string): boolean {
     const a = version.split('.').map((n) => Number.parseInt(n, 10) || 0);
     const b = minimum.split('.').map((n) => Number.parseInt(n, 10) || 0);
     for (let i = 0; i < Math.max(a.length, b.length); i++) {

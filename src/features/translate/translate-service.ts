@@ -1,6 +1,8 @@
 // RU -> EN translation (TZ Phase 6) through the user's current LLM: `generateRaw` with a JSON
 // schema on Chat Completion (structured output works only there, RECON §2.14), a strict
 // instruction on other APIs. The glossary applies first; results are cached in IndexedDB.
+// Since Phase 7 generations go through the human-language interpreter; this plain translation
+// backs /nai-translate.
 import { ctx } from '../../core/context';
 import { NaiError } from '../../core/errors';
 import { log } from '../../core/logger';
@@ -18,17 +20,9 @@ import {
     translationKeySource,
     translationPrompt,
 } from '../../domain';
-import type { PromptTranslator } from '../generation/pipeline';
 import { sha256Hex } from '../vibes/vibe-library';
 
 const memory = new Map<string, string>();
-/** English text -> Russian original, for prompts translated by hand (kept for the session). */
-const originals = new Map<string, string>();
-
-export function rememberOriginal(english: string, original: string): void {
-    if (originals.size > 200) originals.clear();
-    originals.set(english.trim(), original);
-}
 
 export interface Translation {
     text: string;
@@ -83,17 +77,3 @@ export async function translatePrompt(text: string): Promise<Translation> {
     log.info('prompt translated', structured ? '(structured output)' : '(few-shot)');
     return { text: result, cached: false };
 }
-
-/** Pipeline hook: translates Cyrillic prompts before every generation when auto mode is on. */
-export const autoTranslator: PromptTranslator = {
-    enabled: () => settings().translate.auto,
-    async translate(text) {
-        return needsTranslation(text) ? (await translatePrompt(text)).text : null;
-    },
-    original(text) {
-        // A prompt may get a prefix or suffix around the translated part: match by containment.
-        const trimmed = text.trim();
-        for (const [english, original] of originals) if (english && trimmed.includes(english)) return original;
-        return undefined;
-    },
-};

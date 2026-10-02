@@ -34,8 +34,19 @@ export async function selectTransport(
 
 export * from './types';
 export * from './sse';
-export { PHASE5_PLUGIN_VERSION, PLUGIN_BASE, PLUGIN_ID, PLUGIN_FEATURES, pluginFeatures, probePlugin } from './plugin';
+export {
+    PHASE5_PLUGIN_VERSION,
+    PLUGIN_BASE,
+    PLUGIN_ID,
+    PLUGIN_FEATURES,
+    pluginFeatures,
+    probePlugin,
+    TEXT_PLUGIN_VERSION,
+    versionAtLeast,
+} from './plugin';
 export type { PluginHealth } from './plugin';
 export { NATIVE_FEATURES, lostOnNative, stEffectiveBody, toStNativeRequest } from './st-native';
 export { fetchTagSuggestions, fetchTokenizerDefinition, TOKENIZER_STATIC_URL } from './public-files';
 export type { RemoteTagSuggestion } from './public-files';
+export { novelAiText } from './text';
+export type { TextRequest } from './text';

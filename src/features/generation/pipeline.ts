@@ -29,7 +29,14 @@ import {
     roundToStep,
     usesCharacterPrefix,
 } from '../../domain';
-import type { GenerationRequest, InlineGenerationMeta, ModelCapabilities, ModeId, VibeReference } from '../../domain';
+import type {
+    GenerationRequest,
+    InlineGenerationMeta,
+    ModeId,
+    ModelCapabilities,
+    PlannedVibe,
+    VibeReference,
+} from '../../domain';
 import type { GeneratedImage, StreamFrame, Transport } from '../../transport';
 import {
     avatarKey,
@@ -80,6 +87,14 @@ export interface PictureRequest {
     maxCost?: number;
     /** Sprites, comic panels: never take the location image as the img2img base. */
     noContinuity?: boolean;
+    /**
+     * Human-language conversion (TZ Phase 7): "auto" follows the language settings, "cyrillic" only
+     * converts Russian. Default: "auto" for a trigger, "cyrillic" for a given scene (stored prompts
+     * are already final).
+     */
+    interpret?: 'auto' | 'cyrillic';
+    /** Vibes for this request only, in addition to the active ones. */
+    vibes?: PlannedVibe[];
 }
 
 export interface PictureResult {
@@ -104,14 +119,27 @@ export interface Produced extends ProducedImages {
 
 /** Vibes applied to generations (TZ Phase 5); encoding happens before the request is built. */
 export interface VibeProvider {
-    prepare(caps: ModelCapabilities, transport: Transport, signal?: AbortSignal): Promise<VibeReference[]>;
+    /** `extra`: vibes of this request only (a marker's "vibe"), added to the active ones. */
+    prepare(
+        caps: ModelCapabilities,
+        transport: Transport,
+        signal?: AbortSignal,
+        extra?: PlannedVibe[],
+    ): Promise<VibeReference[]>;
 }
 
-/** RU -> EN translation before a generation (TZ Phase 6); null when nothing was translated. */
-export interface PromptTranslator {
-    enabled(): boolean;
-    translate(text: string, signal?: AbortSignal): Promise<string | null>;
-    /** Russian original of a text translated by hand in a prompt field, if any. */
+export interface InterpretContext {
+    model: string;
+    cyrillicOnly: boolean;
+    /** A negative prompt: tags only, whatever the model. */
+    negative?: boolean;
+    signal?: AbortSignal;
+}
+
+/** Human language -> NovelAI prompt before a generation (TZ Phase 7); null when used as is. */
+export interface PromptInterpreter {
+    interpret(text: string, context: InterpretContext): Promise<{ prompt: string; negative: string } | null>;
+    /** Human-language original of a text converted by hand in a prompt field, if any. */
     original?(text: string): string | undefined;
 }
 
@@ -241,7 +269,7 @@ export function metaFromPrepared(
 export class Pipeline {
     private readonly observers = new Set<GenerationObserver>();
     private vibes: VibeProvider | null = null;
-    private translator: PromptTranslator | null = null;
+    private interpreter: PromptInterpreter | null = null;
     private continuity: ContinuityProvider | null = null;
 
     constructor(
@@ -257,8 +285,8 @@ export class Pipeline {
         this.vibes = provider;
     }
 
-    setTranslator(translator: PromptTranslator): void {
-        this.translator = translator;
+    setInterpreter(interpreter: PromptInterpreter): void {
+        this.interpreter = interpreter;
     }
 
     setContinuityProvider(provider: ContinuityProvider): void {
@@ -468,15 +496,23 @@ export class Pipeline {
         await c.eventSource.emit(c.eventTypes.SD_PROMPT_PROCESSING ?? 'sd_prompt_processing', eventData);
         scene = eventData.prompt;
 
-        // RU -> EN (TZ Phase 6): the original stays in the generation metadata.
-        const translator = this.translator?.enabled() ? this.translator : null;
-        let sourcePrompt: string | undefined = this.translator?.original?.(scene);
-        if (translator) {
-            const english = await translator.translate(scene, req.signal);
-            if (english !== null && english !== scene) {
+        // Human language -> NovelAI prompt (TZ Phase 7): the original stays in the generation metadata.
+        const interpreter = this.interpreter;
+        const targetModel = String(o.generation?.model ?? s.generation.model);
+        const cyrillicOnly = (req.interpret ?? (req.scene === undefined ? 'auto' : 'cyrillic')) === 'cyrillic';
+        const interpretContext = { model: targetModel, cyrillicOnly, signal: req.signal };
+        let sourcePrompt: string | undefined = interpreter?.original?.(scene);
+        if (interpreter && scene.trim()) {
+            const result = await interpreter.interpret(scene, interpretContext);
+            if (result && result.prompt !== scene) {
                 sourcePrompt = scene;
-                scene = english;
+                scene = result.prompt;
+                if (result.negative) additionalNegative = combinePrefixes(additionalNegative, result.negative);
             }
+        }
+        if (interpreter && hasCyrillic(additionalNegative)) {
+            const result = await interpreter.interpret(additionalNegative, { ...interpretContext, negative: true });
+            if (result) additionalNegative = result.prompt;
         }
 
         // A stored scene prompt is already final: free-mode "char" expansion must not run twice,
@@ -491,24 +527,35 @@ export class Pipeline {
         );
         // An image swipe with a fixed seed gets a random one, like the built-in.
         if (isSwipe && assembled.overrides.seed === undefined && s.generation.seed >= 0) assembled.overrides.seed = -1;
-        if (translator) {
+        if (interpreter) {
             const characters = assembled.overrides.characters ?? s.generation.characters;
-            if (characters.some((ch) => hasCyrillic(ch.prompt) || hasCyrillic(ch.negative))) {
-                assembled.overrides.characters = await Promise.all(
-                    characters.map(async (ch) => ({
+            let changed = false;
+            const converted = await Promise.all(
+                characters.map(async (ch) => {
+                    if (!ch.enabled) return ch;
+                    const prompt = ch.prompt.trim() ? await interpreter.interpret(ch.prompt, interpretContext) : null;
+                    const negative = hasCyrillic(ch.negative)
+                        ? await interpreter.interpret(ch.negative, { ...interpretContext, negative: true })
+                        : null;
+                    if (!prompt && !negative) return ch;
+                    changed = true;
+                    return {
                         ...ch,
-                        prompt: (await translator.translate(ch.prompt, req.signal)) ?? ch.prompt,
-                        negative: (await translator.translate(ch.negative, req.signal)) ?? ch.negative,
-                    })),
-                );
-            }
+                        prompt: prompt?.prompt ?? ch.prompt,
+                        negative: [negative?.prompt ?? ch.negative, prompt?.negative ?? '']
+                            .filter((n) => n.trim())
+                            .join(', '),
+                    };
+                }),
+            );
+            if (changed) assembled.overrides.characters = converted;
         }
         const patch: Partial<GenerationRequest> = { ...req.requestPatch };
         const transport = this.controller.state.selection?.transport;
         const model = String(assembled.overrides.model ?? s.generation.model);
         const caps = getCapabilities(isModelId(model) ? model : DEFAULT_MODEL);
         if (patch.vibes === undefined && this.vibes && transport && patch.mode !== 'inpaint') {
-            const vibes = await this.vibes.prepare(caps, transport, req.signal);
+            const vibes = await this.vibes.prepare(caps, transport, req.signal, req.vibes);
             if (vibes.length) patch.vibes = vibes;
         }
         // Scene continuity (TZ Phase 6): the last image of the location as the img2img base.

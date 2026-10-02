@@ -24,11 +24,55 @@
 </div>
 
 <div class="naist-section">
-    <b data-i18n="naist.translate.title"></b>
-    <div class="naist-hint" data-i18n="naist.translate.hint"></div>
+    <b data-i18n="naist.language.title"></b>
+    <div class="naist-hint" data-i18n="naist.language.hint"></div>
+    <div class="naist-grid2">
+        <div>
+            <label for="naist_language_mode" data-i18n="naist.language.mode"></label>
+            <select id="naist_language_mode" class="text_pole" data-setting="language.mode">
+                <option value="auto" data-i18n="naist.language.modeAuto"></option>
+                <option value="always" data-i18n="naist.language.modeAlways"></option>
+                <option value="off" data-i18n="naist.language.modeOff"></option>
+            </select>
+        </div>
+        <div>
+            <label for="naist_language_backend" data-i18n="naist.language.backend"></label>
+            <select id="naist_language_backend" class="text_pole" data-setting="language.backend">
+                <option value="main" data-i18n="naist.language.backendMain"></option>
+                <option value="profile" data-i18n="naist.language.backendProfile"></option>
+                <option value="novelai" data-i18n="naist.language.backendNovelai"></option>
+            </select>
+        </div>
+    </div>
+    <div id="naist_language_profile_row" class="naist-hidden">
+        <label for="naist_language_profile" data-i18n="naist.language.profile"></label>
+        <select id="naist_language_profile" class="text_pole" data-setting="language.profileId"></select>
+        <div class="naist-hint" data-i18n="naist.language.profileHint"></div>
+    </div>
+    <div id="naist_language_novelai_row" class="naist-hidden">
+        <label for="naist_language_novelai_model" data-i18n="naist.language.novelaiModel"></label>
+        <select id="naist_language_novelai_model" class="text_pole" data-setting="language.novelaiModel">
+            <option value="glm-4-6">GLM-4.6</option>
+            <option value="xialong-v1">Xialong (Opus)</option>
+        </select>
+        <div class="naist-hint" data-i18n="naist.language.novelaiHint"></div>
+    </div>
     <label class="checkbox_label"
-        ><input type="checkbox" data-setting="translate.auto" /><span data-i18n="naist.translate.auto"></span
+        ><input type="checkbox" data-setting="language.russianOnV5" /><span
+            data-i18n="naist.language.russianOnV5"
+        ></span
     ></label>
+    <label for="naist_language_test" data-i18n="naist.language.test"></label>
+    <textarea
+        id="naist_language_test"
+        class="text_pole textarea_compact"
+        rows="2"
+        data-i18n="[placeholder]naist.language.testPlaceholder"
+    ></textarea>
+    <div class="naist-row">
+        <div id="naist_language_test_run" class="menu_button" data-i18n="naist.language.testRun"></div>
+    </div>
+    <pre id="naist_language_test_result" class="naist-pre naist-hidden"></pre>
     <label for="naist_glossary" data-i18n="naist.translate.glossary"></label>
     <textarea
         id="naist_glossary"

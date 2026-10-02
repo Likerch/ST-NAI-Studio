@@ -1,6 +1,7 @@
 // Inline images (TZ Phase 3): the message text holds a `[nai:img:<id>]` placeholder and the image
 // itself lives in `extra.nai_images[]`. Pure text/entry manipulation, no DOM and no storage.
 // Placeholders survive ST formatting unchanged (RECON §2.3); the id must not be followed by "(".
+import type { MarkerParams } from './markers';
 
 /** Parameters an inline image was generated with (what the lightbox and "repeat" need). */
 export interface InlineGenerationMeta {
@@ -63,6 +64,13 @@ export interface DisplayOptions {
     layout: InlineLayout;
 }
 
+/** An image the chat model asked for with a marker (TZ Phase 7): parameters and progress. */
+export interface InlineMarkerState {
+    params: MarkerParams;
+    status: 'pending' | 'error' | 'done';
+    error?: string;
+}
+
 /** TZ shape: the active swipe is mirrored in blobKey/filePath/meta for simple readers. */
 export interface InlineImage {
     id: string;
@@ -72,6 +80,8 @@ export interface InlineImage {
     swipes: InlineSwipe[];
     activeSwipe: number;
     display: DisplayOptions;
+    /** Present for images requested by a marker; a pending one has no swipes yet. */
+    marker?: InlineMarkerState;
 }
 
 export const PLACEHOLDER_PATTERN = /\[nai:img:([0-9a-zA-Z-]{6,64})\]/g;
@@ -197,7 +207,11 @@ export function textForPrompt(text: string, entries: readonly InlineImage[], mod
     const replaced = text.replace(new RegExp(PLACEHOLDER_PATTERN.source, 'g'), (_m, id: string) => {
         if (mode === 'remove') return '';
         const entry = byId.get(id);
-        const caption = entry?.display.caption.trim() || entry?.meta.scenePrompt.trim() || '';
+        const caption =
+            entry?.display.caption.trim() ||
+            entry?.meta?.scenePrompt?.trim() ||
+            entry?.marker?.params.prompt.trim() ||
+            '';
         return caption ? `[image: ${caption}]` : '';
     });
     return replaced
@@ -240,6 +254,46 @@ export function createInlineImage(id: string, swipe: InlineSwipe, display: Displ
     return mirror({ id, blobKey: '', meta: swipe.meta, swipes: [swipe], activeSwipe: 0, display });
 }
 
+/** Meta of an image that is not generated yet (only the scene prompt is known). */
+export function pendingMeta(scenePrompt: string, now = new Date()): InlineGenerationMeta {
+    return {
+        scenePrompt,
+        prompt: '',
+        negativePrompt: '',
+        negative: '',
+        mode: 0,
+        model: '',
+        seed: 0,
+        width: 0,
+        height: 0,
+        steps: 0,
+        scale: 0,
+        cfgRescale: 0,
+        sampler: '',
+        noiseSchedule: '',
+        ucPreset: '',
+        qualityPreset: '',
+        requestType: 'txt2img',
+        characters: [],
+        transport: '',
+        cost: 0,
+        createdAt: now.toISOString(),
+    };
+}
+
+/** An image a marker asked for: no swipes until the generation finishes. */
+export function createPendingImage(id: string, params: MarkerParams, display: DisplayOptions): InlineImage {
+    return {
+        id,
+        blobKey: '',
+        meta: pendingMeta(params.prompt),
+        swipes: [],
+        activeSwipe: 0,
+        display,
+        marker: { params, status: 'pending' },
+    };
+}
+
 /** Adds an alternative generation and makes it active. */
 export function addSwipe(entry: InlineImage, swipe: InlineSwipe): InlineImage {
     entry.swipes.push(swipe);
@@ -279,7 +333,7 @@ export function readEntries(extra: unknown): InlineImage[] {
             e !== null &&
             typeof (e as InlineImage).id === 'string' &&
             Array.isArray((e as InlineImage).swipes) &&
-            (e as InlineImage).swipes.length > 0,
+            ((e as InlineImage).swipes.length > 0 || typeof (e as InlineImage).marker === 'object'),
     );
 }
 

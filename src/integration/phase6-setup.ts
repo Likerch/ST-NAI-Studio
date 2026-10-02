@@ -19,7 +19,8 @@ import type { Pipeline } from '../features/generation/pipeline';
 import type { SceneService } from '../features/scene/scene-service';
 import { exportSettingsFile, importSettingsText } from '../features/settings-io/settings-io';
 import { SpriteService } from '../features/sprites/sprite-service';
-import { autoTranslator, translatePrompt } from '../features/translate/translate-service';
+import { interpretForModel, languageInterpreter } from '../features/language/interpreter';
+import { translatePrompt } from '../features/translate/translate-service';
 import { setExtraVibes } from '../features/vibes/vibe-library';
 import { openComicDialog } from '../ui/comic-dialog';
 import { openSpritesDialog } from '../ui/sprites-dialog';
@@ -188,6 +189,27 @@ function registerCommands(): void {
     );
     parser.addCommandObject(
         Command.fromProps({
+            name: 'nai-prompt',
+            returns: t('naist.command.promptReturns'),
+            helpString: t('naist.command.promptHelp'),
+            unnamedArgumentList: text(t('naist.command.arg.promptText')),
+            callback: async (_args: Record<string, unknown>, value: unknown) => {
+                const input = String(value ?? '');
+                try {
+                    const result = await interpretForModel(input, settings().generation.model, {
+                        force: true,
+                        strict: true,
+                    });
+                    return result?.prompt ?? input;
+                } catch (error) {
+                    reportGenerationError(error);
+                    return '';
+                }
+            },
+        }),
+    );
+    parser.addCommandObject(
+        Command.fromProps({
             name: 'nai-location',
             returns: t('naist.command.locationReturns'),
             helpString: t('naist.command.locationHelp'),
@@ -232,7 +254,7 @@ function installMenuOption(): void {
 }
 
 export function setupPhase6(pipeline: Pipeline, scenes: SceneService): void {
-    pipeline.setTranslator(autoTranslator);
+    pipeline.setInterpreter(languageInterpreter);
     const continuity = new ContinuityService();
     pipeline.setContinuityProvider(continuity);
     pipeline.onGenerated(continuity.observe);

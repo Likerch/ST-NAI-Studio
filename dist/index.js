@@ -6702,9 +6702,11 @@ function characters(value) {
 		const pos = str$2(pick$1(o, "pos", "position"));
 		const pose = str$2(o.pose);
 		const action = str$2(o.action);
+		const look = str$2(pick$1(o, "look", "appearance", "tags", "prompt", "desc", "description"));
 		if (pos) ch.pos = pos;
 		if (pose) ch.pose = pose;
 		if (action) ch.action = action;
+		if (look) ch.look = look;
 		out.push(ch);
 	}
 	return out.length ? out : void 0;
@@ -7383,21 +7385,22 @@ function interpretCacheSource(text, family, glossary) {
 //#endregion
 //#region src/domain/marker-instructions.ts
 var COMMON_TAIL = `- "caption": a few words in {{captionLanguage}} shown under the picture.
-- Characters whose looks are known{{charsHint}}: just use their names in "prompt" — their appearance is added automatically; describe only what they do, wear differently, feel.
-- Optional keys: "chars": [{"name":"...","pos":"left|center|right","action":"..."}] to place characters and say what each one does; "ratio": "portrait", "landscape", "square", "wide" or "tall"; "negative": what must not be in the picture; "text": words written in the picture; "id": a short name for the picture and "ref": the id of an earlier picture to continue its scene; "spoiler": true for a picture that gives too much away.
+- "chars": one entry per person in the picture (up to 4): {"name":"...","look":"...","action":"...","pos":"left|center|right"}. "look" is that one person only: "1girl" / "1boy" / "1other" first, then hair, eyes, body, clothes. Each person gets their own prompt, so looks of different people never mix: never describe people in "prompt".
+- Characters whose looks are known{{charsHint}}: their name in "chars" is enough — their appearance is added automatically; "look" only for what they wear differently now.
+- Optional keys: "ratio": "portrait", "landscape", "square", "wide" or "tall"; "negative": what must not be in the picture; "text": words written in the picture; "id": a short name for the picture and "ref": the id of an earlier picture to continue its scene; "spoiler": true for a picture that gives too much away.
 - Write the marker exactly in this form, inside the reply where the picture belongs. Never write image links or file names, and do not talk about the markers.`;
 var MARKER_TEMPLATES = {
 	natural: `[Illustrations]
 You can show pictures inside your reply. Where a picture really adds something (a new place, an important moment, how someone looks), put an image marker on its own line:
 <img data-nai='{"prompt":"what the picture shows, in plain words","caption":"short caption"}'>
 - {{count}}
-- "prompt": describe the picture in plain words, in any language: who is in it, their looks and clothes, pose and action, the place, the light, the mood and the camera angle. No tag lists, no quality words.
+- "prompt": describe the picture in plain words, in any language: how many people and what they do together, the place, the light, the mood and the camera angle. The looks of each person go to "chars". No tag lists, no quality words.
 ${COMMON_TAIL}`,
 	tags: `[Illustrations]
 You can show pictures inside your reply. Where a picture really adds something (a new place, an important moment, how someone looks), put an image marker on its own line:
 <img data-nai='{"prompt":"1girl, red hair, school uniform, sitting, classroom, evening light","caption":"short caption"}'>
 - {{count}}
-- "prompt": Danbooru-style tags in English separated by commas (count of people, looks, clothes, pose, action, place, light, camera), optionally followed by one short sentence.
+- "prompt": Danbooru-style tags in English separated by commas (count of people, what they do together, place, light, camera), optionally followed by one short sentence. The looks of each person go to "chars".
 ${COMMON_TAIL}`
 };
 function countRule(min, max) {
@@ -11033,6 +11036,21 @@ var SceneService = class {
 				candidate,
 				ch
 			});
+			else if (ch.look?.trim()) picked.push({
+				candidate: {
+					key: `marker:${ch.name.toLowerCase()}`,
+					name: ch.name,
+					aliases: [],
+					passport: null,
+					fallbackPrompt: ch.look.trim(),
+					fallbackNegative: "",
+					isUser: false
+				},
+				ch: {
+					...ch,
+					look: void 0
+				}
+			});
 		}
 		if (!picked.length) return null;
 		const wanted = picked.map(({ ch }) => markerPosition(ch.pos));
@@ -11044,6 +11062,7 @@ var SceneService = class {
 				x: .5,
 				y: .5
 			}, pose);
+			if (ch.look?.trim()) participant.currentLook = ch.look.trim();
 			const extra = [pose ? "" : ch.pose ?? "", ch.action ?? ""].filter((x) => x.trim()).join(", ");
 			if (extra) participant.poseTags = [participant.poseTags, extra].filter((x) => x.trim()).join(", ");
 			return participant;
@@ -16826,7 +16845,7 @@ var ComicService = class {
 };
 //#endregion
 //#region package.json
-var version = "0.9.9";
+var version = "0.9.10";
 //#endregion
 //#region src/features/settings-io/settings-io.ts
 async function exportSettingsFile(includeImages) {

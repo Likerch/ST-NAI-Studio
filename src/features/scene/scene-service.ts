@@ -338,6 +338,21 @@ export class SceneService {
                     mentionIndex(ch.name, [c.name, ...c.aliases]) >= 0,
             );
             if (candidate) picked.push({ candidate, ch });
+            else if (ch.look?.trim()) {
+                // Nobody known by that name: the marker's own description is their character prompt.
+                picked.push({
+                    candidate: {
+                        key: `marker:${ch.name.toLowerCase()}`,
+                        name: ch.name,
+                        aliases: [],
+                        passport: null,
+                        fallbackPrompt: ch.look.trim(),
+                        fallbackNegative: '',
+                        isUser: false,
+                    },
+                    ch: { ...ch, look: undefined },
+                });
+            }
         }
         if (!picked.length) return null;
         const wanted = picked.map(({ ch }) => markerPosition(ch.pos));
@@ -350,6 +365,8 @@ export class SceneService {
         spec.participants = picked.map(({ candidate, ch }, i) => {
             const pose = detectPose(`${ch.pose ?? ''} ${ch.action ?? ''}`, library);
             const participant = participantFrom(candidate, positions[i] ?? { x: 0.5, y: 0.5 }, pose);
+            // What a known character wears in this picture replaces the passport's clothes.
+            if (ch.look?.trim()) participant.currentLook = ch.look.trim();
             const extra = [pose ? '' : (ch.pose ?? ''), ch.action ?? ''].filter((x) => x.trim()).join(', ');
             if (extra) participant.poseTags = [participant.poseTags, extra].filter((x) => x.trim()).join(', ');
             return participant;

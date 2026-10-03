@@ -18,6 +18,11 @@ export interface MarkerCharacter {
     pos?: string;
     pose?: string;
     action?: string;
+    /**
+     * How this one person looks in the picture (v0.9.10): their own character prompt, so looks of
+     * different people do not mix. With a passport it replaces only the clothes.
+     */
+    look?: string;
 }
 
 export interface MarkerParams {
@@ -165,9 +170,11 @@ function characters(value: unknown): MarkerCharacter[] | undefined {
             const pos = str(pick(o, 'pos', 'position'));
             const pose = str(o.pose);
             const action = str(o.action);
+            const look = str(pick(o, 'look', 'appearance', 'tags', 'prompt', 'desc', 'description'));
             if (pos) ch.pos = pos;
             if (pose) ch.pose = pose;
             if (action) ch.action = action;
+            if (look) ch.look = look;
             out.push(ch);
         }
     }

@@ -1,5 +1,6 @@
 // NAI_STUDIO_API (v0.10) with mocked SillyTavern: published and removed with the extension, passports
-// as the chat sees them, saves into the card or the chat, outfits and states, events, scene providers.
+// as the chat sees them, saves into the card or the chat, outfits and states, events, scene providers,
+// quality gates (v0.11).
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { defaultSettings } from '../../src/core/settings-schema';
 import type { NaiStudioSettings } from '../../src/core/settings-schema';
@@ -42,6 +43,8 @@ vi.mock('../../src/core/context', () => ({
 const { API_GLOBAL, installPublicApi, uninstallPublicApi } = await import('../../src/integration/public-api');
 const { imageReady } = await import('../../src/features/events/studio-events');
 const { sceneHint, sceneHintProviders } = await import('../../src/features/scene/scene-providers');
+const { clearQualityVerdicts, qualityGatesActive, replyVerdict } =
+    await import('../../src/features/quality/quality-gate');
 
 function passport(id: string, name = '', kind: Passport['kind'] = 'character'): Passport {
     const p = defaultPassport(kind, name, id);
@@ -100,6 +103,7 @@ describe('NAI_STUDIO_API', () => {
             'clearChatOverride',
             'on',
             'registerSceneProvider',
+            'registerQualityGate',
         ] as const)
             expect(typeof api[method]).toBe('function');
         const listener = vi.fn();
@@ -111,6 +115,23 @@ describe('NAI_STUDIO_API', () => {
         expect(sceneHintProviders()).toHaveLength(0);
         imageReady(1, 'marker');
         expect(listener).not.toHaveBeenCalled();
+    });
+
+    it('takes quality gates (v0.11) and drops them with the API', async () => {
+        expect(() => api.registerQualityGate('gate' as never)).toThrow(/gate must be a function/);
+        const gate = vi.fn(async () => false);
+        const off = api.registerQualityGate(gate);
+        expect(qualityGatesActive()).toBe(true);
+        state.chat = [{ mes: 'reply', is_user: false, is_system: false, swipe_id: 2 }];
+        expect(await replyVerdict(0)).toBe('skip');
+        expect(gate).toHaveBeenCalledWith({ messageIndex: 0, swipeId: 2 });
+        off();
+        expect(qualityGatesActive()).toBe(false);
+        api.registerQualityGate(gate);
+        expect(qualityGatesActive()).toBe(true);
+        uninstallPublicApi();
+        expect(qualityGatesActive()).toBe(false);
+        clearQualityVerdicts();
     });
 
     it('lists the passports of the chat as copies, by scope', async () => {

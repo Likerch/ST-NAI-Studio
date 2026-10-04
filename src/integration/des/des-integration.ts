@@ -9,6 +9,7 @@
 //   recognises by the appearance line and enriches (passport, current look, framing, stable seed);
 // - NAI Studio items in the DES portrait menu, "Illustrate" on scene banners, a Workshop button.
 // Since v0.10 passports are the chat's view of them (chat overrides, passports of the chat itself).
+// Since v0.11 automatic portraits wait for the quality gates' verdict on the reply of the tracker.
 import { ctx } from '../../core/context';
 import { t } from '../../core/i18n';
 import { log } from '../../core/logger';
@@ -41,6 +42,8 @@ import {
 import { onStudioEvent } from '../../features/events/studio-events';
 import { setCurrentLocation } from '../../features/continuity/continuity-service';
 import type { MarkerService } from '../../features/markers/marker-service';
+import { qualityGatesActive, replyVerdict } from '../../features/quality/quality-gate';
+import type { QualityVerdict } from '../../features/quality/quality-gate';
 import { setSceneProvider } from '../../features/scene/scene-service';
 import type { SceneQuery } from '../../features/scene/scene-service';
 import { setExtraSpriteFolder } from '../../features/sprites/sprite-service';
@@ -226,10 +229,15 @@ export class DesIntegration {
     }
 
     private latestTracker(): DesTracker | null {
+        return this.latestTrackerAt()?.tracker ?? null;
+    }
+
+    /** The newest tracker and the reply it belongs to. */
+    private latestTrackerAt(): { tracker: DesTracker; messageId: number } | null {
         const chat = ctx().chat;
         for (let i = chat.length - 1; i >= 0; i--) {
             const tracker = this.trackerOf(i);
-            if (tracker) return tracker;
+            if (tracker) return { tracker, messageId: i };
         }
         return null;
     }
@@ -325,9 +333,17 @@ export class DesIntegration {
     /** After a tracker update: location, passports of new characters, appearance lines, portraits. */
     private async handleTracker(portraits: boolean): Promise<void> {
         if (!this.active()) return;
-        const tracker = this.latestTracker();
-        if (!tracker) return;
+        const latest = this.latestTrackerAt();
+        if (!latest) return;
+        const { tracker, messageId } = latest;
         const d = settings().des;
+        // Automatic portraits wait for the quality gates' verdict on the reply of the tracker (asked once).
+        let verdict: Promise<QualityVerdict> | undefined;
+        const approval = () => {
+            if (!qualityGatesActive()) return undefined;
+            const streaming = this.markers.generating === true && messageId === ctx().chat.length - 1;
+            return (verdict ??= replyVerdict(messageId, { streaming }));
+        };
         const location = tracker.scene?.location ?? '';
         if (d.sceneTags && location && location !== this.lastLocation) {
             this.lastLocation = location;
@@ -339,7 +355,7 @@ export class DesIntegration {
                 (await this.findPassport(character.name)) ??
                 (d.autoPassports ? await this.createPassport(character) : null);
             this.syncLine(character.name, found?.passport ?? null, character.look);
-            if (portraits && d.portraits) this.maybePortrait(character, found);
+            if (portraits && d.portraits) this.maybePortrait(character, found, approval);
         }
     }
 
@@ -441,7 +457,11 @@ export class DesIntegration {
         return (meta.desPortraits ??= {});
     }
 
-    private maybePortrait(character: DesCharacter, found: Found | null): void {
+    private maybePortrait(
+        character: DesCharacter,
+        found: Found | null,
+        approval?: () => Promise<QualityVerdict> | undefined,
+    ): void {
         const api = this.api;
         if (!api || this.isCardCharacter(character.name)) return;
         const name = character.name;
@@ -455,7 +475,12 @@ export class DesIntegration {
         const policy = settings().des.portraitPolicy;
         const due = !existing || policy === 'every' || (policy === 'state' && records[name] !== hash);
         if (!due) return;
+        const verdict = approval?.();
         this.portraitQueue = this.portraitQueue.then(async () => {
+            if (verdict && (await verdict) !== 'draw') {
+                log.info(`DES: portrait of ${name} skipped by the quality gate`);
+                return;
+            }
             try {
                 const url = await api.regeneratePortrait(name);
                 if (url) {

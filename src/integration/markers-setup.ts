@@ -109,6 +109,7 @@ export function setupMarkers(pipeline: Pipeline, inline: InlineImages, scenes: S
     const renderer = inlineRenderer();
     renderer?.setMarkerHooks({
         isRunning: (id) => markers.isRunning(id),
+        isWaiting: (id) => markers.isWaiting(id),
         retry: (messageId, imageId) => markers.retry(messageId, imageId),
     });
     markers.onRunningChange((id) => renderer?.refreshImage(id));

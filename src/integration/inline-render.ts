@@ -35,6 +35,8 @@ export interface InlineUi {
 /** Marker generation state, supplied by the marker service. */
 export interface MarkerHooks {
     isRunning(imageId: string): boolean;
+    /** The drawing waits for the quality gates (Maestro, v0.11). */
+    isWaiting?(imageId: string): boolean;
     retry(messageId: number, imageId: string): Promise<void>;
 }
 
@@ -351,9 +353,12 @@ export class InlineRenderer {
         box.style.aspectRatio = `${size.width} / ${size.height}`;
         const status = el('span', 'naist-marker-status');
         if (state === 'pending') {
+            const waiting = this.markers?.isWaiting?.(entry.id) ?? false;
             status.append(
                 el('i', 'fa-solid fa-spinner fa-spin'),
-                document.createTextNode(` ${t('naist.markers.generating')}`),
+                document.createTextNode(
+                    ` ${waiting ? t('naist.markers.qualityWaiting') : t('naist.markers.generating')}`,
+                ),
             );
         } else {
             status.append(

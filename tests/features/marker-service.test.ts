@@ -1,7 +1,7 @@
 // Image markers with mocked SillyTavern (TZ Phase 7): early start while streaming and reuse at
 // the end, per-reply limit, every marker parameter in the generation request, paid policy,
-// characters, errors and retry, automatic illustration, skipped generation types.
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+// characters, errors and retry, automatic illustration, skipped generation types, quality gates (v0.11).
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { defaultSettings } from '../../src/core/settings-schema';
 import type { NaiStudioSettings } from '../../src/core/settings-schema';
 import { MODE } from '../../src/domain';
@@ -47,6 +47,8 @@ vi.mock('../../src/features/images/image-utils', () => ({
 }));
 
 const { MarkerService } = await import('../../src/features/markers/marker-service');
+const { clearQualityVerdicts, registerQualityGate, revalidateVerdicts } =
+    await import('../../src/features/quality/quality-gate');
 
 const produced = { images: [{ base64: 'x', mime: 'image/png' }], meta: {}, mode: 0, chatId: 'chat-1' };
 
@@ -422,5 +424,128 @@ describe('MarkerService gate', () => {
         await settle();
         await settle();
         expect(produce).toHaveBeenCalledTimes(1);
+    });
+});
+
+describe('MarkerService quality gate (v0.11)', () => {
+    const offs: (() => void)[] = [];
+    const register = (gate: (detail: { messageIndex: number; swipeId: number }) => Promise<boolean> | boolean) => {
+        const spy = vi.fn(gate);
+        offs.push(registerQualityGate(spy));
+        return spy;
+    };
+
+    afterEach(() => {
+        for (const off of offs.splice(0)) off();
+        clearQualityVerdicts();
+        vi.useRealTimers();
+    });
+
+    it('draws the markers of a reply only after every gate said yes', async () => {
+        const { service, produce, inline } = setup();
+        let answer!: (ok: boolean) => void;
+        const gate = register(() => new Promise<boolean>((r) => (answer = r)));
+        reply('<img data-nai="a cat">');
+        await service.finalize(0, 'normal');
+        await settle();
+        expect(gate).toHaveBeenCalledWith({ messageIndex: 0, swipeId: 0 });
+        expect(produce).not.toHaveBeenCalled();
+        expect(service.isRunning('id1')).toBe(true);
+        expect(service.isWaiting('id1')).toBe(true);
+        answer(true);
+        await settle();
+        await settle();
+        expect(service.isWaiting('id1')).toBe(false);
+        expect(produce).toHaveBeenCalledTimes(1);
+        expect(inline.completePending).toHaveBeenCalledWith(0, 'id1', produced);
+    });
+
+    it('a false verdict keeps the placeholder for a retry and appends no illustrations', async () => {
+        const { service, produce, inline } = setup();
+        state.settings.markers.autoFill = true;
+        state.settings.markers.min = 3;
+        const gate = register(async () => false);
+        reply('Snow. <img data-nai="a cat"> Alice waits.');
+        await service.finalize(0, 'normal');
+        await settle();
+        await settle();
+        expect(gate).toHaveBeenCalledTimes(1);
+        expect(produce).not.toHaveBeenCalled();
+        expect(state.chat[0]!.mes).toBe('Snow. [nai:img:id1] Alice waits.');
+        expect(inline.addPending).toHaveBeenCalledTimes(1);
+        expect(inline.setMarkerStatus).toHaveBeenCalledWith(0, 'id1', 'pending', 'naist.markers.qualitySkipped');
+        expect(service.isRunning('id1')).toBe(false);
+        // A manual retry is not gated.
+        await service.retry(0, 'id1');
+        expect(produce).toHaveBeenCalledTimes(1);
+        expect(gate).toHaveBeenCalledTimes(1);
+    });
+
+    it('collects markers while the reply streams but asks the gates and draws only after its end', async () => {
+        const { service, produce } = setup();
+        let answer!: (ok: boolean) => void;
+        const gate = register(() => new Promise<boolean>((r) => (answer = r)));
+        service.generationStarted('normal', false);
+        reply('<img data-nai="a cat"> and more');
+        service.streamProgress();
+        await settle();
+        expect(gate).not.toHaveBeenCalled();
+        expect(produce).not.toHaveBeenCalled();
+        await service.finalize(0, 'normal');
+        expect(gate).toHaveBeenCalledTimes(1);
+        await settle();
+        expect(produce).not.toHaveBeenCalled();
+        answer(true);
+        await settle();
+        await settle();
+        // The job started while streaming is the one delivered.
+        expect(produce).toHaveBeenCalledTimes(1);
+    });
+
+    it('draws when the gates stay silent past the time limit, counted from the end of the reply', async () => {
+        vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+        state.settings.quality.gateTimeoutMs = 3000;
+        const { service, produce } = setup();
+        const gate = register(() => new Promise<boolean>(() => {}));
+        service.generationStarted('normal', false);
+        reply('<img data-nai="a cat">');
+        service.streamProgress();
+        await vi.advanceTimersByTimeAsync(10000);
+        expect(gate).not.toHaveBeenCalled();
+        await service.finalize(0, 'normal');
+        await vi.advanceTimersByTimeAsync(2999);
+        expect(produce).not.toHaveBeenCalled();
+        await vi.advanceTimersByTimeAsync(1);
+        await vi.advanceTimersByTimeAsync(0);
+        expect(produce).toHaveBeenCalledTimes(1);
+    });
+
+    it('cancels the waiting drawing of a swipe that is swiped away', async () => {
+        const { service, produce, inline } = setup();
+        let answer!: (ok: boolean) => void;
+        register(() => new Promise<boolean>((r) => (answer = r)));
+        reply('<img data-nai="a cat">');
+        await service.finalize(0, 'normal');
+        state.chat[0]!.swipe_id = 1;
+        revalidateVerdicts();
+        await settle();
+        await settle();
+        answer(true);
+        await settle();
+        expect(produce).not.toHaveBeenCalled();
+        expect(inline.setMarkerStatus).toHaveBeenCalledWith(0, 'id1', 'pending', 'naist.markers.qualityCancelled');
+    });
+
+    it('does not gate pictures asked for from a menu, and without a gate nothing waits', async () => {
+        const { service, produce } = setup();
+        reply('<img data-nai="a cat">');
+        await service.finalize(0, 'normal');
+        expect(service.isWaiting('id1')).toBe(false);
+        await settle();
+        expect(produce).toHaveBeenCalledTimes(1);
+        const gate = register(async () => false);
+        await service.illustrate(0, { prompt: 'banner' });
+        expect(gate).not.toHaveBeenCalled();
+        expect(produce).toHaveBeenCalledTimes(2);
     });
 });

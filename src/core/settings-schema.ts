@@ -237,6 +237,11 @@ export interface NaiStudioSettings {
         /** DES auto-portrait settings kept while NAI Studio draws the portraits. */
         saved: { autoPortraitMode: string; autoGenerateAvatars: boolean } | null;
     };
+    /** Quality gates of other extensions (Maestro, v0.11): automatic drawings of a reply wait for them. */
+    quality: {
+        /** How long the drawings of a reply wait for the gates' verdict, from the end of the reply. */
+        gateTimeoutMs: number;
+    };
     /** Human language (Russian / English prose) to NovelAI prompts (TZ Phase 7). */
     language: {
         mode: 'auto' | 'always' | 'off';
@@ -467,6 +472,7 @@ export function defaultSettings(): NaiStudioSettings {
             banners: true,
             saved: null,
         },
+        quality: { gateTimeoutMs: 20000 },
         gallery: { enabled: true, thumbSize: 256 },
         png: { stripMetadata: false },
         poses: { custom: [], favorites: [] },

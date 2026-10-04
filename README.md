@@ -49,6 +49,7 @@ The built-in Image Generation treats NovelAI as one backend among many. NAI Stud
 - Older formats are understood too: image URLs of a self-hosted generation microservice, sillyimages and Auto Illustrator markers.
 - HTML widgets made with regex scripts keep working: they receive every picture as an `<img>`.
 - Free-only by default; paid marker pictures only with your permission and a price cap. Failed or interrupted pictures can be generated again with one click.
+- With Maestro (or another extension with a quality gate), the pictures of a reply wait for its quality check: a reply that is being redone is not drawn, and with no answer in 20 s (configurable on the Chat tab) the pictures are drawn as usual.
 
 ### Characters and scenes
 
@@ -174,6 +175,10 @@ interface NaiStudioApi {
     priority: number;
     describe(context: { messageIndex: number; text: string }): Promise<SceneHint | null> | SceneHint | null;
   }): () => void;
+  // Since 0.11; absent in 0.10, check that it is a function.
+  registerQualityGate(
+    gate: (detail: { messageIndex: number; swipeId: number }) => Promise<boolean> | boolean,
+  ): () => void;
 }
 
 type SceneHint = { locationId?: string; locationName?: string; tags?: string; characters?: string[] };
@@ -191,6 +196,12 @@ type SceneHint = { locationId?: string; locationName?: string; tags?: string; ch
   - They are asked by descending priority; each field comes from the first provider that has it, the rest from the DES tracker and the text as before.
   - Providers have 3 s to answer.
   - Their `characters` are used by the automatic scene when the text names nobody.
+- **Quality gates** (0.11, `version` stays 1: check that `registerQualityGate` is a function).
+  - Before NAI Studio draws on its own for an assistant reply it awaits every registered gate in parallel, once per reply swipe: image markers of the reply (also the ones found while it streams), automatic illustrations of a reply without markers, automatic generation by rules, automatic DES portraits after the reply.
+  - The gates are asked once the reply is complete. Markers found while it streams are still collected, but nothing is sent to NovelAI before the verdict.
+  - Any `false`: nothing is drawn for that reply swipe; its marker placeholders stay, and "Try again" or a new swipe draws them. All `true`, or no answer within the time limit (`quality.gateTimeoutMs`, 20 s by default, counted from the end of the reply; the Chat tab shows the field while a gate is registered): drawn as before. A gate that throws counts as `true`.
+  - A reply swiped away, deleted or left with its chat while waiting gets nothing.
+  - Manual generation (buttons, menus, `/nai…` commands) never waits. Without gates nothing changes.
 - **Maestro places.** With `globalThis.MAESTRO_PLACES` (version 1) scene continuity keys references by place id (`place:<id>`).
   - References bound by name before are still found and move to the id on the next save.
   - The place the story enters becomes current.

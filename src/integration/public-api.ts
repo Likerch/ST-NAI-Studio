@@ -1,7 +1,8 @@
 // NAI_STUDIO_API (v0.10): the public interface for other extensions (Maestro, its plan §16). Read and
 // write passports in the card or for the current chat only, switch outfits and states, listen to
-// "passports saved" and "image ready", and register scene providers. Installed on activation,
-// removed on disable. Version 1: within a version members are only added, never changed.
+// "passports saved" and "image ready", and register scene providers and (v0.11) quality gates.
+// Installed on activation, removed on disable. Version 1: within a version members are only added,
+// never changed.
 import { ctx } from '../core/context';
 import { log } from '../core/logger';
 import { newPassportId, normalizePassport } from '../domain';
@@ -25,6 +26,8 @@ import {
 import type { LocatedPassport, PassportWhere } from '../features/characters/passport-store';
 import { onStudioEvent, STUDIO_EVENTS } from '../features/events/studio-events';
 import type { StudioEventName, StudioEvents } from '../features/events/studio-events';
+import { registerQualityGate } from '../features/quality/quality-gate';
+import type { QualityGate } from '../features/quality/quality-gate';
 import { registerSceneHintProvider } from '../features/scene/scene-providers';
 import type { SceneHintContext } from '../features/scene/scene-providers';
 
@@ -36,6 +39,7 @@ export type {
 } from '../features/events/studio-events';
 export type { SceneHint } from '../domain';
 export type { SceneHintContext } from '../features/scene/scene-providers';
+export type { QualityGate, QualityGateDetail } from '../features/quality/quality-gate';
 
 export const API_GLOBAL = 'NAI_STUDIO_API';
 export const API_VERSION = 1;
@@ -85,6 +89,16 @@ export interface NaiStudioApi {
     clearChatOverride(passportId: string): Promise<void>;
     on<K extends StudioEventName>(event: K, listener: (detail: StudioEvents[K]) => void): () => void;
     registerSceneProvider(provider: ExternalSceneProvider): () => void;
+    /**
+     * Since 0.11 (absent before: check that it is a function). Before NAI Studio draws on its own for an
+     * assistant reply — its image markers (also the ones found while it streams), automatic illustrations
+     * and generation, DES portraits after it — it awaits every gate in parallel, once per reply swipe, at
+     * most `quality.gateTimeoutMs` (20 s) from the end of the reply. Any false: nothing is drawn for that
+     * reply swipe (marker placeholders stay, "Try again" or a new swipe draws them); all true or no answer in
+     * time: drawn as before. A gate that throws counts as true; a reply swiped away or deleted while
+     * waiting gets nothing. Manual generation is never gated. Returns the unregistration.
+     */
+    registerQualityGate(gate: QualityGate): () => void;
 }
 
 /** Unsubscriptions of everything registered through the API (dropped on disable). */
@@ -242,6 +256,17 @@ function registerSceneProvider(provider: ExternalSceneProvider): () => void {
     return unregister;
 }
 
+function registerGate(gate: QualityGate): () => void {
+    if (typeof gate !== 'function') fail('gate must be a function');
+    const off = registerQualityGate((detail) => gate(detail));
+    const unregister = () => {
+        off();
+        registrations.delete(unregister);
+    };
+    registrations.add(unregister);
+    return unregister;
+}
+
 function createApi(): NaiStudioApi {
     return Object.freeze({
         version: API_VERSION as 1,
@@ -258,6 +283,7 @@ function createApi(): NaiStudioApi {
         },
         on,
         registerSceneProvider,
+        registerQualityGate: registerGate,
     });
 }
 

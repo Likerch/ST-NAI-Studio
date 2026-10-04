@@ -996,6 +996,9 @@
   "naist.markers.failed": "The picture was not generated",
   "naist.markers.interrupted": "Generation was interrupted",
   "naist.markers.cancelled": "Cancelled.",
+  "naist.markers.qualityWaiting": "Waiting for the quality check…",
+  "naist.markers.qualitySkipped": "Not drawn: the reply is being redone after the quality check. \"Try again\" draws it anyway.",
+  "naist.markers.qualityCancelled": "Not drawn: the reply was swiped or deleted during the quality check.",
   "naist.markers.retry": "Try again",
   "naist.language.title": "Human language",
   "naist.language.hint": "Write prompts the way you would describe a picture, in Russian or English: before generation the description becomes tags (and short sentences for V4.5 / V5) for the selected model. Automatically: Russian always, English prose on every model except V5 (it reads prose itself). Tag prompts are used as they are; text after \"text:\" stays as typed.",
@@ -1112,5 +1115,8 @@
   "naist.personaAvatar.again": "Another one",
   "naist.personaAvatar.done": "Avatar of {name} updated.",
   "naist.scene.explicitNegative": "Undesired content of explicit scenes",
-  "naist.scene.explicitNegativeHint": "Added to the undesired content only in explicit scenes (when NSFW is allowed, the prompt also gets \"nsfw\"). Tags the undesired content already has are not repeated."
+  "naist.scene.explicitNegativeHint": "Added to the undesired content only in explicit scenes (when NSFW is allowed, the prompt also gets \"nsfw\"). Tags the undesired content already has are not repeated.",
+  "naist.quality.title": "Wait for the quality check (Maestro)",
+  "naist.quality.hint": "Another extension (Maestro) checks every reply. Pictures NAI Studio draws on its own for a reply (image markers, automatic illustrations and generation, DES portraits) wait for its answer: a reply it redoes is not drawn. With no answer in time they are drawn as usual. Manual generation does not wait.",
+  "naist.quality.timeout": "Wait at most, seconds (from the end of the reply)"
 }

@@ -1,5 +1,7 @@
 // Automatic generation by rules (TZ Phase 2, task 7). Counters live in chatMetadata; every
 // automatic request goes through a hard spending cap: 0 in free-only mode (TZ acceptance).
+// With a quality gate (Maestro, v0.11) the picture waits for the verdict on the reply: a reply that is
+// redone, swiped or deleted meanwhile gets none and does not start the cooldown.
 import { ctx } from '../../core/context';
 import { toNaiError } from '../../core/errors';
 import type { NaiErrorCode } from '../../core/errors';
@@ -10,6 +12,7 @@ import { autoBudget, evaluateAuto, MODE, TRIGGER_WORDS } from '../../domain';
 import type { AutoState, ModeId } from '../../domain';
 import type { StudioController } from '../generation/controller';
 import type { Pipeline } from '../generation/pipeline';
+import { qualityGatesActive, replyVerdict } from '../quality/quality-gate';
 
 const SKIPPED_TYPES = new Set(['extension', 'command', 'first_message', 'impersonate', 'quiet']);
 const GUARD_CODES = new Set<NaiErrorCode>(['free-only-blocked', 'price-too-high', 'busy']);
@@ -75,6 +78,18 @@ export class AutoGenerator {
         } catch (error) {
             log.warn('auto generation skipped:', toNaiError(error).code);
             return;
+        }
+
+        if (qualityGatesActive()) {
+            const verdict = await replyVerdict(id);
+            if (verdict !== 'draw') {
+                log.info(`auto generation skipped by the quality gate (${verdict})`);
+                return;
+            }
+            if (this.controller.state.busy) {
+                log.info('auto generation skipped: another generation is running');
+                return;
+            }
         }
 
         meta.auto = decision.state;

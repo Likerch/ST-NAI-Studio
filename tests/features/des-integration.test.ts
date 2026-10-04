@@ -1,7 +1,8 @@
 // @vitest-environment happy-dom
 // Doom's Enhancement Suite integration with mocked SillyTavern and DES (v0.9): people and setting
 // from the tracker of a reply, passports found or written for new characters, the appearance line
-// in DES, portrait policy and the /sd plan, DES auto portraits off and back, the separate-mode gate.
+// in DES, portrait policy and the /sd plan, DES auto portraits off and back, the separate-mode gate,
+// automatic portraits behind the quality gate (v0.11).
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { defaultSettings } from '../../src/core/settings-schema';
 import type { NaiStudioSettings } from '../../src/core/settings-schema';
@@ -62,6 +63,7 @@ vi.mock('../../src/core/context', () => ({
         name1: 'Player',
         chatMetadata: state.meta,
         saveMetadata: vi.fn(async () => undefined),
+        getCurrentChatId: () => 'chat-1',
         eventTypes: { MESSAGE_RECEIVED: 'message_received', APP_READY: 'app_ready' },
         eventSource: { on: vi.fn(), makeLast: vi.fn() },
     }),
@@ -116,6 +118,8 @@ vi.mock('../../src/ui/passport-editor', () => ({ editPassport: vi.fn() }));
 vi.stubGlobal('toastr', { info: vi.fn(), warning: vi.fn(), success: vi.fn() });
 
 const { DesIntegration } = await import('../../src/integration/des/des-integration');
+const { clearQualityVerdicts, qualityGenerationStarted, registerQualityGate } =
+    await import('../../src/features/quality/quality-gate');
 
 const tracker = (
     characters: unknown[],
@@ -200,6 +204,31 @@ describe('DesIntegration', () => {
         await inner(des).portraitQueue;
         expect(state.regenerate).toHaveBeenCalledTimes(2);
         expect(state.generated).toEqual(['Mira']);
+    });
+
+    it('draws automatic portraits only after the quality gate approved the reply of the tracker', async () => {
+        const des = new DesIntegration(markers());
+        await des.start();
+        reply(tracker([{ name: 'Mira', details: { appearance: 'wet blue cloak' } }]));
+        const gate = vi.fn(async () => false);
+        const off = registerQualityGate(gate);
+        try {
+            await inner(des).handleTracker(true);
+            await inner(des).portraitQueue;
+            expect(gate).toHaveBeenCalledWith({ messageIndex: 0, swipeId: 0 });
+            expect(state.regenerate).not.toHaveBeenCalled();
+            // The passport and the appearance line do not wait.
+            expect(state.des.characterAppearance?.Mira).toBe('white hair, blue cloak');
+            qualityGenerationStarted();
+            gate.mockResolvedValue(true);
+            await inner(des).handleTracker(true);
+            await inner(des).portraitQueue;
+            expect(gate).toHaveBeenCalledTimes(2);
+            expect(state.regenerate).toHaveBeenCalledWith('Mira');
+        } finally {
+            off();
+            clearQualityVerdicts();
+        }
     });
 
     it('never replaces a portrait the user uploaded, nor the card character', async () => {

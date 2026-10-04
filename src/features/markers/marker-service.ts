@@ -2,7 +2,9 @@
 // (<img data-nai='{...}'>, the old microservice URL, sillyimages, Auto Illustrator comments) with
 // a description in human language; generation starts as soon as the marker is complete while the
 // reply still streams, and when the reply is finished the markers become inline images. One
-// generation runs at a time (NovelAI refuses parallel requests on most plans).
+// generation runs at a time (NovelAI refuses parallel requests on most plans). With a quality gate
+// (Maestro, v0.11) the drawings of a reply wait for its verdict: markers found while the reply streams
+// are still collected, but their requests are held until the reply is complete and the gates answered.
 import { ctx } from '../../core/context';
 import { toNaiError } from '../../core/errors';
 import { t } from '../../core/i18n';
@@ -35,6 +37,8 @@ import { setCurrentLocation } from '../continuity/continuity-service';
 import type { CallOverrides, Pipeline, ProducedImages } from '../generation/pipeline';
 import { blobToBase64, toPngBlob } from '../images/image-utils';
 import type { InlineImages } from '../inline/inline-service';
+import { qualityGatesActive, replyAbandoned, replyComplete, replyVerdict } from '../quality/quality-gate';
+import type { QualityVerdict } from '../quality/quality-gate';
 import type { SceneService } from '../scene/scene-service';
 import { mentionedLocationTags, sceneCandidates, sceneSetting } from '../scene/scene-service';
 import type { SceneQuery } from '../scene/scene-service';
@@ -43,6 +47,33 @@ import { vibeItems } from '../vibes/vibe-library';
 interface Job {
     promise: Promise<ProducedImages | null>;
     abort: AbortController;
+    /** The quality gates' verdict on the reply while the drawing waits for it (v0.11). */
+    verdict?: Promise<QualityVerdict>;
+    /** The gates held the drawing back: the reply is redone (skip) or was swiped / deleted (cancelled). */
+    held?: Exclude<QualityVerdict, 'draw'>;
+}
+
+interface StartOptions {
+    /** An automatic drawing of the reply: it waits for the quality gates. */
+    gated?: boolean;
+    /** The reply still streams: the gates are asked once it is complete. */
+    streaming?: boolean;
+}
+
+/** The value of a promise, or undefined as soon as the signal aborts. */
+function untilAborted<T>(promise: Promise<T>, signal: AbortSignal): Promise<T | undefined> {
+    if (signal.aborted) return Promise.resolve(undefined);
+    return new Promise((resolve) => {
+        const onAbort = () => resolve(undefined);
+        signal.addEventListener('abort', onAbort, { once: true });
+        promise.then(
+            (value) => {
+                signal.removeEventListener('abort', onAbort);
+                resolve(value);
+            },
+            () => resolve(undefined),
+        );
+    });
 }
 
 /**
@@ -70,6 +101,8 @@ export class MarkerService {
     private queue: Promise<unknown> = Promise.resolve();
     /** Images with a generation in flight (the renderer shows a spinner, not "interrupted"). */
     private readonly running = new Set<string>();
+    /** Images whose drawing waits for the quality gates' verdict. */
+    private readonly waiting = new Set<string>();
     private readonly listeners = new Set<(imageId: string) => void>();
     private lastScan = 0;
     private gate: MarkerGate | null = null;
@@ -92,6 +125,11 @@ export class MarkerService {
         return this.running.has(imageId);
     }
 
+    /** The drawing of this image waits for the quality gates (v0.11). */
+    isWaiting(imageId: string): boolean {
+        return this.waiting.has(imageId);
+    }
+
     onRunningChange(listener: (imageId: string) => void): void {
         this.listeners.add(listener);
     }
@@ -99,6 +137,12 @@ export class MarkerService {
     private setRunning(imageId: string, on: boolean): void {
         if (on) this.running.add(imageId);
         else this.running.delete(imageId);
+        for (const listener of this.listeners) listener(imageId);
+    }
+
+    private setWaiting(imageId: string, on: boolean): void {
+        if (on) this.waiting.add(imageId);
+        else this.waiting.delete(imageId);
         for (const listener of this.listeners) listener(imageId);
     }
 
@@ -130,8 +174,14 @@ export class MarkerService {
         const chat = ctx().chat;
         const last = chat.length - 1;
         const m = chat[last];
-        if (m && !m.is_user && !m.is_system && this.markersIn(m.mes).length) await this.finalize(last);
-        else this.dropEarly();
+        const reply = Boolean(m && !m.is_user && !m.is_system);
+        if (reply && this.markersIn(m!.mes).length) await this.finalize(last);
+        else {
+            this.dropEarly();
+            // Drawings that waited for the end of this reply (DES portraits) ask the quality gates now.
+            if (reply) replyComplete(last);
+            else replyAbandoned();
+        }
     }
 
     chatChanged(): void {
@@ -160,7 +210,8 @@ export class MarkerService {
             const key = `${i}:${markerGenerationKey(match.params)}`;
             if (!this.early.has(key)) {
                 log.info('marker complete while streaming, generation queued');
-                this.early.set(key, this.start(match.params, { messageId: chat.length - 1, text: m.mes }));
+                const query = { messageId: chat.length - 1, text: m.mes };
+                this.early.set(key, this.start(match.params, query, { gated: true, streaming: true }));
             }
         });
     }
@@ -180,8 +231,11 @@ export class MarkerService {
         const m = c.chat[messageId];
         if (!s.enabled || SKIPPED_TYPES.has(kind) || !m || m.is_user || m.is_system) {
             for (const job of early.values()) job.abort.abort();
+            replyAbandoned(messageId);
             return;
         }
+        // Markers found while it streamed waited for the end of the reply: the quality gates are asked now.
+        replyComplete(messageId);
         const markers = this.markersIn(m.mes);
         // The reply as written: a tracker at its start describes the scene of these markers.
         const query: SceneQuery = { messageId, text: m.mes };
@@ -196,7 +250,7 @@ export class MarkerService {
             await this.inline.addPending(messageId, text, entries);
             keep.forEach((match, i) => {
                 const key = `${i}:${markerGenerationKey(match.params)}`;
-                const job = early.get(key) ?? this.start(match.params, query);
+                const job = early.get(key) ?? this.start(match.params, query, { gated: true });
                 early.delete(key);
                 void this.deliver(messageId, ids[i]!, job);
             });
@@ -214,6 +268,14 @@ export class MarkerService {
 
     /** Fewer markers than the minimum: illustrations of the reply itself, appended at its end. */
     private async autoFill(messageId: number, missing: number): Promise<void> {
+        // A reply that is redone gets no illustrations appended (its own markers stay placeholders).
+        if (qualityGatesActive()) {
+            const verdict = await replyVerdict(messageId);
+            if (verdict !== 'draw') {
+                log.info(`automatic illustration of reply ${messageId} skipped by the quality gate (${verdict})`);
+                return;
+            }
+        }
         const m = ctx().chat[messageId];
         const excerpt = m ? replyExcerpt(m.mes) : '';
         if (!m || !excerpt) return;
@@ -257,28 +319,52 @@ export class MarkerService {
         return run;
     }
 
-    private start(params: MarkerParams, query: SceneQuery = {}): Job {
+    private start(params: MarkerParams, query: SceneQuery = {}, options: StartOptions = {}): Job {
         const abort = new AbortController();
         const gate = this.gate;
-        const promise = (async () => {
-            if (gate && query.messageId !== undefined) await gate.wait(query.messageId, abort.signal);
+        const messageId = query.messageId;
+        // Asked now, so the verdict is for the reply swipe this drawing belongs to.
+        const verdict =
+            options.gated && messageId !== undefined && qualityGatesActive()
+                ? replyVerdict(messageId, { streaming: options.streaming === true })
+                : undefined;
+        const job: Job = { promise: Promise.resolve(null), abort, ...(verdict ? { verdict } : {}) };
+        job.promise = (async () => {
+            if (gate && messageId !== undefined) await gate.wait(messageId, abort.signal);
+            if (verdict) {
+                // Nothing goes to NovelAI before the verdict; a dropped job stops waiting.
+                const answer = await untilAborted(verdict, abort.signal);
+                if (answer === undefined) return null;
+                if (answer !== 'draw') {
+                    job.held = answer;
+                    return null;
+                }
+            }
             return await this.enqueue(async () =>
                 abort.signal.aborted ? null : await this.produce(params, abort.signal, query),
             );
         })();
         // An early job that is dropped must not end as an unhandled rejection.
-        promise.catch(() => undefined);
-        return { promise, abort };
+        job.promise.catch(() => undefined);
+        return job;
     }
 
     private async deliver(hint: number, imageId: string, job: Job): Promise<void> {
         const chatId = ctx().getCurrentChatId();
         this.setRunning(imageId, true);
+        if (job.verdict) {
+            this.setWaiting(imageId, true);
+            void job.verdict.then(() => this.setWaiting(imageId, false));
+        }
         try {
             const produced = await job.promise;
             if (ctx().getCurrentChatId() !== chatId) return;
             if (produced) await this.inline.completePending(hint, imageId, produced);
-            else await this.inline.setMarkerStatus(hint, imageId, 'error', t('naist.markers.cancelled'));
+            else if (job.held) {
+                // Held by the quality gate: the placeholder stays, "Retry" (or a new swipe) draws it.
+                const reason = job.held === 'skip' ? 'naist.markers.qualitySkipped' : 'naist.markers.qualityCancelled';
+                await this.inline.setMarkerStatus(hint, imageId, 'pending', t(reason));
+            } else await this.inline.setMarkerStatus(hint, imageId, 'error', t('naist.markers.cancelled'));
         } catch (error) {
             const naiError = toNaiError(error);
             log.warn('marker image failed:', naiError.code);

@@ -22,6 +22,7 @@ import { setupPhase6 } from './integration/phase6-setup';
 import { setupTools } from './integration/tools-setup';
 import { setupIntegrations } from './integration/setup';
 import { installPublicApi, uninstallPublicApi } from './integration/public-api';
+import { setupQualityGates } from './integration/quality-setup';
 import { stopPlaceFollowing } from './features/continuity/continuity-service';
 import { syncFunctionTool } from './integration/tools';
 import { Panel } from './ui/panel/panel';
@@ -87,7 +88,9 @@ export async function onActivate(): Promise<void> {
     const markers = setupMarkers(pipeline, inline, scenes);
     setupDes(markers);
     new AutoGenerator(studio, pipeline).attach();
-    // NAI_STUDIO_API for other extensions (Maestro): passports, events, scene providers (v0.10).
+    // Automatic drawings of a reply wait for the quality gates of other extensions (Maestro, v0.11).
+    setupQualityGates();
+    // NAI_STUDIO_API for other extensions (Maestro): passports, events, scene providers, quality gates.
     installPublicApi();
     // Network probing must not hold the 5 s activation window.
     void studio.refreshTransport();

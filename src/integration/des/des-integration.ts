@@ -10,6 +10,8 @@
 // - NAI Studio items in the DES portrait menu, "Illustrate" on scene banners, a Workshop button.
 // Since v0.10 passports are the chat's view of them (chat overrides, passports of the chat itself).
 // Since v0.11 automatic portraits wait for the quality gates' verdict on the reply of the tracker.
+// Since v0.12 a character a passport provider knows (Maestro's lore entry) uses that passport instead of
+// getting a new one written into the card; the cards and the chat still win.
 import { ctx } from '../../core/context';
 import { t } from '../../core/i18n';
 import { log } from '../../core/logger';
@@ -44,6 +46,7 @@ import { setCurrentLocation } from '../../features/continuity/continuity-service
 import type { MarkerService } from '../../features/markers/marker-service';
 import { qualityGatesActive, replyVerdict } from '../../features/quality/quality-gate';
 import type { QualityVerdict } from '../../features/quality/quality-gate';
+import { providedPassports } from '../../features/scene/passport-providers';
 import { setSceneProvider } from '../../features/scene/scene-service';
 import type { SceneQuery } from '../../features/scene/scene-service';
 import { setExtraSpriteFolder } from '../../features/sprites/sprite-service';
@@ -352,7 +355,7 @@ export class DesIntegration {
         for (const character of tracker.characters) {
             if (this.isUserName(character.name)) continue;
             const found =
-                (await this.findPassport(character.name)) ??
+                (await this.findPassport(character.name, { provided: { messageId } })) ??
                 (d.autoPassports ? await this.createPassport(character) : null);
             this.syncLine(character.name, found?.passport ?? null, character.look);
             if (portraits && d.portraits) this.maybePortrait(character, found, approval);
@@ -382,9 +385,10 @@ export class DesIntegration {
 
     /**
      * The character passport of a name in the cards of the chat (name, aliases, sound), then among the
-     * passports of the chat itself; as the chat sees it.
+     * passports of the chat itself; as the chat sees it. With `provided` (v0.12) then among the passports
+     * of the passport providers for that scene (stored nowhere: `cardIndex` null).
      */
-    async findPassport(name: string): Promise<Found | null> {
+    async findPassport(name: string, options: { provided?: SceneQuery } = {}): Promise<Found | null> {
         const chat = chatPassportData();
         const matches = (passport: Passport, own: string) =>
             passport.kind === 'character' &&
@@ -396,7 +400,12 @@ export class DesIntegration {
             }
         }
         const own = chat.extra.find((passport) => passport.name && matches(passport, passport.name));
-        return own ? { cardIndex: null, passport: own } : null;
+        if (own) return { cardIndex: null, passport: own };
+        if (!options.provided) return null;
+        const provided = (await providedPassports(options.provided)).find((passport) =>
+            matches(passport, passport.name),
+        );
+        return provided ? { cardIndex: null, passport: provided } : null;
     }
 
     /** A passport written from the tracker for a character the cards do not know yet. */
@@ -499,7 +508,7 @@ export class DesIntegration {
         if (!this.active()) return null;
         const name = this.lines.get(normalizeLine(prompt));
         if (!name) return null;
-        const found = await this.findPassport(name);
+        const found = await this.findPassport(name, { provided: {} });
         const look = await this.lookTags(
             this.latestTracker()?.characters.find((ch) => sameName(ch.name, name))?.look ?? '',
         );
@@ -567,7 +576,7 @@ export class DesIntegration {
             if (found && found.cardIndex !== null) openEmotions(found.cardIndex, found.passport.id);
             else toastr.warning(t('naist.des.noPassport', { name }));
         } else if (action === 'portrait' && this.api) {
-            const found = await this.ensureFound(name);
+            const found = (await this.findPassport(name, { provided: {} })) ?? (await this.ensureFound(name));
             const look = this.latestTracker()?.characters.find((ch) => sameName(ch.name, name))?.look ?? '';
             this.syncLine(name, found?.passport ?? null, look);
             toastr.info(t('naist.des.portraitStarted', { name }), t('naist.des.title'));

@@ -50,6 +50,7 @@ The built-in Image Generation treats NovelAI as one backend among many. NAI Stud
 - HTML widgets made with regex scripts keep working: they receive every picture as an `<img>`.
 - Free-only by default; paid marker pictures only with your permission and a price cap. Failed or interrupted pictures can be generated again with one click.
 - With Maestro (or another extension with a quality gate), the pictures of a reply wait for its quality check: a reply that is being redone is not drawn, and with no answer in 20 s (configurable on the Chat tab) the pictures are drawn as usual.
+- With Maestro, the passports of the lore entries of a scene (places, items, creatures, people without a card) take part in scene pictures and image markers after the passports of your cards, and Maestro can have NAI Studio write a passport from a lore entry or draw a background for a place into the backgrounds library.
 
 ### Characters and scenes
 
@@ -169,7 +170,7 @@ interface NaiStudioApi {
   setOutfit(passportId: string, outfit: string, scope?: 'card' | 'chat'): Promise<void>;
   setState(passportId: string, stateId: string, enabled: boolean, scope?: 'card' | 'chat'): Promise<void>;
   clearChatOverride(passportId: string): Promise<void>;
-  on(event: 'passportsSaved' | 'imageReady', listener: (detail: unknown) => void): () => void;
+  on(event: 'passportsSaved' | 'imageReady' | 'requestFailed', listener: (detail: unknown) => void): () => void;
   registerSceneProvider(provider: {
     id: string;
     priority: number;
@@ -179,6 +180,26 @@ interface NaiStudioApi {
   registerQualityGate(
     gate: (detail: { messageIndex: number; swipeId: number }) => Promise<boolean> | boolean,
   ): () => void;
+  // Since 0.12; absent before, check that they are functions.
+  registerPassportProvider(provider: {
+    id: string;
+    priority?: number;
+    passports(context: { messageIndex: number; text: string }): Promise<Passport[]> | Passport[];
+  }): () => void;
+  generatePassport(input: {
+    name: string;
+    kind: 'character' | 'location' | 'object' | 'world';
+    description: string;
+    language?: string;
+  }): Promise<Passport | null>;
+  generateBackground(input: {
+    locationName: string;
+    tags?: string;
+    passportId?: string;
+    timeOfDay?: string;
+    weather?: string;
+    style?: string;
+  }): Promise<{ file: string } | null>;
 }
 
 type SceneHint = { locationId?: string; locationName?: string; tags?: string; characters?: string[] };
@@ -192,6 +213,7 @@ type SceneHint = { locationId?: string; locationName?: string; tags?: string; ch
 - **Events.**
   - `passportsSaved` `{ ids, scope, avatar?, persona? }` follows every passport save, including the ones made in NAI Studio's own UI.
   - `imageReady` `{ messageIndex, kind, passportIds }` follows every image attached to a message once the chat is saved.
+  - `requestFailed` `{ request: 'passport' | 'background', name, code, message }` (0.12) follows a `generatePassport` / `generateBackground` call that resolved `null`; `code` is NAI Studio's error code (`free-only-blocked`, `aborted` when the user declined the cost, …).
 - **Scene providers.**
   - They are asked by descending priority; each field comes from the first provider that has it, the rest from the DES tracker and the text as before.
   - Providers have 3 s to answer.
@@ -202,6 +224,17 @@ type SceneHint = { locationId?: string; locationName?: string; tags?: string; ch
   - Any `false`: nothing is drawn for that reply swipe; its marker placeholders stay, and "Try again" or a new swipe draws them. All `true`, or no answer within the time limit (`quality.gateTimeoutMs`, 20 s by default, counted from the end of the reply; the Chat tab shows the field while a gate is registered): drawn as before. A gate that throws counts as `true`.
   - A reply swiped away, deleted or left with its chat while waiting gets nothing.
   - Manual generation (buttons, menus, `/nai…` commands) never waits. Without gates nothing changes.
+- **Passport providers** (0.12, check that `registerPassportProvider` is a function). Maestro gives the passports of the lore entries activated or mentioned in a scene (places, items, creatures, people without a card).
+  - Wherever NAI Studio resolves passports for scene images and image markers it adds them after the passports of the cards, the persona and the chat: characters become scene participants (by name in a marker or the text, in the composer, in `{{nai_characters}}`), locations named places, worlds setting tags, objects named items whose tags join a picture that names them (card object passports now do that too).
+  - One named like a passport of the cards, the persona or the chat (name or alias) is left out: the chat's wins; between providers the higher priority wins.
+  - Providers have 3 s; one that throws or is silent is skipped. Answers are reused for one picture (1.5 s).
+  - The DES integration uses a provider's character passport for a new tracker character instead of writing one into the card.
+- **`generatePassport`** (0.12) runs NAI Studio's passport generator for one person, place, item or the world from a description (a lore entry) through the language backend chosen in NAI Studio. Nothing is saved: a full passport with a new id and the given name (the model's name becomes an alias), or `null` with a `requestFailed` event. `language` (`ru`) puts the name as that language spells it into the aliases. Invalid input rejects.
+- **`generateBackground`** (0.12) draws one background for a place.
+  - The prompt has nobody in it (`no humans, scenery`, people in the undesired content): the tags of `passportId` (a location or world passport of the chat or of a provider; else the place name), `tags`, and the time of day and weather as tags (tracker words are read like the DES scene: `evening`, `19:40`, `rain`, Russian too). `style` is a saved style by name, else style tags.
+  - One 16:9 image within the free budget (1344×768) through the normal pipeline and its Anlas guards: in free-only mode a request that would cost Anlas is refused; otherwise the usual cost confirmation.
+  - The image goes into SillyTavern's backgrounds library like ST's own upload (`POST /api/backgrounds/upload`, form field `avatar`) as `maestro-<slug>-<timestamp>.png`; resolves `{ file }` with the name the server stored. The background is not set: the caller does that.
+  - On failure: `null`, a toast with the reason and a `requestFailed` event (a declined cost confirmation is `aborted`, without a toast).
 - **Maestro places.** With `globalThis.MAESTRO_PLACES` (version 1) scene continuity keys references by place id (`place:<id>`).
   - References bound by name before are still found and move to the id on the next save.
   - The place the story enters becomes current.

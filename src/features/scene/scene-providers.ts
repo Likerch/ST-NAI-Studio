@@ -60,23 +60,35 @@ export function hintContext(query: { messageId?: number; text?: string }): Scene
     return { messageIndex, text: query.text ?? chat[messageIndex]?.mes ?? '' };
 }
 
-async function ask(provider: SceneHintProvider, context: SceneHintContext): Promise<SceneHint | null> {
+/**
+ * The answer of another extension's provider, or `fallback` when it throws or does not answer within
+ * PROVIDER_TIMEOUT_MS (scene providers, passport providers of v0.12).
+ */
+export async function askInTime<T>(label: string, call: () => Promise<T> | T, fallback: T): Promise<T> {
     let timer: ReturnType<typeof setTimeout> | undefined;
     try {
-        const timeout = new Promise<null>((resolve) => {
+        const timeout = new Promise<T>((resolve) => {
             timer = setTimeout(() => {
-                log.warn(`scene provider ${provider.id}: no answer in ${PROVIDER_TIMEOUT_MS} ms`);
-                resolve(null);
+                log.warn(`${label}: no answer in ${PROVIDER_TIMEOUT_MS} ms`);
+                resolve(fallback);
             }, PROVIDER_TIMEOUT_MS);
         });
-        const answer = await Promise.race([Promise.resolve(provider.describe({ ...context })), timeout]);
-        return normalizeSceneHint(answer);
+        return await Promise.race([Promise.resolve(call()), timeout]);
     } catch (error) {
-        log.warn(`scene provider ${provider.id} failed`, error);
-        return null;
+        log.warn(`${label} failed`, error);
+        return fallback;
     } finally {
         if (timer !== undefined) clearTimeout(timer);
     }
+}
+
+async function ask(provider: SceneHintProvider, context: SceneHintContext): Promise<SceneHint | null> {
+    const answer = await askInTime<unknown>(
+        `scene provider ${provider.id}`,
+        () => provider.describe({ ...context }),
+        null,
+    );
+    return normalizeSceneHint(answer);
 }
 
 /** The merged hint of every provider for a scene; empty without providers. */

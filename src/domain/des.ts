@@ -186,6 +186,26 @@ function weatherOf(forecast: string, emoji: string): string {
     return '';
 }
 
+/** Image tags of a time of day as a tracker writes it ("late evening", "Evening, 19:40", Russian words too); empty when unknown. */
+export function timeTags(time: string): string[] {
+    return [...(TIME_TAGS[timeOfDay(time)] ?? [])];
+}
+
+/**
+ * Image tags of the weather as a tracker writes it (words or an emoji); empty when unknown. A clear sky
+ * needs the time of day (`time`): blue by day, a night sky in the evening and at night.
+ */
+export function weatherTags(forecast: string, emoji = '', time = ''): string[] {
+    const kind = weatherOf(forecast, emoji);
+    if (kind === 'storm') return ['storm', 'lightning'];
+    if (kind === 'snow') return ['snow', 'snowing'];
+    if (kind === 'rain' || kind === 'fog' || kind === 'wind') return [kind];
+    if (kind === 'cloudy') return ['cloudy sky'];
+    const part = timeOfDay(time);
+    if (kind === 'clear' && part) return [part === 'night' || part === 'evening' ? 'night sky' : 'blue sky'];
+    return [];
+}
+
 /** Scene of a DES info box with its image tags. */
 export function sceneFromInfoBox(box: Raw): DesScene {
     const location = text(box.location);
@@ -197,20 +217,11 @@ export function sceneFromInfoBox(box: Raw): DesScene {
     const context = [weather, location, text(box.conditions), text(box.terrain)].join(' ').toLowerCase();
     const indoors = has(context, words.indoors);
     const outdoors = !indoors && has(context, words.outdoors);
-    const tags: string[] = [];
-    const part = timeOfDay(time);
-    tags.push(...(TIME_TAGS[part] ?? []));
+    const tags = timeTags(time);
     if (indoors) tags.push('indoors');
     else {
         if (outdoors) tags.push('outdoors');
-        const kind = weatherOf(weather, emoji);
-        if (kind === 'storm') tags.push('storm', 'lightning');
-        else if (kind === 'snow') tags.push('snow', 'snowing');
-        else if (kind === 'rain') tags.push('rain');
-        else if (kind === 'fog') tags.push('fog');
-        else if (kind === 'cloudy') tags.push('cloudy sky');
-        else if (kind === 'wind') tags.push('wind');
-        else if (kind === 'clear' && part) tags.push(part === 'night' || part === 'evening' ? 'night sky' : 'blue sky');
+        tags.push(...weatherTags(weather, emoji, time));
     }
     return { location, time, weather, tags: [...new Set(tags)] };
 }

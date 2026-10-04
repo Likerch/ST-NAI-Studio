@@ -44,6 +44,8 @@ export * from './markers';
 export * from './interpret';
 export * from './marker-instructions';
 export * from './passport-gen';
+export * from './provided-passports';
+export * from './backgrounds';
 export * from './des';
 export * from './vision';
 export * from './explicit';

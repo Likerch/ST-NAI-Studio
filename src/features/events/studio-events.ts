@@ -1,5 +1,6 @@
 // Events for other extensions (v0.10, NAI_STUDIO_API.on): passports were saved, an image was generated
-// and attached to a message. A listener's failure never reaches the code that emitted the event.
+// and attached to a message; (v0.12) a request of another extension failed. A listener's failure never
+// reaches the code that emitted the event.
 import { log } from '../../core/logger';
 
 /** Where a passport save went: the card (or persona settings) or the current chat only. */
@@ -25,18 +26,36 @@ export interface ImageReadyDetail {
     passportIds: string[];
 }
 
+/** What another extension asked for through the API (v0.12). */
+export type StudioRequestKind = 'passport' | 'background';
+
+/**
+ * A request of another extension failed and resolved null (v0.12): `code` is NAI Studio's error code
+ * (`free-only-blocked` when free-only mode refused to spend Anlas, `aborted` when the user cancelled),
+ * `message` the localized text shown to the user.
+ */
+export interface RequestFailedDetail {
+    request: StudioRequestKind;
+    /** The passport's or the place's name. */
+    name: string;
+    code: string;
+    message: string;
+}
+
 export interface StudioEvents {
     passportsSaved: PassportsSavedDetail;
     imageReady: ImageReadyDetail;
+    requestFailed: RequestFailedDetail;
 }
 
 export type StudioEventName = keyof StudioEvents;
 
-export const STUDIO_EVENTS: readonly StudioEventName[] = ['passportsSaved', 'imageReady'];
+export const STUDIO_EVENTS: readonly StudioEventName[] = ['passportsSaved', 'imageReady', 'requestFailed'];
 
 const listeners: { [K in StudioEventName]: Set<(detail: StudioEvents[K]) => void> } = {
     passportsSaved: new Set(),
     imageReady: new Set(),
+    requestFailed: new Set(),
 };
 
 export function onStudioEvent<K extends StudioEventName>(

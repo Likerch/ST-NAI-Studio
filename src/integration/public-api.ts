@@ -1,12 +1,17 @@
 // NAI_STUDIO_API (v0.10): the public interface for other extensions (Maestro, its plan §16). Read and
 // write passports in the card or for the current chat only, switch outfits and states, listen to
 // "passports saved" and "image ready", and register scene providers and (v0.11) quality gates.
-// Installed on activation, removed on disable. Version 1: within a version members are only added,
-// never changed.
+// v0.12: passport providers (lore entries in scenes), passports written from a description and
+// backgrounds of places. Installed on activation, removed on disable. Version 1: within a version
+// members are only added, never changed.
 import { ctx } from '../core/context';
+import { toNaiError } from '../core/errors';
+import { t } from '../core/i18n';
 import { log } from '../core/logger';
-import { newPassportId, normalizePassport } from '../domain';
-import type { Passport, SceneHint } from '../domain';
+import { ENTRY_PASSPORT_KINDS, newPassportId, normalizePassport } from '../domain';
+import type { EntryPassportKind, Passport, SceneHint } from '../domain';
+import type { BackgroundService } from '../features/backgrounds/background-service';
+import { generateEntryPassport } from '../features/characters/passport-generator';
 import {
     cardIndexByAvatar,
     chatCardIndexes,
@@ -24,10 +29,11 @@ import {
     savePersonaPassport,
 } from '../features/characters/passport-store';
 import type { LocatedPassport, PassportWhere } from '../features/characters/passport-store';
-import { onStudioEvent, STUDIO_EVENTS } from '../features/events/studio-events';
-import type { StudioEventName, StudioEvents } from '../features/events/studio-events';
+import { emitStudioEvent, onStudioEvent, STUDIO_EVENTS } from '../features/events/studio-events';
+import type { StudioEventName, StudioEvents, StudioRequestKind } from '../features/events/studio-events';
 import { registerQualityGate } from '../features/quality/quality-gate';
 import type { QualityGate } from '../features/quality/quality-gate';
+import { registerScenePassportProvider } from '../features/scene/passport-providers';
 import { registerSceneHintProvider } from '../features/scene/scene-providers';
 import type { SceneHintContext } from '../features/scene/scene-providers';
 
@@ -35,7 +41,9 @@ export type {
     ImageReadyDetail,
     ImageReadyKind,
     PassportsSavedDetail,
+    RequestFailedDetail,
     StudioEventName,
+    StudioRequestKind,
 } from '../features/events/studio-events';
 export type { SceneHint } from '../domain';
 export type { SceneHintContext } from '../features/scene/scene-providers';
@@ -69,6 +77,39 @@ export interface ExternalSceneProvider {
     describe(context: SceneHintContext): Promise<SceneHint | null> | SceneHint | null;
 }
 
+/** v0.12: passports of a scene from another extension (Maestro: lore entries activated or mentioned). */
+export interface ExternalPassportProvider {
+    id: string;
+    /** Higher first: its passport wins a name another provider also gives (0 when absent). */
+    priority?: number;
+    passports(context: SceneHintContext): Promise<Passport[]> | Passport[];
+}
+
+/** v0.12: what `generatePassport` writes a passport for. */
+export interface PassportGenerationInput {
+    name: string;
+    kind: EntryPassportKind;
+    /** The text describing it (a lorebook entry); macros like {{char}} are substituted. */
+    description: string;
+    /** Language of the story ("ru", "Russian"): the name as it spells it goes to the aliases. */
+    language?: string;
+}
+
+/** v0.12: the background `generateBackground` draws. */
+export interface BackgroundInput {
+    locationName: string;
+    /** Extra tags (the state of the place). */
+    tags?: string;
+    /** A location (or world) passport of the chat or of a passport provider. */
+    passportId?: string;
+    /** As a tracker writes it ("evening", "19:40", Russian words too). */
+    timeOfDay?: string;
+    /** As a tracker writes it ("rain, wind", Russian words too). */
+    weather?: string;
+    /** A saved style of NAI Studio by name, else style tags. */
+    style?: string;
+}
+
 export interface NaiStudioApi {
     readonly version: 1;
     /** Passports as the current chat sees them (chat overrides applied), as copies. */
@@ -99,10 +140,39 @@ export interface NaiStudioApi {
      * waiting gets nothing. Manual generation is never gated. Returns the unregistration.
      */
     registerQualityGate(gate: QualityGate): () => void;
+    /**
+     * Since 0.12 (absent before: check that it is a function). Passports of a scene: wherever NAI Studio
+     * resolves passports for scene images and image markers it adds the provider's passports after the
+     * ones of the cards, the persona and the chat — people as scene participants, locations and the world
+     * as the setting, objects whose tags join a picture that names them; one named like a passport the
+     * chat has (name or alias) is left out, the chat's wins. The DES integration uses a provider's
+     * character passport before writing a new one into the card. Providers have 3 s; one that throws or
+     * is silent is skipped. A provider with the same id replaces the previous one. Returns the
+     * unregistration.
+     */
+    registerPassportProvider(provider: ExternalPassportProvider): () => void;
+    /**
+     * Since 0.12. NAI Studio's passport generator for one person, place, item or the world from its text,
+     * through the language backend chosen in NAI Studio (it costs what that backend costs; no image).
+     * Nothing is saved. A full passport with a new id and the given name, or null when generation failed
+     * (a "requestFailed" event says why). Invalid input rejects.
+     */
+    generatePassport(input: PassportGenerationInput): Promise<Passport | null>;
+    /**
+     * Since 0.12. One background for a place: no people, 16:9 at about 1 MP, the place's passport tags
+     * (or its name), `tags`, the time of day and the weather as tags, through NAI Studio's normal pipeline
+     * and Anlas guards (free-only mode refuses a request that would cost Anlas; otherwise the usual
+     * confirmation). The image goes into SillyTavern's backgrounds library as
+     * `maestro-<slug>-<timestamp>.png`; the background is NOT set. The stored file name, or null (a toast
+     * and a "requestFailed" event say why; a cancelled confirmation is code "aborted").
+     */
+    generateBackground(input: BackgroundInput): Promise<{ file: string } | null>;
 }
 
 /** Unsubscriptions of everything registered through the API (dropped on disable). */
 const registrations = new Set<() => void>();
+/** Draws backgrounds (set on activation; null before). */
+let backgrounds: BackgroundService | null = null;
 
 function fail(message: string): never {
     throw new Error(`NAI Studio API: ${message}`);
@@ -267,6 +337,81 @@ function registerGate(gate: QualityGate): () => void {
     return unregister;
 }
 
+function registerPassportProvider(provider: ExternalPassportProvider): () => void {
+    if (typeof provider !== 'object' || provider === null) fail('provider must be an object');
+    const id = requireId(provider.id, 'provider id');
+    if (typeof provider.passports !== 'function') fail('provider.passports must be a function');
+    const priority = Number.isFinite(provider.priority) ? Number(provider.priority) : 0;
+    const off = registerScenePassportProvider({ id, priority, passports: (context) => provider.passports(context) });
+    const unregister = () => {
+        off();
+        registrations.delete(unregister);
+    };
+    registrations.add(unregister);
+    return unregister;
+}
+
+/** An optional string field of an input object. */
+function optionalText(input: object, field: string): string | undefined {
+    const value = (input as Record<string, unknown>)[field];
+    if (value === undefined || value === null) return undefined;
+    if (typeof value !== 'string') fail(`${field} must be a string`);
+    return value.trim() || undefined;
+}
+
+/** A request of another extension failed: logged and reported with the "requestFailed" event. */
+function requestFailed(request: StudioRequestKind, name: string, error: unknown) {
+    const naiError = toNaiError(error);
+    log.warn(`${API_GLOBAL}: ${request} for "${name}" failed:`, naiError.code, naiError.text);
+    emitStudioEvent('requestFailed', { request, name, code: naiError.code, message: naiError.text });
+    return naiError;
+}
+
+async function generatePassport(input: PassportGenerationInput): Promise<Passport | null> {
+    if (typeof input !== 'object' || input === null) fail('input must be an object');
+    const name = requireId(input.name, 'name');
+    const kind = input.kind;
+    if (!(ENTRY_PASSPORT_KINDS as readonly unknown[]).includes(kind))
+        fail(`kind must be one of ${ENTRY_PASSPORT_KINDS.join(', ')}`);
+    if (typeof input.description !== 'string') fail('description must be a string');
+    const language = optionalText(input, 'language');
+    try {
+        return await generateEntryPassport({
+            name,
+            kind,
+            description: input.description,
+            ...(language ? { language } : {}),
+        });
+    } catch (error) {
+        requestFailed('passport', name, error);
+        return null;
+    }
+}
+
+async function generateBackground(input: BackgroundInput): Promise<{ file: string } | null> {
+    if (typeof input !== 'object' || input === null) fail('input must be an object');
+    const locationName = requireId(input.locationName, 'locationName');
+    const request = { locationName };
+    for (const field of ['tags', 'passportId', 'timeOfDay', 'weather', 'style'] as const) {
+        const value = optionalText(input, field);
+        if (value) Object.assign(request, { [field]: value });
+    }
+    const service = backgrounds;
+    if (!service) {
+        requestFailed('background', locationName, new Error('NAI Studio is not active'));
+        return null;
+    }
+    try {
+        return await service.generate(request);
+    } catch (error) {
+        const naiError = requestFailed('background', locationName, error);
+        if (naiError.code !== 'aborted') {
+            toastr.error(t('naist.background.failed', { name: locationName, reason: naiError.text }), naiError.title);
+        }
+        return null;
+    }
+}
+
 function createApi(): NaiStudioApi {
     return Object.freeze({
         version: API_VERSION as 1,
@@ -284,13 +429,22 @@ function createApi(): NaiStudioApi {
         on,
         registerSceneProvider,
         registerQualityGate: registerGate,
+        registerPassportProvider,
+        generatePassport,
+        generateBackground,
     });
 }
 
 let installed: NaiStudioApi | null = null;
 
+/** Services the API needs from the running extension (activation passes them; enabling again keeps them). */
+export interface PublicApiServices {
+    backgrounds?: BackgroundService;
+}
+
 /** Publishes globalThis.NAI_STUDIO_API (activation). */
-export function installPublicApi(): NaiStudioApi {
+export function installPublicApi(services: PublicApiServices = {}): NaiStudioApi {
+    if (services.backgrounds) backgrounds = services.backgrounds;
     installed ??= createApi();
     (globalThis as Record<string, unknown>)[API_GLOBAL] = installed;
     // The persona key is read synchronously by passports(): load it now.

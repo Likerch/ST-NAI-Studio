@@ -34,6 +34,7 @@ import {
     currentCaps,
     PASSPORT_KEY_SEPARATOR,
     PERSONA_PREFIX,
+    PROVIDED_PASSPORT_PREFIX,
 } from '../features/scene/scene-service';
 import type { SceneService } from '../features/scene/scene-service';
 import { escapeHtml } from './components/dom';
@@ -45,7 +46,8 @@ import { poseSelectOptions } from './pose-helpers';
 
 /** Where the saved passport of a participant lives (card, persona or the chat); null without one. */
 async function locateCandidatePassport(key: string, passportId: string | undefined): Promise<LocatedPassport | null> {
-    if (!passportId) return null;
+    // A passport of a passport provider (v0.12) lives in that extension: edited for this picture only.
+    if (!passportId || key.startsWith(PROVIDED_PASSPORT_PREFIX)) return null;
     if (key.startsWith(PERSONA_PREFIX))
         return locatePassport(passportId, { persona: key.slice(PERSONA_PREFIX.length) });
     if (key.startsWith(CHAT_PASSPORT_PREFIX)) {
@@ -372,7 +374,7 @@ export async function openComposer(service: SceneService, pipeline: Pipeline, op
                     ? await editLocatedPassport(p.name, located)
                     : await editPassport(p.name, p.passport);
                 if (!passport) return;
-                if (!located) {
+                if (!located && !p.key.startsWith(PROVIDED_PASSPORT_PREFIX)) {
                     if (p.key.startsWith(PERSONA_PREFIX))
                         savePersonaPassport(p.key.slice(PERSONA_PREFIX.length), passport);
                     else {

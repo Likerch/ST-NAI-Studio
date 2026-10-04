@@ -1118,5 +1118,6 @@
   "naist.scene.explicitNegativeHint": "Added to the undesired content only in explicit scenes (when NSFW is allowed, the prompt also gets \"nsfw\"). Tags the undesired content already has are not repeated.",
   "naist.quality.title": "Wait for the quality check (Maestro)",
   "naist.quality.hint": "Another extension (Maestro) checks every reply. Pictures NAI Studio draws on its own for a reply (image markers, automatic illustrations and generation, DES portraits) wait for its answer: a reply it redoes is not drawn. With no answer in time they are drawn as usual. Manual generation does not wait.",
-  "naist.quality.timeout": "Wait at most, seconds (from the end of the reply)"
+  "naist.quality.timeout": "Wait at most, seconds (from the end of the reply)",
+  "naist.background.failed": "The background for “{name}” was not made: {reason}"
 }

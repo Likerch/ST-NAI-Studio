@@ -120,16 +120,21 @@ const RU_LATIN = [
     'ya',
 ];
 
-/** How a name sounds in Latin letters, loosely: "Lyra" and the Russian spelling give "lira". */
-export function nameSound(word: string): string {
+/** A text in lower case with Russian letters written in Latin ones; other characters stay. */
+export function latinLetters(text: string): string {
     let latin = '';
-    for (const ch of word.toLowerCase()) {
+    for (const ch of text.toLowerCase()) {
         const code = ch.codePointAt(0) ?? 0;
         if (code >= 0x430 && code <= 0x44f) latin += RU_LATIN[code - 0x430];
         else if (code === 0x451) latin += 'e';
         else latin += ch;
     }
-    return latin
+    return latin;
+}
+
+/** How a name sounds in Latin letters, loosely: "Lyra" and the Russian spelling give "lira". */
+export function nameSound(word: string): string {
+    return latinLetters(word)
         .replace(/kh/g, 'h')
         .replace(/ph/g, 'f')
         .replace(/ck/g, 'k')

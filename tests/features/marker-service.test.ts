@@ -403,6 +403,29 @@ describe('MarkerService requests', () => {
         );
         expect(lastRequest(produce).scene).toBe('scene: Nia waves, wooden interior, night, rain');
     });
+
+    it('adds the tags of the objects its description names (v0.12), not of the ones the reply names', async () => {
+        const { service, produce } = setup();
+        state.candidates = [];
+        state.setting = {
+            world: '',
+            location: '',
+            locations: [],
+            objects: [
+                { name: 'Sun Blade', aliases: [], tags: 'golden sword, glowing' },
+                { name: 'Moon Lamp', aliases: [], tags: 'silver lantern' },
+            ],
+        } as typeof state.setting;
+        await service.produce(
+            { prompt: 'a knight raises the Sun Blade', caption: 'The Moon Lamp flickers' },
+            undefined,
+            {
+                messageId: 0,
+                text: 'The Moon Lamp and the Sun Blade.',
+            },
+        );
+        expect(lastRequest(produce).scene).toBe('a knight raises the Sun Blade, golden sword, glowing');
+    });
 });
 
 describe('MarkerService gate', () => {

@@ -449,13 +449,14 @@ export class MarkerService {
                 scene = [scene, ...actions].join(', ');
             }
         }
-        // Setting of the chat: world / scenario tags and the locations the marker names.
+        // Setting of the chat: world / scenario tags, the locations and (v0.12) the objects the marker names.
         const setting = await sceneSetting(query);
         const place = mentionedLocationTags(
             `${params.location ?? ''} ${setting.location} ${params.prompt}`,
             setting.locations,
         );
-        if (place || setting.world) scene = joinTags(scene, place, setting.world);
+        const things = mentionedLocationTags(params.prompt, setting.objects ?? []);
+        if (place || things || setting.world) scene = joinTags(scene, place, things, setting.world);
         if (params.text && caps.family !== 'v3') scene = `${scene}, text: ${params.text}`;
         const where = params.location || setting.location;
         // The place id of a scene provider belongs to its own location, not to the marker's.

@@ -120,6 +120,7 @@ vi.stubGlobal('toastr', { info: vi.fn(), warning: vi.fn(), success: vi.fn() });
 const { DesIntegration } = await import('../../src/integration/des/des-integration');
 const { clearQualityVerdicts, qualityGenerationStarted, registerQualityGate } =
     await import('../../src/features/quality/quality-gate');
+const { registerScenePassportProvider } = await import('../../src/features/scene/passport-providers');
 
 const tracker = (
     characters: unknown[],
@@ -228,6 +229,37 @@ describe('DesIntegration', () => {
         } finally {
             off();
             clearQualityVerdicts();
+        }
+    });
+
+    it('uses the passport of a passport provider (v0.12) instead of writing one; the card still wins', async () => {
+        const lore = defaultPassport('character', 'Mira', 'lore-mira');
+        lore.slots.hair = 'black hair';
+        lore.slots.clothing = 'green robe';
+        const passports = vi.fn(() => [lore]);
+        const off = registerScenePassportProvider({ id: 'maestro', priority: 1, passports });
+        try {
+            const des = new DesIntegration(markers());
+            await des.start();
+            reply(tracker([{ name: 'Mira', details: { appearance: 'wet blue cloak' } }]));
+            await inner(des).handleTracker(true);
+            await inner(des).portraitQueue;
+            expect(state.generated).toEqual([]);
+            expect(state.cardPassports).toEqual([]);
+            expect(passports).toHaveBeenCalledWith({ messageIndex: 0, text: state.chat[0]!.mes });
+            expect(state.des.characterAppearance?.Mira).toBe('black hair, green robe');
+            expect(state.regenerate).toHaveBeenCalledWith('Mira');
+            expect((await state.hook('black hair, green robe'))?.scene).toBe(
+                'black hair, wet blue cloak, portrait, upper body, looking at viewer',
+            );
+            // A passport in the card wins over the provider's.
+            const card = defaultPassport('character', 'Mira', 'card-mira');
+            card.slots.hair = 'white hair';
+            state.cardPassports = [card];
+            await inner(des).handleTracker(false);
+            expect(state.des.characterAppearance?.Mira).toBe('white hair');
+        } finally {
+            off();
         }
     });
 

@@ -1151,7 +1151,8 @@ var EN = {
 	"naist.scene.explicitNegativeHint": "Added to the undesired content only in explicit scenes (when NSFW is allowed, the prompt also gets \"nsfw\"). Tags the undesired content already has are not repeated.",
 	"naist.quality.title": "Wait for the quality check (Maestro)",
 	"naist.quality.hint": "Another extension (Maestro) checks every reply. Pictures NAI Studio draws on its own for a reply (image markers, automatic illustrations and generation, DES portraits) wait for its answer: a reply it redoes is not drawn. With no answer in time they are drawn as usual. Manual generation does not wait.",
-	"naist.quality.timeout": "Wait at most, seconds (from the end of the reply)"
+	"naist.quality.timeout": "Wait at most, seconds (from the end of the reply)",
+	"naist.background.failed": "The background for “{name}” was not made: {reason}"
 };
 var translator = (text) => text;
 /** Wires the host translator (SillyTavern's translate). Called once on activation. */
@@ -5350,16 +5351,20 @@ var RU_LATIN = [
 	"yu",
 	"ya"
 ];
-/** How a name sounds in Latin letters, loosely: "Lyra" and the Russian spelling give "lira". */
-function nameSound(word) {
+/** A text in lower case with Russian letters written in Latin ones; other characters stay. */
+function latinLetters(text) {
 	let latin = "";
-	for (const ch of word.toLowerCase()) {
+	for (const ch of text.toLowerCase()) {
 		const code = ch.codePointAt(0) ?? 0;
 		if (code >= 1072 && code <= 1103) latin += RU_LATIN[code - 1072];
 		else if (code === 1105) latin += "e";
 		else latin += ch;
 	}
-	return latin.replace(/kh/g, "h").replace(/ph/g, "f").replace(/ck/g, "k").replace(/w/g, "v").replace(/x/g, "ks").replace(/y/g, "i").replace(/[^a-z]/g, "").replace(/(.)\1+/g, "$1");
+	return latin;
+}
+/** How a name sounds in Latin letters, loosely: "Lyra" and the Russian spelling give "lira". */
+function nameSound(word) {
+	return latinLetters(word).replace(/kh/g, "h").replace(/ph/g, "f").replace(/ck/g, "k").replace(/w/g, "v").replace(/x/g, "ks").replace(/y/g, "i").replace(/[^a-z]/g, "").replace(/(.)\1+/g, "$1");
 }
 /** Russian case endings after a final vowel (Lira, Liry, Lire, Liru, Liroi) or a consonant (Brom, Broma, Bromom). */
 var AFTER_VOWEL = [
@@ -7884,6 +7889,57 @@ var SYSTEM_NPC = [
 	"The story card describes the world and other characters: take from it only what it says about this character by name, never the traits of anyone else (race, hair, clothes).",
 	"Rules: English Danbooru tags, lowercase, comma separated, spaces instead of underscores. Only what the texts say or clearly imply about this character, never invent (a species or race only when the text names it, never from a name, a title or the setting); leave a field empty when unknown. Explicit anatomy (genitals, nipples, the penis of a futanari) goes only to \"nsfw\"; a futanari is \"1girl\" in base and \"futanari, penis\" in nsfw. No quality, art style or colour palette tags (pastel colors, vibrant colors, muted colors, monochrome). clothing is ONE default outfit (what they wear most): one item per body part, one colour per item, never alternatives (\"blue or grey coat\"); every other outfit of the text goes to \"outfits\"."
 ].join("\n");
+/** Kinds another extension can have a passport written for (v0.12, generatePassport). */
+var ENTRY_PASSPORT_KINDS = [
+	"character",
+	"location",
+	"object",
+	"world"
+];
+var ENTRY_THING = {
+	character: "one person or creature",
+	location: "one place",
+	object: "one item or vehicle",
+	world: "the world of the story as a whole"
+};
+var ENTRY_FIELDS = {
+	character: "one entry of kind \"character\" with the fields name, aliases, base (count tag and what they are: \"1girl, elf, adult\", \"1boy, orc\", \"1other, dragon\"), hair, eyes, body, skin, clothing, accessories, outfits ({\"name\",\"tags\"}), nsfw (explicit body details only if given), negative",
+	location: "one entry of kind \"location\" with the fields name, aliases, tags (how the place looks: architecture or landscape, interior, materials, light, notable details; never people), negative",
+	object: "one entry of kind \"object\" with the fields name, aliases, tags (how it looks: shape, material, colours, notable details), negative",
+	world: "one entry of kind \"world\" with the fields name, aliases, tags (the setting as a whole: era, technology, magic, overall look), negative"
+};
+var LANGUAGE_NAMES = {
+	ru: "Russian",
+	en: "English",
+	uk: "Ukrainian",
+	be: "Belarusian",
+	de: "German",
+	fr: "French",
+	es: "Spanish",
+	it: "Italian",
+	pt: "Portuguese",
+	pl: "Polish",
+	ja: "Japanese",
+	zh: "Chinese",
+	ko: "Korean"
+};
+/** A language code ("ru", "ru-RU") as its English name; anything else as given. */
+function languageName(language) {
+	const value = language.trim();
+	return LANGUAGE_NAMES[value.toLowerCase().split(/[-_]/)[0] ?? ""] ?? value;
+}
+/** System prompt for one passport of a lorebook entry (a person, place, item or the world). */
+function entrySystem(kind, language) {
+	const spelled = language ? `the name as a ${languageName(language)} text spells it` : "the name written in Cyrillic as a Russian text would spell it";
+	const character = kind === "character";
+	return [
+		`You read a lorebook entry of a roleplay about ${ENTRY_THING[kind]} and write one visual passport for an image generator (NovelAI, Danbooru tags).`,
+		`Answer only with JSON: {"passports": [ ${ENTRY_FIELDS[kind]} ]}.`,
+		`aliases: short names, nicknames and ${spelled}.`,
+		character ? "Permanent features go to their fields; temporary states (wet, wounded, blushing) are left out. Explicit anatomy (genitals, nipples, the penis of a futanari) goes only to \"nsfw\"; a futanari is \"1girl\" in base and \"futanari, penis\" in nsfw. clothing is ONE default outfit (what they wear most): one item per body part, one colour per item, never alternatives; every other outfit of the text goes to \"outfits\"." : "Only what can be seen in a still picture: no names, history, sounds or smells.",
+		"Rules: English Danbooru tags, lowercase, comma separated, spaces instead of underscores. Only what the text says or clearly implies, never invent (a species or race only when the text names it, never from a name, a title or the setting); leave a field empty when unknown. No quality, art style or colour palette tags (pastel colors, vibrant colors, muted colors, monochrome)."
+	].join("\n");
+}
 var str$1 = { type: "string" };
 var PASSPORT_GEN_SCHEMA = {
 	name: "nai_passports",
@@ -7939,16 +7995,19 @@ var SYSTEMS = {
 var LABELS = {
 	card: "Card",
 	persona: "Persona",
-	npc: "Character"
+	npc: "Character",
+	entry: "Entry"
 };
-/** System and user messages for a card, a persona or one character of a scene tracker. */
-function passportGenMessages(source, target) {
+/** System and user messages for a card, a persona, one character of a scene tracker or a lorebook entry. */
+function passportGenMessages(source, target, options = {}) {
+	const system = target === "entry" ? entrySystem(options.kind ?? "character", options.language) : SYSTEMS[target];
 	const parts = [`${LABELS[target]}: ${source.name}`, `${target === "npc" ? "Tracker" : "Description"}:\n${clip(source.description, LIMITS.description)}`];
 	if (source.personality?.trim()) parts.push(`Personality:\n${clip(source.personality, LIMITS.personality)}`);
 	if (source.scenario?.trim()) parts.push(`${target === "npc" ? "Story card" : "Scenario"}:\n${clip(source.scenario, target === "npc" ? LIMITS.description : LIMITS.scenario)}`);
 	if (source.firstMessage?.trim()) parts.push(`First message:\n${clip(source.firstMessage, LIMITS.firstMessage)}`);
+	if (target === "entry" && options.language?.trim()) parts.push(`Story language: ${languageName(options.language)}`);
 	return {
-		system: SYSTEMS[target],
+		system,
 		user: parts.join("\n\n")
 	};
 }
@@ -7976,16 +8035,19 @@ var STYLE_TAG = /^(?:(?:pastel|vibrant|muted|vivid|bright|dark|soft|warm|cool|ea
 function tags$1(value) {
 	return joinTags(splitTags(asText$1(value).replace(/_/g, " ")).filter((tag) => !STYLE_TAG.test(tag)).join(", "));
 }
-/** Passports from the answer; entries without a name or anything visual are dropped. */
-function parseGeneratedPassports(raw, fallbackName = "") {
+/**
+* Passports from the answer; entries without a name or anything visual are dropped. An entry without a
+* known kind is `defaultKind`; the fallback name goes to an unnamed entry of that kind.
+*/
+function parseGeneratedPassports(raw, fallbackName = "", defaultKind = "character") {
 	const data = typeof raw === "string" ? extractJson(raw) : raw;
 	const list = Array.isArray(data) ? data : data && typeof data === "object" && Array.isArray(data.passports) ? data.passports : [];
 	const result = [];
 	for (const item of list) {
 		if (!item || typeof item !== "object") continue;
 		const o = item;
-		const kind = PASSPORT_KINDS.includes(String(o.kind)) ? o.kind : "character";
-		const name = asText$1(o.name).trim() || (kind === "character" ? fallbackName : "");
+		const kind = PASSPORT_KINDS.includes(String(o.kind)) ? o.kind : defaultKind;
+		const name = asText$1(o.name).trim() || (kind === defaultKind ? fallbackName : "");
 		if (!name) continue;
 		const passport = defaultPassport(kind, name, newPassportId());
 		passport.aliases = (Array.isArray(o.aliases) ? o.aliases.map(asText$1) : asText$1(o.aliases).split(",")).map((a) => a.trim()).filter((a) => a && a.toLowerCase() !== name.toLowerCase());
@@ -8030,6 +8092,49 @@ function withoutUnstatedSpecies(passports, sourceText) {
 		}));
 	}
 	return passports;
+}
+//#endregion
+//#region src/domain/provided-passports.ts
+function passportGroup(kind) {
+	return kind === "world" || kind === "scenario" ? "setting" : kind;
+}
+/**
+* The same one under two entries: one name (or alias) is a whole word of the other's name, also in a
+* declined Russian form (the matcher of scene participants). Nameless entries are never the same.
+*/
+function sameNamed(a, b) {
+	if (!a.name.trim() || !b.name.trim()) return false;
+	return mentionIndex(a.name, [b.name, ...b.aliases]) >= 0 || mentionIndex(b.name, [a.name, ...a.aliases]) >= 0;
+}
+/**
+* A provider's answer as passports: junk, empty passports and nameless ones (except a world or a
+* scenario) are left out; a passport without an id gets a stable one from the provider, kind and name.
+*/
+function normalizeProvidedPassports(raw, providerId) {
+	if (!Array.isArray(raw)) return [];
+	const result = [];
+	for (const item of raw) {
+		const passport = normalizePassport(item);
+		if (!passport || isPassportEmpty(passport)) continue;
+		if (!passport.name && passportGroup(passport.kind) !== "setting") continue;
+		const id = item.id;
+		if (typeof id !== "string" || !id.trim()) passport.id = `${providerId}:${passport.kind}:${passport.name.toLowerCase() || result.length}`;
+		result.push(passport);
+	}
+	return result;
+}
+/**
+* Provider passports (best first) NAI Studio does not have yet: one named like a known entry or like an
+* earlier provider passport is left out. Pass passports and known entries of one group.
+*/
+function unknownPassports(provided, known) {
+	const kept = [];
+	for (const passport of provided) {
+		const same = (other) => sameNamed(passport, other);
+		if (known.some(same) || kept.some(same)) continue;
+		kept.push(passport);
+	}
+	return kept;
 }
 var des_words_default = {
 	time: {
@@ -8386,6 +8491,24 @@ function weatherOf(forecast, emoji) {
 	for (const [pattern, kind] of EMOJI_WEATHER) if (pattern.test(emoji)) return kind;
 	return "";
 }
+/** Image tags of a time of day as a tracker writes it ("late evening", "Evening, 19:40", Russian words too); empty when unknown. */
+function timeTags(time) {
+	return [...TIME_TAGS[timeOfDay(time)] ?? []];
+}
+/**
+* Image tags of the weather as a tracker writes it (words or an emoji); empty when unknown. A clear sky
+* needs the time of day (`time`): blue by day, a night sky in the evening and at night.
+*/
+function weatherTags(forecast, emoji = "", time = "") {
+	const kind = weatherOf(forecast, emoji);
+	if (kind === "storm") return ["storm", "lightning"];
+	if (kind === "snow") return ["snow", "snowing"];
+	if (kind === "rain" || kind === "fog" || kind === "wind") return [kind];
+	if (kind === "cloudy") return ["cloudy sky"];
+	const part = timeOfDay(time);
+	if (kind === "clear" && part) return [part === "night" || part === "evening" ? "night sky" : "blue sky"];
+	return [];
+}
 /** Scene of a DES info box with its image tags. */
 function sceneFromInfoBox(box) {
 	const location = text$1(box.location);
@@ -8402,20 +8525,11 @@ function sceneFromInfoBox(box) {
 	].join(" ").toLowerCase();
 	const indoors = has(context, des_words_default.indoors);
 	const outdoors = !indoors && has(context, des_words_default.outdoors);
-	const tags = [];
-	const part = timeOfDay(time);
-	tags.push(...TIME_TAGS[part] ?? []);
+	const tags = timeTags(time);
 	if (indoors) tags.push("indoors");
 	else {
 		if (outdoors) tags.push("outdoors");
-		const kind = weatherOf(weather, emoji);
-		if (kind === "storm") tags.push("storm", "lightning");
-		else if (kind === "snow") tags.push("snow", "snowing");
-		else if (kind === "rain") tags.push("rain");
-		else if (kind === "fog") tags.push("fog");
-		else if (kind === "cloudy") tags.push("cloudy sky");
-		else if (kind === "wind") tags.push("wind");
-		else if (kind === "clear" && part) tags.push(part === "night" || part === "evening" ? "night sky" : "blue sky");
+		tags.push(...weatherTags(weather, emoji, time));
 	}
 	return {
 		location,
@@ -8434,6 +8548,39 @@ function withoutCountTags(prompt) {
 	const head = cut >= 0 ? prompt.slice(0, cut) : prompt;
 	const tail = cut >= 0 ? prompt.slice(cut) : "";
 	return `${head.split(",").map((tag) => tag.trim()).filter((tag) => tag && !COUNT_TAG.test(tag)).join(", ")}${tail}`.trim();
+}
+//#endregion
+//#region src/domain/backgrounds.ts
+/** Undesired content of every background: nobody in the picture. */
+var BACKGROUND_NEGATIVE = "1girl, 1boy, multiple girls, multiple boys, people, crowd";
+/** Background ratio (16:9); within the free pixel budget it is 1344×768, free on Opus. */
+var BACKGROUND_RATIO = "wide";
+/** Tags of a time of day as a tracker writes it ("late evening", "19:40", Russian words too); unknown words as given. */
+function timeOfDayTags(value) {
+	const text = value.trim();
+	return text ? joinTags(...timeTags(text)) || text : "";
+}
+/**
+* Tags of the weather as a tracker writes it ("rain", "clear", Russian words too); unknown words as given. A clear sky is
+* blue unless the time of day says evening or night.
+*/
+function backgroundWeatherTags(value, timeOfDay = "") {
+	const text = value.trim();
+	return text ? joinTags(...weatherTags(text, "", timeOfDay.trim() || "noon")) || text : "";
+}
+/** Positive prompt of a background: scenery without people, how the place looks, the time and weather. */
+function backgroundPrompt(input) {
+	const looks = joinTags(input.placeTags ?? "", input.tags ?? "");
+	const time = input.timeOfDay ?? "";
+	return joinTags("no humans", "scenery", looks || input.locationName.trim(), timeOfDayTags(time), backgroundWeatherTags(input.weather ?? "", time));
+}
+/** A place name as a file name part: Latin letters and digits joined by "-", at most 40 characters. */
+function backgroundSlug(name) {
+	return latinLetters(name).normalize("NFKD").replace(/\p{M}+/gu, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+/, "").slice(0, 40).replace(/-+$/, "") || "place";
+}
+/** File name of a background in SillyTavern's library: `maestro-<slug>-<timestamp>.png`. */
+function backgroundFileName(locationName, timestamp) {
+	return `maestro-${backgroundSlug(locationName)}-${Math.max(0, Math.floor(timestamp))}.png`;
 }
 //#endregion
 //#region src/domain/vision.ts
@@ -8685,7 +8832,7 @@ function vote(entry, registration, ok) {
 	if (!entry.waiting.size) settle$1(entry, "draw");
 }
 /** Every gate at once; the time limit runs from now (the end of the reply). */
-function ask$2(entry) {
+function ask$3(entry) {
 	entry.phase = "asking";
 	entry.waiting = new Set(gates);
 	if (!entry.waiting.size) {
@@ -8760,13 +8907,13 @@ function replyVerdict(messageIndex, options = {}) {
 		entries.set(key, entry);
 		prune();
 	}
-	if (entry.phase === "deferred" && !options.streaming) ask$2(entry);
+	if (entry.phase === "deferred" && !options.streaming) ask$3(entry);
 	return entry.promise;
 }
 /** The reply is complete: verdicts that waited for it ask the gates now (the time limit starts here). */
 function replyComplete(messageIndex) {
 	for (const entry of [...entries.values()]) if (entry.phase === "deferred" && entry.messageIndex === messageIndex) {
-		if (isCurrent(entry)) ask$2(entry);
+		if (isCurrent(entry)) ask$3(entry);
 		else settle$1(entry, "cancelled");
 	}
 }
@@ -8892,6 +9039,421 @@ var AutoGenerator = class {
 	}
 };
 //#endregion
+//#region src/features/events/studio-events.ts
+var STUDIO_EVENTS = [
+	"passportsSaved",
+	"imageReady",
+	"requestFailed"
+];
+var listeners = {
+	passportsSaved: /* @__PURE__ */ new Set(),
+	imageReady: /* @__PURE__ */ new Set(),
+	requestFailed: /* @__PURE__ */ new Set()
+};
+function onStudioEvent(event, listener) {
+	const set = listeners[event];
+	set.add(listener);
+	return () => {
+		set.delete(listener);
+	};
+}
+function emitStudioEvent(event, detail) {
+	for (const listener of [...listeners[event]]) try {
+		const result = listener(structuredClone(detail));
+		if (result instanceof Promise) result.catch((error) => log.warn(`${event} listener failed`, error));
+	} catch (error) {
+		log.warn(`${event} listener failed`, error);
+	}
+}
+/** An image was attached to a message (after the chat was saved). */
+function imageReady(messageIndex, kind, passportIds = []) {
+	emitStudioEvent("imageReady", {
+		messageIndex,
+		kind,
+		passportIds: [...passportIds]
+	});
+}
+//#endregion
+//#region src/features/characters/character-prompts.ts
+var CARD_FIELD = "nai_studio";
+/** Card field the built-in writes when its "Shareable" box is checked (RECON §2.1.7). */
+var BUILTIN_CARD_FIELD = "sd_character_prompt";
+var EMPTY = {
+	positive: "",
+	negative: ""
+};
+/** Avatar file name without extension: the key the built-in uses (getCharaFilename). */
+function avatarKey(avatar) {
+	return (avatar ?? "").replace(/\.[^/.]+$/, "");
+}
+/** Index of the character of a 1:1 chat, undefined in groups or with no character selected. */
+function soloCharacterIndex() {
+	const c = ctx();
+	if (c.groupId || c.characterId === void 0 || c.characterId === null || c.characterId === "") return void 0;
+	const index = Number(c.characterId);
+	return Number.isInteger(index) && c.characters[index] ? index : void 0;
+}
+function asPrompt(value) {
+	if (!value || typeof value !== "object") return null;
+	const prompt = value;
+	return {
+		positive: String(prompt.positive ?? ""),
+		negative: String(prompt.negative ?? "")
+	};
+}
+/** The card's shared prompt: ours first, then the built-in's. `own` = stored in our field. */
+function cardPrompt(character) {
+	const extensions = character?.data?.extensions;
+	const own = asPrompt((extensions?.[CARD_FIELD])?.characterPrompt);
+	if (own) return {
+		prompt: own,
+		own: true
+	};
+	const builtIn = asPrompt(extensions?.[BUILTIN_CARD_FIELD]);
+	return builtIn ? {
+		prompt: builtIn,
+		own: false
+	} : null;
+}
+/** Local values win; empty local values fall back to the card (same precedence as the built-in). */
+function readCharacterPrompt(character) {
+	if (!character) return {
+		...EMPTY,
+		shared: false
+	};
+	const local = settings().prompts.characterPrompts[avatarKey(character.avatar)] ?? EMPTY;
+	const card = cardPrompt(character);
+	return {
+		positive: local.positive || card?.prompt.positive || "",
+		negative: local.negative || card?.prompt.negative || "",
+		shared: card?.own === true
+	};
+}
+/** Prompt of the current 1:1 character (empty in groups, like the built-in). */
+function currentCharacterPrompt() {
+	const index = soloCharacterIndex();
+	return index === void 0 ? EMPTY : readCharacterPrompt(ctx().characters[index]);
+}
+/** Free mode `char` prefix: current character, or in groups the last character who spoke. */
+function lastSpeakerPrompt() {
+	const c = ctx();
+	const index = soloCharacterIndex();
+	if (index !== void 0) return readCharacterPrompt(c.characters[index]);
+	for (let i = c.chat.length - 1; i >= 0; i--) {
+		const message = c.chat[i];
+		const avatar = message?.original_avatar;
+		if (message && !message.is_user && !message.is_system && typeof avatar === "string") return readCharacterPrompt(c.characters.find((ch) => ch.avatar === avatar));
+	}
+	return EMPTY;
+}
+async function saveCharacterPrompt(index, value, share) {
+	const c = ctx();
+	const character = c.characters[index];
+	if (!character) return;
+	settings().prompts.characterPrompts[avatarKey(character.avatar)] = { ...value };
+	saveSettings();
+	const existing = character.data?.extensions?.["nai_studio"] ?? {};
+	if (share) await c.writeExtensionField(index, CARD_FIELD, {
+		...existing,
+		characterPrompt: { ...value }
+	});
+	else if (existing.characterPrompt) await c.writeExtensionField(index, CARD_FIELD, {
+		...existing,
+		characterPrompt: null
+	});
+}
+//#endregion
+//#region src/features/characters/passport-store.ts
+/** Key of chat_metadata where NAI Studio keeps its chat data. */
+var META_KEY$1 = "nai_studio";
+/** Prefix of the owner of a persona passport ("persona:<avatar>"), also the persona candidate key. */
+var PERSONA_OWNER_PREFIX = "persona:";
+var savedListeners = /* @__PURE__ */ new Set();
+/** Called after the passports of a card are saved (integrations keep their copies in sync). */
+function onPassportsSaved(listener) {
+	savedListeners.add(listener);
+}
+function cardField(character) {
+	return character?.data?.extensions?.[CARD_FIELD];
+}
+/** Every passport of the card (characters, world, locations, scenario, objects), as stored. */
+function cardPassports(character) {
+	const field = cardField(character);
+	return normalizePassportList(field?.passports, field?.passport);
+}
+/** The passport of the card's own character (the composer, sprites and tools use it). */
+function cardPassport(character) {
+	return primaryPassport(cardPassports(character), character?.name ?? "");
+}
+/** Lazily loaded cards (shallow) have no extensions until unshallowed. */
+async function loadCharacter(index) {
+	const c = ctx();
+	if (c.characters[index]?.shallow) await c.unshallowCharacter(index);
+	return ctx().characters[index];
+}
+/** Card indexes of the current chat: the 1:1 character or every group member. */
+function chatCardIndexes() {
+	const c = ctx();
+	if (c.groupId) return (c.groups?.find((g) => g.id === c.groupId)?.members ?? []).map((avatar) => c.characters.findIndex((ch) => ch.avatar === avatar)).filter((i) => i >= 0);
+	if (c.characterId !== void 0 && c.characterId !== null && c.characterId !== "") {
+		const index = Number(c.characterId);
+		return Number.isInteger(index) && c.characters[index] ? [index] : [];
+	}
+	return [];
+}
+/** Index of a card by its avatar file, with or without the extension; -1 when absent. */
+function cardIndexByAvatar(avatar) {
+	const characters = ctx().characters;
+	const exact = characters.findIndex((ch) => ch.avatar === avatar);
+	return exact >= 0 ? exact : characters.findIndex((ch) => avatarKey(ch.avatar) === avatarKey(avatar));
+}
+async function saveCardPassports(index, passports) {
+	const c = ctx();
+	const character = await loadCharacter(index);
+	if (!character) return;
+	const existing = character.data?.extensions?.["nai_studio"] ?? {};
+	const main = primaryPassport(passports, character.name);
+	await c.writeExtensionField(index, CARD_FIELD, {
+		...existing,
+		passports,
+		passport: main ?? void 0
+	});
+	for (const listener of savedListeners) try {
+		listener(index, passports);
+	} catch {}
+	emitStudioEvent("passportsSaved", {
+		ids: passports.map((p) => p.id),
+		scope: "card",
+		avatar: character.avatar
+	});
+}
+/** Replaces one passport of the card by id (or adds it). */
+async function saveCardPassport(index, passport) {
+	const list = cardPassports(await loadCharacter(index));
+	const at = list.findIndex((p) => p.id === passport.id);
+	if (at >= 0) list[at] = passport;
+	else list.push(passport);
+	await saveCardPassports(index, list);
+}
+var personas = null;
+async function currentPersonaKey() {
+	try {
+		personas ??= await importHost("/scripts/personas.js");
+		return personas.user_avatar || "default";
+	} catch {
+		return "default";
+	}
+}
+/** The current persona without waiting: its module is loaded once (`user_avatar` is a live binding). */
+function knownPersonaKey() {
+	return personas?.user_avatar || "default";
+}
+function personaPassport(key) {
+	return normalizePassport(settings().scene.personaPassports[key]);
+}
+function savePersonaPassport(key, passport) {
+	settings().scene.personaPassports[key] = passport;
+	saveSettings();
+	emitStudioEvent("passportsSaved", {
+		ids: [passport.id],
+		scope: "card",
+		persona: true
+	});
+}
+function personaOwner(key) {
+	return `${PERSONA_OWNER_PREFIX}${key}`;
+}
+/** A chat is open (chat-scope passports can be saved). */
+function chatOpen() {
+	try {
+		return Boolean(ctx().getCurrentChatId?.());
+	} catch {
+		return false;
+	}
+}
+/** Overrides and passports of the current chat (a copy; empty without a chat). */
+function chatPassportData() {
+	const root = ctx().chatMetadata?.[META_KEY$1];
+	return root?.passports ? normalizeChatPassports(root.passports) : emptyChatPassports();
+}
+async function writeChatPassports(data) {
+	const c = ctx();
+	const root = c.chatMetadata[META_KEY$1] ??= {};
+	if (!Object.keys(data.overrides).length && !data.extra.length) delete root.passports;
+	else root.passports = data;
+	await c.saveMetadata();
+}
+function requireChat() {
+	if (!chatOpen()) throw new Error("NAI Studio: no chat is open");
+}
+/** The passports of a card as the current chat sees them. */
+function resolvedCardPassports(character, data = chatPassportData()) {
+	const owner = character?.avatar;
+	return cardPassports(character).map((p) => resolveChatPassport(p, owner, data));
+}
+/** The persona passport as the current chat sees it. */
+function resolvedPersonaPassport(key, data = chatPassportData()) {
+	const passport = personaPassport(key);
+	return passport ? resolveChatPassport(passport, personaOwner(key), data) : null;
+}
+/**
+* Saves a passport for this chat only: over a card or persona passport (`base`) as the fields that
+* differ (no difference removes the override), or as a passport of the chat itself (`base` null).
+*/
+async function saveChatPassport(base, edited, owner) {
+	requireChat();
+	const data = chatPassportData();
+	if (base) {
+		const diff = passportDiff(base, {
+			...edited,
+			id: base.id
+		});
+		if (isOverrideEmpty(diff)) delete data.overrides[base.id];
+		else data.overrides[base.id] = owner ? {
+			owner,
+			...diff
+		} : diff;
+	} else {
+		const at = data.extra.findIndex((p) => p.id === edited.id);
+		if (at >= 0) data.extra[at] = edited;
+		else data.extra.push(edited);
+	}
+	await writeChatPassports(data);
+	emitStudioEvent("passportsSaved", {
+		ids: [base?.id ?? edited.id],
+		scope: "chat"
+	});
+}
+/**
+* Drops the chat's override of a passport (the card value comes back) and a passport of the chat
+* itself with that id. False when there was nothing to drop.
+*/
+async function clearChatOverride(id) {
+	requireChat();
+	const data = chatPassportData();
+	if (!(Object.prototype.hasOwnProperty.call(data.overrides, id) || data.extra.some((p) => p.id === id))) return false;
+	delete data.overrides[id];
+	data.extra = data.extra.filter((p) => p.id !== id);
+	await writeChatPassports(data);
+	emitStudioEvent("passportsSaved", {
+		ids: [id],
+		scope: "chat"
+	});
+	return true;
+}
+/** The chat has an override for this passport of this owner. */
+function hasChatOverride(id, owner, data = chatPassportData()) {
+	const override = Object.prototype.hasOwnProperty.call(data.overrides, id) ? data.overrides[id] : void 0;
+	return Boolean(override && !(override.owner && owner && override.owner !== owner));
+}
+function ownerId(owner) {
+	if (owner.type === "card") return owner.avatar;
+	return owner.type === "persona" ? personaOwner(owner.key) : void 0;
+}
+/**
+* Finds a passport by id: in the given card or persona, else in the cards of the chat, the current
+* persona and the passports of the chat itself. Synchronous: lazily loaded cards that were never
+* opened have no passports yet.
+*/
+function locatePassport(id, where = {}, data = chatPassportData()) {
+	const c = ctx();
+	const inCard = (index) => {
+		const character = c.characters[index];
+		const base = cardPassports(character).find((p) => p.id === id);
+		if (!character || !base) return null;
+		return {
+			owner: {
+				type: "card",
+				index,
+				avatar: character.avatar
+			},
+			base,
+			resolved: resolveChatPassport(base, character.avatar, data),
+			overridden: hasChatOverride(id, character.avatar, data)
+		};
+	};
+	const inPersona = (key) => {
+		const base = personaPassport(key);
+		if (!base || base.id !== id) return null;
+		return {
+			owner: {
+				type: "persona",
+				key
+			},
+			base,
+			resolved: resolveChatPassport(base, personaOwner(key), data),
+			overridden: hasChatOverride(id, personaOwner(key), data)
+		};
+	};
+	if (where.persona !== void 0) return inPersona(where.persona);
+	if (where.index !== void 0) return inCard(where.index);
+	for (const index of chatCardIndexes()) {
+		const found = inCard(index);
+		if (found) return found;
+	}
+	const persona = inPersona(knownPersonaKey());
+	if (persona) return persona;
+	const own = data.extra.find((p) => p.id === id);
+	return own ? {
+		owner: { type: "chat" },
+		base: null,
+		resolved: own,
+		overridden: true
+	} : null;
+}
+/** Saves an edited passport where it lives ("card": the card or persona settings) or for this chat. */
+async function savePassportIn(located, edited, scope) {
+	const passport = {
+		...edited,
+		id: located.base?.id ?? located.resolved.id
+	};
+	if (scope === "chat") {
+		await saveChatPassport(located.base, passport, ownerId(located.owner));
+		return;
+	}
+	const owner = located.owner;
+	if (owner.type === "card") await saveCardPassport(owner.index, passport);
+	else if (owner.type === "persona") savePersonaPassport(owner.key, passport);
+	else throw new Error("NAI Studio: a passport of the chat has no card");
+}
+/** The chat's view of a passport after a save (an override of the card applied again). */
+function resolvedAfterSave(located, saved, scope) {
+	if (scope === "chat" || !located.base) return saved;
+	const data = chatPassportData();
+	return resolveChatPassport(saved, ownerId(located.owner), data);
+}
+//#endregion
+//#region src/features/generation/styles.ts
+/** The style's UC preset when it is a known one. */
+function styleUcPreset(style) {
+	const preset = style.ucPreset;
+	return preset && UC_PRESETS.includes(preset) ? preset : void 0;
+}
+/** A saved style by name, ignoring case and spaces around it. */
+function findStyle(s, name) {
+	const wanted = name.trim().toLowerCase();
+	return wanted ? s.prompts.styles.find((style) => style.name.trim().toLowerCase() === wanted) : void 0;
+}
+/** Puts a style into the fields it fills and makes it the active one. */
+function applyStyle(s, style) {
+	s.prompts.activeStyle = style.name;
+	s.prompts.prefix = style.prefix;
+	s.prompts.suffix = style.suffix;
+	s.generation.negativePrompt = style.negative;
+	const preset = styleUcPreset(style);
+	if (preset) s.generation.ucPreset = preset;
+}
+/** The current fields as a style under this name. */
+function styleFromSettings(s, name) {
+	return {
+		name,
+		prefix: s.prompts.prefix,
+		suffix: s.prompts.suffix,
+		negative: s.generation.negativePrompt,
+		ucPreset: s.generation.ucPreset
+	};
+}
+//#endregion
 //#region src/features/images/image-utils.ts
 function base64ToBytes(base64) {
 	const clean = base64.includes(",") ? base64.slice(base64.indexOf(",") + 1) : base64;
@@ -8979,6 +9541,210 @@ function downloadBlob(blob, filename) {
 	link.remove();
 	setTimeout(() => URL.revokeObjectURL(url), 1e4);
 }
+//#endregion
+//#region src/features/scene/scene-providers.ts
+/** A provider that does not answer in time is skipped for this scene. */
+var PROVIDER_TIMEOUT_MS = 3e3;
+/** Answers are reused for the same message and text this long (one picture asks several times). */
+var CACHE_MS$1 = 1500;
+var providers$1 = [];
+var cache$1 = null;
+/** Registers a provider; one with the same id is replaced. Returns the unregistration. */
+function registerSceneHintProvider(provider) {
+	providers$1 = [...providers$1.filter((p) => p.id !== provider.id), provider];
+	cache$1 = null;
+	return () => {
+		if (!providers$1.includes(provider)) return;
+		providers$1 = providers$1.filter((p) => p !== provider);
+		cache$1 = null;
+	};
+}
+function sceneHintProviders() {
+	return byPriority(providers$1);
+}
+/** The message a scene query is about: the given one, else the last message that is not a system one. */
+function hintContext(query) {
+	const chat = ctx().chat ?? [];
+	let messageIndex = query.messageId ?? -1;
+	if (messageIndex < 0) {
+		messageIndex = chat.length - 1;
+		while (messageIndex >= 0 && chat[messageIndex]?.is_system) messageIndex--;
+	}
+	return {
+		messageIndex,
+		text: query.text ?? chat[messageIndex]?.mes ?? ""
+	};
+}
+/**
+* The answer of another extension's provider, or `fallback` when it throws or does not answer within
+* PROVIDER_TIMEOUT_MS (scene providers, passport providers of v0.12).
+*/
+async function askInTime(label, call, fallback) {
+	let timer;
+	try {
+		const timeout = new Promise((resolve) => {
+			timer = setTimeout(() => {
+				log.warn(`${label}: no answer in ${PROVIDER_TIMEOUT_MS} ms`);
+				resolve(fallback);
+			}, PROVIDER_TIMEOUT_MS);
+		});
+		return await Promise.race([Promise.resolve(call()), timeout]);
+	} catch (error) {
+		log.warn(`${label} failed`, error);
+		return fallback;
+	} finally {
+		if (timer !== void 0) clearTimeout(timer);
+	}
+}
+async function ask$2(provider, context) {
+	return normalizeSceneHint(await askInTime(`scene provider ${provider.id}`, () => provider.describe({ ...context }), null));
+}
+/** The merged hint of every provider for a scene; empty without providers. */
+async function sceneHint(query = {}) {
+	const ordered = sceneHintProviders();
+	if (!ordered.length) return {};
+	const context = hintContext(query);
+	const key = `${context.messageIndex}\u0000${context.text}`;
+	const now = Date.now();
+	if (cache$1 && cache$1.key === key && now - cache$1.at < CACHE_MS$1) return structuredClone(await cache$1.hint);
+	const hint = Promise.all(ordered.map((provider) => ask$2(provider, context))).then(mergeSceneHints);
+	cache$1 = {
+		key,
+		at: now,
+		hint
+	};
+	return structuredClone(await hint);
+}
+//#endregion
+//#region src/features/scene/passport-providers.ts
+/** Answers are reused for the same message and text this long (one picture asks several times). */
+var CACHE_MS = 1500;
+var providers = [];
+var cache = null;
+/** Registers a provider; one with the same id is replaced. Returns the unregistration. */
+function registerScenePassportProvider(provider) {
+	providers = [...providers.filter((p) => p.id !== provider.id), provider];
+	cache = null;
+	return () => {
+		if (!providers.includes(provider)) return;
+		providers = providers.filter((p) => p !== provider);
+		cache = null;
+	};
+}
+function scenePassportProviders() {
+	return byPriority(providers);
+}
+async function ask$1(provider, context) {
+	return normalizeProvidedPassports(await askInTime(`passport provider ${provider.id}`, () => provider.passports({ ...context }), null), provider.id);
+}
+/**
+* Passports every provider gives for a scene (the message of a marker, else the last message), best
+* provider first, as copies; empty without providers.
+*/
+async function providedPassports(query = {}) {
+	const ordered = scenePassportProviders();
+	if (!ordered.length) return [];
+	const context = hintContext(query);
+	const key = `${context.messageIndex}\u0000${context.text}`;
+	const now = Date.now();
+	if (cache && cache.key === key && now - cache.at < CACHE_MS) return structuredClone(await cache.list);
+	const list = Promise.all(ordered.map((provider) => ask$1(provider, context))).then((lists) => lists.flat());
+	cache = {
+		key,
+		at: now,
+		list
+	};
+	return structuredClone(await list);
+}
+//#endregion
+//#region src/features/backgrounds/background-service.ts
+/** ST's endpoint for its backgrounds library (src/endpoints/backgrounds.js, 1.19). */
+var BACKGROUND_UPLOAD_URL = "/api/backgrounds/upload";
+/**
+* Uploads a PNG into SillyTavern's backgrounds library like ST's own "add background" (multipart field
+* "avatar", its file name kept); the file name the server stored.
+*/
+async function uploadBackground(png, fileName) {
+	const form = new FormData();
+	form.append("avatar", new File([png], fileName, { type: "image/png" }));
+	const response = await fetch(BACKGROUND_UPLOAD_URL, {
+		method: "POST",
+		headers: requestHeaders(true),
+		body: form,
+		cache: "no-cache"
+	});
+	if (!response.ok) throw new NaiError("unknown", "none", { server: `background upload failed: HTTP ${response.status}` });
+	return (await response.text()).trim() || fileName;
+}
+/** The place passport with that id (the chat's view, else a passport provider's); a person does not count. */
+async function placePassport(id) {
+	for (const index of chatCardIndexes()) await loadCharacter(index);
+	const found = locatePassport(id)?.resolved ?? (await providedPassports()).find((p) => p.id === id) ?? null;
+	if (!found || found.kind === "character") {
+		log.warn(`background: no place passport "${id}"`);
+		return null;
+	}
+	return found;
+}
+var join = (...parts) => parts.filter((part) => part.trim()).join(", ");
+var BackgroundService = class {
+	pipeline;
+	now;
+	constructor(pipeline, now = () => Date.now()) {
+		this.pipeline = pipeline;
+		this.now = now;
+	}
+	/** Draws and uploads one background; the file name in ST's library. Failures throw a NaiError. */
+	async generate(request, signal) {
+		const s = settings();
+		const passport = request.passportId ? await placePassport(request.passportId) : null;
+		let scene = backgroundPrompt({
+			locationName: request.locationName,
+			placeTags: passport?.tags ?? "",
+			tags: request.tags ?? "",
+			timeOfDay: request.timeOfDay ?? "",
+			weather: request.weather ?? ""
+		});
+		let negative = joinTags(BACKGROUND_NEGATIVE, passport?.negative ?? "");
+		const generation = {
+			...markerDimensions(BACKGROUND_RATIO, void 0, true),
+			samples: 1,
+			characters: [],
+			transparentBackground: false
+		};
+		const styleName = request.style?.trim();
+		if (styleName) {
+			const style = findStyle(s, styleName);
+			if (style) {
+				scene = join(style.prefix, scene, style.suffix);
+				negative = join(negative, style.negative);
+				const preset = styleUcPreset(style);
+				if (preset) generation.ucPreset = preset;
+			} else scene = join(styleName, scene);
+		}
+		const produced = await this.pipeline.produce({
+			initiator: "panel",
+			trigger: scene,
+			scene,
+			mode: MODE.BACKGROUND,
+			interpret: "cyrillic",
+			noContinuity: true,
+			overrides: {
+				edit: false,
+				negative,
+				generation
+			},
+			...s.anlas.freeOnly ? { maxCost: 0 } : {},
+			...signal ? { signal } : {}
+		});
+		const image = produced?.images[0];
+		if (!produced || !image) throw new NaiError("aborted", "none");
+		const blob = base64ToBlob(image.base64, image.mime);
+		const file = await uploadBackground(s.png.stripMetadata || image.mime !== "image/png" ? await toPngBlob(blob) : blob, backgroundFileName(request.locationName, this.now()));
+		log.info("background", file, `cost ${produced.prepared.cost.total}`);
+		return { file };
+	}
+};
 //#endregion
 //#region src/features/gallery/gallery-store.ts
 function characterName() {
@@ -9920,125 +10686,6 @@ async function visionChoices() {
 			hasKey: hasSecret(state, api.secret)
 		}))
 	};
-}
-//#endregion
-//#region src/features/characters/character-prompts.ts
-var CARD_FIELD = "nai_studio";
-/** Card field the built-in writes when its "Shareable" box is checked (RECON §2.1.7). */
-var BUILTIN_CARD_FIELD = "sd_character_prompt";
-var EMPTY = {
-	positive: "",
-	negative: ""
-};
-/** Avatar file name without extension: the key the built-in uses (getCharaFilename). */
-function avatarKey(avatar) {
-	return (avatar ?? "").replace(/\.[^/.]+$/, "");
-}
-/** Index of the character of a 1:1 chat, undefined in groups or with no character selected. */
-function soloCharacterIndex() {
-	const c = ctx();
-	if (c.groupId || c.characterId === void 0 || c.characterId === null || c.characterId === "") return void 0;
-	const index = Number(c.characterId);
-	return Number.isInteger(index) && c.characters[index] ? index : void 0;
-}
-function asPrompt(value) {
-	if (!value || typeof value !== "object") return null;
-	const prompt = value;
-	return {
-		positive: String(prompt.positive ?? ""),
-		negative: String(prompt.negative ?? "")
-	};
-}
-/** The card's shared prompt: ours first, then the built-in's. `own` = stored in our field. */
-function cardPrompt(character) {
-	const extensions = character?.data?.extensions;
-	const own = asPrompt((extensions?.[CARD_FIELD])?.characterPrompt);
-	if (own) return {
-		prompt: own,
-		own: true
-	};
-	const builtIn = asPrompt(extensions?.[BUILTIN_CARD_FIELD]);
-	return builtIn ? {
-		prompt: builtIn,
-		own: false
-	} : null;
-}
-/** Local values win; empty local values fall back to the card (same precedence as the built-in). */
-function readCharacterPrompt(character) {
-	if (!character) return {
-		...EMPTY,
-		shared: false
-	};
-	const local = settings().prompts.characterPrompts[avatarKey(character.avatar)] ?? EMPTY;
-	const card = cardPrompt(character);
-	return {
-		positive: local.positive || card?.prompt.positive || "",
-		negative: local.negative || card?.prompt.negative || "",
-		shared: card?.own === true
-	};
-}
-/** Prompt of the current 1:1 character (empty in groups, like the built-in). */
-function currentCharacterPrompt() {
-	const index = soloCharacterIndex();
-	return index === void 0 ? EMPTY : readCharacterPrompt(ctx().characters[index]);
-}
-/** Free mode `char` prefix: current character, or in groups the last character who spoke. */
-function lastSpeakerPrompt() {
-	const c = ctx();
-	const index = soloCharacterIndex();
-	if (index !== void 0) return readCharacterPrompt(c.characters[index]);
-	for (let i = c.chat.length - 1; i >= 0; i--) {
-		const message = c.chat[i];
-		const avatar = message?.original_avatar;
-		if (message && !message.is_user && !message.is_system && typeof avatar === "string") return readCharacterPrompt(c.characters.find((ch) => ch.avatar === avatar));
-	}
-	return EMPTY;
-}
-async function saveCharacterPrompt(index, value, share) {
-	const c = ctx();
-	const character = c.characters[index];
-	if (!character) return;
-	settings().prompts.characterPrompts[avatarKey(character.avatar)] = { ...value };
-	saveSettings();
-	const existing = character.data?.extensions?.["nai_studio"] ?? {};
-	if (share) await c.writeExtensionField(index, CARD_FIELD, {
-		...existing,
-		characterPrompt: { ...value }
-	});
-	else if (existing.characterPrompt) await c.writeExtensionField(index, CARD_FIELD, {
-		...existing,
-		characterPrompt: null
-	});
-}
-//#endregion
-//#region src/features/events/studio-events.ts
-var STUDIO_EVENTS = ["passportsSaved", "imageReady"];
-var listeners = {
-	passportsSaved: /* @__PURE__ */ new Set(),
-	imageReady: /* @__PURE__ */ new Set()
-};
-function onStudioEvent(event, listener) {
-	const set = listeners[event];
-	set.add(listener);
-	return () => {
-		set.delete(listener);
-	};
-}
-function emitStudioEvent(event, detail) {
-	for (const listener of [...listeners[event]]) try {
-		const result = listener(structuredClone(detail));
-		if (result instanceof Promise) result.catch((error) => log.warn(`${event} listener failed`, error));
-	} catch (error) {
-		log.warn(`${event} listener failed`, error);
-	}
-}
-/** An image was attached to a message (after the chat was saved). */
-function imageReady(messageIndex, kind, passportIds = []) {
-	emitStudioEvent("imageReady", {
-		messageIndex,
-		kind,
-		passportIds: [...passportIds]
-	});
 }
 //#endregion
 //#region src/features/images/png-io.ts
@@ -11217,266 +11864,6 @@ var InlineImages = class {
 	}
 };
 //#endregion
-//#region src/features/characters/passport-store.ts
-/** Key of chat_metadata where NAI Studio keeps its chat data. */
-var META_KEY$1 = "nai_studio";
-/** Prefix of the owner of a persona passport ("persona:<avatar>"), also the persona candidate key. */
-var PERSONA_OWNER_PREFIX = "persona:";
-var savedListeners = /* @__PURE__ */ new Set();
-/** Called after the passports of a card are saved (integrations keep their copies in sync). */
-function onPassportsSaved(listener) {
-	savedListeners.add(listener);
-}
-function cardField(character) {
-	return character?.data?.extensions?.[CARD_FIELD];
-}
-/** Every passport of the card (characters, world, locations, scenario, objects), as stored. */
-function cardPassports(character) {
-	const field = cardField(character);
-	return normalizePassportList(field?.passports, field?.passport);
-}
-/** The passport of the card's own character (the composer, sprites and tools use it). */
-function cardPassport(character) {
-	return primaryPassport(cardPassports(character), character?.name ?? "");
-}
-/** Lazily loaded cards (shallow) have no extensions until unshallowed. */
-async function loadCharacter(index) {
-	const c = ctx();
-	if (c.characters[index]?.shallow) await c.unshallowCharacter(index);
-	return ctx().characters[index];
-}
-/** Card indexes of the current chat: the 1:1 character or every group member. */
-function chatCardIndexes() {
-	const c = ctx();
-	if (c.groupId) return (c.groups?.find((g) => g.id === c.groupId)?.members ?? []).map((avatar) => c.characters.findIndex((ch) => ch.avatar === avatar)).filter((i) => i >= 0);
-	if (c.characterId !== void 0 && c.characterId !== null && c.characterId !== "") {
-		const index = Number(c.characterId);
-		return Number.isInteger(index) && c.characters[index] ? [index] : [];
-	}
-	return [];
-}
-/** Index of a card by its avatar file, with or without the extension; -1 when absent. */
-function cardIndexByAvatar(avatar) {
-	const characters = ctx().characters;
-	const exact = characters.findIndex((ch) => ch.avatar === avatar);
-	return exact >= 0 ? exact : characters.findIndex((ch) => avatarKey(ch.avatar) === avatarKey(avatar));
-}
-async function saveCardPassports(index, passports) {
-	const c = ctx();
-	const character = await loadCharacter(index);
-	if (!character) return;
-	const existing = character.data?.extensions?.["nai_studio"] ?? {};
-	const main = primaryPassport(passports, character.name);
-	await c.writeExtensionField(index, CARD_FIELD, {
-		...existing,
-		passports,
-		passport: main ?? void 0
-	});
-	for (const listener of savedListeners) try {
-		listener(index, passports);
-	} catch {}
-	emitStudioEvent("passportsSaved", {
-		ids: passports.map((p) => p.id),
-		scope: "card",
-		avatar: character.avatar
-	});
-}
-/** Replaces one passport of the card by id (or adds it). */
-async function saveCardPassport(index, passport) {
-	const list = cardPassports(await loadCharacter(index));
-	const at = list.findIndex((p) => p.id === passport.id);
-	if (at >= 0) list[at] = passport;
-	else list.push(passport);
-	await saveCardPassports(index, list);
-}
-var personas = null;
-async function currentPersonaKey() {
-	try {
-		personas ??= await importHost("/scripts/personas.js");
-		return personas.user_avatar || "default";
-	} catch {
-		return "default";
-	}
-}
-/** The current persona without waiting: its module is loaded once (`user_avatar` is a live binding). */
-function knownPersonaKey() {
-	return personas?.user_avatar || "default";
-}
-function personaPassport(key) {
-	return normalizePassport(settings().scene.personaPassports[key]);
-}
-function savePersonaPassport(key, passport) {
-	settings().scene.personaPassports[key] = passport;
-	saveSettings();
-	emitStudioEvent("passportsSaved", {
-		ids: [passport.id],
-		scope: "card",
-		persona: true
-	});
-}
-function personaOwner(key) {
-	return `${PERSONA_OWNER_PREFIX}${key}`;
-}
-/** A chat is open (chat-scope passports can be saved). */
-function chatOpen() {
-	try {
-		return Boolean(ctx().getCurrentChatId?.());
-	} catch {
-		return false;
-	}
-}
-/** Overrides and passports of the current chat (a copy; empty without a chat). */
-function chatPassportData() {
-	const root = ctx().chatMetadata?.[META_KEY$1];
-	return root?.passports ? normalizeChatPassports(root.passports) : emptyChatPassports();
-}
-async function writeChatPassports(data) {
-	const c = ctx();
-	const root = c.chatMetadata[META_KEY$1] ??= {};
-	if (!Object.keys(data.overrides).length && !data.extra.length) delete root.passports;
-	else root.passports = data;
-	await c.saveMetadata();
-}
-function requireChat() {
-	if (!chatOpen()) throw new Error("NAI Studio: no chat is open");
-}
-/** The passports of a card as the current chat sees them. */
-function resolvedCardPassports(character, data = chatPassportData()) {
-	const owner = character?.avatar;
-	return cardPassports(character).map((p) => resolveChatPassport(p, owner, data));
-}
-/** The persona passport as the current chat sees it. */
-function resolvedPersonaPassport(key, data = chatPassportData()) {
-	const passport = personaPassport(key);
-	return passport ? resolveChatPassport(passport, personaOwner(key), data) : null;
-}
-/**
-* Saves a passport for this chat only: over a card or persona passport (`base`) as the fields that
-* differ (no difference removes the override), or as a passport of the chat itself (`base` null).
-*/
-async function saveChatPassport(base, edited, owner) {
-	requireChat();
-	const data = chatPassportData();
-	if (base) {
-		const diff = passportDiff(base, {
-			...edited,
-			id: base.id
-		});
-		if (isOverrideEmpty(diff)) delete data.overrides[base.id];
-		else data.overrides[base.id] = owner ? {
-			owner,
-			...diff
-		} : diff;
-	} else {
-		const at = data.extra.findIndex((p) => p.id === edited.id);
-		if (at >= 0) data.extra[at] = edited;
-		else data.extra.push(edited);
-	}
-	await writeChatPassports(data);
-	emitStudioEvent("passportsSaved", {
-		ids: [base?.id ?? edited.id],
-		scope: "chat"
-	});
-}
-/**
-* Drops the chat's override of a passport (the card value comes back) and a passport of the chat
-* itself with that id. False when there was nothing to drop.
-*/
-async function clearChatOverride(id) {
-	requireChat();
-	const data = chatPassportData();
-	if (!(Object.prototype.hasOwnProperty.call(data.overrides, id) || data.extra.some((p) => p.id === id))) return false;
-	delete data.overrides[id];
-	data.extra = data.extra.filter((p) => p.id !== id);
-	await writeChatPassports(data);
-	emitStudioEvent("passportsSaved", {
-		ids: [id],
-		scope: "chat"
-	});
-	return true;
-}
-/** The chat has an override for this passport of this owner. */
-function hasChatOverride(id, owner, data = chatPassportData()) {
-	const override = Object.prototype.hasOwnProperty.call(data.overrides, id) ? data.overrides[id] : void 0;
-	return Boolean(override && !(override.owner && owner && override.owner !== owner));
-}
-function ownerId(owner) {
-	if (owner.type === "card") return owner.avatar;
-	return owner.type === "persona" ? personaOwner(owner.key) : void 0;
-}
-/**
-* Finds a passport by id: in the given card or persona, else in the cards of the chat, the current
-* persona and the passports of the chat itself. Synchronous: lazily loaded cards that were never
-* opened have no passports yet.
-*/
-function locatePassport(id, where = {}, data = chatPassportData()) {
-	const c = ctx();
-	const inCard = (index) => {
-		const character = c.characters[index];
-		const base = cardPassports(character).find((p) => p.id === id);
-		if (!character || !base) return null;
-		return {
-			owner: {
-				type: "card",
-				index,
-				avatar: character.avatar
-			},
-			base,
-			resolved: resolveChatPassport(base, character.avatar, data),
-			overridden: hasChatOverride(id, character.avatar, data)
-		};
-	};
-	const inPersona = (key) => {
-		const base = personaPassport(key);
-		if (!base || base.id !== id) return null;
-		return {
-			owner: {
-				type: "persona",
-				key
-			},
-			base,
-			resolved: resolveChatPassport(base, personaOwner(key), data),
-			overridden: hasChatOverride(id, personaOwner(key), data)
-		};
-	};
-	if (where.persona !== void 0) return inPersona(where.persona);
-	if (where.index !== void 0) return inCard(where.index);
-	for (const index of chatCardIndexes()) {
-		const found = inCard(index);
-		if (found) return found;
-	}
-	const persona = inPersona(knownPersonaKey());
-	if (persona) return persona;
-	const own = data.extra.find((p) => p.id === id);
-	return own ? {
-		owner: { type: "chat" },
-		base: null,
-		resolved: own,
-		overridden: true
-	} : null;
-}
-/** Saves an edited passport where it lives ("card": the card or persona settings) or for this chat. */
-async function savePassportIn(located, edited, scope) {
-	const passport = {
-		...edited,
-		id: located.base?.id ?? located.resolved.id
-	};
-	if (scope === "chat") {
-		await saveChatPassport(located.base, passport, ownerId(located.owner));
-		return;
-	}
-	const owner = located.owner;
-	if (owner.type === "card") await saveCardPassport(owner.index, passport);
-	else if (owner.type === "persona") savePersonaPassport(owner.key, passport);
-	else throw new Error("NAI Studio: a passport of the chat has no card");
-}
-/** The chat's view of a passport after a save (an override of the card applied again). */
-function resolvedAfterSave(located, saved, scope) {
-	if (scope === "chat" || !located.base) return saved;
-	const data = chatPassportData();
-	return resolveChatPassport(saved, ownerId(located.owner), data);
-}
-//#endregion
 //#region src/features/continuity/places.ts
 var PLACES_GLOBAL = "MAESTRO_PLACES";
 /** Fired on window by Maestro when MAESTRO_PLACES appears. */
@@ -11541,77 +11928,12 @@ function unfollowPlaces() {
 	safe(() => unsubscribe(), void 0);
 }
 //#endregion
-//#region src/features/scene/scene-providers.ts
-/** A provider that does not answer in time is skipped for this scene. */
-var PROVIDER_TIMEOUT_MS = 3e3;
-/** Answers are reused for the same message and text this long (one picture asks several times). */
-var CACHE_MS = 1500;
-var providers = [];
-var cache = null;
-/** Registers a provider; one with the same id is replaced. Returns the unregistration. */
-function registerSceneHintProvider(provider) {
-	providers = [...providers.filter((p) => p.id !== provider.id), provider];
-	cache = null;
-	return () => {
-		if (!providers.includes(provider)) return;
-		providers = providers.filter((p) => p !== provider);
-		cache = null;
-	};
-}
-function sceneHintProviders() {
-	return byPriority(providers);
-}
-/** The message a scene query is about: the given one, else the last message that is not a system one. */
-function hintContext(query) {
-	const chat = ctx().chat ?? [];
-	let messageIndex = query.messageId ?? -1;
-	if (messageIndex < 0) {
-		messageIndex = chat.length - 1;
-		while (messageIndex >= 0 && chat[messageIndex]?.is_system) messageIndex--;
-	}
-	return {
-		messageIndex,
-		text: query.text ?? chat[messageIndex]?.mes ?? ""
-	};
-}
-async function ask$1(provider, context) {
-	let timer;
-	try {
-		const timeout = new Promise((resolve) => {
-			timer = setTimeout(() => {
-				log.warn(`scene provider ${provider.id}: no answer in ${PROVIDER_TIMEOUT_MS} ms`);
-				resolve(null);
-			}, PROVIDER_TIMEOUT_MS);
-		});
-		return normalizeSceneHint(await Promise.race([Promise.resolve(provider.describe({ ...context })), timeout]));
-	} catch (error) {
-		log.warn(`scene provider ${provider.id} failed`, error);
-		return null;
-	} finally {
-		if (timer !== void 0) clearTimeout(timer);
-	}
-}
-/** The merged hint of every provider for a scene; empty without providers. */
-async function sceneHint(query = {}) {
-	const ordered = sceneHintProviders();
-	if (!ordered.length) return {};
-	const context = hintContext(query);
-	const key = `${context.messageIndex}\u0000${context.text}`;
-	const now = Date.now();
-	if (cache && cache.key === key && now - cache.at < CACHE_MS) return structuredClone(await cache.hint);
-	const hint = Promise.all(ordered.map((provider) => ask$1(provider, context))).then(mergeSceneHints);
-	cache = {
-		key,
-		at: now,
-		hint
-	};
-	return structuredClone(await hint);
-}
-//#endregion
 //#region src/features/scene/scene-service.ts
 var PERSONA_PREFIX = PERSONA_OWNER_PREFIX;
 /** Key prefix of the candidates of passports that exist only in the chat ("chat#<passport id>"). */
 var CHAT_PASSPORT_PREFIX = "chat#";
+/** Key prefix of the candidates of passport providers ("provided#<passport id>", v0.12); stored nowhere. */
+var PROVIDED_PASSPORT_PREFIX = "provided#";
 function customPoses() {
 	return settings().poses.custom.map((p) => ({
 		id: p.id,
@@ -11694,17 +12016,35 @@ async function characterCandidates(index, chat) {
 		isUser: false
 	}];
 }
-/** Named character passports that exist only in this chat (another extension wrote them). */
-function chatOnlyCandidates(chat) {
-	return chat.extra.filter((p) => p.kind === "character" && p.name.trim() && !isPassportEmpty(p)).map((passport) => ({
-		key: `${CHAT_PASSPORT_PREFIX}${passport.id}`,
+/** A named character passport that no card holds, as a candidate under the key prefix. */
+function passportCandidate(passport, prefix) {
+	return {
+		key: `${prefix}${passport.id}`,
 		name: passport.name,
 		aliases: [.../* @__PURE__ */ new Set([...passport.aliases, ...aliasesOf(passport.name)])],
 		passport,
 		fallbackPrompt: "",
 		fallbackNegative: "",
 		isUser: false
-	}));
+	};
+}
+/** Named character passports that exist only in this chat (another extension wrote them). */
+function chatOnlyCandidates(chat) {
+	return chat.extra.filter((p) => p.kind === "character" && p.name.trim() && !isPassportEmpty(p)).map((passport) => passportCandidate(passport, CHAT_PASSPORT_PREFIX));
+}
+/**
+* People of the passport providers (v0.12): after everyone the chat knows; one named like a card, the
+* persona, a passport of the chat or an earlier provider passport is left out (the earlier one wins).
+*/
+async function providedCandidates(known, query) {
+	const added = [];
+	for (const passport of await providedPassports(query)) {
+		if (passport.kind !== "character") continue;
+		const candidate = passportCandidate(passport, PROVIDED_PASSPORT_PREFIX);
+		if ([...known, ...added].some((c) => sameCandidate(c, candidate))) continue;
+		added.push(candidate);
+	}
+	return added;
 }
 var namesOne = (name, candidate) => mentionIndex(name, [candidate.name, ...candidate.aliases]) >= 0 || mentionIndex(candidate.name, [name]) >= 0;
 /** Candidates a scene provider says are present get `present` (the automatic scene falls back to them). */
@@ -11714,24 +12054,37 @@ function markPresent(list, names) {
 	return list;
 }
 /**
-* Setting of the chat: world and scenario tags and named locations of its cards, plus the setting
-* tags and the current location of a provider (a scene tracker).
+* Setting of the chat: world and scenario tags, named locations and objects of its cards and the chat,
+* then the ones of the passport providers (a name the chat has wins), plus the setting tags and the
+* current location of a provider (a scene tracker).
 */
 async function sceneSetting(query = {}) {
 	const world = [];
+	const worlds = [];
 	const locations = [];
+	const objects = [];
 	const chat = chatPassportData();
 	const collect = (passport) => {
-		if (passport.kind === "world" || passport.kind === "scenario") world.push(passport.tags);
-		else if (passport.kind === "location" && passport.name && passport.tags.trim()) locations.push({
+		const named = {
 			name: passport.name,
 			aliases: passport.aliases,
 			tags: passport.tags
-		});
+		};
+		if (passport.kind === "world" || passport.kind === "scenario") {
+			world.push(passport.tags);
+			worlds.push(named);
+		} else if (passport.kind === "location" && passport.name && passport.tags.trim()) locations.push(named);
+		else if (passport.kind === "object" && passport.name && passport.tags.trim()) objects.push(named);
 	};
 	for (const index of chatCardIndexes()) for (const passport of resolvedCardPassports(await loadCharacter(index), chat)) collect(passport);
 	for (const passport of chat.extra) collect(passport);
-	const hint = await sceneHint(query);
+	const [provided, hint] = await Promise.all([providedPassports(query), sceneHint(query)]);
+	const ofGroup = (group) => provided.filter((p) => passportGroup(p.kind) === group);
+	for (const passport of [
+		...unknownPassports(ofGroup("setting"), worlds),
+		...unknownPassports(ofGroup("location"), locations),
+		...unknownPassports(ofGroup("object"), objects)
+	]) collect(passport);
 	let tracked = {
 		tags: [],
 		location: ""
@@ -11746,15 +12099,19 @@ async function sceneSetting(query = {}) {
 	return {
 		world: joinTags(...world, tags),
 		locations,
+		objects,
 		location,
 		...hint.locationId ? { locationId: hint.locationId } : {}
 	};
 }
-/** Tags of the locations a text names (whole-word name or alias). */
+/** Tags of the locations (or objects) a text names (whole-word name or alias). */
 function mentionedLocationTags(text, locations) {
 	return joinTags(...locations.filter((l) => mentionIndex(text, [l.name, ...l.aliases]) >= 0).map((l) => l.tags));
 }
-/** Characters of the current chat (the 1:1 character or every group member) and the persona. */
+/**
+* Characters of the current chat (the 1:1 character or every group member), the persona, then the
+* people of the passport providers (v0.12) nobody of the chat is named like.
+*/
 async function sceneCandidates(query = {}) {
 	const c = ctx();
 	const chat = chatPassportData();
@@ -11771,7 +12128,9 @@ async function sceneCandidates(query = {}) {
 		fallbackNegative: "",
 		isUser: true
 	});
-	return markPresent(await withProvided(result, query), (await sceneHint(query)).characters);
+	const hint = sceneHint(query);
+	result.push(...await providedCandidates(result, query));
+	return markPresent(await withProvided(result, query), (await hint).characters);
 }
 function sentencesMentioning(text, candidate) {
 	const names = [candidate.name, ...candidate.aliases].map((n) => n.toLowerCase()).filter((n) => n.length > 1);
@@ -11853,7 +12212,7 @@ var SceneService = class {
 		}
 		if (settings().scene.llmBase && source.text.trim()) spec.base = await this.describeLocation();
 		const setting = await sceneSetting();
-		spec.base = joinTags(spec.base, mentionedLocationTags(`${setting.location} ${source.text}`, setting.locations), setting.world);
+		spec.base = joinTags(spec.base, mentionedLocationTags(`${setting.location} ${source.text}`, setting.locations), mentionedLocationTags(source.text, setting.objects), setting.world);
 		return {
 			spec,
 			candidates
@@ -13767,16 +14126,16 @@ async function askLlm(req) {
 }
 //#endregion
 //#region src/features/characters/passport-generator.ts
-async function ask(source, target) {
+async function ask(source, target, options = {}) {
 	if (!source.description.trim() && !source.firstMessage?.trim()) throw new NaiError("translation-failed", "none", { message: "the description is empty" });
-	const { system, user } = passportGenMessages(source, target);
+	const { system, user } = passportGenMessages(source, target, options);
 	const answer = await askLlm({
 		system,
 		user,
 		schema: PASSPORT_GEN_SCHEMA,
 		maxTokens: target === "card" ? 3500 : 1200
 	});
-	const passports = withoutUnstatedSpecies(parseGeneratedPassports(answer, source.name), user);
+	const passports = withoutUnstatedSpecies(parseGeneratedPassports(answer, source.name, options.kind), user);
 	if (!passports.length) {
 		log.warn("passport generation: no usable passports in", answer.slice(0, 300));
 		throw new NaiError("translation-failed", "none", { message: "the answer had no usable passports" });
@@ -13815,6 +14174,26 @@ async function generateTrackerPassport(name, look, cardIndex) {
 	const passport = first;
 	passport.kind = "character";
 	passport.name = name;
+	return passport;
+}
+/**
+* One passport of a lorebook entry (v0.12, NAI_STUDIO_API.generatePassport): the person, place, item or
+* world of the entry from its text, through the language backend. It keeps the given name (the name
+* the model wrote becomes an alias) and a new id; nothing is saved.
+*/
+async function generateEntryPassport(request) {
+	const c = ctx();
+	const passport = (await ask({
+		name: request.name,
+		description: c.substituteParams(request.description)
+	}, "entry", {
+		kind: request.kind,
+		...request.language ? { language: request.language } : {}
+	})).find((p) => p.kind === request.kind);
+	if (!passport) throw new NaiError("translation-failed", "none", { message: `the answer had no ${request.kind} passport` });
+	const wanted = request.name.trim();
+	passport.aliases = [.../* @__PURE__ */ new Set([passport.name, ...passport.aliases])].filter((alias) => alias.trim() && alias.trim().toLowerCase() !== wanted.toLowerCase());
+	passport.name = wanted;
 	return passport;
 }
 /** One character passport from the current persona's description. */
@@ -15341,32 +15720,6 @@ async function editLocatedPassport(name, located, options = {}) {
 	return resolvedAfterSave(located, scoped.passport, scoped.scope);
 }
 //#endregion
-//#region src/features/generation/styles.ts
-/** The style's UC preset when it is a known one. */
-function styleUcPreset(style) {
-	const preset = style.ucPreset;
-	return preset && UC_PRESETS.includes(preset) ? preset : void 0;
-}
-/** Puts a style into the fields it fills and makes it the active one. */
-function applyStyle(s, style) {
-	s.prompts.activeStyle = style.name;
-	s.prompts.prefix = style.prefix;
-	s.prompts.suffix = style.suffix;
-	s.generation.negativePrompt = style.negative;
-	const preset = styleUcPreset(style);
-	if (preset) s.generation.ucPreset = preset;
-}
-/** The current fields as a style under this name. */
-function styleFromSettings(s, name) {
-	return {
-		name,
-		prefix: s.prompts.prefix,
-		suffix: s.prompts.suffix,
-		negative: s.generation.negativePrompt,
-		ucPreset: s.generation.ucPreset
-	};
-}
-//#endregion
 //#region src/integration/command-args.ts
 /** Built-in arguments without a NovelAI meaning (SD-WebUI/ComfyUI specific). */
 var IGNORED_ARGS = [
@@ -15828,7 +16181,7 @@ async function openInspector(prepared, options = { confirmSend: false }) {
 //#region src/ui/composer.ts
 /** Where the saved passport of a participant lives (card, persona or the chat); null without one. */
 async function locateCandidatePassport(key, passportId) {
-	if (!passportId) return null;
+	if (!passportId || key.startsWith("provided#")) return null;
 	if (key.startsWith(PERSONA_PREFIX)) return locatePassport(passportId, { persona: key.slice(PERSONA_PREFIX.length) });
 	if (key.startsWith("chat#")) {
 		const found = locatePassport(passportId);
@@ -16096,7 +16449,7 @@ async function openComposer(service, pipeline, opts) {
 				const located = await locateCandidatePassport(p.key, p.passport?.id);
 				const passport = located ? await editLocatedPassport(p.name, located) : await editPassport(p.name, p.passport);
 				if (!passport) return;
-				if (!located) {
+				if (!located && !p.key.startsWith("provided#")) {
 					if (p.key.startsWith(PERSONA_PREFIX)) savePersonaPassport(p.key.slice(PERSONA_PREFIX.length), passport);
 					else {
 						const cardKey = p.key.split("#")[0];
@@ -16980,7 +17333,7 @@ var DesIntegration = class {
 		}
 		for (const character of tracker.characters) {
 			if (this.isUserName(character.name)) continue;
-			const found = await this.findPassport(character.name) ?? (d.autoPassports ? await this.createPassport(character) : null);
+			const found = await this.findPassport(character.name, { provided: { messageId } }) ?? (d.autoPassports ? await this.createPassport(character) : null);
 			this.syncLine(character.name, found?.passport ?? null, character.look);
 			if (portraits && d.portraits) this.maybePortrait(character, found, approval);
 		}
@@ -17003,9 +17356,10 @@ var DesIntegration = class {
 	}
 	/**
 	* The character passport of a name in the cards of the chat (name, aliases, sound), then among the
-	* passports of the chat itself; as the chat sees it.
+	* passports of the chat itself; as the chat sees it. With `provided` (v0.12) then among the passports
+	* of the passport providers for that scene (stored nowhere: `cardIndex` null).
 	*/
-	async findPassport(name) {
+	async findPassport(name, options = {}) {
 		const chat = chatPassportData();
 		const matches = (passport, own) => passport.kind === "character" && (mentionIndex(name, [own, ...passport.aliases]) >= 0 || mentionIndex(own, [name]) >= 0);
 		for (const cardIndex of this.chatCards()) {
@@ -17016,9 +17370,15 @@ var DesIntegration = class {
 			};
 		}
 		const own = chat.extra.find((passport) => passport.name && matches(passport, passport.name));
-		return own ? {
+		if (own) return {
 			cardIndex: null,
 			passport: own
+		};
+		if (!options.provided) return null;
+		const provided = (await providedPassports(options.provided)).find((passport) => matches(passport, passport.name));
+		return provided ? {
+			cardIndex: null,
+			passport: provided
 		} : null;
 	}
 	/** A passport written from the tracker for a character the cards do not know yet. */
@@ -17109,7 +17469,7 @@ var DesIntegration = class {
 		if (!this.active()) return null;
 		const name = this.lines.get(normalizeLine(prompt));
 		if (!name) return null;
-		const found = await this.findPassport(name);
+		const found = await this.findPassport(name, { provided: {} });
 		const look = await this.lookTags(this.latestTracker()?.characters.find((ch) => sameName(ch.name, name))?.look ?? "");
 		const s = settings();
 		const identity = found ? passportTags(found.passport, {
@@ -17182,7 +17542,7 @@ var DesIntegration = class {
 			if (found && found.cardIndex !== null) openEmotions(found.cardIndex, found.passport.id);
 			else toastr.warning(t("naist.des.noPassport", { name }));
 		} else if (action === "portrait" && this.api) {
-			const found = await this.ensureFound(name);
+			const found = await this.findPassport(name, { provided: {} }) ?? await this.ensureFound(name);
 			const look = this.latestTracker()?.characters.find((ch) => sameName(ch.name, name))?.look ?? "";
 			this.syncLine(name, found?.passport ?? null, look);
 			toastr.info(t("naist.des.portraitStarted", { name }), t("naist.des.title"));
@@ -17694,7 +18054,8 @@ var MarkerService = class {
 		}
 		const setting = await sceneSetting(query);
 		const place = mentionedLocationTags(`${params.location ?? ""} ${setting.location} ${params.prompt}`, setting.locations);
-		if (place || setting.world) scene = joinTags(scene, place, setting.world);
+		const things = mentionedLocationTags(params.prompt, setting.objects ?? []);
+		if (place || things || setting.world) scene = joinTags(scene, place, things, setting.world);
 		if (params.text && caps.family !== "v3") scene = `${scene}, text: ${params.text}`;
 		const where = params.location || setting.location;
 		const placeId = params.location ? void 0 : setting.locationId;
@@ -18022,7 +18383,7 @@ var ComicService = class {
 };
 //#endregion
 //#region package.json
-var version = "0.11.0";
+var version = "0.12.0";
 //#endregion
 //#region src/features/settings-io/settings-io.ts
 async function exportSettingsFile(includeImages) {
@@ -20118,6 +20479,8 @@ function setupIntegrations(pipeline) {
 var API_GLOBAL = "NAI_STUDIO_API";
 /** Unsubscriptions of everything registered through the API (dropped on disable). */
 var registrations = /* @__PURE__ */ new Set();
+/** Draws backgrounds (set on activation; null before). */
+var backgrounds = null;
 function fail(message) {
 	throw new Error(`NAI Studio API: ${message}`);
 }
@@ -20266,6 +20629,90 @@ function registerGate(gate) {
 	registrations.add(unregister);
 	return unregister;
 }
+function registerPassportProvider(provider) {
+	if (typeof provider !== "object" || provider === null) fail("provider must be an object");
+	const id = requireId(provider.id, "provider id");
+	if (typeof provider.passports !== "function") fail("provider.passports must be a function");
+	const off = registerScenePassportProvider({
+		id,
+		priority: Number.isFinite(provider.priority) ? Number(provider.priority) : 0,
+		passports: (context) => provider.passports(context)
+	});
+	const unregister = () => {
+		off();
+		registrations.delete(unregister);
+	};
+	registrations.add(unregister);
+	return unregister;
+}
+/** An optional string field of an input object. */
+function optionalText(input, field) {
+	const value = input[field];
+	if (value === void 0 || value === null) return void 0;
+	if (typeof value !== "string") fail(`${field} must be a string`);
+	return value.trim() || void 0;
+}
+/** A request of another extension failed: logged and reported with the "requestFailed" event. */
+function requestFailed(request, name, error) {
+	const naiError = toNaiError(error);
+	log.warn(`${API_GLOBAL}: ${request} for "${name}" failed:`, naiError.code, naiError.text);
+	emitStudioEvent("requestFailed", {
+		request,
+		name,
+		code: naiError.code,
+		message: naiError.text
+	});
+	return naiError;
+}
+async function generatePassport(input) {
+	if (typeof input !== "object" || input === null) fail("input must be an object");
+	const name = requireId(input.name, "name");
+	const kind = input.kind;
+	if (!ENTRY_PASSPORT_KINDS.includes(kind)) fail(`kind must be one of ${ENTRY_PASSPORT_KINDS.join(", ")}`);
+	if (typeof input.description !== "string") fail("description must be a string");
+	const language = optionalText(input, "language");
+	try {
+		return await generateEntryPassport({
+			name,
+			kind,
+			description: input.description,
+			...language ? { language } : {}
+		});
+	} catch (error) {
+		requestFailed("passport", name, error);
+		return null;
+	}
+}
+async function generateBackground(input) {
+	if (typeof input !== "object" || input === null) fail("input must be an object");
+	const locationName = requireId(input.locationName, "locationName");
+	const request = { locationName };
+	for (const field of [
+		"tags",
+		"passportId",
+		"timeOfDay",
+		"weather",
+		"style"
+	]) {
+		const value = optionalText(input, field);
+		if (value) Object.assign(request, { [field]: value });
+	}
+	const service = backgrounds;
+	if (!service) {
+		requestFailed("background", locationName, /* @__PURE__ */ new Error("NAI Studio is not active"));
+		return null;
+	}
+	try {
+		return await service.generate(request);
+	} catch (error) {
+		const naiError = requestFailed("background", locationName, error);
+		if (naiError.code !== "aborted") toastr.error(t("naist.background.failed", {
+			name: locationName,
+			reason: naiError.text
+		}), naiError.title);
+		return null;
+	}
+}
 function createApi() {
 	return Object.freeze({
 		version: 1,
@@ -20282,12 +20729,16 @@ function createApi() {
 		},
 		on,
 		registerSceneProvider,
-		registerQualityGate: registerGate
+		registerQualityGate: registerGate,
+		registerPassportProvider,
+		generatePassport,
+		generateBackground
 	});
 }
 var installed = null;
 /** Publishes globalThis.NAI_STUDIO_API (activation). */
-function installPublicApi() {
+function installPublicApi(services = {}) {
+	if (services.backgrounds) backgrounds = services.backgrounds;
 	installed ??= createApi();
 	globalThis[API_GLOBAL] = installed;
 	currentPersonaKey();
@@ -21651,7 +22102,7 @@ async function onActivate() {
 	setupDes(setupMarkers(pipeline, inline, scenes));
 	new AutoGenerator(studio, pipeline).attach();
 	setupQualityGates();
-	installPublicApi();
+	installPublicApi({ backgrounds: new BackgroundService(pipeline) });
 	studio.refreshTransport();
 	for (const name of [
 		"SECRET_WRITTEN",

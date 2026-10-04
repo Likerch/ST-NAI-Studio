@@ -50,6 +50,7 @@
 - HTML-виджеты на regex-скриптах продолжают работать: каждая картинка приходит к ним как `<img>`.
 - По умолчанию только бесплатно; платные картинки по меткам — только с вашего разрешения и с лимитом цены. Неудавшуюся или прерванную картинку можно сгенерировать заново одним кликом.
 - С Maestro (или другим расширением с проверкой качества) картинки ответа ждут его проверки: ответ, который переделывается, не рисуется, а если ответа нет 20 с (настраивается на вкладке «Чат»), картинки рисуются как обычно.
+- С Maestro паспорта записей лора из сцены (места, предметы, существа, NPC без карточки) участвуют в картинках сцены и метках после паспортов ваших карточек, а Maestro может попросить NAI Studio написать паспорт по записи лора или нарисовать фон для места в библиотеку фонов.
 
 ### Персонажи и сцены
 
@@ -169,7 +170,7 @@ interface NaiStudioApi {
   setOutfit(passportId: string, outfit: string, scope?: 'card' | 'chat'): Promise<void>;
   setState(passportId: string, stateId: string, enabled: boolean, scope?: 'card' | 'chat'): Promise<void>;
   clearChatOverride(passportId: string): Promise<void>;
-  on(event: 'passportsSaved' | 'imageReady', listener: (detail: unknown) => void): () => void;
+  on(event: 'passportsSaved' | 'imageReady' | 'requestFailed', listener: (detail: unknown) => void): () => void;
   registerSceneProvider(provider: {
     id: string;
     priority: number;
@@ -179,6 +180,26 @@ interface NaiStudioApi {
   registerQualityGate(
     gate: (detail: { messageIndex: number; swipeId: number }) => Promise<boolean> | boolean,
   ): () => void;
+  // С 0.12; раньше их нет — проверяйте, что это функции.
+  registerPassportProvider(provider: {
+    id: string;
+    priority?: number;
+    passports(context: { messageIndex: number; text: string }): Promise<Passport[]> | Passport[];
+  }): () => void;
+  generatePassport(input: {
+    name: string;
+    kind: 'character' | 'location' | 'object' | 'world';
+    description: string;
+    language?: string;
+  }): Promise<Passport | null>;
+  generateBackground(input: {
+    locationName: string;
+    tags?: string;
+    passportId?: string;
+    timeOfDay?: string;
+    weather?: string;
+    style?: string;
+  }): Promise<{ file: string } | null>;
 }
 
 type SceneHint = { locationId?: string; locationName?: string; tags?: string; characters?: string[] };
@@ -211,6 +232,7 @@ type SceneHint = { locationId?: string; locationName?: string; tags?: string; ch
 - `imageReady` — `{ messageIndex, kind, passportIds }`. Приходит после того, как картинка добавлена в сообщение и чат сохранён.
   - `kind`: `message` — новое сообщение, `inline` — вставка в сообщение, `marker` — картинка метки в ответе, `swipe` — новый свайп, `tool` — результат инструмента.
   - `passportIds` — паспорта, нарисованные в сцене.
+- `requestFailed` (0.12) — `{ request: 'passport' | 'background', name, code, message }`. Приходит, когда `generatePassport` или `generateBackground` вернул `null`; `code` — код ошибки NAI Studio (`free-only-blocked` — режим «только бесплатные» не дал потратить Anlas, `aborted` — пользователь отказался от траты, …), `message` — текст, который видел пользователь.
 
 **Поставщики сцены.** `registerSceneProvider` возвращает функцию отмены регистрации; поставщик с тем же `id` заменяет прежнего.
 
@@ -238,6 +260,31 @@ type SceneHint = { locationId?: string; locationName?: string; tags?: string; ch
   - проверка, которая упала, считается `true`.
 - Ответ, который свайпнули, удалили или чат которого закрыли во время ожидания, не рисуется.
 - Ручная генерация (кнопки, меню, команды `/nai…`) не ждёт. Без проверок ничего не меняется.
+
+**Поставщики паспортов** (0.12). Сначала проверьте, что `registerPassportProvider` — функция. Метод возвращает функцию отмены регистрации; поставщик с тем же `id` заменяет прежнего.
+
+- Поставщик отдаёт паспорта сцены. Maestro — паспорта записей лора, которые сработали или упомянуты в сцене: места, предметы, существа, NPC без карточки. `passports` вызывается с тем же `{ messageIndex, text }`, что и `describe` поставщиков сцены.
+- Везде, где NAI Studio подбирает паспорта для картинок сцены и меток, они добавляются после паспортов карточек, персоны и чата:
+  - персонажи — участники сцены (по имени в метке или в тексте, в композере, в `{{nai_characters}}`);
+  - локации — именованные места, мир — теги обстановки;
+  - предметы — именованные предметы: их теги добавляются к картинке, описание которой называет предмет. Так теперь работают и паспорта предметов из карточки.
+- Паспорт с тем же именем или алиасом, что у паспорта карточки, персоны или чата, пропускается — побеждает чат. Из двух поставщиков с одним именем побеждает тот, у кого `priority` выше (по умолчанию 0).
+- Ответ ждут до 3 с; поставщик, который не ответил или упал, пропускается. Ответы переиспользуются для одной картинки (1,5 с).
+- Интеграция с DES берёт паспорт поставщика для нового персонажа трекера, а не пишет новый паспорт в карточку.
+
+**`generatePassport`** (0.12) — генератор паспортов NAI Studio для одного персонажа, места, предмета или мира по описанию (например, тексту записи лора) через языковой бэкенд, выбранный в NAI Studio; стоит столько, сколько стоит этот бэкенд, картинок нет.
+
+- Ничего не сохраняет. Возвращает полный паспорт с новым id и заданным именем (имя, которое написала модель, уходит в алиасы) или `null` с событием `requestFailed`.
+- `language` (`ru`) — язык истории: имя на нём попадает в алиасы. Макросы вроде `{{char}}` в описании подставляются.
+- Неверный ввод (нет имени, другой `kind`) — отклонённый `Promise`.
+
+**`generateBackground`** (0.12) — один фон для места.
+
+- Промпт без персонажей (`no humans, scenery`, люди — в нежелательном): теги паспорта `passportId` (паспорт локации или мира из чата или от поставщика; без него — название места), `tags`, время суток и погода как теги. Слова трекера читаются так же, как сцена DES: `вечер`, `19:40`, `дождь`.
+- `style` — сохранённый стиль NAI Studio по имени (префикс, суффикс, нежелательное, пресет UC) или теги стиля.
+- Одна картинка 16:9 в бесплатном бюджете (1344×768) через обычный конвейер с защитой Anlas: в режиме «только бесплатные» запрос, который стоил бы Anlas, отклоняется; иначе — обычное подтверждение стоимости.
+- Картинка загружается в библиотеку фонов SillyTavern так же, как это делает сам ST (`POST /api/backgrounds/upload`, поле формы `avatar`), с именем `maestro-<slug>-<timestamp>.png`. Возвращается `{ file }` — имя, которое сохранил сервер. Фон не ставится — это делает вызывающий.
+- При неудаче — `null`, тост с причиной и событие `requestFailed`. Отказ в подтверждении стоимости — код `aborted`, без тоста.
 
 **Где хранится.** Переопределения и паспорта чата лежат в `chat_metadata.nai_studio.passports`:
 

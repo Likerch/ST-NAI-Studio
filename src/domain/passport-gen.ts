@@ -51,6 +51,65 @@ const SYSTEM_NPC = [
     'Rules: English Danbooru tags, lowercase, comma separated, spaces instead of underscores. Only what the texts say or clearly imply about this character, never invent (a species or race only when the text names it, never from a name, a title or the setting); leave a field empty when unknown. Explicit anatomy (genitals, nipples, the penis of a futanari) goes only to "nsfw"; a futanari is "1girl" in base and "futanari, penis" in nsfw. No quality, art style or colour palette tags (pastel colors, vibrant colors, muted colors, monochrome). clothing is ONE default outfit (what they wear most): one item per body part, one colour per item, never alternatives ("blue or grey coat"); every other outfit of the text goes to "outfits".',
 ].join('\n');
 
+/** Kinds another extension can have a passport written for (v0.12, generatePassport). */
+export const ENTRY_PASSPORT_KINDS = ['character', 'location', 'object', 'world'] as const;
+export type EntryPassportKind = (typeof ENTRY_PASSPORT_KINDS)[number];
+
+const ENTRY_THING: Record<EntryPassportKind, string> = {
+    character: 'one person or creature',
+    location: 'one place',
+    object: 'one item or vehicle',
+    world: 'the world of the story as a whole',
+};
+
+const ENTRY_FIELDS: Record<EntryPassportKind, string> = {
+    character:
+        'one entry of kind "character" with the fields name, aliases, base (count tag and what they are: "1girl, elf, adult", "1boy, orc", "1other, dragon"), hair, eyes, body, skin, clothing, accessories, outfits ({"name","tags"}), nsfw (explicit body details only if given), negative',
+    location:
+        'one entry of kind "location" with the fields name, aliases, tags (how the place looks: architecture or landscape, interior, materials, light, notable details; never people), negative',
+    object: 'one entry of kind "object" with the fields name, aliases, tags (how it looks: shape, material, colours, notable details), negative',
+    world: 'one entry of kind "world" with the fields name, aliases, tags (the setting as a whole: era, technology, magic, overall look), negative',
+};
+
+const LANGUAGE_NAMES: Readonly<Record<string, string>> = {
+    ru: 'Russian',
+    en: 'English',
+    uk: 'Ukrainian',
+    be: 'Belarusian',
+    de: 'German',
+    fr: 'French',
+    es: 'Spanish',
+    it: 'Italian',
+    pt: 'Portuguese',
+    pl: 'Polish',
+    ja: 'Japanese',
+    zh: 'Chinese',
+    ko: 'Korean',
+};
+
+/** A language code ("ru", "ru-RU") as its English name; anything else as given. */
+export function languageName(language: string): string {
+    const value = language.trim();
+    return LANGUAGE_NAMES[value.toLowerCase().split(/[-_]/)[0] ?? ''] ?? value;
+}
+
+/** System prompt for one passport of a lorebook entry (a person, place, item or the world). */
+function entrySystem(kind: EntryPassportKind, language?: string): string {
+    const spelled = language
+        ? `the name as a ${languageName(language)} text spells it`
+        : 'the name written in Cyrillic as a Russian text would spell it';
+    const character = kind === 'character';
+    return [
+        `You read a lorebook entry of a roleplay about ${ENTRY_THING[kind]} and write one visual passport for an image generator (NovelAI, Danbooru tags).`,
+        `Answer only with JSON: {"passports": [ ${ENTRY_FIELDS[kind]} ]}.`,
+        `aliases: short names, nicknames and ${spelled}.`,
+        character
+            ? 'Permanent features go to their fields; temporary states (wet, wounded, blushing) are left out. Explicit anatomy (genitals, nipples, the penis of a futanari) goes only to "nsfw"; a futanari is "1girl" in base and "futanari, penis" in nsfw. clothing is ONE default outfit (what they wear most): one item per body part, one colour per item, never alternatives; every other outfit of the text goes to "outfits".'
+            : 'Only what can be seen in a still picture: no names, history, sounds or smells.',
+        'Rules: English Danbooru tags, lowercase, comma separated, spaces instead of underscores. Only what the text says or clearly implies, never invent (a species or race only when the text names it, never from a name, a title or the setting); leave a field empty when unknown. No quality, art style or colour palette tags (pastel colors, vibrant colors, muted colors, monochrome).',
+    ].join('\n');
+}
+
 const str = { type: 'string' };
 export const PASSPORT_GEN_SCHEMA = {
     name: 'nai_passports',
@@ -89,13 +148,30 @@ function clip(text: string | undefined, max: number): string {
     return value.length > max ? `${value.slice(0, max)}…` : value;
 }
 
-export type PassportTarget = 'card' | 'persona' | 'npc';
+/** `entry` (v0.12): one passport of a lorebook entry another extension asks for. */
+export type PassportTarget = 'card' | 'persona' | 'npc' | 'entry';
 
-const SYSTEMS: Record<PassportTarget, string> = { card: SYSTEM_CARD, persona: SYSTEM_PERSONA, npc: SYSTEM_NPC };
-const LABELS: Record<PassportTarget, string> = { card: 'Card', persona: 'Persona', npc: 'Character' };
+const SYSTEMS: Record<Exclude<PassportTarget, 'entry'>, string> = {
+    card: SYSTEM_CARD,
+    persona: SYSTEM_PERSONA,
+    npc: SYSTEM_NPC,
+};
+const LABELS: Record<PassportTarget, string> = { card: 'Card', persona: 'Persona', npc: 'Character', entry: 'Entry' };
 
-/** System and user messages for a card, a persona or one character of a scene tracker. */
-export function passportGenMessages(source: PassportSource, target: PassportTarget): { system: string; user: string } {
+export interface PassportGenOptions {
+    /** What the passport of an entry describes (the "entry" target; a character by default). */
+    kind?: EntryPassportKind;
+    /** Language of the story ("ru", "Russian"): the name as it spells it goes to the aliases. */
+    language?: string;
+}
+
+/** System and user messages for a card, a persona, one character of a scene tracker or a lorebook entry. */
+export function passportGenMessages(
+    source: PassportSource,
+    target: PassportTarget,
+    options: PassportGenOptions = {},
+): { system: string; user: string } {
+    const system = target === 'entry' ? entrySystem(options.kind ?? 'character', options.language) : SYSTEMS[target];
     const parts = [
         `${LABELS[target]}: ${source.name}`,
         `${target === 'npc' ? 'Tracker' : 'Description'}:\n${clip(source.description, LIMITS.description)}`,
@@ -106,7 +182,8 @@ export function passportGenMessages(source: PassportSource, target: PassportTarg
             `${target === 'npc' ? 'Story card' : 'Scenario'}:\n${clip(source.scenario, target === 'npc' ? LIMITS.description : LIMITS.scenario)}`,
         );
     if (source.firstMessage?.trim()) parts.push(`First message:\n${clip(source.firstMessage, LIMITS.firstMessage)}`);
-    return { system: SYSTEMS[target], user: parts.join('\n\n') };
+    if (target === 'entry' && options.language?.trim()) parts.push(`Story language: ${languageName(options.language)}`);
+    return { system, user: parts.join('\n\n') };
 }
 
 /** The first JSON value in a text (code fences, chatter around it). */
@@ -150,8 +227,15 @@ function tags(value: unknown): string {
     );
 }
 
-/** Passports from the answer; entries without a name or anything visual are dropped. */
-export function parseGeneratedPassports(raw: unknown, fallbackName = ''): Passport[] {
+/**
+ * Passports from the answer; entries without a name or anything visual are dropped. An entry without a
+ * known kind is `defaultKind`; the fallback name goes to an unnamed entry of that kind.
+ */
+export function parseGeneratedPassports(
+    raw: unknown,
+    fallbackName = '',
+    defaultKind: PassportKind = 'character',
+): Passport[] {
     const data = typeof raw === 'string' ? extractJson(raw) : raw;
     const list = Array.isArray(data)
         ? data
@@ -164,8 +248,8 @@ export function parseGeneratedPassports(raw: unknown, fallbackName = ''): Passpo
         const o = item as Record<string, unknown>;
         const kind = (PASSPORT_KINDS as readonly string[]).includes(String(o.kind))
             ? (o.kind as PassportKind)
-            : 'character';
-        const name = asText(o.name).trim() || (kind === 'character' ? fallbackName : '');
+            : defaultKind;
+        const name = asText(o.name).trim() || (kind === defaultKind ? fallbackName : '');
         if (!name) continue;
         const passport = defaultPassport(kind, name, newPassportId());
         passport.aliases = (Array.isArray(o.aliases) ? o.aliases.map(asText) : asText(o.aliases).split(','))

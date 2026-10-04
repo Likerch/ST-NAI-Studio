@@ -194,7 +194,12 @@ describe('scene providers', () => {
 
     it('change nothing when none is registered', async () => {
         scenes.setSceneProvider(tracker('Old Mill', ['night']));
-        expect(await scenes.sceneSetting()).toEqual({ world: 'night', locations: [], location: 'Old Mill' });
+        expect(await scenes.sceneSetting()).toEqual({
+            world: 'night',
+            locations: [],
+            objects: [],
+            location: 'Old Mill',
+        });
         expect(await providers.sceneHint()).toEqual({});
     });
 
@@ -212,12 +217,19 @@ describe('scene providers', () => {
             { mes: 'note', is_system: true },
         ];
         const setting = await scenes.sceneSetting();
-        expect(setting).toEqual({ world: 'low tags', locations: [], location: 'Rusty Tavern', locationId: 'pl1' });
+        expect(setting).toEqual({
+            world: 'low tags',
+            locations: [],
+            objects: [],
+            location: 'Rusty Tavern',
+            locationId: 'pl1',
+        });
         expect(low).toHaveBeenCalledWith({ messageIndex: 0, text: 'Hello.' });
         off();
         expect(await scenes.sceneSetting({ messageId: 5, text: 'x' })).toEqual({
             world: 'low tags',
             locations: [],
+            objects: [],
             location: 'Low Place',
         });
         expect(low).toHaveBeenLastCalledWith({ messageIndex: 5, text: 'x' });

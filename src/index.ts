@@ -8,6 +8,7 @@ import { log } from './core/logger';
 import { loadSettings, resetSettings } from './core/settings';
 import { clearStorage } from './core/storage';
 import { AutoGenerator } from './features/auto/auto-generation';
+import { BackgroundService } from './features/backgrounds/background-service';
 import { recordGeneration } from './features/gallery/gallery-store';
 import { StudioController } from './features/generation/controller';
 import { Pipeline } from './features/generation/pipeline';
@@ -90,8 +91,9 @@ export async function onActivate(): Promise<void> {
     new AutoGenerator(studio, pipeline).attach();
     // Automatic drawings of a reply wait for the quality gates of other extensions (Maestro, v0.11).
     setupQualityGates();
-    // NAI_STUDIO_API for other extensions (Maestro): passports, events, scene providers, quality gates.
-    installPublicApi();
+    // NAI_STUDIO_API for other extensions (Maestro): passports, events, scene and passport providers,
+    // quality gates, passports from a description, backgrounds of places.
+    installPublicApi({ backgrounds: new BackgroundService(pipeline) });
     // Network probing must not hold the 5 s activation window.
     void studio.refreshTransport();
     // A NovelAI key written, deleted or rotated in SillyTavern changes the token source and balance.

@@ -1,6 +1,7 @@
 // Passports written from the description (v0.8): the card's description, personality, scenario and
 // first message, or the persona description, go to the language backend; the answer becomes
-// passports for the user to review before saving.
+// passports for the user to review before saving. Since v0.12 also one passport of a lorebook entry
+// for another extension (NAI_STUDIO_API.generatePassport); nothing is saved.
 import { ctx } from '../../core/context';
 import { NaiError } from '../../core/errors';
 import { log } from '../../core/logger';
@@ -11,22 +12,26 @@ import {
     sentencesNaming,
     withoutUnstatedSpecies,
 } from '../../domain';
-import type { Passport, PassportSource, PassportTarget } from '../../domain';
+import type { EntryPassportKind, Passport, PassportGenOptions, PassportSource, PassportTarget } from '../../domain';
 import { askLlm } from '../language/llm';
 import { loadCharacter } from './passport-store';
 
-async function ask(source: PassportSource, target: PassportTarget): Promise<Passport[]> {
+async function ask(
+    source: PassportSource,
+    target: PassportTarget,
+    options: PassportGenOptions = {},
+): Promise<Passport[]> {
     if (!source.description.trim() && !source.firstMessage?.trim()) {
         throw new NaiError('translation-failed', 'none', { message: 'the description is empty' });
     }
-    const { system, user } = passportGenMessages(source, target);
+    const { system, user } = passportGenMessages(source, target, options);
     const answer = await askLlm({
         system,
         user,
         schema: PASSPORT_GEN_SCHEMA,
         maxTokens: target === 'card' ? 3500 : 1200,
     });
-    const passports = withoutUnstatedSpecies(parseGeneratedPassports(answer, source.name), user);
+    const passports = withoutUnstatedSpecies(parseGeneratedPassports(answer, source.name, options.kind), user);
     if (!passports.length) {
         log.warn('passport generation: no usable passports in', answer.slice(0, 300));
         throw new NaiError('translation-failed', 'none', { message: 'the answer had no usable passports' });
@@ -75,6 +80,38 @@ export async function generateTrackerPassport(name: string, look: string, cardIn
     const passport = first!;
     passport.kind = 'character';
     passport.name = name;
+    return passport;
+}
+
+export interface EntryPassportRequest {
+    name: string;
+    kind: EntryPassportKind;
+    /** What the entry says (macros like {{char}} are substituted). */
+    description: string;
+    /** Language of the story ("ru"): the name as it spells it goes to the aliases. */
+    language?: string;
+}
+
+/**
+ * One passport of a lorebook entry (v0.12, NAI_STUDIO_API.generatePassport): the person, place, item or
+ * world of the entry from its text, through the language backend. It keeps the given name (the name
+ * the model wrote becomes an alias) and a new id; nothing is saved.
+ */
+export async function generateEntryPassport(request: EntryPassportRequest): Promise<Passport> {
+    const c = ctx();
+    const passports = await ask({ name: request.name, description: c.substituteParams(request.description) }, 'entry', {
+        kind: request.kind,
+        ...(request.language ? { language: request.language } : {}),
+    });
+    const passport = passports.find((p) => p.kind === request.kind);
+    if (!passport) {
+        throw new NaiError('translation-failed', 'none', { message: `the answer had no ${request.kind} passport` });
+    }
+    const wanted = request.name.trim();
+    passport.aliases = [...new Set([passport.name, ...passport.aliases])].filter(
+        (alias) => alias.trim() && alias.trim().toLowerCase() !== wanted.toLowerCase(),
+    );
+    passport.name = wanted;
     return passport;
 }
 

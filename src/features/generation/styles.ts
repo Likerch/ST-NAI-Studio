@@ -10,6 +10,12 @@ export function styleUcPreset(style: StyleSettings): UcPresetId | undefined {
     return preset && (UC_PRESETS as readonly string[]).includes(preset) ? (preset as UcPresetId) : undefined;
 }
 
+/** A saved style by name, ignoring case and spaces around it. */
+export function findStyle(s: NaiStudioSettings, name: string): StyleSettings | undefined {
+    const wanted = name.trim().toLowerCase();
+    return wanted ? s.prompts.styles.find((style) => style.name.trim().toLowerCase() === wanted) : undefined;
+}
+
 /** Puts a style into the fields it fills and makes it the active one. */
 export function applyStyle(s: NaiStudioSettings, style: StyleSettings): void {
     s.prompts.activeStyle = style.name;

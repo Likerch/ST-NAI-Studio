@@ -2,7 +2,8 @@
 // and the user persona) with their passports, automatic assembly from a message, and generation
 // of a composed scene into a new message or inline into the last message. Since v0.10 passports are
 // the chat's view of them (chat overrides, passports of the chat itself), and scene providers of
-// other extensions (registerSceneHintProvider) name the place, setting tags and who is present.
+// other extensions (registerSceneHintProvider) name the place, setting tags and who is present. Since
+// v0.12 passport providers (Maestro's lore entries) add people, places, items and the world after them.
 import { ctx } from '../../core/context';
 import { NaiError } from '../../core/errors';
 import { log } from '../../core/logger';
@@ -25,15 +26,18 @@ import {
     markerPosition,
     mentionIndex,
     participantFrom,
+    passportGroup,
     POSES,
     primaryPassport,
     processReply,
+    unknownPassports,
 } from '../../domain';
 import type {
     BuiltScene,
     ChatPassports,
     MarkerCharacter,
     ModelCapabilities,
+    Named,
     Passport,
     PosePreset,
     SceneCandidate,
@@ -52,11 +56,14 @@ import {
 import { placeById } from '../continuity/places';
 import type { Pipeline, PictureResult } from '../generation/pipeline';
 import type { InlineImages } from '../inline/inline-service';
+import { providedPassports } from './passport-providers';
 import { sceneHint } from './scene-providers';
 
 export const PERSONA_PREFIX = PERSONA_OWNER_PREFIX;
 /** Key prefix of the candidates of passports that exist only in the chat ("chat#<passport id>"). */
 export const CHAT_PASSPORT_PREFIX = 'chat#';
+/** Key prefix of the candidates of passport providers ("provided#<passport id>", v0.12); stored nowhere. */
+export const PROVIDED_PASSPORT_PREFIX = 'provided#';
 
 export function customPoses(): PosePreset[] {
     return settings().poses.custom.map((p) => ({
@@ -170,19 +177,39 @@ async function characterCandidates(index: number, chat: ChatPassports): Promise<
     ];
 }
 
+/** A named character passport that no card holds, as a candidate under the key prefix. */
+function passportCandidate(passport: Passport, prefix: string): SceneCandidate {
+    return {
+        key: `${prefix}${passport.id}`,
+        name: passport.name,
+        aliases: [...new Set([...passport.aliases, ...aliasesOf(passport.name)])],
+        passport,
+        fallbackPrompt: '',
+        fallbackNegative: '',
+        isUser: false,
+    };
+}
+
 /** Named character passports that exist only in this chat (another extension wrote them). */
 function chatOnlyCandidates(chat: ChatPassports): SceneCandidate[] {
     return chat.extra
         .filter((p) => p.kind === 'character' && p.name.trim() && !isPassportEmpty(p))
-        .map((passport) => ({
-            key: `${CHAT_PASSPORT_PREFIX}${passport.id}`,
-            name: passport.name,
-            aliases: [...new Set([...passport.aliases, ...aliasesOf(passport.name)])],
-            passport,
-            fallbackPrompt: '',
-            fallbackNegative: '',
-            isUser: false,
-        }));
+        .map((passport) => passportCandidate(passport, CHAT_PASSPORT_PREFIX));
+}
+
+/**
+ * People of the passport providers (v0.12): after everyone the chat knows; one named like a card, the
+ * persona, a passport of the chat or an earlier provider passport is left out (the earlier one wins).
+ */
+async function providedCandidates(known: SceneCandidate[], query: SceneQuery): Promise<SceneCandidate[]> {
+    const added: SceneCandidate[] = [];
+    for (const passport of await providedPassports(query)) {
+        if (passport.kind !== 'character') continue;
+        const candidate = passportCandidate(passport, PROVIDED_PASSPORT_PREFIX);
+        if ([...known, ...added].some((c) => sameCandidate(c, candidate))) continue;
+        added.push(candidate);
+    }
+    return added;
 }
 
 const namesOne = (name: string, candidate: SceneCandidate): boolean =>
@@ -195,33 +222,57 @@ function markPresent(list: SceneCandidate[], names: readonly string[] | undefine
     return list;
 }
 
+/** A named location or object passport: its tags join a picture that names it. */
 export interface SceneLocation {
     name: string;
     aliases: string[];
     tags: string;
 }
 
+export interface SceneSetting {
+    /** World and scenario tags, and the setting tags of a provider. */
+    world: string;
+    locations: SceneLocation[];
+    /** Named objects (v0.12): their tags join a picture that names them. */
+    objects: SceneLocation[];
+    /** The current location by a provider (a scene tracker, a scene provider). */
+    location: string;
+    locationId?: string;
+}
+
 /**
- * Setting of the chat: world and scenario tags and named locations of its cards, plus the setting
- * tags and the current location of a provider (a scene tracker).
+ * Setting of the chat: world and scenario tags, named locations and objects of its cards and the chat,
+ * then the ones of the passport providers (a name the chat has wins), plus the setting tags and the
+ * current location of a provider (a scene tracker).
  */
-export async function sceneSetting(
-    query: SceneQuery = {},
-): Promise<{ world: string; locations: SceneLocation[]; location: string; locationId?: string }> {
+export async function sceneSetting(query: SceneQuery = {}): Promise<SceneSetting> {
     const world: string[] = [];
+    const worlds: Named[] = [];
     const locations: SceneLocation[] = [];
+    const objects: SceneLocation[] = [];
     const chat = chatPassportData();
     const collect = (passport: Passport) => {
-        if (passport.kind === 'world' || passport.kind === 'scenario') world.push(passport.tags);
-        else if (passport.kind === 'location' && passport.name && passport.tags.trim())
-            locations.push({ name: passport.name, aliases: passport.aliases, tags: passport.tags });
+        const named = { name: passport.name, aliases: passport.aliases, tags: passport.tags };
+        if (passport.kind === 'world' || passport.kind === 'scenario') {
+            world.push(passport.tags);
+            worlds.push(named);
+        } else if (passport.kind === 'location' && passport.name && passport.tags.trim()) locations.push(named);
+        else if (passport.kind === 'object' && passport.name && passport.tags.trim()) objects.push(named);
     };
     for (const index of chatCardIndexes()) {
         for (const passport of resolvedCardPassports(await loadCharacter(index), chat)) collect(passport);
     }
     for (const passport of chat.extra) collect(passport);
+    const [provided, hint] = await Promise.all([providedPassports(query), sceneHint(query)]);
+    // Lore passports of the scene (v0.12): what the chat already has by that name wins.
+    const ofGroup = (group: string) => provided.filter((p) => passportGroup(p.kind) === group);
+    for (const passport of [
+        ...unknownPassports(ofGroup('setting'), worlds),
+        ...unknownPassports(ofGroup('location'), locations),
+        ...unknownPassports(ofGroup('object'), objects),
+    ])
+        collect(passport);
     // Scene providers of other extensions first, field by field; then the tracker integration.
-    const hint = await sceneHint(query);
     let tracked = { tags: [] as string[], location: '' };
     if (provider && (hint.tags === undefined || hint.locationName === undefined)) {
         try {
@@ -236,17 +287,21 @@ export async function sceneSetting(
     return {
         world: joinTags(...world, tags),
         locations,
+        objects,
         location,
         ...(hint.locationId ? { locationId: hint.locationId } : {}),
     };
 }
 
-/** Tags of the locations a text names (whole-word name or alias). */
+/** Tags of the locations (or objects) a text names (whole-word name or alias). */
 export function mentionedLocationTags(text: string, locations: readonly SceneLocation[]): string {
     return joinTags(...locations.filter((l) => mentionIndex(text, [l.name, ...l.aliases]) >= 0).map((l) => l.tags));
 }
 
-/** Characters of the current chat (the 1:1 character or every group member) and the persona. */
+/**
+ * Characters of the current chat (the 1:1 character or every group member), the persona, then the
+ * people of the passport providers (v0.12) nobody of the chat is named like.
+ */
 export async function sceneCandidates(query: SceneQuery = {}): Promise<SceneCandidate[]> {
     const c = ctx();
     const chat = chatPassportData();
@@ -263,8 +318,10 @@ export async function sceneCandidates(query: SceneQuery = {}): Promise<SceneCand
         fallbackNegative: '',
         isUser: true,
     });
+    const hint = sceneHint(query);
+    result.push(...(await providedCandidates(result, query)));
     const merged = await withProvided(result, query);
-    return markPresent(merged, (await sceneHint(query)).characters);
+    return markPresent(merged, (await hint).characters);
 }
 
 function sentencesMentioning(text: string, candidate: SceneCandidate): string {
@@ -355,6 +412,7 @@ export class SceneService {
         spec.base = joinTags(
             spec.base,
             mentionedLocationTags(`${setting.location} ${source.text}`, setting.locations),
+            mentionedLocationTags(source.text, setting.objects),
             setting.world,
         );
         return { spec, candidates };

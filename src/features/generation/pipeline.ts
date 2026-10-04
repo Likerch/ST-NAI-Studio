@@ -47,6 +47,7 @@ import {
     lastSpeakerPrompt,
     soloCharacterIndex,
 } from '../characters/character-prompts';
+import { imageReady } from '../events/studio-events';
 import type { StudioController } from './controller';
 import { appendToMessage, imageFolder, messageText, postToChat, saveImages } from './output';
 import type { GenerationMeta, MediaAttachmentData } from './output';
@@ -103,6 +104,8 @@ export interface PictureRequest {
     interpretCharacters?: 'auto' | 'cyrillic';
     /** Vibes for this request only, in addition to the active ones. */
     vibes?: PlannedVibe[];
+    /** Passports drawn in this picture (reported with the "imageReady" event, v0.10). */
+    passportIds?: string[];
 }
 
 export interface PictureResult {
@@ -117,6 +120,8 @@ export interface ProducedImages {
     meta: InlineGenerationMeta;
     mode: ModeId;
     chatId: string | undefined;
+    /** Passports drawn in the picture (from the request). */
+    passportIds?: string[];
 }
 
 /** Images and everything known about how they were made; nothing is saved or posted yet. */
@@ -680,7 +685,15 @@ export class Pipeline {
             });
             if (sourcePrompt) legacy.sourcePrompt = sourcePrompt;
             log.info('picture', req.initiator, `mode ${mode}`, prepared.body.model, `cost ${prepared.cost.total}`);
-            return { images: result.images, meta, legacy, prepared, mode, chatId };
+            return {
+                images: result.images,
+                meta,
+                legacy,
+                prepared,
+                mode,
+                chatId,
+                ...(req.passportIds?.length ? { passportIds: [...req.passportIds] } : {}),
+            };
         } catch (error) {
             throw toNaiError(error, {
                 model: prepared.request.model,
@@ -730,6 +743,7 @@ export class Pipeline {
                         text: messageText(templates()[String(MODE.MESSAGE)] ?? '{{prompt}}', meta.scenePrompt),
                     });
                 }
+                if (messageId !== null) imageReady(messageId, req.swipe ? 'swipe' : 'message', produced.passportIds);
             }
             return { path: first.path, messageId, cost };
         } catch (error) {

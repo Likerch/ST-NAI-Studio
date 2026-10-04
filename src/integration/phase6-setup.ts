@@ -6,15 +6,18 @@ import { t } from '../core/i18n';
 import { log } from '../core/logger';
 import { reportGenerationError } from '../core/notify';
 import { onExternalChange, saveSettings, settings } from '../core/settings';
-import { activeSwipe, locationKey, readEntries } from '../domain';
+import { activeSwipe, readEntries } from '../domain';
 import { ComicService } from '../features/comic/comic-service';
 import {
     bindLocation,
     ContinuityService,
     continuityData,
+    currentReference,
     forgetLocation,
     setCurrentLocation,
+    startPlaceFollowing,
 } from '../features/continuity/continuity-service';
+import { PLACES_READY_EVENT } from '../features/continuity/places';
 import type { Pipeline } from '../features/generation/pipeline';
 import type { SceneService } from '../features/scene/scene-service';
 import { exportSettingsFile, importSettingsText } from '../features/settings-io/settings-io';
@@ -116,7 +119,7 @@ function refreshContinuity(): void {
     }
     const info = document.getElementById('naist_cont_info');
     if (info) {
-        const ref = data.locations[locationKey(data.current)];
+        const ref = ctx().getCurrentChatId() ? currentReference() : null;
         const names = Object.values(data.locations).map((l) => l.name);
         info.textContent = [
             ref
@@ -322,7 +325,12 @@ export function setupPhase6(pipeline: Pipeline, scenes: SceneService): void {
     });
 
     const c = ctx();
-    c.eventSource.on(c.eventTypes.CHAT_CHANGED ?? 'chat_id_changed', () => refreshContinuity());
+    c.eventSource.on(c.eventTypes.CHAT_CHANGED ?? 'chat_id_changed', () => {
+        startPlaceFollowing();
+        refreshContinuity();
+    });
+    // Maestro announces its place registry when it appears (it may come after the app is ready).
+    window.addEventListener(PLACES_READY_EVENT, () => startPlaceFollowing());
     c.eventSource.on(c.eventTypes.CHARACTER_MANAGEMENT_DROPDOWN ?? 'charManagementDropdown', (target: unknown) => {
         if (target === SPRITES_OPTION) openSprites();
     });
@@ -330,6 +338,8 @@ export function setupPhase6(pipeline: Pipeline, scenes: SceneService): void {
         installMenuOption();
         registerCommands();
         fillGlossary();
+        // Maestro (if any) has published its places by now.
+        startPlaceFollowing();
         refreshContinuity();
         log.info('phase 6 tools ready');
     });

@@ -30,6 +30,8 @@ export interface SceneCandidate {
     isUser: boolean;
     /** What they wear and how they are right now (a scene tracker); replaces the passport's clothing. */
     currentLook?: string;
+    /** Present in the scene by another extension's scene hint (v0.10). */
+    present?: boolean;
 }
 
 export interface SceneParticipant {
@@ -316,6 +318,8 @@ export interface BuiltScene {
     withoutPassport: string[];
     /** Participants beyond the model's limit (dropped). */
     dropped: string[];
+    /** Ids of the passports drawn (v0.10, reported to other extensions with the image). */
+    passportIds: string[];
 }
 
 /** Turns the composer state into the base prompt and character slots for the request. */
@@ -333,6 +337,7 @@ export function buildScene(
     const capacity = caps.maxCharacters;
     const kept = capacity > 0 ? active.slice(0, capacity) : active;
     const dropped = capacity > 0 ? active.slice(capacity).map((p) => p.name) : [];
+    const passportIds = [...new Set(kept.flatMap((p) => (p.passport ? [p.passport.id] : [])))];
     const pair = spec.pair ? findPairPose(spec.pair.pose) : undefined;
     const pairTags = pair ? pairPoseTags(pair, caps.v4Prompt && capacity > 0) : null;
 
@@ -389,6 +394,7 @@ export function buildScene(
             useCoords: false,
             withoutPassport: kept.filter((p) => !p.passport).map((p) => p.name),
             dropped,
+            passportIds,
         };
     }
 
@@ -403,6 +409,7 @@ export function buildScene(
         useCoords: canPosition,
         withoutPassport: kept.filter((p) => !p.passport).map((p) => p.name),
         dropped,
+        passportIds,
     };
 }
 

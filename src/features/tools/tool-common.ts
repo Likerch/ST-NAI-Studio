@@ -8,6 +8,7 @@ import { activeSwipe, readEntries } from '../../domain';
 import type { InlineGenerationMeta } from '../../domain';
 import type { GeneratedImage } from '../../transport';
 import { base64ToBytes, blobToBase64, imageSize, sniffMime, toPngBlob } from '../images/image-utils';
+import { imageReady } from '../events/studio-events';
 import { appendToMessage, imageFolder, saveImages } from '../generation/output';
 import type { GenerationMeta } from '../generation/output';
 import type { Pipeline, ProducedImages } from '../generation/pipeline';
@@ -166,6 +167,7 @@ export async function deliver(
     const saved = await saveImages(produced.images, folder);
     await appendToMessage(source.target.messageId, saved, legacyMeta(produced.meta));
     services.pipeline.notify(produced, { target: 'message', paths: saved.map((s) => s.path) });
+    imageReady(source.target.messageId, 'tool', produced.passportIds);
 }
 
 /** Meta of a tool result derived from the source (Director Tools, upscale keep its prompt). */

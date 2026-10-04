@@ -24,6 +24,7 @@ import {
 } from '../../domain';
 import type { DisplayOptions, InlineGenerationMeta, InlineImage, InlineSwipe, ModeId } from '../../domain';
 import type { GeneratedImage } from '../../transport';
+import { imageReady } from '../events/studio-events';
 import { imageFileName, imageFolder, uploadImage } from '../generation/output';
 import type { CallOverrides, Pipeline, ProducedImages } from '../generation/pipeline';
 import { base64ToBlob, blobToBase64, toPngBlob } from '../images/image-utils';
@@ -37,6 +38,8 @@ export interface InlineRequest {
     scene?: string;
     overrides?: CallOverrides;
     display?: Partial<DisplayOptions>;
+    /** Passports drawn in the picture (reported with the "imageReady" event, v0.10). */
+    passportIds?: string[];
 }
 
 export interface EditParams {
@@ -153,6 +156,7 @@ export class InlineImages {
             mode: req.mode,
             scene: req.scene,
             overrides: req.overrides,
+            ...(req.passportIds?.length ? { passportIds: req.passportIds } : {}),
         });
         if (!produced) return null;
         const m = message(messageId);
@@ -177,6 +181,7 @@ export class InlineImages {
         m.mes = insertPlaceholder(m.mes, entry.id, offset ?? m.mes.length);
         await commit(messageId);
         settle(entryBlobKeys(entry));
+        imageReady(messageId, 'inline', req.passportIds);
         return entry;
     }
 
@@ -231,6 +236,7 @@ export class InlineImages {
         await this.commitLocated(found);
         settle(swipes.map((sw) => sw.blobKey));
         this.record(produced, swipes, imageId);
+        imageReady(found.messageId, entry.marker ? 'marker' : 'inline', produced.passportIds);
         return true;
     }
 
@@ -254,12 +260,14 @@ export class InlineImages {
     async saveCreated(messageId: number, entry: InlineImage): Promise<void> {
         await commit(messageId, false);
         settle(entryBlobKeys(entry));
+        imageReady(messageId, 'inline');
     }
 
     private async addGeneratedSwipe(
         messageId: number,
         imageId: string,
         produced: ProducedImages | null,
+        kind: 'swipe' | 'tool' = 'swipe',
     ): Promise<boolean> {
         if (!produced) return false;
         const { entry } = findEntry(messageId, imageId);
@@ -269,6 +277,7 @@ export class InlineImages {
         await commit(messageId);
         settle(swipes.map((s) => s.blobKey));
         this.record(produced, swipes, imageId);
+        imageReady(messageId, kind, produced.passportIds);
         return true;
     }
 
@@ -356,7 +365,7 @@ export class InlineImages {
 
     /** Adds an externally produced image (Director Tools, upscale, inpaint) as a new swipe. */
     async addProducedSwipe(messageId: number, imageId: string, produced: ProducedImages): Promise<boolean> {
-        return await this.addGeneratedSwipe(messageId, imageId, produced);
+        return await this.addGeneratedSwipe(messageId, imageId, produced, 'tool');
     }
 
     async setActive(messageId: number, imageId: string, index: number): Promise<void> {

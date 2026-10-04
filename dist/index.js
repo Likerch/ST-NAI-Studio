@@ -1082,6 +1082,16 @@ var EN = {
 	"naist.passports.mergeAdd": "Add new",
 	"naist.passports.mergeReplace": "Replace all",
 	"naist.passports.generated": "Passports generated: {count}. Check them and press Save.",
+	"naist.passport.scope": "Applies to:",
+	"naist.passport.scopeCard": "Card",
+	"naist.passport.scopePersona": "Persona",
+	"naist.passport.scopeChat": "This chat",
+	"naist.passport.scopeReset": "Back to the card",
+	"naist.passport.scopeCardHint": "Saved into the card: every chat with it sees the change.",
+	"naist.passport.scopeChatHint": "Only this chat sees the change; it is kept over the card and the card stays as it is. \"Back to the card\" and Save drop the changes of this chat.",
+	"naist.passport.scopeChatOnly": "This passport exists only in this chat.",
+	"naist.passport.savedChat": "The passport of {name} is saved for this chat.",
+	"naist.passports.chatOverride": "changed in this chat",
 	"naist.sprites.who": "For",
 	"naist.sprites.costume": "own folder",
 	"naist.macro.characters": "Characters of the chat with a NAI Studio passport (name them in an image marker, their looks are added).",
@@ -3433,17 +3443,17 @@ function assemblePrompt(input) {
 }
 //#endregion
 //#region src/domain/autogen.ts
-function list$2(text) {
+function list$3(text) {
 	return text.split(",").map((s) => s.trim()).filter(Boolean);
 }
 function escapeRegExp$4(text) {
 	return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 function matchesKeyword(message, keywords) {
-	return list$2(keywords).some((word) => new RegExp(`(^|[^\\p{L}\\p{N}])${escapeRegExp$4(word)}($|[^\\p{L}\\p{N}])`, "iu").test(message));
+	return list$3(keywords).some((word) => new RegExp(`(^|[^\\p{L}\\p{N}])${escapeRegExp$4(word)}($|[^\\p{L}\\p{N}])`, "iu").test(message));
 }
 function isSceneChange(message, markers) {
-	return list$2(markers).some((marker) => {
+	return list$3(markers).some((marker) => {
 		return (/^[\p{L}\p{N}]/u.test(marker) ? new RegExp(`(^|\\n)\\s*${escapeRegExp$4(marker)}\\b`, "iu") : new RegExp(escapeRegExp$4(marker))).test(message);
 	});
 }
@@ -3981,7 +3991,7 @@ function num$2(value) {
 function str$4(value) {
 	return typeof value === "string" ? value : "";
 }
-function obj$1(value) {
+function obj$2(value) {
 	return typeof value === "object" && value !== null && !Array.isArray(value) ? value : {};
 }
 /** Removes the quality suffix the client appended to the first `|` segment. */
@@ -4027,15 +4037,15 @@ function parseNovelAIMetadata(text, fallbackModel) {
 	if (!raw) return null;
 	let comment;
 	try {
-		comment = obj$1(JSON.parse(raw));
+		comment = obj$2(JSON.parse(raw));
 	} catch {
 		return null;
 	}
 	if (!("prompt" in comment) && !("v4_prompt" in comment) && !("steps" in comment)) return null;
 	const model = modelFromSource(text.Source) ?? (isModelId(fallbackModel) ? fallbackModel : void 0);
-	const v4 = obj$1(comment.v4_prompt);
-	const v4Caption = obj$1(v4.caption);
-	const v4Negative = obj$1(obj$1(comment.v4_negative_prompt).caption);
+	const v4 = obj$2(comment.v4_prompt);
+	const v4Caption = obj$2(v4.caption);
+	const v4Negative = obj$2(obj$2(comment.v4_negative_prompt).caption);
 	const basePrompt = str$4(v4Caption.base_caption) || str$4(comment.prompt) || str$4(text.Description);
 	const baseNegative = str$4(v4Negative.base_caption) || str$4(comment.uc);
 	const quality = model ? splitQualityTags(basePrompt, model) : {
@@ -4046,10 +4056,10 @@ function parseNovelAIMetadata(text, fallbackModel) {
 		negative: baseNegative,
 		preset: void 0
 	};
-	const charCaptions = Array.isArray(v4Caption.char_captions) ? v4Caption.char_captions.map(obj$1) : [];
-	const charNegatives = Array.isArray(v4Negative.char_captions) ? v4Negative.char_captions.map(obj$1) : [];
+	const charCaptions = Array.isArray(v4Caption.char_captions) ? v4Caption.char_captions.map(obj$2) : [];
+	const charNegatives = Array.isArray(v4Negative.char_captions) ? v4Negative.char_captions.map(obj$2) : [];
 	const characters = charCaptions.map((caption, i) => {
-		const center = obj$1(Array.isArray(caption.centers) ? caption.centers[0] : void 0);
+		const center = obj$2(Array.isArray(caption.centers) ? caption.centers[0] : void 0);
 		return {
 			prompt: str$4(caption.char_caption),
 			negative: str$4(charNegatives[i]?.char_caption),
@@ -4301,7 +4311,7 @@ function defaultPassport(kind = "character", name = "", id = newPassportId()) {
 function str$3(value) {
 	return typeof value === "string" ? value : "";
 }
-function obj(value) {
+function obj$1(value) {
 	return typeof value === "object" && value !== null && !Array.isArray(value) ? value : {};
 }
 function unit(value, fallback) {
@@ -4311,24 +4321,24 @@ function unit(value, fallback) {
 /** Defensive parse of a stored passport (hand-edited cards, older versions). Null when absent. */
 function normalizePassport(raw) {
 	if (raw === null || raw === void 0 || typeof raw !== "object" || Array.isArray(raw)) return null;
-	const source = obj(raw);
+	const source = obj$1(raw);
 	const result = defaultPassport(PASSPORT_KINDS.includes(str$3(source.kind)) ? source.kind : "character", str$3(source.name).trim(), str$3(source.id).trim() || "main");
 	result.aliases = (Array.isArray(source.aliases) ? source.aliases.map(str$3) : str$3(source.aliases).split(",")).map((a) => a.trim()).filter(Boolean);
 	result.tags = str$3(source.tags);
-	const slots = obj(source.slots);
+	const slots = obj$1(source.slots);
 	for (const slot of PASSPORT_SLOTS) result.slots[slot] = str$3(slots[slot]);
-	const nsfw = obj(source.nsfw);
+	const nsfw = obj$1(source.nsfw);
 	result.nsfw = {
 		enabled: nsfw.enabled === true,
 		tags: str$3(nsfw.tags)
 	};
-	result.outfits = (Array.isArray(source.outfits) ? source.outfits : []).map(obj).map((o) => ({
+	result.outfits = (Array.isArray(source.outfits) ? source.outfits : []).map(obj$1).map((o) => ({
 		name: str$3(o.name).trim(),
 		tags: str$3(o.tags)
 	})).filter((o) => o.name);
 	result.activeOutfit = result.outfits.some((o) => o.name === str$3(source.activeOutfit)) ? str$3(source.activeOutfit) : "";
 	if (Array.isArray(source.states)) {
-		const stored = source.states.map(obj).map((s) => ({
+		const stored = source.states.map(obj$1).map((s) => ({
 			id: str$3(s.id).trim(),
 			tags: str$3(s.tags),
 			enabled: s.enabled === true
@@ -4337,12 +4347,12 @@ function normalizePassport(raw) {
 		result.states = [...result.states.map((preset) => byId.get(preset.id) ?? preset), ...stored.filter((s) => s.id && !(s.id in STATE_PRESETS))];
 	}
 	result.negative = str$3(source.negative);
-	const pose = obj(source.pose);
+	const pose = obj$1(source.pose);
 	result.pose = {
 		preset: str$3(pose.preset),
 		custom: str$3(pose.custom)
 	};
-	const position = obj(source.position);
+	const position = obj$1(source.position);
 	result.position = source.position && typeof source.position === "object" ? {
 		x: unit(position.x, .5),
 		y: unit(position.y, .5)
@@ -4435,6 +4445,211 @@ function isPassportEmpty(passport) {
 	if (!passport) return true;
 	if (passport.kind !== "character") return !passport.tags.trim();
 	return PASSPORT_SLOTS.every((slot) => !passport.slots[slot].trim()) && !passport.outfits.length && !passport.nsfw.tags.trim();
+}
+//#endregion
+//#region src/domain/passport-overrides.ts
+function emptyChatPassports() {
+	return {
+		overrides: {},
+		extra: []
+	};
+}
+function obj(value) {
+	return typeof value === "object" && value !== null && !Array.isArray(value) ? value : {};
+}
+var isString = (value) => typeof value === "string";
+var sameStrings = (a, b) => a.length === b.length && a.every((item, i) => item === b[i]);
+var sameOutfits = (a, b) => a.length === b.length && a.every((o, i) => o.name === b[i]?.name && o.tags === b[i]?.tags);
+var samePosition = (a, b) => a === null || b === null ? a === b : a.x === b.x && a.y === b.y;
+/** The fields of `edited` that differ from `base` (an empty object when nothing changed). */
+function passportDiff(base, edited) {
+	const diff = {};
+	if (edited.name !== base.name) diff.name = edited.name;
+	if (edited.kind !== base.kind) diff.kind = edited.kind;
+	if (!sameStrings(edited.aliases, base.aliases)) diff.aliases = [...edited.aliases];
+	if (edited.tags !== base.tags) diff.tags = edited.tags;
+	const slots = {};
+	for (const slot of PASSPORT_SLOTS) if (edited.slots[slot] !== base.slots[slot]) slots[slot] = edited.slots[slot];
+	if (Object.keys(slots).length) diff.slots = slots;
+	const nsfw = {};
+	if (edited.nsfw.enabled !== base.nsfw.enabled) nsfw.enabled = edited.nsfw.enabled;
+	if (edited.nsfw.tags !== base.nsfw.tags) nsfw.tags = edited.nsfw.tags;
+	if (Object.keys(nsfw).length) diff.nsfw = nsfw;
+	if (!sameOutfits(edited.outfits, base.outfits)) diff.outfits = edited.outfits.map((o) => ({ ...o }));
+	if (edited.activeOutfit !== base.activeOutfit) diff.activeOutfit = edited.activeOutfit;
+	const states = edited.states.filter((state) => {
+		const original = base.states.find((s) => s.id === state.id);
+		return !original || original.tags !== state.tags || original.enabled !== state.enabled;
+	});
+	if (states.length) diff.states = states.map((s) => ({ ...s }));
+	if (edited.negative !== base.negative) diff.negative = edited.negative;
+	if (edited.pose.preset !== base.pose.preset || edited.pose.custom !== base.pose.custom) diff.pose = { ...edited.pose };
+	if (!samePosition(edited.position, base.position)) diff.position = edited.position ? { ...edited.position } : null;
+	return diff;
+}
+/** No field is overridden (the owner alone does not count). */
+function isOverrideEmpty(override) {
+	return !override || Object.keys(override).every((key) => key === "owner");
+}
+/** The passport as the chat sees it: a new copy, the base untouched. */
+function applyPassportOverride(base, override) {
+	if (isOverrideEmpty(override)) return normalizePassport(base) ?? base;
+	const o = override;
+	const states = base.states.map((s) => ({ ...s }));
+	for (const state of o.states ?? []) {
+		const at = states.findIndex((s) => s.id === state.id);
+		if (at >= 0) states[at] = { ...state };
+		else states.push({ ...state });
+	}
+	const result = normalizePassport({
+		...base,
+		name: o.name ?? base.name,
+		kind: o.kind ?? base.kind,
+		aliases: o.aliases ?? base.aliases,
+		tags: o.tags ?? base.tags,
+		slots: {
+			...base.slots,
+			...o.slots
+		},
+		nsfw: {
+			...base.nsfw,
+			...o.nsfw
+		},
+		outfits: o.outfits ?? base.outfits,
+		activeOutfit: o.activeOutfit ?? base.activeOutfit,
+		states,
+		negative: o.negative ?? base.negative,
+		pose: o.pose ?? base.pose,
+		position: "position" in o ? o.position ?? null : base.position
+	}) ?? base;
+	result.id = base.id;
+	return result;
+}
+/** Defensive parse of a stored override (hand-edited metadata, newer versions); null when unusable. */
+function normalizeOverride(raw) {
+	if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return null;
+	const source = obj(raw);
+	const result = {};
+	if (isString(source.owner) && source.owner.trim()) result.owner = source.owner.trim();
+	if (isString(source.name)) result.name = source.name;
+	if (PASSPORT_KINDS.includes(source.kind)) result.kind = source.kind;
+	if (Array.isArray(source.aliases)) result.aliases = source.aliases.filter(isString);
+	if (isString(source.tags)) result.tags = source.tags;
+	const slots = {};
+	const rawSlots = obj(source.slots);
+	for (const slot of PASSPORT_SLOTS) if (isString(rawSlots[slot])) slots[slot] = rawSlots[slot];
+	if (Object.keys(slots).length) result.slots = slots;
+	const rawNsfw = obj(source.nsfw);
+	const nsfw = {};
+	if (typeof rawNsfw.enabled === "boolean") nsfw.enabled = rawNsfw.enabled;
+	if (isString(rawNsfw.tags)) nsfw.tags = rawNsfw.tags;
+	if (Object.keys(nsfw).length) result.nsfw = nsfw;
+	if (Array.isArray(source.outfits)) result.outfits = source.outfits.map(obj).filter((o) => isString(o.name) && o.name.trim()).map((o) => ({
+		name: String(o.name).trim(),
+		tags: isString(o.tags) ? o.tags : ""
+	}));
+	if (isString(source.activeOutfit)) result.activeOutfit = source.activeOutfit;
+	if (Array.isArray(source.states)) {
+		const states = source.states.map(obj).filter((s) => isString(s.id) && s.id.trim()).map((s) => ({
+			id: String(s.id).trim(),
+			tags: isString(s.tags) ? s.tags : "",
+			enabled: s.enabled === true
+		}));
+		if (states.length) result.states = states;
+	}
+	if (isString(source.negative)) result.negative = source.negative;
+	if (typeof source.pose === "object" && source.pose !== null) {
+		const pose = obj(source.pose);
+		result.pose = {
+			preset: isString(pose.preset) ? pose.preset : "",
+			custom: isString(pose.custom) ? pose.custom : ""
+		};
+	}
+	if ("position" in source) {
+		const position = obj(source.position);
+		const x = Number(position.x);
+		const y = Number(position.y);
+		result.position = source.position && Number.isFinite(x) && Number.isFinite(y) ? {
+			x: Math.min(1, Math.max(0, x)),
+			y: Math.min(1, Math.max(0, y))
+		} : null;
+	}
+	return result;
+}
+/** Defensive parse of chat_metadata.nai_studio.passports. */
+function normalizeChatPassports(raw) {
+	const source = obj(raw);
+	const overrides = {};
+	for (const [id, value] of Object.entries(obj(source.overrides))) {
+		const override = normalizeOverride(value);
+		if (id.trim() && override && !isOverrideEmpty(override)) overrides[id] = override;
+	}
+	return {
+		overrides,
+		extra: normalizePassportList(source.extra)
+	};
+}
+/**
+* The passport with the chat's override applied, when the override is for it (same id and, when the
+* override names one, the same owner). The base itself when there is none.
+*/
+function resolveChatPassport(passport, owner, data) {
+	const override = Object.prototype.hasOwnProperty.call(data.overrides, passport.id) ? data.overrides[passport.id] : void 0;
+	if (!override || override.owner && owner && override.owner !== owner) return passport;
+	return applyPassportOverride(passport, override);
+}
+//#endregion
+//#region src/domain/scene-hints.ts
+var HINT_FIELDS = [
+	"locationId",
+	"locationName",
+	"tags",
+	"characters"
+];
+function text$2(value) {
+	if (typeof value !== "string") return void 0;
+	return value.trim() || void 0;
+}
+/** Defensive parse of what a provider returned; null when it says nothing usable. */
+function normalizeSceneHint(raw) {
+	if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return null;
+	const source = raw;
+	const hint = {};
+	const locationId = text$2(source.locationId);
+	if (locationId) hint.locationId = locationId;
+	const locationName = text$2(source.locationName);
+	if (locationName) hint.locationName = locationName;
+	const tags = Array.isArray(source.tags) ? text$2(source.tags.filter((t) => typeof t === "string").join(", ")) : text$2(source.tags);
+	if (tags) hint.tags = tags;
+	if (Array.isArray(source.characters)) {
+		const seen = /* @__PURE__ */ new Set();
+		const names = source.characters.map(text$2).filter((name) => {
+			if (!name || seen.has(name.toLowerCase())) return false;
+			seen.add(name.toLowerCase());
+			return true;
+		});
+		if (names.length) hint.characters = names;
+	}
+	return HINT_FIELDS.some((field) => hint[field] !== void 0) ? hint : null;
+}
+/** Hints in priority order (best first): each field from the first hint that has it. */
+function mergeSceneHints(ordered) {
+	const result = {};
+	for (const hint of ordered) {
+		if (!hint) continue;
+		if (result.locationId === void 0 && hint.locationId) result.locationId = hint.locationId;
+		if (result.locationName === void 0 && hint.locationName) result.locationName = hint.locationName;
+		if (result.tags === void 0 && hint.tags) result.tags = hint.tags;
+		if (result.characters === void 0 && hint.characters?.length) result.characters = [...hint.characters];
+	}
+	return result;
+}
+/** Providers sorted by priority, highest first; equal priorities keep their registration order. */
+function byPriority(providers) {
+	return providers.map((provider, index) => ({
+		provider,
+		index
+	})).sort((a, b) => b.provider.priority - a.provider.priority || a.index - b.index).map(({ provider }) => provider);
 }
 //#endregion
 //#region src/domain/poses.ts
@@ -5316,6 +5531,7 @@ function buildScene(spec, caps, options) {
 	const capacity = caps.maxCharacters;
 	const kept = capacity > 0 ? active.slice(0, capacity) : active;
 	const dropped = capacity > 0 ? active.slice(capacity).map((p) => p.name) : [];
+	const passportIds = [...new Set(kept.flatMap((p) => p.passport ? [p.passport.id] : []))];
 	const pair = spec.pair ? findPairPose(spec.pair.pose) : void 0;
 	const pairTags = pair ? pairPoseTags(pair, caps.v4Prompt && capacity > 0) : null;
 	const characterTags = kept.map((p) => {
@@ -5344,7 +5560,8 @@ function buildScene(spec, caps, options) {
 		characters: [],
 		useCoords: false,
 		withoutPassport: kept.filter((p) => !p.passport).map((p) => p.name),
-		dropped
+		dropped,
+		passportIds
 	};
 	const canPosition = caps.positioning !== "none" && (kept.length > 1 || caps.canPositionSingleCharacter) && spec.useCoords;
 	return {
@@ -5361,7 +5578,8 @@ function buildScene(spec, caps, options) {
 		}),
 		useCoords: canPosition,
 		withoutPassport: kept.filter((p) => !p.passport).map((p) => p.name),
-		dropped
+		dropped,
+		passportIds
 	};
 }
 /** Sentences of a message (split after . ! ? … and at line breaks). */
@@ -6321,6 +6539,37 @@ function detectLocation(text, names) {
 	for (const name of sorted) if (new RegExp(`(^|[^\\p{L}\\p{N}])${escapeRegExp$1(name.trim())}($|[^\\p{L}\\p{N}])`, "iu").test(text)) return name;
 	return null;
 }
+/** Prefix of the continuity keys of places with a stable id (Maestro places, v0.10). */
+var PLACE_KEY_PREFIX = "place:";
+function placeKey(id) {
+	return `${PLACE_KEY_PREFIX}${id.trim()}`;
+}
+/** Defensive parse of a place another extension returned; null when it has no id. */
+function normalizePlace(raw) {
+	if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return null;
+	const source = raw;
+	const id = typeof source.id === "string" ? source.id.trim() : "";
+	if (!id) return null;
+	return {
+		id,
+		name: typeof source.name === "string" ? source.name.trim() : "",
+		aliases: Array.isArray(source.aliases) ? source.aliases.filter((a) => typeof a === "string" && a.trim() !== "").map((a) => a.trim()) : [],
+		parent: typeof source.parent === "string" && source.parent ? source.parent : null
+	};
+}
+/**
+* Keys under which the reference of a location may be stored, best first: the place id, then the
+* name keys of the label, the place's name and its aliases (references bound before place ids).
+* Without a place: the name key of the label only (the behaviour before v0.10).
+*/
+function locationKeys(label, place) {
+	const keys = place ? [placeKey(place.id), ...[
+		label,
+		place.name,
+		...place.aliases
+	].map(locationKey)] : [locationKey(label)];
+	return [...new Set(keys.filter(Boolean))];
+}
 /** Strength for img2img continuity: low keeps the place, high follows the new prompt. */
 function clampContinuityStrength(value) {
 	return Number.isFinite(value) ? Math.min(.95, Math.max(.1, value)) : .6;
@@ -7163,7 +7412,7 @@ function interpretCompletion(description, glossary) {
 	].join("\n");
 }
 var COMPLETION_INTERPRET_PREFILL = "Tags:";
-var list$1 = (v) => (Array.isArray(v) ? v : typeof v === "string" ? v.split(",") : []).map((x) => String(x).trim()).filter(Boolean);
+var list$2 = (v) => (Array.isArray(v) ? v : typeof v === "string" ? v.split(",") : []).map((x) => String(x).trim()).filter(Boolean);
 /** Reads either the JSON answer or the "Tags: / Sentence: / Text: / Negative:" lines. */
 function parseInterpretation(raw) {
 	let source = raw;
@@ -7178,13 +7427,13 @@ function parseInterpretation(raw) {
 	}
 	if (source && typeof source === "object") {
 		const o = source;
-		const tags = list$1(o.tags);
+		const tags = list$2(o.tags);
 		if (!tags.length && !String(o.sentence ?? "").trim()) return null;
 		return {
 			tags,
 			sentence: String(o.sentence ?? "").trim(),
 			text: String(o.text ?? "").trim(),
-			negative: list$1(o.negative)
+			negative: list$2(o.negative)
 		};
 	}
 	if (typeof source !== "string") return null;
@@ -7193,13 +7442,13 @@ function parseInterpretation(raw) {
 		return (text.match(new RegExp(`^\\s*${name}\\s*:[ \\t]*(.*)$`, "im"))?.[1] ?? "").trim();
 	};
 	const cut = text.split(/\n\s*description\s*:/i)[0];
-	const tags = list$1(cut.match(/^\s*tags\s*:[ \t]*(.*)$/im)?.[1] ?? "");
+	const tags = list$2(cut.match(/^\s*tags\s*:[ \t]*(.*)$/im)?.[1] ?? "");
 	if (!tags.length) return null;
 	return {
 		tags,
 		sentence: field("sentence"),
 		text: field("text"),
-		negative: list$1(field("negative"))
+		negative: list$2(field("negative"))
 	};
 }
 var normalize = (t) => tagName(t).replace(/\s+/g, " ").trim();
@@ -9560,6 +9809,36 @@ async function saveCharacterPrompt(index, value, share) {
 	});
 }
 //#endregion
+//#region src/features/events/studio-events.ts
+var STUDIO_EVENTS = ["passportsSaved", "imageReady"];
+var listeners = {
+	passportsSaved: /* @__PURE__ */ new Set(),
+	imageReady: /* @__PURE__ */ new Set()
+};
+function onStudioEvent(event, listener) {
+	const set = listeners[event];
+	set.add(listener);
+	return () => {
+		set.delete(listener);
+	};
+}
+function emitStudioEvent(event, detail) {
+	for (const listener of [...listeners[event]]) try {
+		const result = listener(structuredClone(detail));
+		if (result instanceof Promise) result.catch((error) => log.warn(`${event} listener failed`, error));
+	} catch (error) {
+		log.warn(`${event} listener failed`, error);
+	}
+}
+/** An image was attached to a message (after the chat was saved). */
+function imageReady(messageIndex, kind, passportIds = []) {
+	emitStudioEvent("imageReady", {
+		messageIndex,
+		kind,
+		passportIds: [...passportIds]
+	});
+}
+//#endregion
 //#region src/features/images/png-io.ts
 /** NovelAI text map of a PNG or WebP (compressed PNG chunks inflated). Empty for other files. */
 async function readMetadataText(bytes) {
@@ -10201,7 +10480,8 @@ var Pipeline = class {
 				legacy,
 				prepared,
 				mode,
-				chatId
+				chatId,
+				...req.passportIds?.length ? { passportIds: [...req.passportIds] } : {}
 			};
 		} catch (error) {
 			throw toNaiError(error, {
@@ -10255,6 +10535,7 @@ var Pipeline = class {
 						text: messageText(templates()[String(MODE.MESSAGE)] ?? "{{prompt}}", meta.scenePrompt)
 					});
 				}
+				if (messageId !== null) imageReady(messageId, req.swipe ? "swipe" : "message", produced.passportIds);
 			}
 			return {
 				path: first.path,
@@ -10432,7 +10713,8 @@ var InlineImages = class {
 			trigger: req.trigger,
 			mode: req.mode,
 			scene: req.scene,
-			overrides: req.overrides
+			overrides: req.overrides,
+			...req.passportIds?.length ? { passportIds: req.passportIds } : {}
 		});
 		if (!produced) return null;
 		const m = message(messageId);
@@ -10456,6 +10738,7 @@ var InlineImages = class {
 		m.mes = insertPlaceholder(m.mes, entry.id, offset ?? m.mes.length);
 		await commit(messageId);
 		settle(entryBlobKeys(entry));
+		imageReady(messageId, "inline", req.passportIds);
 		return entry;
 	}
 	/** A finished reply: raw markers replaced with placeholders, pending entries added. */
@@ -10514,6 +10797,7 @@ var InlineImages = class {
 		await this.commitLocated(found);
 		settle(swipes.map((sw) => sw.blobKey));
 		this.record(produced, swipes, imageId);
+		imageReady(found.messageId, entry.marker ? "marker" : "inline", produced.passportIds);
 		return true;
 	}
 	/** Status of a marker image (pending again for a retry, error with the reason). */
@@ -10530,8 +10814,9 @@ var InlineImages = class {
 	async saveCreated(messageId, entry) {
 		await commit(messageId, false);
 		settle(entryBlobKeys(entry));
+		imageReady(messageId, "inline");
 	}
-	async addGeneratedSwipe(messageId, imageId, produced) {
+	async addGeneratedSwipe(messageId, imageId, produced, kind = "swipe") {
 		if (!produced) return false;
 		const { entry } = findEntry(messageId, imageId);
 		const swipes = [];
@@ -10540,6 +10825,7 @@ var InlineImages = class {
 		await commit(messageId);
 		settle(swipes.map((s) => s.blobKey));
 		this.record(produced, swipes, imageId);
+		imageReady(messageId, kind, produced.passportIds);
 		return true;
 	}
 	overridesFrom(meta, seed) {
@@ -10621,7 +10907,7 @@ var InlineImages = class {
 	}
 	/** Adds an externally produced image (Director Tools, upscale, inpaint) as a new swipe. */
 	async addProducedSwipe(messageId, imageId, produced) {
-		return await this.addGeneratedSwipe(messageId, imageId, produced);
+		return await this.addGeneratedSwipe(messageId, imageId, produced, "tool");
 	}
 	async setActive(messageId, imageId, index) {
 		const { entry } = findEntry(messageId, imageId);
@@ -10730,6 +11016,10 @@ var InlineImages = class {
 };
 //#endregion
 //#region src/features/characters/passport-store.ts
+/** Key of chat_metadata where NAI Studio keeps its chat data. */
+var META_KEY$1 = "nai_studio";
+/** Prefix of the owner of a persona passport ("persona:<avatar>"), also the persona candidate key. */
+var PERSONA_OWNER_PREFIX = "persona:";
 var savedListeners = /* @__PURE__ */ new Set();
 /** Called after the passports of a card are saved (integrations keep their copies in sync). */
 function onPassportsSaved(listener) {
@@ -10738,7 +11028,7 @@ function onPassportsSaved(listener) {
 function cardField(character) {
 	return character?.data?.extensions?.[CARD_FIELD];
 }
-/** Every passport of the card (characters, world, locations, scenario, objects). */
+/** Every passport of the card (characters, world, locations, scenario, objects), as stored. */
 function cardPassports(character) {
 	const field = cardField(character);
 	return normalizePassportList(field?.passports, field?.passport);
@@ -10752,6 +11042,22 @@ async function loadCharacter(index) {
 	const c = ctx();
 	if (c.characters[index]?.shallow) await c.unshallowCharacter(index);
 	return ctx().characters[index];
+}
+/** Card indexes of the current chat: the 1:1 character or every group member. */
+function chatCardIndexes() {
+	const c = ctx();
+	if (c.groupId) return (c.groups?.find((g) => g.id === c.groupId)?.members ?? []).map((avatar) => c.characters.findIndex((ch) => ch.avatar === avatar)).filter((i) => i >= 0);
+	if (c.characterId !== void 0 && c.characterId !== null && c.characterId !== "") {
+		const index = Number(c.characterId);
+		return Number.isInteger(index) && c.characters[index] ? [index] : [];
+	}
+	return [];
+}
+/** Index of a card by its avatar file, with or without the extension; -1 when absent. */
+function cardIndexByAvatar(avatar) {
+	const characters = ctx().characters;
+	const exact = characters.findIndex((ch) => ch.avatar === avatar);
+	return exact >= 0 ? exact : characters.findIndex((ch) => avatarKey(ch.avatar) === avatarKey(avatar));
 }
 async function saveCardPassports(index, passports) {
 	const c = ctx();
@@ -10767,6 +11073,11 @@ async function saveCardPassports(index, passports) {
 	for (const listener of savedListeners) try {
 		listener(index, passports);
 	} catch {}
+	emitStudioEvent("passportsSaved", {
+		ids: passports.map((p) => p.id),
+		scope: "card",
+		avatar: character.avatar
+	});
 }
 /** Replaces one passport of the card by id (or adds it). */
 async function saveCardPassport(index, passport) {
@@ -10776,12 +11087,18 @@ async function saveCardPassport(index, passport) {
 	else list.push(passport);
 	await saveCardPassports(index, list);
 }
+var personas = null;
 async function currentPersonaKey() {
 	try {
-		return (await importHost("/scripts/personas.js")).user_avatar || "default";
+		personas ??= await importHost("/scripts/personas.js");
+		return personas.user_avatar || "default";
 	} catch {
 		return "default";
 	}
+}
+/** The current persona without waiting: its module is loaded once (`user_avatar` is a live binding). */
+function knownPersonaKey() {
+	return personas?.user_avatar || "default";
 }
 function personaPassport(key) {
 	return normalizePassport(settings().scene.personaPassports[key]);
@@ -10789,10 +11106,310 @@ function personaPassport(key) {
 function savePersonaPassport(key, passport) {
 	settings().scene.personaPassports[key] = passport;
 	saveSettings();
+	emitStudioEvent("passportsSaved", {
+		ids: [passport.id],
+		scope: "card",
+		persona: true
+	});
+}
+function personaOwner(key) {
+	return `${PERSONA_OWNER_PREFIX}${key}`;
+}
+/** A chat is open (chat-scope passports can be saved). */
+function chatOpen() {
+	try {
+		return Boolean(ctx().getCurrentChatId?.());
+	} catch {
+		return false;
+	}
+}
+/** Overrides and passports of the current chat (a copy; empty without a chat). */
+function chatPassportData() {
+	const root = ctx().chatMetadata?.[META_KEY$1];
+	return root?.passports ? normalizeChatPassports(root.passports) : emptyChatPassports();
+}
+async function writeChatPassports(data) {
+	const c = ctx();
+	const root = c.chatMetadata[META_KEY$1] ??= {};
+	if (!Object.keys(data.overrides).length && !data.extra.length) delete root.passports;
+	else root.passports = data;
+	await c.saveMetadata();
+}
+function requireChat() {
+	if (!chatOpen()) throw new Error("NAI Studio: no chat is open");
+}
+/** The passports of a card as the current chat sees them. */
+function resolvedCardPassports(character, data = chatPassportData()) {
+	const owner = character?.avatar;
+	return cardPassports(character).map((p) => resolveChatPassport(p, owner, data));
+}
+/** The persona passport as the current chat sees it. */
+function resolvedPersonaPassport(key, data = chatPassportData()) {
+	const passport = personaPassport(key);
+	return passport ? resolveChatPassport(passport, personaOwner(key), data) : null;
+}
+/**
+* Saves a passport for this chat only: over a card or persona passport (`base`) as the fields that
+* differ (no difference removes the override), or as a passport of the chat itself (`base` null).
+*/
+async function saveChatPassport(base, edited, owner) {
+	requireChat();
+	const data = chatPassportData();
+	if (base) {
+		const diff = passportDiff(base, {
+			...edited,
+			id: base.id
+		});
+		if (isOverrideEmpty(diff)) delete data.overrides[base.id];
+		else data.overrides[base.id] = owner ? {
+			owner,
+			...diff
+		} : diff;
+	} else {
+		const at = data.extra.findIndex((p) => p.id === edited.id);
+		if (at >= 0) data.extra[at] = edited;
+		else data.extra.push(edited);
+	}
+	await writeChatPassports(data);
+	emitStudioEvent("passportsSaved", {
+		ids: [base?.id ?? edited.id],
+		scope: "chat"
+	});
+}
+/**
+* Drops the chat's override of a passport (the card value comes back) and a passport of the chat
+* itself with that id. False when there was nothing to drop.
+*/
+async function clearChatOverride(id) {
+	requireChat();
+	const data = chatPassportData();
+	if (!(Object.prototype.hasOwnProperty.call(data.overrides, id) || data.extra.some((p) => p.id === id))) return false;
+	delete data.overrides[id];
+	data.extra = data.extra.filter((p) => p.id !== id);
+	await writeChatPassports(data);
+	emitStudioEvent("passportsSaved", {
+		ids: [id],
+		scope: "chat"
+	});
+	return true;
+}
+/** The chat has an override for this passport of this owner. */
+function hasChatOverride(id, owner, data = chatPassportData()) {
+	const override = Object.prototype.hasOwnProperty.call(data.overrides, id) ? data.overrides[id] : void 0;
+	return Boolean(override && !(override.owner && owner && override.owner !== owner));
+}
+function ownerId(owner) {
+	if (owner.type === "card") return owner.avatar;
+	return owner.type === "persona" ? personaOwner(owner.key) : void 0;
+}
+/**
+* Finds a passport by id: in the given card or persona, else in the cards of the chat, the current
+* persona and the passports of the chat itself. Synchronous: lazily loaded cards that were never
+* opened have no passports yet.
+*/
+function locatePassport(id, where = {}, data = chatPassportData()) {
+	const c = ctx();
+	const inCard = (index) => {
+		const character = c.characters[index];
+		const base = cardPassports(character).find((p) => p.id === id);
+		if (!character || !base) return null;
+		return {
+			owner: {
+				type: "card",
+				index,
+				avatar: character.avatar
+			},
+			base,
+			resolved: resolveChatPassport(base, character.avatar, data),
+			overridden: hasChatOverride(id, character.avatar, data)
+		};
+	};
+	const inPersona = (key) => {
+		const base = personaPassport(key);
+		if (!base || base.id !== id) return null;
+		return {
+			owner: {
+				type: "persona",
+				key
+			},
+			base,
+			resolved: resolveChatPassport(base, personaOwner(key), data),
+			overridden: hasChatOverride(id, personaOwner(key), data)
+		};
+	};
+	if (where.persona !== void 0) return inPersona(where.persona);
+	if (where.index !== void 0) return inCard(where.index);
+	for (const index of chatCardIndexes()) {
+		const found = inCard(index);
+		if (found) return found;
+	}
+	const persona = inPersona(knownPersonaKey());
+	if (persona) return persona;
+	const own = data.extra.find((p) => p.id === id);
+	return own ? {
+		owner: { type: "chat" },
+		base: null,
+		resolved: own,
+		overridden: true
+	} : null;
+}
+/** Saves an edited passport where it lives ("card": the card or persona settings) or for this chat. */
+async function savePassportIn(located, edited, scope) {
+	const passport = {
+		...edited,
+		id: located.base?.id ?? located.resolved.id
+	};
+	if (scope === "chat") {
+		await saveChatPassport(located.base, passport, ownerId(located.owner));
+		return;
+	}
+	const owner = located.owner;
+	if (owner.type === "card") await saveCardPassport(owner.index, passport);
+	else if (owner.type === "persona") savePersonaPassport(owner.key, passport);
+	else throw new Error("NAI Studio: a passport of the chat has no card");
+}
+/** The chat's view of a passport after a save (an override of the card applied again). */
+function resolvedAfterSave(located, saved, scope) {
+	if (scope === "chat" || !located.base) return saved;
+	const data = chatPassportData();
+	return resolveChatPassport(saved, ownerId(located.owner), data);
+}
+//#endregion
+//#region src/features/continuity/places.ts
+var PLACES_GLOBAL = "MAESTRO_PLACES";
+/** Fired on window by Maestro when MAESTRO_PLACES appears. */
+var PLACES_READY_EVENT = "maestro-places-ready";
+var METHODS = [
+	"current",
+	"resolve",
+	"list",
+	"onEnter"
+];
+/** The published registry when it is version 1 with every method; null otherwise. */
+function maestroPlaces() {
+	const value = globalThis[PLACES_GLOBAL];
+	if (typeof value !== "object" || value === null) return null;
+	const api = value;
+	if (api.version !== 1) return null;
+	return METHODS.every((method) => typeof api[method] === "function") ? value : null;
+}
+function safe(run, fallback) {
+	try {
+		return run();
+	} catch (error) {
+		log.warn("MAESTRO_PLACES failed", error);
+		return fallback;
+	}
+}
+/** The place a label names (name, alias or case form); null without the registry or a match. */
+function resolvePlace(label) {
+	const api = maestroPlaces();
+	if (!api || !label.trim()) return null;
+	return safe(() => normalizePlace(api.resolve(label.trim())), null);
+}
+/** A place by id from the registry's list; null when absent. */
+function placeById(id) {
+	const api = maestroPlaces();
+	if (!api) return null;
+	const list = safe(() => api.list(), []);
+	return (Array.isArray(list) ? list.map(normalizePlace) : []).find((place) => place?.id === id) ?? null;
+}
+var subscribed = null;
+/**
+* Follows the place the story enters (once per registry object; a new registry after a reload of
+* Maestro is subscribed again). Called whenever continuity is used, so a late Maestro is picked up.
+*/
+function followPlaces(onEnter) {
+	const api = maestroPlaces();
+	if (!api || subscribed?.api === api) return;
+	unfollowPlaces();
+	const result = safe(() => api.onEnter((raw) => {
+		const place = normalizePlace(raw);
+		if (place) onEnter(place);
+	}), void 0);
+	subscribed = {
+		api,
+		unsubscribe: typeof result === "function" ? result : () => {}
+	};
+}
+function unfollowPlaces() {
+	if (!subscribed) return;
+	const { unsubscribe } = subscribed;
+	subscribed = null;
+	safe(() => unsubscribe(), void 0);
+}
+//#endregion
+//#region src/features/scene/scene-providers.ts
+/** A provider that does not answer in time is skipped for this scene. */
+var PROVIDER_TIMEOUT_MS = 3e3;
+/** Answers are reused for the same message and text this long (one picture asks several times). */
+var CACHE_MS = 1500;
+var providers = [];
+var cache = null;
+/** Registers a provider; one with the same id is replaced. Returns the unregistration. */
+function registerSceneHintProvider(provider) {
+	providers = [...providers.filter((p) => p.id !== provider.id), provider];
+	cache = null;
+	return () => {
+		if (!providers.includes(provider)) return;
+		providers = providers.filter((p) => p !== provider);
+		cache = null;
+	};
+}
+function sceneHintProviders() {
+	return byPriority(providers);
+}
+/** The message a scene query is about: the given one, else the last message that is not a system one. */
+function hintContext(query) {
+	const chat = ctx().chat ?? [];
+	let messageIndex = query.messageId ?? -1;
+	if (messageIndex < 0) {
+		messageIndex = chat.length - 1;
+		while (messageIndex >= 0 && chat[messageIndex]?.is_system) messageIndex--;
+	}
+	return {
+		messageIndex,
+		text: query.text ?? chat[messageIndex]?.mes ?? ""
+	};
+}
+async function ask$1(provider, context) {
+	let timer;
+	try {
+		const timeout = new Promise((resolve) => {
+			timer = setTimeout(() => {
+				log.warn(`scene provider ${provider.id}: no answer in ${PROVIDER_TIMEOUT_MS} ms`);
+				resolve(null);
+			}, PROVIDER_TIMEOUT_MS);
+		});
+		return normalizeSceneHint(await Promise.race([Promise.resolve(provider.describe({ ...context })), timeout]));
+	} catch (error) {
+		log.warn(`scene provider ${provider.id} failed`, error);
+		return null;
+	} finally {
+		if (timer !== void 0) clearTimeout(timer);
+	}
+}
+/** The merged hint of every provider for a scene; empty without providers. */
+async function sceneHint(query = {}) {
+	const ordered = sceneHintProviders();
+	if (!ordered.length) return {};
+	const context = hintContext(query);
+	const key = `${context.messageIndex}\u0000${context.text}`;
+	const now = Date.now();
+	if (cache && cache.key === key && now - cache.at < CACHE_MS) return structuredClone(await cache.hint);
+	const hint = Promise.all(ordered.map((provider) => ask$1(provider, context))).then(mergeSceneHints);
+	cache = {
+		key,
+		at: now,
+		hint
+	};
+	return structuredClone(await hint);
 }
 //#endregion
 //#region src/features/scene/scene-service.ts
-var PERSONA_PREFIX = "persona:";
+var PERSONA_PREFIX = PERSONA_OWNER_PREFIX;
+/** Key prefix of the candidates of passports that exist only in the chat ("chat#<passport id>"). */
+var CHAT_PASSPORT_PREFIX = "chat#";
 function customPoses() {
 	return settings().poses.custom.map((p) => ({
 		id: p.id,
@@ -10841,12 +11458,12 @@ async function withProvided(base, query) {
 * a card without character passports is one candidate with its character prompt, unless it is a
 * scenario (then nobody is drawn for the card itself).
 */
-async function characterCandidates(index) {
+async function characterCandidates(index, chat) {
 	const character = await loadCharacter(index);
 	if (!character) return [];
 	const prompt = readCharacterPrompt(character);
 	const key = avatarKey(character.avatar);
-	const list = cardPassports(character);
+	const list = resolvedCardPassports(character, chat);
 	const people = list.filter((p) => p.kind === "character" && !isPassportEmpty(p));
 	if (people.length) {
 		const main = primaryPassport(people, character.name);
@@ -10875,12 +11492,24 @@ async function characterCandidates(index) {
 		isUser: false
 	}];
 }
-/** Card indexes of the current chat: the 1:1 character or every group member. */
-function chatCardIndexes() {
-	const c = ctx();
-	if (c.groupId) return (c.groups.find((g) => g.id === c.groupId)?.members ?? []).map((avatar) => c.characters.findIndex((ch) => ch.avatar === avatar)).filter((i) => i >= 0);
-	if (c.characterId !== void 0 && c.characterId !== null && c.characterId !== "") return [Number(c.characterId)];
-	return [];
+/** Named character passports that exist only in this chat (another extension wrote them). */
+function chatOnlyCandidates(chat) {
+	return chat.extra.filter((p) => p.kind === "character" && p.name.trim() && !isPassportEmpty(p)).map((passport) => ({
+		key: `${CHAT_PASSPORT_PREFIX}${passport.id}`,
+		name: passport.name,
+		aliases: [.../* @__PURE__ */ new Set([...passport.aliases, ...aliasesOf(passport.name)])],
+		passport,
+		fallbackPrompt: "",
+		fallbackNegative: "",
+		isUser: false
+	}));
+}
+var namesOne = (name, candidate) => mentionIndex(name, [candidate.name, ...candidate.aliases]) >= 0 || mentionIndex(candidate.name, [name]) >= 0;
+/** Candidates a scene provider says are present get `present` (the automatic scene falls back to them). */
+function markPresent(list, names) {
+	if (!names?.length) return list;
+	for (const candidate of list) if (names.some((name) => namesOne(name, candidate))) candidate.present = true;
+	return list;
 }
 /**
 * Setting of the chat: world and scenario tags and named locations of its cards, plus the setting
@@ -10889,25 +11518,34 @@ function chatCardIndexes() {
 async function sceneSetting(query = {}) {
 	const world = [];
 	const locations = [];
-	for (const index of chatCardIndexes()) for (const passport of cardPassports(await loadCharacter(index))) if (passport.kind === "world" || passport.kind === "scenario") world.push(passport.tags);
-	else if (passport.kind === "location" && passport.name && passport.tags.trim()) locations.push({
-		name: passport.name,
-		aliases: passport.aliases,
-		tags: passport.tags
-	});
+	const chat = chatPassportData();
+	const collect = (passport) => {
+		if (passport.kind === "world" || passport.kind === "scenario") world.push(passport.tags);
+		else if (passport.kind === "location" && passport.name && passport.tags.trim()) locations.push({
+			name: passport.name,
+			aliases: passport.aliases,
+			tags: passport.tags
+		});
+	};
+	for (const index of chatCardIndexes()) for (const passport of resolvedCardPassports(await loadCharacter(index), chat)) collect(passport);
+	for (const passport of chat.extra) collect(passport);
+	const hint = await sceneHint(query);
 	let tracked = {
 		tags: [],
 		location: ""
 	};
-	if (provider) try {
+	if (provider && (hint.tags === void 0 || hint.locationName === void 0)) try {
 		tracked = await provider.setting(query);
 	} catch (error) {
 		log.warn("scene provider: setting not available", error);
 	}
+	const tags = hint.tags ?? tracked.tags.join(", ");
+	const location = hint.locationName ?? (hint.locationId ? placeById(hint.locationId)?.name : void 0) ?? tracked.location;
 	return {
-		world: joinTags(...world, tracked.tags.join(", ")),
+		world: joinTags(...world, tags),
 		locations,
-		location: tracked.location
+		location,
+		...hint.locationId ? { locationId: hint.locationId } : {}
 	};
 }
 /** Tags of the locations a text names (whole-word name or alias). */
@@ -10917,19 +11555,21 @@ function mentionedLocationTags(text, locations) {
 /** Characters of the current chat (the 1:1 character or every group member) and the persona. */
 async function sceneCandidates(query = {}) {
 	const c = ctx();
+	const chat = chatPassportData();
 	const result = [];
-	for (const index of chatCardIndexes()) result.push(...await characterCandidates(index));
+	for (const index of chatCardIndexes()) result.push(...await characterCandidates(index, chat));
+	result.push(...chatOnlyCandidates(chat));
 	const personaKey = await currentPersonaKey();
 	result.push({
 		key: `${PERSONA_PREFIX}${personaKey}`,
 		name: c.name1,
 		aliases: aliasesOf(c.name1),
-		passport: personaPassport(personaKey),
+		passport: resolvedPersonaPassport(personaKey, chat),
 		fallbackPrompt: "",
 		fallbackNegative: "",
 		isUser: true
 	});
-	return await withProvided(result, query);
+	return markPresent(await withProvided(result, query), (await sceneHint(query)).characters);
 }
 function sentencesMentioning(text, candidate) {
 	const names = [candidate.name, ...candidate.aliases].map((n) => n.toLowerCase()).filter((n) => n.length > 1);
@@ -10989,10 +11629,12 @@ var SceneService = class {
 		} : lastMessage();
 		const caps = currentCaps();
 		const max = caps.maxCharacters > 0 ? caps.maxCharacters : 3;
-		const found = detectParticipants(source.text, candidates, {
+		let found = detectParticipants(source.text, candidates, {
 			speakerKey: source.speakerKey,
 			max
 		});
+		const present = candidates.filter((c) => c.present);
+		if (present.length && !candidates.some((c) => mentionIndex(source.text, [c.name, ...c.aliases]) >= 0)) found = present.slice(0, max);
 		const library = poseLibrary();
 		const positions = autoLayout(found.length, caps, found.map((c) => c.passport?.position ?? null));
 		spec.participants = found.map((candidate, i) => {
@@ -11120,7 +11762,8 @@ var SceneService = class {
 				trigger: built.prompt,
 				scene: built.prompt,
 				mode: MODE.FREE,
-				overrides
+				overrides,
+				passportIds: built.passportIds
 			}))?.id ?? null;
 		}
 		return await this.pipeline.generatePicture({
@@ -11128,7 +11771,8 @@ var SceneService = class {
 			trigger: built.prompt || "scene",
 			scene: built.prompt,
 			mode: MODE.FREE,
-			overrides
+			overrides,
+			passportIds: built.passportIds
 		});
 	}
 };
@@ -13435,47 +14079,120 @@ function data() {
 function continuityData() {
 	return structuredClone(data());
 }
-async function setCurrentLocation(name) {
-	data().current = name.trim();
+/** The place of a location: the given id (with the registry's name and aliases), else the registry's match. */
+function placeOf(label, placeId) {
+	if (placeId?.trim()) {
+		const id = placeId.trim();
+		return placeById(id) ?? {
+			id,
+			name: label.trim(),
+			aliases: [],
+			parent: null
+		};
+	}
+	return resolvePlace(label);
+}
+/** The place of the current location (its stored id first). */
+function currentPlace(d) {
+	return d.current ? placeOf(d.current, d.currentPlace) : null;
+}
+/** Reference of a location: under the place id, else under a name key of the label, the place or its aliases. */
+function findReference(d, label, place) {
+	for (const key of locationKeys(label, place)) {
+		const found = d.locations[key];
+		if (found) return [key, found];
+	}
+	return null;
+}
+/** A reference found under a name key moves to the place id key (no reference there yet). */
+function migrate(d, label, place) {
+	if (!place) return;
+	const target = placeKey(place.id);
+	if (d.locations[target]) return;
+	const found = findReference(d, label, place);
+	if (!found || found[0] === target) return;
+	d.locations[target] = {
+		...found[1],
+		placeId: place.id
+	};
+	delete d.locations[found[0]];
+	log.info(`continuity: reference of ${found[1].name} moved to ${target}`);
+}
+/** The reference of the current location, if any (the panel shows it). */
+function currentReference(d = data()) {
+	return d.current ? findReference(d, d.current, currentPlace(d))?.[1] ?? null : null;
+}
+function followMaestro() {
+	followPlaces((place) => {
+		if (!settings().continuity.enabled || !ctx().getCurrentChatId()) return;
+		setCurrentLocation(place.name || place.id, place.id).catch((error) => log.warn("continuity: place not set", error));
+	});
+}
+/** `placeId`: the stable id of the place, when the caller knows it (a scene provider). */
+async function setCurrentLocation(name, placeId) {
+	followMaestro();
+	const d = data();
+	d.current = name.trim();
+	const place = d.current ? placeOf(d.current, placeId) : null;
+	if (place) d.currentPlace = place.id;
+	else delete d.currentPlace;
+	migrate(d, d.current, place);
 	await ctx().saveMetadata();
 }
 async function forgetLocation(name) {
 	const d = data();
-	const key = locationKey(name);
-	const old = d.locations[key];
-	delete d.locations[key];
-	if (locationKey(d.current) === key) d.current = "";
+	const keys = locationKeys(name, locationKey(name) === locationKey(d.current) ? currentPlace(d) : placeOf(name));
+	const removed = keys.map((key) => d.locations[key]).filter((l) => Boolean(l));
+	for (const key of keys) delete d.locations[key];
+	if (locationKey(d.current) === locationKey(name)) {
+		d.current = "";
+		delete d.currentPlace;
+	}
 	await ctx().saveMetadata();
-	if (old?.vibeId) await removeVibe(old.vibeId);
+	for (const old of removed) if (old.vibeId) await removeVibe(old.vibeId);
 }
 /** Makes the image the reference of the location; in vibe mode also a vibe library item. */
-async function bindLocation(name, ref) {
+async function bindLocation(name, ref, placeId) {
 	const d = data();
-	const key = locationKey(name);
-	if (!key) return;
-	const previous = d.locations[key];
+	const label = name.trim();
+	if (!locationKey(label)) return;
+	const place = placeOf(label, placeId ?? (locationKey(label) === locationKey(d.current) ? d.currentPlace : void 0));
+	const keys = locationKeys(label, place);
+	const key = keys[0];
+	const previous = keys.map((k) => d.locations[k]).filter((l) => Boolean(l));
 	const stored = {
 		...ref,
-		name: name.trim(),
+		name: label,
 		updatedAt: (/* @__PURE__ */ new Date()).toISOString()
 	};
+	if (place) stored.placeId = place.id;
 	if (settings().continuity.mode === "vibe") try {
 		const response = await fetch(ref.filePath);
-		if (response.ok) stored.vibeId = (await addVibe(await response.blob(), `@${name.trim()}`)).id;
+		if (response.ok) stored.vibeId = (await addVibe(await response.blob(), `@${label}`)).id;
 	} catch (error) {
 		log.warn("continuity vibe not created:", error);
 	}
+	for (const old of keys.slice(1)) delete d.locations[old];
 	d.locations[key] = stored;
-	d.current ||= name.trim();
+	if (!d.current) {
+		d.current = label;
+		if (place) d.currentPlace = place.id;
+	}
 	await ctx().saveMetadata();
-	if (previous?.vibeId && previous.vibeId !== stored.vibeId) await removeVibe(previous.vibeId);
+	for (const old of previous) if (old.vibeId && old.vibeId !== stored.vibeId) await removeVibe(old.vibeId);
 }
 var ContinuityService = class {
 	follow(text) {
+		followMaestro();
 		const d = data();
 		const detected = detectLocation(text, Object.values(d.locations).map((l) => l.name));
 		if (detected && locationKey(detected) !== locationKey(d.current)) {
+			const stored = Object.values(d.locations).find((l) => locationKey(l.name) === locationKey(detected));
 			d.current = detected;
+			const place = placeOf(detected, stored?.placeId);
+			if (place) d.currentPlace = place.id;
+			else delete d.currentPlace;
+			migrate(d, detected, place);
 			ctx().saveMetadata();
 			log.info("continuity: location", detected);
 		}
@@ -13486,7 +14203,7 @@ var ContinuityService = class {
 		if (!s.enabled) return null;
 		const d = this.follow(input.text);
 		if (s.mode !== "img2img" || !d.current) return null;
-		const ref = d.locations[locationKey(d.current)];
+		const ref = currentReference(d);
 		if (!ref?.filePath) return null;
 		const response = await fetch(ref.filePath, { signal: input.signal });
 		if (!response.ok) return null;
@@ -13501,8 +14218,7 @@ var ContinuityService = class {
 	vibes() {
 		const s = settings().continuity;
 		if (!s.enabled || s.mode !== "vibe" || !ctx().getCurrentChatId()) return [];
-		const d = data();
-		const vibeId = d.locations[locationKey(d.current)]?.vibeId;
+		const vibeId = currentReference(data())?.vibeId;
 		const item = vibeId ? settings().vibes.items.find((i) => i.id === vibeId) : void 0;
 		return item ? [{
 			item,
@@ -13526,9 +14242,16 @@ var ContinuityService = class {
 			model: produced.meta.model,
 			seed: produced.meta.seed,
 			prompt: produced.meta.scenePrompt
-		}).catch((error) => log.warn("continuity bind failed:", error));
+		}, d.currentPlace).catch((error) => log.warn("continuity bind failed:", error));
 	};
 };
+/** Starts following Maestro's places (app ready; continuity calls it too, so a late Maestro is found). */
+function startPlaceFollowing() {
+	followMaestro();
+}
+function stopPlaceFollowing() {
+	unfollowPlaces();
+}
 //#endregion
 //#region src/features/tools/tool-common.ts
 /** Free-only blocks every paid tool call; otherwise a paid call above the threshold is confirmed. */
@@ -13658,6 +14381,7 @@ async function deliver(source, produced, services) {
 		target: "message",
 		paths: saved.map((s) => s.path)
 	});
+	imageReady(source.target.messageId, "tool", produced.passportIds);
 }
 /** Meta of a tool result derived from the source (Director Tools, upscale keep its prompt). */
 function toolMeta(source, patch) {
@@ -13872,7 +14596,7 @@ var active = 0;
 var target = null;
 var remoteTimer = null;
 var formatCount = (n) => n >= 1e6 ? `${(n / 1e6).toFixed(1)}M` : n >= 1e3 ? `${Math.round(n / 1e3)}k` : String(n);
-function list() {
+function list$1() {
 	if (!dropdown) {
 		dropdown = document.createElement("div");
 		dropdown.className = "naist-ac naist-hidden";
@@ -13893,7 +14617,7 @@ function hide() {
 	target = null;
 }
 function render$1() {
-	const el = list();
+	const el = list$1();
 	if (!target || !items.length) {
 		hide();
 		return;
@@ -14112,10 +14836,26 @@ function stateLabel(state) {
 }
 /** Opens the editor; resolves with the edited passport or null when cancelled. */
 async function editPassport(name, initial, options = {}) {
+	return (await openEditor(name, {
+		card: structuredClone(initial ?? defaultPassport()),
+		chat: null
+	}, "card", null, options))?.passport ?? null;
+}
+/** The editor with the scope switch; resolves with the edited passport and where to save it. */
+async function editPassportIn(name, scopes, options = {}) {
+	return await openEditor(name, {
+		card: scopes.card ? structuredClone(scopes.card) : null,
+		chat: structuredClone(scopes.chat)
+	}, scopes.card ? scopes.initial : "chat", scopes, options);
+}
+var editorCount = 0;
+async function openEditor(name, drafts, initialScope, scopes, options) {
 	const c = ctx();
-	const passport = structuredClone(initial ?? defaultPassport());
+	let scope = initialScope;
+	let passport = drafts[scope] ?? drafts.card ?? drafts.chat;
 	const root = document.createElement("div");
 	root.className = "naist-dialog naist-passport";
+	const radioName = `naist-passport-scope-${++editorCount}`;
 	const renderOutfits = () => `
         ${passport.outfits.map((o, i) => `<div class="naist-row naist-outfit" data-index="${i}">
                     <input class="text_pole naist-outfit-name" value="${escapeHtml$2(o.name)}" placeholder="${escapeHtml$2(t("naist.passport.outfitName"))}">
@@ -14127,77 +14867,87 @@ async function editPassport(name, initial, options = {}) {
                     <label class="checkbox_label"><input type="checkbox" class="naist-state-on"${s.enabled ? " checked" : ""}><span>${escapeHtml$2(stateLabel(s))}</span></label>
                     <input class="text_pole naist-grow naist-state-tags" value="${escapeHtml$2(s.tags)}">
                 </div>`).join("") + `<div class="naist-row"><input class="text_pole naist-grow naist-state-new" placeholder="${escapeHtml$2(t("naist.passport.newState"))}"><div class="menu_button naist-state-add">${escapeHtml$2(t("naist.passport.addState"))}</div></div>`;
-	const identity = options.identity ? `<div class="naist-grid2">
-            <div><label>${escapeHtml$2(t("naist.passport.name"))}</label>
-                <input class="text_pole naist-passport-name" value="${escapeHtml$2(passport.name)}" placeholder="${escapeHtml$2(name)}"></div>
-            <div><label>${escapeHtml$2(t("naist.passport.kind"))}</label>
-                <select class="text_pole naist-passport-kind">${PASSPORT_KINDS.map((k) => `<option value="${k}"${k === passport.kind ? " selected" : ""}>${escapeHtml$2(t(`naist.passport.kind.${k}`))}</option>`).join("")}</select></div>
+	const scopeBar = scopes ? `<div class="naist-row naist-passport-scope">
+            <span>${escapeHtml$2(t("naist.passport.scope"))}</span>
+            <label class="checkbox_label"><input type="radio" name="${radioName}" value="card"${drafts.card ? "" : " disabled"}><span>${escapeHtml$2(t(scopes.persona ? "naist.passport.scopePersona" : "naist.passport.scopeCard"))}</span></label>
+            <label class="checkbox_label"><input type="radio" name="${radioName}" value="chat"><span>${escapeHtml$2(t("naist.passport.scopeChat"))}</span></label>
+            <div class="menu_button naist-passport-scope-reset"><i class="fa-solid fa-rotate-left"></i> ${escapeHtml$2(t("naist.passport.scopeReset"))}</div>
         </div>
-        <label>${escapeHtml$2(t("naist.passport.aliases"))}</label>
-        <input class="text_pole naist-passport-aliases" value="${escapeHtml$2(passport.aliases.join(", "))}" placeholder="${escapeHtml$2(t("naist.passport.aliasesHint"))}">` : "";
-	root.innerHTML = `
-        <h3>${escapeHtml$2(t("naist.passport.title", { name: passport.name || name }))}</h3>
-        <div class="naist-hint">${escapeHtml$2(t("naist.passport.hint"))}</div>
-        ${options.generate ? `<div class="naist-row"><div class="menu_button naist-passport-generate"><i class="fa-solid fa-wand-magic-sparkles"></i> ${escapeHtml$2(t("naist.passport.generateOne"))}</div><span class="naist-muted">${escapeHtml$2(t("naist.passport.generateHint"))}</span></div>` : ""}
-        ${identity}
-        <div class="naist-passport-tags-box">
-            <label>${escapeHtml$2(t("naist.passport.tags"))}</label>
-            <textarea class="text_pole textarea_compact naist-slot-input naist-passport-tags" rows="3">${escapeHtml$2(passport.tags)}</textarea>
-            <div class="naist-hint">${escapeHtml$2(t("naist.passport.tagsHint"))}</div>
-        </div>
-        <div class="naist-passport-character">
-        <div class="naist-grid2">${PASSPORT_SLOTS.map((slot) => `<div><label>${escapeHtml$2(t(`naist.slot.${slot}`))}</label>
-                <textarea class="text_pole textarea_compact naist-slot-input" data-slot="${slot}" rows="2">${escapeHtml$2(passport.slots[slot])}</textarea></div>`).join("")}</div>
-        <div class="naist-section">
-            <b>${escapeHtml$2(t("naist.passport.outfits"))}</b>
-            <div class="naist-hint">${escapeHtml$2(t("naist.passport.outfitsHint"))}</div>
-            <div class="naist-outfits">${renderOutfits()}</div>
-            <label>${escapeHtml$2(t("naist.passport.activeOutfit"))}</label>
-            <select class="text_pole naist-active-outfit"></select>
-        </div>
-        <div class="naist-section">
-            <b>${escapeHtml$2(t("naist.passport.states"))}</b>
-            <div class="naist-states">${renderStates()}</div>
-        </div>
-        <div class="naist-section">
-            <label class="checkbox_label"><input type="checkbox" class="naist-nsfw-on"${passport.nsfw.enabled ? " checked" : ""}><span>${escapeHtml$2(t("naist.passport.nsfw"))}</span></label>
-            <textarea class="text_pole textarea_compact naist-nsfw-tags" rows="2">${escapeHtml$2(passport.nsfw.tags)}</textarea>
-            <div class="naist-hint">${escapeHtml$2(t("naist.passport.nsfwHint"))}</div>
-        </div>
-        <label>${escapeHtml$2(t("naist.passport.negative"))}</label>
-        <textarea class="text_pole textarea_compact naist-negative" rows="2">${escapeHtml$2(passport.negative)}</textarea>
-        <div class="naist-grid2">
-            <div><label>${escapeHtml$2(t("naist.passport.pose"))}</label><select class="text_pole naist-pose">${poseSelectOptions(passport.pose.preset)}</select></div>
-            <div><label>${escapeHtml$2(t("naist.passport.poseTags"))}</label><input class="text_pole naist-pose-tags" value="${escapeHtml$2(passport.pose.custom)}"></div>
-        </div>
-        <div class="naist-row">
-            <label class="checkbox_label"><input type="checkbox" class="naist-pos-on"${passport.position ? " checked" : ""}><span>${escapeHtml$2(t("naist.passport.position"))}</span></label>
-            <input type="number" min="0" max="1" step="0.1" class="text_pole naist-pos-x" value="${passport.position?.x ?? .5}" title="x">
-            <input type="number" min="0" max="1" step="0.1" class="text_pole naist-pos-y" value="${passport.position?.y ?? .5}" title="y">
-        </div>
-        </div>`;
-	const negativeBlock = root.querySelector(".naist-negative")?.previousElementSibling;
-	const characterBlock = root.querySelector(".naist-passport-character");
-	if (negativeBlock && characterBlock) characterBlock.after(negativeBlock, root.querySelector(".naist-negative"));
-	const kindSelect = root.querySelector(".naist-passport-kind");
-	const applyKind = () => {
-		const kind = kindSelect?.value ?? passport.kind;
-		root.querySelector(".naist-passport-character")?.classList.toggle("naist-hidden", kind !== "character");
-		root.querySelector(".naist-passport-tags-box")?.classList.toggle("naist-hidden", kind === "character");
+        <div class="naist-hint naist-passport-scope-hint"></div>` : "";
+	const formHtml = () => {
+		const identity = options.identity ? `<div class="naist-grid2">
+                <div><label>${escapeHtml$2(t("naist.passport.name"))}</label>
+                    <input class="text_pole naist-passport-name" value="${escapeHtml$2(passport.name)}" placeholder="${escapeHtml$2(name)}"></div>
+                <div><label>${escapeHtml$2(t("naist.passport.kind"))}</label>
+                    <select class="text_pole naist-passport-kind">${PASSPORT_KINDS.map((k) => `<option value="${k}"${k === passport.kind ? " selected" : ""}>${escapeHtml$2(t(`naist.passport.kind.${k}`))}</option>`).join("")}</select></div>
+            </div>
+            <label>${escapeHtml$2(t("naist.passport.aliases"))}</label>
+            <input class="text_pole naist-passport-aliases" value="${escapeHtml$2(passport.aliases.join(", "))}" placeholder="${escapeHtml$2(t("naist.passport.aliasesHint"))}">` : "";
+		return `
+            ${options.generate ? `<div class="naist-row"><div class="menu_button naist-passport-generate"><i class="fa-solid fa-wand-magic-sparkles"></i> ${escapeHtml$2(t("naist.passport.generateOne"))}</div><span class="naist-muted">${escapeHtml$2(t("naist.passport.generateHint"))}</span></div>` : ""}
+            ${identity}
+            <div class="naist-passport-tags-box">
+                <label>${escapeHtml$2(t("naist.passport.tags"))}</label>
+                <textarea class="text_pole textarea_compact naist-slot-input naist-passport-tags" rows="3">${escapeHtml$2(passport.tags)}</textarea>
+                <div class="naist-hint">${escapeHtml$2(t("naist.passport.tagsHint"))}</div>
+            </div>
+            <div class="naist-passport-character">
+            <div class="naist-grid2">${PASSPORT_SLOTS.map((slot) => `<div><label>${escapeHtml$2(t(`naist.slot.${slot}`))}</label>
+                    <textarea class="text_pole textarea_compact naist-slot-input" data-slot="${slot}" rows="2">${escapeHtml$2(passport.slots[slot])}</textarea></div>`).join("")}</div>
+            <div class="naist-section">
+                <b>${escapeHtml$2(t("naist.passport.outfits"))}</b>
+                <div class="naist-hint">${escapeHtml$2(t("naist.passport.outfitsHint"))}</div>
+                <div class="naist-outfits">${renderOutfits()}</div>
+                <label>${escapeHtml$2(t("naist.passport.activeOutfit"))}</label>
+                <select class="text_pole naist-active-outfit"></select>
+            </div>
+            <div class="naist-section">
+                <b>${escapeHtml$2(t("naist.passport.states"))}</b>
+                <div class="naist-states">${renderStates()}</div>
+            </div>
+            <div class="naist-section">
+                <label class="checkbox_label"><input type="checkbox" class="naist-nsfw-on"${passport.nsfw.enabled ? " checked" : ""}><span>${escapeHtml$2(t("naist.passport.nsfw"))}</span></label>
+                <textarea class="text_pole textarea_compact naist-nsfw-tags" rows="2">${escapeHtml$2(passport.nsfw.tags)}</textarea>
+                <div class="naist-hint">${escapeHtml$2(t("naist.passport.nsfwHint"))}</div>
+            </div>
+            <div class="naist-grid2">
+                <div><label>${escapeHtml$2(t("naist.passport.pose"))}</label><select class="text_pole naist-pose">${poseSelectOptions(passport.pose.preset)}</select></div>
+                <div><label>${escapeHtml$2(t("naist.passport.poseTags"))}</label><input class="text_pole naist-pose-tags" value="${escapeHtml$2(passport.pose.custom)}"></div>
+            </div>
+            <div class="naist-row">
+                <label class="checkbox_label"><input type="checkbox" class="naist-pos-on"${passport.position ? " checked" : ""}><span>${escapeHtml$2(t("naist.passport.position"))}</span></label>
+                <input type="number" min="0" max="1" step="0.1" class="text_pole naist-pos-x" value="${passport.position?.x ?? .5}" title="x">
+                <input type="number" min="0" max="1" step="0.1" class="text_pole naist-pos-y" value="${passport.position?.y ?? .5}" title="y">
+            </div>
+            </div>
+            <label>${escapeHtml$2(t("naist.passport.negative"))}</label>
+            <textarea class="text_pole textarea_compact naist-negative" rows="2">${escapeHtml$2(passport.negative)}</textarea>`;
 	};
-	kindSelect?.addEventListener("change", applyKind);
-	applyKind();
-	const outfitsBox = root.querySelector(".naist-outfits");
-	const statesBox = root.querySelector(".naist-states");
-	const activeSelect = root.querySelector(".naist-active-outfit");
+	root.innerHTML = `
+        <h3 class="naist-passport-title"></h3>
+        <div class="naist-hint">${escapeHtml$2(t("naist.passport.hint"))}</div>
+        ${scopeBar}
+        <div class="naist-passport-form"></div>`;
+	const form = root.querySelector(".naist-passport-form");
+	const q = (selector) => form.querySelector(selector);
+	const outfitsBox = () => q(".naist-outfits");
+	const statesBox = () => q(".naist-states");
+	const activeSelect = () => q(".naist-active-outfit");
+	const applyKind = () => {
+		const kind = q(".naist-passport-kind")?.value ?? passport.kind;
+		q(".naist-passport-character")?.classList.toggle("naist-hidden", kind !== "character");
+		q(".naist-passport-tags-box")?.classList.toggle("naist-hidden", kind === "character");
+	};
 	const readOutfits = () => {
-		passport.outfits = [...outfitsBox.querySelectorAll(".naist-outfit")].map((row) => ({
+		const box = outfitsBox();
+		if (!box) return;
+		passport.outfits = [...box.querySelectorAll(".naist-outfit")].map((row) => ({
 			name: row.querySelector(".naist-outfit-name")?.value.trim() ?? "",
 			tags: row.querySelector(".naist-outfit-tags")?.value ?? ""
 		}));
 	};
 	const readStates = () => {
-		statesBox.querySelectorAll(".naist-state").forEach((row) => {
+		statesBox()?.querySelectorAll(".naist-state").forEach((row) => {
 			const state = passport.states[Number(row.dataset.index)];
 			if (!state) return;
 			state.enabled = row.querySelector(".naist-state-on")?.checked === true;
@@ -14205,34 +14955,113 @@ async function editPassport(name, initial, options = {}) {
 		});
 	};
 	const fillActive = () => {
+		const select = activeSelect();
+		if (!select) return;
 		const current = passport.activeOutfit;
-		activeSelect.innerHTML = [`<option value="">${escapeHtml$2(t("naist.passport.clothingSlot"))}</option>`, ...passport.outfits.filter((o) => o.name).map((o) => `<option value="${escapeHtml$2(o.name)}">${escapeHtml$2(o.name)}</option>`)].join("");
-		activeSelect.value = passport.outfits.some((o) => o.name === current) ? current : "";
+		select.innerHTML = [`<option value="">${escapeHtml$2(t("naist.passport.clothingSlot"))}</option>`, ...passport.outfits.filter((o) => o.name).map((o) => `<option value="${escapeHtml$2(o.name)}">${escapeHtml$2(o.name)}</option>`)].join("");
+		select.value = passport.outfits.some((o) => o.name === current) ? current : "";
 	};
-	fillActive();
+	/** The form's values into the passport shown (before saving or switching the scope). */
+	const readForm = () => {
+		form.querySelectorAll(".naist-slot-input[data-slot]").forEach((area) => {
+			const slot = area.dataset.slot;
+			if (slot) passport.slots[slot] = area.value.trim();
+		});
+		passport.tags = q(".naist-passport-tags")?.value.trim() ?? passport.tags;
+		if (options.identity) {
+			passport.name = q(".naist-passport-name")?.value.trim() ?? passport.name;
+			passport.kind = q(".naist-passport-kind")?.value ?? passport.kind;
+			passport.aliases = (q(".naist-passport-aliases")?.value ?? "").split(",").map((a) => a.trim()).filter(Boolean);
+		}
+		readOutfits();
+		passport.outfits = passport.outfits.filter((o) => o.name);
+		const active = activeSelect()?.value ?? "";
+		passport.activeOutfit = passport.outfits.some((o) => o.name === active) ? active : "";
+		readStates();
+		passport.nsfw = {
+			enabled: q(".naist-nsfw-on")?.checked === true,
+			tags: q(".naist-nsfw-tags")?.value.trim() ?? ""
+		};
+		passport.negative = q(".naist-negative")?.value.trim() ?? "";
+		passport.pose = {
+			preset: q(".naist-pose")?.value ?? "",
+			custom: q(".naist-pose-tags")?.value.trim() ?? ""
+		};
+		const usePosition = q(".naist-pos-on")?.checked === true;
+		const clamp = (v) => Math.min(1, Math.max(0, Number(v) || .5));
+		passport.position = usePosition ? {
+			x: clamp(q(".naist-pos-x")?.value),
+			y: clamp(q(".naist-pos-y")?.value)
+		} : null;
+	};
+	const renderScope = () => {
+		if (!scopes) return;
+		root.querySelectorAll(`input[name="${radioName}"]`).forEach((radio) => {
+			radio.checked = radio.value === scope;
+		});
+		const hint = root.querySelector(".naist-passport-scope-hint");
+		if (hint) hint.textContent = t(!drafts.card ? "naist.passport.scopeChatOnly" : scope === "chat" ? "naist.passport.scopeChatHint" : "naist.passport.scopeCardHint");
+		root.querySelector(".naist-passport-scope-reset")?.classList.toggle("naist-hidden", scope !== "chat" || !scopes.card);
+	};
+	const renderForm = () => {
+		const title = root.querySelector(".naist-passport-title");
+		if (title) title.textContent = t("naist.passport.title", { name: passport.name || name });
+		form.innerHTML = formHtml();
+		fillActive();
+		applyKind();
+		renderScope();
+		localize(root);
+	};
 	const fill = (generated) => {
-		root.querySelectorAll(".naist-slot-input[data-slot]").forEach((area) => {
+		form.querySelectorAll(".naist-slot-input[data-slot]").forEach((area) => {
 			const slot = area.dataset.slot;
 			if (slot && generated.slots[slot]) area.value = generated.slots[slot];
 		});
-		const tags = root.querySelector(".naist-passport-tags");
+		const tags = q(".naist-passport-tags");
 		if (tags && generated.tags) tags.value = generated.tags;
-		const nsfw = root.querySelector(".naist-nsfw-tags");
+		const nsfw = q(".naist-nsfw-tags");
 		if (nsfw && generated.nsfw.tags) nsfw.value = generated.nsfw.tags;
-		const negative = root.querySelector(".naist-negative");
+		const negative = q(".naist-negative");
 		if (negative && generated.negative) negative.value = generated.negative;
-		const aliases = root.querySelector(".naist-passport-aliases");
+		const aliases = q(".naist-passport-aliases");
 		if (aliases && generated.aliases.length) aliases.value = generated.aliases.join(", ");
 		if (generated.outfits.length) {
 			readOutfits();
 			const names = new Set(passport.outfits.map((o) => o.name.toLowerCase()));
 			passport.outfits.push(...generated.outfits.filter((o) => !names.has(o.name.toLowerCase())));
-			outfitsBox.innerHTML = renderOutfits();
+			const box = outfitsBox();
+			if (box) box.innerHTML = renderOutfits();
 			fillActive();
 		}
 	};
+	const switchScope = (next) => {
+		const target = drafts[next];
+		if (next === scope || !target) {
+			renderScope();
+			return;
+		}
+		readForm();
+		scope = next;
+		passport = target;
+		renderForm();
+	};
+	root.addEventListener("change", (event) => {
+		const target = event.target;
+		if (target instanceof HTMLInputElement && target.name === radioName) switchScope(target.value === "chat" ? "chat" : "card");
+		else if (target.classList.contains("naist-passport-kind")) applyKind();
+		else if (target.closest(".naist-outfits")) {
+			readOutfits();
+			fillActive();
+		}
+	});
 	root.addEventListener("click", (event) => {
 		const target = event.target;
+		if (target.closest(".naist-passport-scope-reset") && scopes?.card) {
+			drafts.chat = structuredClone(scopes.card);
+			passport = drafts.chat;
+			renderForm();
+			return;
+		}
 		const generateButton = target.closest(".naist-passport-generate");
 		if (generateButton && options.generate && !generateButton.classList.contains("disabled")) {
 			generateButton.classList.add("disabled");
@@ -14242,35 +15071,33 @@ async function editPassport(name, initial, options = {}) {
 			}).catch(reportGenerationError).finally(() => generateButton.classList.remove("disabled"));
 			return;
 		}
-		if (target.classList.contains("naist-outfit-add")) {
+		const box = outfitsBox();
+		if (target.classList.contains("naist-outfit-add") && box) {
 			readOutfits();
 			passport.outfits.push({
 				name: t("naist.passport.outfitDefault", { n: passport.outfits.length + 1 }),
 				tags: ""
 			});
-			outfitsBox.innerHTML = renderOutfits();
+			box.innerHTML = renderOutfits();
 			fillActive();
-		} else if (target.classList.contains("naist-outfit-remove")) {
+		} else if (target.classList.contains("naist-outfit-remove") && box) {
 			readOutfits();
 			passport.outfits.splice(Number(target.closest(".naist-outfit")?.dataset.index), 1);
-			outfitsBox.innerHTML = renderOutfits();
+			box.innerHTML = renderOutfits();
 			fillActive();
 		} else if (target.classList.contains("naist-state-add")) {
 			readStates();
-			const id = root.querySelector(".naist-state-new")?.value.trim() ?? "";
+			const id = q(".naist-state-new")?.value.trim() ?? "";
 			if (id && !passport.states.some((s) => s.id === id)) passport.states.push({
 				id,
 				tags: id,
 				enabled: true
 			});
-			statesBox.innerHTML = renderStates();
+			const states = statesBox();
+			if (states) states.innerHTML = renderStates();
 		}
 	});
-	outfitsBox.addEventListener("change", () => {
-		readOutfits();
-		fillActive();
-	});
-	localize(root);
+	renderForm();
 	attachPromptAssist(root, ".naist-slot-input, .naist-nsfw-tags, .naist-negative", () => settings().generation.model);
 	if (await c.callGenericPopup(root, c.POPUP_TYPE.CONFIRM, "", {
 		okButton: t("naist.passport.save"),
@@ -14279,36 +15106,35 @@ async function editPassport(name, initial, options = {}) {
 		large: true,
 		allowVerticalScrolling: true
 	}) !== c.POPUP_RESULT.AFFIRMATIVE) return null;
-	root.querySelectorAll(".naist-slot-input[data-slot]").forEach((area) => {
-		const slot = area.dataset.slot;
-		if (slot) passport.slots[slot] = area.value.trim();
-	});
-	passport.tags = root.querySelector(".naist-passport-tags")?.value.trim() ?? passport.tags;
-	if (options.identity) {
-		passport.name = root.querySelector(".naist-passport-name")?.value.trim() ?? passport.name;
-		passport.kind = kindSelect?.value ?? passport.kind;
-		passport.aliases = (root.querySelector(".naist-passport-aliases")?.value ?? "").split(",").map((a) => a.trim()).filter(Boolean);
+	readForm();
+	return {
+		passport,
+		scope
+	};
+}
+//#endregion
+//#region src/ui/passport-scope.ts
+/** Edits and saves; resolves with the passport as the chat now sees it, or null when cancelled. */
+async function editLocatedPassport(name, located, options = {}) {
+	if (!chatOpen()) {
+		if (!located.base) return null;
+		const edited = await editPassport(name, located.base, options);
+		if (!edited) return null;
+		await savePassportIn(located, edited, "card");
+		toastr.success(t("naist.passport.saved", { name: edited.name || name }));
+		return resolvedAfterSave(located, edited, "card");
 	}
-	readOutfits();
-	passport.outfits = passport.outfits.filter((o) => o.name);
-	passport.activeOutfit = passport.outfits.some((o) => o.name === activeSelect.value) ? activeSelect.value : "";
-	readStates();
-	passport.nsfw = {
-		enabled: root.querySelector(".naist-nsfw-on")?.checked === true,
-		tags: root.querySelector(".naist-nsfw-tags")?.value.trim() ?? ""
-	};
-	passport.negative = root.querySelector(".naist-negative")?.value.trim() ?? "";
-	passport.pose = {
-		preset: root.querySelector(".naist-pose")?.value ?? "",
-		custom: root.querySelector(".naist-pose-tags")?.value.trim() ?? ""
-	};
-	const useposition = root.querySelector(".naist-pos-on")?.checked === true;
-	const clamp = (v) => Math.min(1, Math.max(0, Number(v) || .5));
-	passport.position = useposition ? {
-		x: clamp(root.querySelector(".naist-pos-x")?.value),
-		y: clamp(root.querySelector(".naist-pos-y")?.value)
-	} : null;
-	return passport;
+	const scoped = await editPassportIn(name, {
+		card: located.base,
+		chat: located.resolved,
+		initial: located.overridden ? "chat" : "card",
+		persona: located.owner.type === "persona"
+	}, options);
+	if (!scoped) return null;
+	await savePassportIn(located, scoped.passport, scoped.scope);
+	const label = scoped.passport.name || name;
+	toastr.success(t(scoped.scope === "chat" ? "naist.passport.savedChat" : "naist.passport.saved", { name: label }));
+	return resolvedAfterSave(located, scoped.passport, scoped.scope);
 }
 //#endregion
 //#region src/features/generation/styles.ts
@@ -14796,6 +15622,19 @@ async function openInspector(prepared, options = { confirmSend: false }) {
 }
 //#endregion
 //#region src/ui/composer.ts
+/** Where the saved passport of a participant lives (card, persona or the chat); null without one. */
+async function locateCandidatePassport(key, passportId) {
+	if (!passportId) return null;
+	if (key.startsWith(PERSONA_PREFIX)) return locatePassport(passportId, { persona: key.slice(PERSONA_PREFIX.length) });
+	if (key.startsWith("chat#")) {
+		const found = locatePassport(passportId);
+		return found?.owner.type === "chat" ? found : null;
+	}
+	const index = cardIndexByAvatar(key.split("#")[0] ?? "");
+	if (index < 0) return null;
+	await loadCharacter(index);
+	return locatePassport(passportId, { index });
+}
 var COLORS = [
 	"#e57373",
 	"#64b5f6",
@@ -15049,19 +15888,23 @@ async function openComposer(service, pipeline, opts) {
 		} else if (el.classList.contains("naist-slot-passport")) {
 			const p = spec.participants[index];
 			if (!p) return;
-			editPassport(p.name, p.passport).then(async (passport) => {
+			(async () => {
+				const located = await locateCandidatePassport(p.key, p.passport?.id);
+				const passport = located ? await editLocatedPassport(p.name, located) : await editPassport(p.name, p.passport);
 				if (!passport) return;
-				if (p.key.startsWith("persona:")) savePersonaPassport(p.key.slice(PERSONA_PREFIX.length), passport);
-				else {
-					const cardKey = p.key.split("#")[0];
-					const charIndex = c.characters.findIndex((ch) => ch.avatar.replace(/\.[^/.]+$/, "") === cardKey);
-					if (charIndex >= 0) await saveCardPassport(charIndex, passport);
+				if (!located) {
+					if (p.key.startsWith(PERSONA_PREFIX)) savePersonaPassport(p.key.slice(PERSONA_PREFIX.length), passport);
+					else {
+						const cardKey = p.key.split("#")[0];
+						const charIndex = c.characters.findIndex((ch) => ch.avatar.replace(/\.[^/.]+$/, "") === cardKey);
+						if (charIndex >= 0) await saveCardPassport(charIndex, passport);
+					}
 				}
 				p.passport = passport;
 				const candidate = candidates.find((x) => x.key === p.key);
 				if (candidate) candidate.passport = passport;
 				render();
-			});
+			})().catch(reportGenerationError);
 		}
 	});
 	root.addEventListener("pointerdown", (event) => {
@@ -15149,18 +15992,23 @@ async function openPassportManager(index, actions) {
 	const character = await loadCharacter(index);
 	if (!character) return;
 	let list = structuredClone(cardPassports(character));
+	/** Ids saved in the card: only those can have a chat override. */
+	const savedIds = new Set(list.map((p) => p.id));
+	const inChat = () => chatOpen() && chatCardIndexes().includes(index);
 	let dirty = false;
 	const root = document.createElement("div");
 	root.className = "naist-dialog naist-passports";
 	const render = () => {
 		const main = primaryPassport(list, character.name);
+		const chat = inChat() ? chatPassportData() : null;
 		const rows = list.map((p, i) => {
 			const label = p.name || character.name;
+			const changed = chat !== null && hasChatOverride(p.id, character.avatar, chat);
 			const summary = passportTags(p, { allowNsfw: false });
 			return `<div class="naist-passport-row" data-index="${i}">
                     <i class="fa-solid ${KIND_ICON[p.kind]} naist-passport-kind-icon" title="${escapeHtml$2(t(`naist.passport.kind.${p.kind}`))}"></i>
                     <div class="naist-grow">
-                        <div><b>${escapeHtml$2(label)}</b> <span class="naist-muted">${escapeHtml$2(t(`naist.passport.kind.${p.kind}`))}${p === main ? ` · ${escapeHtml$2(t("naist.passports.main"))}` : ""}${p.aliases.length ? ` · ${escapeHtml$2(p.aliases.join(", "))}` : ""}</span></div>
+                        <div><b>${escapeHtml$2(label)}</b> <span class="naist-muted">${escapeHtml$2(t(`naist.passport.kind.${p.kind}`))}${p === main ? ` · ${escapeHtml$2(t("naist.passports.main"))}` : ""}${p.aliases.length ? ` · ${escapeHtml$2(p.aliases.join(", "))}` : ""}${changed ? ` · <i class="fa-solid fa-comments"></i> ${escapeHtml$2(t("naist.passports.chatOverride"))}` : ""}</span></div>
                         <div class="naist-muted naist-passport-summary">${escapeHtml$2(summary || t("naist.passports.empty"))}</div>
                     </div>
                     ${p.kind === "character" ? `<div class="menu_button fa-solid fa-masks-theater naist-passport-emotions" title="${escapeHtml$2(t("naist.passports.emotions"))}"></div>` : ""}
@@ -15185,6 +16033,24 @@ async function openPassportManager(index, actions) {
 	const edit = async (i, fresh = false) => {
 		const current = list[i];
 		if (!current) return;
+		if (!fresh && savedIds.has(current.id) && inChat()) {
+			const chat = chatPassportData();
+			const scoped = await editPassportIn(character.name, {
+				card: current,
+				chat: resolveChatPassport(current, character.avatar, chat),
+				initial: hasChatOverride(current.id, character.avatar, chat) ? "chat" : "card"
+			}, { identity: true });
+			if (!scoped) return;
+			if (scoped.scope === "chat") {
+				await saveChatPassport(current, scoped.passport, character.avatar);
+				toastr.success(t("naist.passport.savedChat", { name: scoped.passport.name || character.name }));
+			} else {
+				list[i] = scoped.passport;
+				dirty = true;
+			}
+			render();
+			return;
+		}
 		const edited = await editPassport(character.name, current, { identity: true });
 		if (!edited) {
 			if (fresh) {
@@ -15360,7 +16226,13 @@ async function editCharacterPassport(index) {
 }
 async function editPersonaPassport() {
 	const key = await currentPersonaKey();
-	const passport = await editPassport(ctx().name1, personaPassport(key), { generate: generatePersonaPassport });
+	const stored = personaPassport(key);
+	const located = stored ? locatePassport(stored.id, { persona: key }) : null;
+	if (located) {
+		await editLocatedPassport(ctx().name1, located, { generate: generatePersonaPassport });
+		return;
+	}
+	const passport = await editPassport(ctx().name1, stored, { generate: generatePersonaPassport });
 	if (!passport) return;
 	savePersonaPassport(key, passport);
 	toastr.success(t("naist.passport.saved", { name: ctx().name1 }));
@@ -15740,6 +16612,9 @@ var DesIntegration = class {
 		setPortraitHook((prompt) => this.portraitPlan(prompt));
 		setExtraSpriteFolder((name) => this.active() && settings().des.emotionsToDes ? name : null);
 		onPassportsSaved((index, passports) => this.syncCard(index, passports));
+		onStudioEvent("passportsSaved", (detail) => {
+			if (detail.scope === "chat") this.schedule(false);
+		});
 		const received = c.eventTypes.MESSAGE_RECEIVED;
 		const after = (_id, type) => {
 			if (type !== "quiet" && type !== "impersonate") this.schedule(true);
@@ -15893,10 +16768,7 @@ var DesIntegration = class {
 		}
 	}
 	chatCards() {
-		const c = ctx();
-		if (c.groupId) return (c.groups.find((g) => g.id === c.groupId)?.members ?? []).map((avatar) => c.characters.findIndex((ch) => ch.avatar === avatar)).filter((i) => i >= 0);
-		const id = c.characterId;
-		return id === void 0 || id === null || id === "" ? [] : [Number(id)];
+		return chatCardIndexes();
 	}
 	/** Card new passports go to: the 1:1 character, in a group the speaker of the last reply. */
 	targetCard() {
@@ -15911,20 +16783,25 @@ var DesIntegration = class {
 	isCardCharacter(name) {
 		return this.chatCards().some((i) => sameName(ctx().characters[i]?.name ?? "", name));
 	}
-	/** The character passport of a name in the cards of the chat (name, aliases, sound). */
+	/**
+	* The character passport of a name in the cards of the chat (name, aliases, sound), then among the
+	* passports of the chat itself; as the chat sees it.
+	*/
 	async findPassport(name) {
+		const chat = chatPassportData();
+		const matches = (passport, own) => passport.kind === "character" && (mentionIndex(name, [own, ...passport.aliases]) >= 0 || mentionIndex(own, [name]) >= 0);
 		for (const cardIndex of this.chatCards()) {
 			const card = await loadCharacter(cardIndex);
-			for (const passport of cardPassports(card)) {
-				if (passport.kind !== "character") continue;
-				const own = passport.name || card?.name || "";
-				if (mentionIndex(name, [own, ...passport.aliases]) >= 0 || mentionIndex(own, [name]) >= 0) return {
-					cardIndex,
-					passport
-				};
-			}
+			for (const passport of resolvedCardPassports(card, chat)) if (matches(passport, passport.name || card?.name || "")) return {
+				cardIndex,
+				passport
+			};
 		}
-		return null;
+		const own = chat.extra.find((passport) => passport.name && matches(passport, passport.name));
+		return own ? {
+			cardIndex: null,
+			passport: own
+		} : null;
 	}
 	/** A passport written from the tracker for a character the cards do not know yet. */
 	createPassport(character) {
@@ -15968,8 +16845,13 @@ var DesIntegration = class {
 	}
 	syncCard(index, passports) {
 		if (!this.active()) return;
-		const cardName = ctx().characters[index]?.name ?? "";
-		for (const passport of passports) if (passport.kind === "character") this.syncLine(passport.name || cardName, passport);
+		const card = ctx().characters[index];
+		const cardName = card?.name ?? "";
+		const chat = this.chatCards().includes(index) ? chatPassportData() : null;
+		for (const stored of passports) {
+			const passport = chat ? resolveChatPassport(stored, card?.avatar, chat) : stored;
+			if (passport.kind === "character") this.syncLine(passport.name || cardName, passport);
+		}
 	}
 	portraitRecords() {
 		const meta = ctx().chatMetadata.nai_studio ??= {};
@@ -16045,10 +16927,17 @@ var DesIntegration = class {
 				passport: defaultPassport("character", name)
 			};
 		}
-		const cardName = ctx().characters[found.cardIndex]?.name ?? name;
+		const cardIndex = found.cardIndex;
+		const cardName = cardIndex === null ? name : ctx().characters[cardIndex]?.name ?? name;
+		const located = locatePassport(found.passport.id, cardIndex === null ? {} : { index: cardIndex });
+		if (located && (cardIndex !== null || located.owner.type === "chat")) {
+			await editLocatedPassport(cardName, located, { identity: true });
+			return;
+		}
+		if (cardIndex === null) return;
 		const edited = await editPassport(cardName, found.passport, { identity: true });
 		if (!edited) return;
-		await saveCardPassport(found.cardIndex, edited);
+		await saveCardPassport(cardIndex, edited);
 		toastr.success(t("naist.passport.saved", { name: edited.name || cardName }));
 	}
 	async ensureFound(name) {
@@ -16067,7 +16956,7 @@ var DesIntegration = class {
 			else await this.openPassport(name);
 		} else if (action === "emotions") {
 			const found = await this.ensureFound(name);
-			if (found) openEmotions(found.cardIndex, found.passport.id);
+			if (found && found.cardIndex !== null) openEmotions(found.cardIndex, found.passport.id);
 			else toastr.warning(t("naist.des.noPassport", { name }));
 		} else if (action === "portrait" && this.api) {
 			const found = await this.ensureFound(name);
@@ -16501,6 +17390,7 @@ var MarkerService = class {
 			} else scene = join(style, scene);
 		}
 		let chars = params.chars;
+		let passportIds = [];
 		const declared = Boolean(chars?.length);
 		if (!declared) {
 			const known = (await sceneCandidates(query)).filter((cand) => cand.passport !== null || cand.fallbackPrompt.trim() !== "" || Boolean(cand.currentLook?.trim()));
@@ -16513,6 +17403,7 @@ var MarkerService = class {
 				scene = built.prompt;
 				generation.characters = built.characters;
 				generation.useCoords = built.useCoords;
+				passportIds = built.passportIds ?? [];
 			} else {
 				const actions = chars.map((ch) => [ch.pose, ch.action].filter(Boolean).join(" ")).filter(Boolean);
 				scene = [scene, ...actions].join(", ");
@@ -16523,7 +17414,8 @@ var MarkerService = class {
 		if (place || setting.world) scene = joinTags(scene, place, setting.world);
 		if (params.text && caps.family !== "v3") scene = `${scene}, text: ${params.text}`;
 		const where = params.location || setting.location;
-		if (where && s.continuity.enabled) await setCurrentLocation(where).catch(() => void 0);
+		const placeId = params.location ? void 0 : setting.locationId;
+		if (where && s.continuity.enabled) await setCurrentLocation(where, placeId).catch(() => void 0);
 		const requestPatch = params.ref ? await this.refPatch(params.ref, dims) : void 0;
 		const vibes = params.vibe ? this.namedVibe(params.vibe) : void 0;
 		const overrides = {
@@ -16546,7 +17438,8 @@ var MarkerService = class {
 			...vibes?.length ? { vibes } : {},
 			signal,
 			skipCostConfirm: true,
-			maxCost: freeOnly ? 0 : s.markers.maxCost
+			maxCost: freeOnly ? 0 : s.markers.maxCost,
+			...passportIds.length ? { passportIds } : {}
 		});
 	}
 	/** "ref": an earlier image of the chat (marker id or image id) as the img2img base. */
@@ -16845,7 +17738,7 @@ var ComicService = class {
 };
 //#endregion
 //#region package.json
-var version = "0.9.10";
+var version = "0.10.0";
 //#endregion
 //#region src/features/settings-io/settings-io.ts
 async function exportSettingsFile(includeImages) {
@@ -17454,7 +18347,7 @@ function refreshContinuity() {
 	}
 	const info = document.getElementById("naist_cont_info");
 	if (info) {
-		const ref = data.locations[locationKey(data.current)];
+		const ref = ctx().getCurrentChatId() ? currentReference() : null;
 		const names = Object.values(data.locations).map((l) => l.name);
 		info.textContent = [ref ? t("naist.continuity.boundTo", { path: ref.filePath }) : data.current ? t("naist.continuity.unbound") : "", names.length ? t("naist.continuity.known", { names: names.join(", ") }) : ""].filter(Boolean).join(" · ");
 	}
@@ -17621,7 +18514,11 @@ function setupPhase6(pipeline, scenes) {
 		refreshContinuity();
 	});
 	const c = ctx();
-	c.eventSource.on(c.eventTypes.CHAT_CHANGED ?? "chat_id_changed", () => refreshContinuity());
+	c.eventSource.on(c.eventTypes.CHAT_CHANGED ?? "chat_id_changed", () => {
+		startPlaceFollowing();
+		refreshContinuity();
+	});
+	window.addEventListener(PLACES_READY_EVENT, () => startPlaceFollowing());
 	c.eventSource.on(c.eventTypes.CHARACTER_MANAGEMENT_DROPDOWN ?? "charManagementDropdown", (target) => {
 		if (target === SPRITES_OPTION) openSprites();
 	});
@@ -17629,6 +18526,7 @@ function setupPhase6(pipeline, scenes) {
 		installMenuOption();
 		registerCommands();
 		fillGlossary();
+		startPlaceFollowing();
 		refreshContinuity();
 		log.info("phase 6 tools ready");
 	});
@@ -18930,6 +19828,183 @@ function setupIntegrations(pipeline) {
 		syncFunctionTool(pipeline, compat);
 		log.info(compat ? "took over /sd, /imagine, macros and the GenerateImage tool" : "built-in Image Generation is active: only /nai is registered");
 	});
+}
+//#endregion
+//#region src/integration/public-api.ts
+var API_GLOBAL = "NAI_STUDIO_API";
+/** Unsubscriptions of everything registered through the API (dropped on disable). */
+var registrations = /* @__PURE__ */ new Set();
+function fail(message) {
+	throw new Error(`NAI Studio API: ${message}`);
+}
+function requireId(value, what = "passport id") {
+	if (typeof value !== "string" || !value.trim()) fail(`${what} must be a non-empty string`);
+	return value.trim();
+}
+function requireScope(value) {
+	if (value !== "card" && value !== "chat") fail(`scope must be "card" or "chat"`);
+	return value;
+}
+/** The persona and the cards of the chat are loaded before an async call looks for a passport. */
+async function prepare() {
+	await currentPersonaKey();
+	for (const index of chatCardIndexes()) await loadCharacter(index);
+}
+function whereOf(target) {
+	if (target?.persona) return { persona: knownPersonaKey() };
+	if (target?.avatar !== void 0) {
+		const index = cardIndexByAvatar(target.avatar);
+		if (index < 0) fail(`no card "${target.avatar}"`);
+		return { index };
+	}
+	return null;
+}
+function located(passportId) {
+	return locatePassport(passportId) ?? fail(`no passport "${passportId}" in this chat`);
+}
+/** The view a change starts from: the chat's view for the chat scope, the stored passport for the card. */
+function viewFor(found, scope) {
+	if (scope === "chat") return structuredClone(found.resolved);
+	return found.base ? structuredClone(found.base) : fail("a passport of the chat itself has no card");
+}
+function list(filter) {
+	const data = chatPassportData();
+	const all = !filter || filter.avatar === void 0 && !filter.persona && !filter.chat;
+	const result = [];
+	let cards = [];
+	if (all) cards = chatCardIndexes();
+	else if (filter.avatar !== void 0) cards = [cardIndexByAvatar(filter.avatar)].filter((i) => i >= 0);
+	for (const index of cards) result.push(...resolvedCardPassports(ctx().characters[index], data));
+	if (all || filter.persona) {
+		const persona = resolvedPersonaPassport(knownPersonaKey(), data);
+		if (persona) result.push(persona);
+	}
+	if (all || filter.chat) result.push(...data.extra);
+	return structuredClone(result);
+}
+async function savePassport(raw, scopeValue, target) {
+	const scope = requireScope(scopeValue);
+	const passport = normalizePassport(raw) ?? fail("passport must be an object");
+	const rawId = raw.id;
+	passport.id = typeof rawId === "string" && rawId.trim() ? rawId.trim() : newPassportId();
+	await prepare();
+	const where = whereOf(target);
+	const found = where ? locatePassport(passport.id, where) : locatePassport(passport.id);
+	if (scope === "chat") {
+		if (found?.base) await savePassportIn(found, passport, "chat");
+		else await saveChatPassport(null, passport);
+		return;
+	}
+	const owner = found?.owner;
+	if (target?.persona) {
+		savePersonaPassport(knownPersonaKey(), passport);
+		return;
+	}
+	if (!where && owner?.type === "persona") {
+		savePersonaPassport(owner.key, passport);
+		return;
+	}
+	let index;
+	if (where?.index !== void 0) index = where.index;
+	else if (owner?.type === "card") index = owner.index;
+	else {
+		const cards = chatCardIndexes();
+		if (cards.length !== 1) fail("name the card of a new passport (target.avatar)");
+		index = cards[0];
+	}
+	await saveCardPassport(index, passport);
+	if (owner?.type === "chat") await clearChatOverride(passport.id);
+}
+async function setOutfit(passportId, outfit, scopeValue = "chat") {
+	const id = requireId(passportId);
+	const scope = requireScope(scopeValue);
+	if (typeof outfit !== "string") fail("outfit must be a string");
+	await prepare();
+	const found = located(id);
+	const edited = viewFor(found, scope);
+	const wanted = outfit.trim().toLowerCase();
+	const match = wanted ? edited.outfits.find((o) => o.name.trim().toLowerCase() === wanted) : void 0;
+	if (wanted && !match) fail(`passport "${id}" has no outfit "${outfit}"`);
+	edited.activeOutfit = match?.name ?? "";
+	await savePassportIn(found, edited, scope);
+}
+async function setState(passportId, stateId, enabled, scopeValue = "chat") {
+	const id = requireId(passportId);
+	const state = requireId(stateId, "state id");
+	const scope = requireScope(scopeValue);
+	await prepare();
+	const found = located(id);
+	const edited = viewFor(found, scope);
+	const existing = edited.states.find((s) => s.id === state) ?? edited.states.find((s) => s.id.toLowerCase() === state.toLowerCase());
+	if (existing) existing.enabled = enabled === true;
+	else if (enabled === true) edited.states.push({
+		id: state,
+		tags: state,
+		enabled: true
+	});
+	else return;
+	await savePassportIn(found, edited, scope);
+}
+function on(event, listener) {
+	if (!STUDIO_EVENTS.includes(event)) fail(`unknown event "${String(event)}"`);
+	if (typeof listener !== "function") fail("listener must be a function");
+	const off = onStudioEvent(event, listener);
+	const unsubscribe = () => {
+		off();
+		registrations.delete(unsubscribe);
+	};
+	registrations.add(unsubscribe);
+	return unsubscribe;
+}
+function registerSceneProvider(provider) {
+	if (typeof provider !== "object" || provider === null) fail("provider must be an object");
+	const id = requireId(provider.id, "provider id");
+	if (typeof provider.describe !== "function") fail("provider.describe must be a function");
+	const off = registerSceneHintProvider({
+		id,
+		priority: Number.isFinite(provider.priority) ? Number(provider.priority) : 0,
+		describe: (context) => provider.describe(context)
+	});
+	const unregister = () => {
+		off();
+		registrations.delete(unregister);
+	};
+	registrations.add(unregister);
+	return unregister;
+}
+function createApi() {
+	return Object.freeze({
+		version: 1,
+		passports: (scope) => list(scope),
+		getPassport: (id) => {
+			const found = typeof id === "string" && id.trim() ? locatePassport(id.trim()) : null;
+			return found ? structuredClone(found.resolved) : null;
+		},
+		savePassport,
+		setOutfit,
+		setState,
+		clearChatOverride: async (passportId) => {
+			await clearChatOverride(requireId(passportId));
+		},
+		on,
+		registerSceneProvider
+	});
+}
+var installed = null;
+/** Publishes globalThis.NAI_STUDIO_API (activation). */
+function installPublicApi() {
+	installed ??= createApi();
+	globalThis[API_GLOBAL] = installed;
+	currentPersonaKey();
+	log.info(`${API_GLOBAL} version 1 published`);
+	return installed;
+}
+/** Removes the API and everything registered through it (lifecycle "disable" / "delete"). */
+function uninstallPublicApi() {
+	const root = globalThis;
+	if (installed && root["NAI_STUDIO_API"] === installed) delete root[API_GLOBAL];
+	installed = null;
+	for (const unregister of [...registrations]) unregister();
 }
 //#endregion
 //#region src/ui/templates/character-row.html?raw
@@ -20237,6 +21312,7 @@ async function onActivate() {
 	setupPhase6(pipeline, scenes);
 	setupDes(setupMarkers(pipeline, inline, scenes));
 	new AutoGenerator(studio, pipeline).attach();
+	installPublicApi();
 	studio.refreshTransport();
 	for (const name of [
 		"SECRET_WRITTEN",
@@ -20265,14 +21341,19 @@ async function onUpdate() {
 }
 /** hooks.enable */
 async function onEnable() {
+	if (controller) installPublicApi();
 	log.info("enabled");
 }
 /** hooks.disable */
 async function onDisable() {
+	uninstallPublicApi();
+	stopPlaceFollowing();
 	log.info("disabled");
 }
 /** hooks.delete */
 async function onDelete() {
+	uninstallPublicApi();
+	stopPlaceFollowing();
 	log.info("deleted");
 }
 /** hooks.clean: removes settings and IndexedDB data. */

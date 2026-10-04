@@ -8,6 +8,7 @@
 //   when (missing / state changed / every reply) and calls DES's regeneration, whose /sd call it
 //   recognises by the appearance line and enriches (passport, current look, framing, stable seed);
 // - NAI Studio items in the DES portrait menu, "Illustrate" on scene banners, a Workshop button.
+// Since v0.10 passports are the chat's view of them (chat overrides, passports of the chat itself).
 import { ctx } from '../../core/context';
 import { t } from '../../core/i18n';
 import { log } from '../../core/logger';
@@ -20,6 +21,7 @@ import {
     markerDimensions,
     mentionIndex,
     passportTags,
+    resolveChatPassport,
     trackerFromSwipe,
     trackerFromText,
     withoutCountTags,
@@ -28,17 +30,22 @@ import type { DesCharacter, DesTracker, MarkerParams, Passport, SceneCandidate }
 import { generateTrackerPassport } from '../../features/characters/passport-generator';
 import { interpretForModel } from '../../features/language/interpreter';
 import {
-    cardPassports,
+    chatCardIndexes,
+    chatPassportData,
     loadCharacter,
+    locatePassport,
     onPassportsSaved,
+    resolvedCardPassports,
     saveCardPassport,
 } from '../../features/characters/passport-store';
+import { onStudioEvent } from '../../features/events/studio-events';
 import { setCurrentLocation } from '../../features/continuity/continuity-service';
 import type { MarkerService } from '../../features/markers/marker-service';
 import { setSceneProvider } from '../../features/scene/scene-service';
 import type { SceneQuery } from '../../features/scene/scene-service';
 import { setExtraSpriteFolder } from '../../features/sprites/sprite-service';
 import { editPassport } from '../../ui/passport-editor';
+import { editLocatedPassport } from '../../ui/passport-scope';
 import { setPortraitHook } from '../commands';
 import type { PortraitPlan } from '../commands';
 import { editPersonaPassport, openEmotions } from '../scene-setup';
@@ -46,7 +53,9 @@ import { connectDes } from './des-adapter';
 import type { DesApi } from './des-adapter';
 
 interface Found {
-    cardIndex: number;
+    /** Card of the passport; null for a passport of the chat itself. */
+    cardIndex: number | null;
+    /** As the current chat sees it. */
     passport: Passport;
 }
 
@@ -155,6 +164,10 @@ export class DesIntegration {
         setPortraitHook((prompt) => this.portraitPlan(prompt));
         setExtraSpriteFolder((name) => (this.active() && settings().des.emotionsToDes ? name : null));
         onPassportsSaved((index, passports) => this.syncCard(index, passports));
+        // A passport changed for this chat only: the appearance lines follow it.
+        onStudioEvent('passportsSaved', (detail) => {
+            if (detail.scope === 'chat') this.schedule(false);
+        });
         const received = c.eventTypes.MESSAGE_RECEIVED;
         const after = (_id: unknown, type: unknown) => {
             if (type !== 'quiet' && type !== 'impersonate') this.schedule(true);
@@ -333,13 +346,7 @@ export class DesIntegration {
     // ---- passports ------------------------------------------------------------------------
 
     private chatCards(): number[] {
-        const c = ctx();
-        if (c.groupId) {
-            const members = c.groups.find((g) => g.id === c.groupId)?.members ?? [];
-            return members.map((avatar) => c.characters.findIndex((ch) => ch.avatar === avatar)).filter((i) => i >= 0);
-        }
-        const id = c.characterId;
-        return id === undefined || id === null || id === '' ? [] : [Number(id)];
+        return chatCardIndexes();
     }
 
     /** Card new passports go to: the 1:1 character, in a group the speaker of the last reply. */
@@ -357,18 +364,23 @@ export class DesIntegration {
         return this.chatCards().some((i) => sameName(ctx().characters[i]?.name ?? '', name));
     }
 
-    /** The character passport of a name in the cards of the chat (name, aliases, sound). */
+    /**
+     * The character passport of a name in the cards of the chat (name, aliases, sound), then among the
+     * passports of the chat itself; as the chat sees it.
+     */
     async findPassport(name: string): Promise<Found | null> {
+        const chat = chatPassportData();
+        const matches = (passport: Passport, own: string) =>
+            passport.kind === 'character' &&
+            (mentionIndex(name, [own, ...passport.aliases]) >= 0 || mentionIndex(own, [name]) >= 0);
         for (const cardIndex of this.chatCards()) {
             const card = await loadCharacter(cardIndex);
-            for (const passport of cardPassports(card)) {
-                if (passport.kind !== 'character') continue;
-                const own = passport.name || card?.name || '';
-                if (mentionIndex(name, [own, ...passport.aliases]) >= 0 || mentionIndex(own, [name]) >= 0)
-                    return { cardIndex, passport };
+            for (const passport of resolvedCardPassports(card, chat)) {
+                if (matches(passport, passport.name || card?.name || '')) return { cardIndex, passport };
             }
         }
-        return null;
+        const own = chat.extra.find((passport) => passport.name && matches(passport, passport.name));
+        return own ? { cardIndex: null, passport: own } : null;
     }
 
     /** A passport written from the tracker for a character the cards do not know yet. */
@@ -412,8 +424,12 @@ export class DesIntegration {
 
     private syncCard(index: number, passports: Passport[]): void {
         if (!this.active()) return;
-        const cardName = ctx().characters[index]?.name ?? '';
-        for (const passport of passports) {
+        const card = ctx().characters[index];
+        const cardName = card?.name ?? '';
+        // A card of this chat: its passports as the chat sees them.
+        const chat = this.chatCards().includes(index) ? chatPassportData() : null;
+        for (const stored of passports) {
+            const passport = chat ? resolveChatPassport(stored, card?.avatar, chat) : stored;
             if (passport.kind === 'character') this.syncLine(passport.name || cardName, passport);
         }
     }
@@ -493,10 +509,18 @@ export class DesIntegration {
             if (cardIndex === null) return;
             found = { cardIndex, passport: defaultPassport('character', name) };
         }
-        const cardName = ctx().characters[found.cardIndex]?.name ?? name;
+        const cardIndex = found.cardIndex;
+        const cardName = cardIndex === null ? name : (ctx().characters[cardIndex]?.name ?? name);
+        // A saved passport: where it lives, with "Card / This chat" (v0.10).
+        const located = locatePassport(found.passport.id, cardIndex === null ? {} : { index: cardIndex });
+        if (located && (cardIndex !== null || located.owner.type === 'chat')) {
+            await editLocatedPassport(cardName, located, { identity: true });
+            return;
+        }
+        if (cardIndex === null) return;
         const edited = await editPassport(cardName, found.passport, { identity: true });
         if (!edited) return;
-        await saveCardPassport(found.cardIndex, edited);
+        await saveCardPassport(cardIndex, edited);
         toastr.success(t('naist.passport.saved', { name: edited.name || cardName }));
     }
 
@@ -514,7 +538,8 @@ export class DesIntegration {
             else await this.openPassport(name);
         } else if (action === 'emotions') {
             const found = await this.ensureFound(name);
-            if (found) openEmotions(found.cardIndex, found.passport.id);
+            // Emotion sprites belong to a card: a passport of the chat itself has none.
+            if (found && found.cardIndex !== null) openEmotions(found.cardIndex, found.passport.id);
             else toastr.warning(t('naist.des.noPassport', { name }));
         } else if (action === 'portrait' && this.api) {
             const found = await this.ensureFound(name);

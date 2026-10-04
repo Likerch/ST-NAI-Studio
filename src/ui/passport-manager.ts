@@ -1,15 +1,32 @@
 // Passports of a card (v0.8): every character the card describes, its world, locations, scenario
 // and objects. Add, edit, remove, generate them from the card's description, and draw the
-// Expressions sprites of a character. Changes are saved to the card together.
+// Expressions sprites of a character. Changes are saved to the card together. Since v0.10 a passport
+// of a card in the open chat can be edited for this chat only (saved at once as a chat override).
 import { ctx } from '../core/context';
 import { localize, t } from '../core/i18n';
 import { reportGenerationError } from '../core/notify';
-import { defaultPassport, isPassportEmpty, PASSPORT_KINDS, passportTags, primaryPassport } from '../domain';
+import {
+    defaultPassport,
+    isPassportEmpty,
+    PASSPORT_KINDS,
+    passportTags,
+    primaryPassport,
+    resolveChatPassport,
+} from '../domain';
 import type { Passport, PassportKind } from '../domain';
 import { generateCardPassports } from '../features/characters/passport-generator';
-import { cardPassports, loadCharacter, saveCardPassports } from '../features/characters/passport-store';
+import {
+    cardPassports,
+    chatCardIndexes,
+    chatOpen,
+    chatPassportData,
+    hasChatOverride,
+    loadCharacter,
+    saveCardPassports,
+    saveChatPassport,
+} from '../features/characters/passport-store';
 import { escapeHtml } from './components/dom';
-import { editPassport } from './passport-editor';
+import { editPassport, editPassportIn } from './passport-editor';
 
 export interface PassportManagerActions {
     /** Opens the sprite generator for a character passport of the card. */
@@ -46,20 +63,25 @@ export async function openPassportManager(index: number, actions: PassportManage
     const character = await loadCharacter(index);
     if (!character) return;
     let list: Passport[] = structuredClone(cardPassports(character));
+    /** Ids saved in the card: only those can have a chat override. */
+    const savedIds = new Set(list.map((p) => p.id));
+    const inChat = () => chatOpen() && chatCardIndexes().includes(index);
     let dirty = false;
     const root = document.createElement('div');
     root.className = 'naist-dialog naist-passports';
 
     const render = () => {
         const main = primaryPassport(list, character.name);
+        const chat = inChat() ? chatPassportData() : null;
         const rows = list
             .map((p, i) => {
                 const label = p.name || character.name;
+                const changed = chat !== null && hasChatOverride(p.id, character.avatar, chat);
                 const summary = passportTags(p, { allowNsfw: false });
                 return `<div class="naist-passport-row" data-index="${i}">
                     <i class="fa-solid ${KIND_ICON[p.kind]} naist-passport-kind-icon" title="${escapeHtml(t(`naist.passport.kind.${p.kind}`))}"></i>
                     <div class="naist-grow">
-                        <div><b>${escapeHtml(label)}</b> <span class="naist-muted">${escapeHtml(t(`naist.passport.kind.${p.kind}`))}${p === main ? ` · ${escapeHtml(t('naist.passports.main'))}` : ''}${p.aliases.length ? ` · ${escapeHtml(p.aliases.join(', '))}` : ''}</span></div>
+                        <div><b>${escapeHtml(label)}</b> <span class="naist-muted">${escapeHtml(t(`naist.passport.kind.${p.kind}`))}${p === main ? ` · ${escapeHtml(t('naist.passports.main'))}` : ''}${p.aliases.length ? ` · ${escapeHtml(p.aliases.join(', '))}` : ''}${changed ? ` · <i class="fa-solid fa-comments"></i> ${escapeHtml(t('naist.passports.chatOverride'))}` : ''}</span></div>
                         <div class="naist-muted naist-passport-summary">${escapeHtml(summary || t('naist.passports.empty'))}</div>
                     </div>
                     ${p.kind === 'character' ? `<div class="menu_button fa-solid fa-masks-theater naist-passport-emotions" title="${escapeHtml(t('naist.passports.emotions'))}"></div>` : ''}
@@ -86,6 +108,29 @@ export async function openPassportManager(index: number, actions: PassportManage
     const edit = async (i: number, fresh = false) => {
         const current = list[i];
         if (!current) return;
+        if (!fresh && savedIds.has(current.id) && inChat()) {
+            const chat = chatPassportData();
+            const scoped = await editPassportIn(
+                character.name,
+                {
+                    card: current,
+                    chat: resolveChatPassport(current, character.avatar, chat),
+                    initial: hasChatOverride(current.id, character.avatar, chat) ? 'chat' : 'card',
+                },
+                { identity: true },
+            );
+            if (!scoped) return;
+            if (scoped.scope === 'chat') {
+                // For this chat only: saved now, the card list stays as it is.
+                await saveChatPassport(current, scoped.passport, character.avatar);
+                toastr.success(t('naist.passport.savedChat', { name: scoped.passport.name || character.name }));
+            } else {
+                list[i] = scoped.passport;
+                dirty = true;
+            }
+            render();
+            return;
+        }
         const edited = await editPassport(character.name, current, { identity: true });
         if (!edited) {
             // A new passport closed without saving is not kept.

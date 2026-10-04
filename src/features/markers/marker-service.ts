@@ -340,6 +340,7 @@ export class MarkerService {
         // Characters with a passport named in the description take part without "chars" too. Only the
         // description counts: a caption often names who is looked at ("winks at Arthur"), not who is drawn.
         let chars = params.chars;
+        let passportIds: string[] = [];
         const declared = Boolean(chars?.length);
         if (!declared) {
             const known = (await sceneCandidates(query)).filter(
@@ -355,6 +356,7 @@ export class MarkerService {
                 scene = built.prompt;
                 generation.characters = built.characters;
                 generation.useCoords = built.useCoords;
+                passportIds = built.passportIds ?? [];
             } else {
                 // Nobody known by that name: what they do still describes the picture.
                 const actions = chars.map((ch) => [ch.pose, ch.action].filter(Boolean).join(' ')).filter(Boolean);
@@ -370,7 +372,9 @@ export class MarkerService {
         if (place || setting.world) scene = joinTags(scene, place, setting.world);
         if (params.text && caps.family !== 'v3') scene = `${scene}, text: ${params.text}`;
         const where = params.location || setting.location;
-        if (where && s.continuity.enabled) await setCurrentLocation(where).catch(() => undefined);
+        // The place id of a scene provider belongs to its own location, not to the marker's.
+        const placeId = params.location ? undefined : setting.locationId;
+        if (where && s.continuity.enabled) await setCurrentLocation(where, placeId).catch(() => undefined);
 
         const requestPatch = params.ref ? await this.refPatch(params.ref, dims) : undefined;
         const vibes = params.vibe ? this.namedVibe(params.vibe) : undefined;
@@ -389,6 +393,7 @@ export class MarkerService {
             signal,
             skipCostConfirm: true,
             maxCost: freeOnly ? 0 : s.markers.maxCost,
+            ...(passportIds.length ? { passportIds } : {}),
         });
     }
 

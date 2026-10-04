@@ -20,6 +20,8 @@ export * from './inline';
 export * from './png-meta';
 export * from './gallery';
 export * from './passport';
+export * from './passport-overrides';
+export * from './scene-hints';
 export * from './poses';
 export * from './scene-assembly';
 export * from './advanced';

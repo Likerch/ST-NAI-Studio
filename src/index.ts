@@ -21,6 +21,8 @@ import { setupScenes } from './integration/scene-setup';
 import { setupPhase6 } from './integration/phase6-setup';
 import { setupTools } from './integration/tools-setup';
 import { setupIntegrations } from './integration/setup';
+import { installPublicApi, uninstallPublicApi } from './integration/public-api';
+import { stopPlaceFollowing } from './features/continuity/continuity-service';
 import { syncFunctionTool } from './integration/tools';
 import { Panel } from './ui/panel/panel';
 import { createPipelineUi } from './ui/panel/pipeline-ui';
@@ -85,6 +87,8 @@ export async function onActivate(): Promise<void> {
     const markers = setupMarkers(pipeline, inline, scenes);
     setupDes(markers);
     new AutoGenerator(studio, pipeline).attach();
+    // NAI_STUDIO_API for other extensions (Maestro): passports, events, scene providers (v0.10).
+    installPublicApi();
     // Network probing must not hold the 5 s activation window.
     void studio.refreshTransport();
     // A NovelAI key written, deleted or rotated in SillyTavern changes the token source and balance.
@@ -119,16 +123,22 @@ export async function onUpdate(): Promise<void> {
 
 /** hooks.enable */
 export async function onEnable(): Promise<void> {
+    // Enabled again without a page reload: the API comes back with the running extension.
+    if (controller) installPublicApi();
     log.info('enabled');
 }
 
 /** hooks.disable */
 export async function onDisable(): Promise<void> {
+    uninstallPublicApi();
+    stopPlaceFollowing();
     log.info('disabled');
 }
 
 /** hooks.delete */
 export async function onDelete(): Promise<void> {
+    uninstallPublicApi();
+    stopPlaceFollowing();
     log.info('deleted');
 }
 

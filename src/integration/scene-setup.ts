@@ -10,12 +10,18 @@ import { generatePersonaPassport } from '../features/characters/passport-generat
 import { drawPersonaAvatar, imageDataUrl, uploadPersonaAvatar } from '../features/characters/persona-avatar';
 import { isPassportEmpty } from '../domain';
 import { escapeHtml } from '../ui/components/dom';
-import { currentPersonaKey, personaPassport, savePersonaPassport } from '../features/characters/passport-store';
+import {
+    currentPersonaKey,
+    locatePassport,
+    personaPassport,
+    savePersonaPassport,
+} from '../features/characters/passport-store';
 import type { Pipeline } from '../features/generation/pipeline';
 import type { SceneService } from '../features/scene/scene-service';
 import { openComposer } from '../ui/composer';
 import { editPassport } from '../ui/passport-editor';
 import { openPassportManager } from '../ui/passport-manager';
+import { editLocatedPassport } from '../ui/passport-scope';
 import { openPoseLibrary } from '../ui/pose-library';
 
 const MENU_OPTIONS: [id: string, key: string][] = [
@@ -59,7 +65,14 @@ export async function editCharacterPassport(index: number): Promise<void> {
 
 export async function editPersonaPassport(): Promise<void> {
     const key = await currentPersonaKey();
-    const passport = await editPassport(ctx().name1, personaPassport(key), { generate: generatePersonaPassport });
+    const stored = personaPassport(key);
+    // A saved passport may be changed for this chat only (v0.10).
+    const located = stored ? locatePassport(stored.id, { persona: key }) : null;
+    if (located) {
+        await editLocatedPassport(ctx().name1, located, { generate: generatePersonaPassport });
+        return;
+    }
+    const passport = await editPassport(ctx().name1, stored, { generate: generatePersonaPassport });
     if (!passport) return;
     savePersonaPassport(key, passport);
     toastr.success(t('naist.passport.saved', { name: ctx().name1 }));

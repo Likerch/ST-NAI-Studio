@@ -397,6 +397,15 @@
 - `writeExtensionField(chid, key, value)`: `chid` — индекс в `characters`. Пишет `data.extensions[key]` в памяти и шлёт `/api/characters/merge-attributes`; сервер делает **deep-merge** (ключи, удалённые из объекта, на сервере останутся — сначала `UNSET_VALUE`) (`public/scripts/extensions.js:2070-2120`; `src/endpoints/characters.js:1288-1293`).
 - `saveSettingsDebounced` (1000 мс) отправляет **все** настройки целиком на `/api/settings/save` (`public/script.js:466-470,8051-8103`) — подтверждает ограничение 4 ТЗ: блобы в настройки нельзя.
 
+### 2.15 Данные чата и публичный API (v0.10)
+
+- Паспорта для одного чата хранятся в `chat_metadata.nai_studio.passports`. Рядом лежат `continuity` и `desPortraits`.
+  - `getContext().chatMetadata` при загрузке чата заменяется новым объектом, поэтому его читают заново при каждом обращении и сохраняют через `saveMetadata()`.
+  - В групповом чате это метаданные группового чата.
+- Текущая персона: в `getContext()` её нет. `user_avatar` — живая привязка модуля `/scripts/personas.js`: модуль импортируется один раз, после этого значение читается синхронно. Смену персоны ST сообщает событием `PERSONA_CHANGED` с аватаром (`public/scripts/personas.js:108,166`, `public/scripts/events.js:100`).
+- Хук `disable` ST 1.19 вызывает так же, как остальные хуки (§2.14). На нём NAI Studio убирает `globalThis.NAI_STUDIO_API`, подписки и поставщиков сцены, зарегистрированных через него. Остальное отключённое расширение снимает перезагрузка страницы.
+- Maestro грузится после NAI Studio (`loading_order` 200 против 100). Поэтому `MAESTRO_PLACES` читается при каждом обращении к непрерывности, на `APP_READY`, при смене чата и по событию `maestro-places-ready` на `window`, а не при активации.
+
 ---
 
 ## 3. NovelAI

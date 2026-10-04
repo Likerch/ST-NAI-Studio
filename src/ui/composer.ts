@@ -20,15 +20,43 @@ import {
     STATE_PRESETS,
 } from '../domain';
 import type { SceneCandidate, SceneSpec } from '../domain';
-import { saveCardPassport, savePersonaPassport } from '../features/characters/passport-store';
+import {
+    cardIndexByAvatar,
+    loadCharacter,
+    locatePassport,
+    saveCardPassport,
+    savePersonaPassport,
+} from '../features/characters/passport-store';
+import type { LocatedPassport } from '../features/characters/passport-store';
 import type { Pipeline } from '../features/generation/pipeline';
-import { currentCaps, PASSPORT_KEY_SEPARATOR, PERSONA_PREFIX } from '../features/scene/scene-service';
+import {
+    CHAT_PASSPORT_PREFIX,
+    currentCaps,
+    PASSPORT_KEY_SEPARATOR,
+    PERSONA_PREFIX,
+} from '../features/scene/scene-service';
 import type { SceneService } from '../features/scene/scene-service';
 import { escapeHtml } from './components/dom';
 import { attachPromptAssist } from './prompt-assist';
 import { openInspector } from './panel/inspector';
 import { editPassport } from './passport-editor';
+import { editLocatedPassport } from './passport-scope';
 import { poseSelectOptions } from './pose-helpers';
+
+/** Where the saved passport of a participant lives (card, persona or the chat); null without one. */
+async function locateCandidatePassport(key: string, passportId: string | undefined): Promise<LocatedPassport | null> {
+    if (!passportId) return null;
+    if (key.startsWith(PERSONA_PREFIX))
+        return locatePassport(passportId, { persona: key.slice(PERSONA_PREFIX.length) });
+    if (key.startsWith(CHAT_PASSPORT_PREFIX)) {
+        const found = locatePassport(passportId);
+        return found?.owner.type === 'chat' ? found : null;
+    }
+    const index = cardIndexByAvatar(key.split(PASSPORT_KEY_SEPARATOR)[0] ?? '');
+    if (index < 0) return null;
+    await loadCharacter(index);
+    return locatePassport(passportId, { index });
+}
 
 const COLORS = ['#e57373', '#64b5f6', '#81c784', '#ffb74d', '#ba68c8', '#4dd0e1', '#f06292', '#aed581'];
 
@@ -337,20 +365,30 @@ export async function openComposer(service: SceneService, pipeline: Pipeline, op
         } else if (el.classList.contains('naist-slot-passport')) {
             const p = spec.participants[index];
             if (!p) return;
-            void editPassport(p.name, p.passport).then(async (passport) => {
+            void (async () => {
+                // A saved passport is edited where it lives, with "Card / This chat" in a chat (v0.10).
+                const located = await locateCandidatePassport(p.key, p.passport?.id);
+                const passport = located
+                    ? await editLocatedPassport(p.name, located)
+                    : await editPassport(p.name, p.passport);
                 if (!passport) return;
-                if (p.key.startsWith(PERSONA_PREFIX)) savePersonaPassport(p.key.slice(PERSONA_PREFIX.length), passport);
-                else {
-                    // "<avatar>#<passport id>" for the other characters of a card.
-                    const cardKey = p.key.split(PASSPORT_KEY_SEPARATOR)[0];
-                    const charIndex = c.characters.findIndex((ch) => ch.avatar.replace(/\.[^/.]+$/, '') === cardKey);
-                    if (charIndex >= 0) await saveCardPassport(charIndex, passport);
+                if (!located) {
+                    if (p.key.startsWith(PERSONA_PREFIX))
+                        savePersonaPassport(p.key.slice(PERSONA_PREFIX.length), passport);
+                    else {
+                        // "<avatar>#<passport id>" for the other characters of a card.
+                        const cardKey = p.key.split(PASSPORT_KEY_SEPARATOR)[0];
+                        const charIndex = c.characters.findIndex(
+                            (ch) => ch.avatar.replace(/\.[^/.]+$/, '') === cardKey,
+                        );
+                        if (charIndex >= 0) await saveCardPassport(charIndex, passport);
+                    }
                 }
                 p.passport = passport;
                 const candidate = candidates.find((x) => x.key === p.key);
                 if (candidate) candidate.passport = passport;
                 render();
-            });
+            })().catch(reportGenerationError);
         }
     });
 

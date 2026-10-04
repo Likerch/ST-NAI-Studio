@@ -54,6 +54,7 @@ The built-in Image Generation treats NovelAI as one backend among many. NAI Stud
 
 - **Passports** stored in the character card: base, hair, eyes, body, outfits, states, personal undesired content, default pose and position. A card can carry several: **every character it describes**, and the **world, locations, scenario or objects** (their visual tags) — because a card is not always one person.
 - **"Passports" button** in the character card, **"Generate from the description"** — the language model reads the description, personality, scenario and first message and writes the passports for you to review. Personas have their own passport (button in the persona panel), filled from the persona description. **"Avatar from the passport"** in the persona panel draws a free portrait of the persona from its passport and, after a preview (set / another one / cancel) and the usual crop, replaces the persona avatar.
+- **A passport for one chat:** the passport editor has a "Card / This chat" switch. In "This chat" the outfit, states or any field change for this chat only (only the difference from the card is kept, the card stays as it is); "Back to the card" drops the changes.
 - Passports are used everywhere: in the composer, the automatic scene, the LLM tool and **image markers in replies** — a character named in a marker (even in Russian, declined) gets their looks automatically; world and scenario tags join every scene of the chat, a location joins when it is named. `{{nai_characters}}` lists the characters with a passport for your own prompts.
 - Pose library (38 poses), pair poses (hug, holding hands, carry…) using NovelAI's `source#` / `target#` / `mutual#` interaction tags, framing, camera angle, distance.
 - **Scene composer** with a position canvas; automatic scene from the last message: who is in the frame, their poses and interactions, character counts. Works in group chats.
@@ -149,6 +150,51 @@ Features that need the plugin stay visible in the interface with the reason they
 - Network traffic goes only to NovelAI (and to your SillyTavern server). The tag list ships with the extension; tokenizer files are fetched from novelai.net once and cached.
 - Paid actions (vibe encoding, upscale, background removal, anything above the free limits) always show the price and ask for confirmation; free-only mode blocks them entirely.
 - Plain-language conversion uses the LLM you choose (your chat model, a connection profile you configured in SillyTavern, or NovelAI through the plugin); nothing is sent anywhere else.
+
+## API for Maestro
+
+NAI Studio publishes `globalThis.NAI_STUDIO_API` for other extensions, Maestro first of all. It appears when the extension is enabled and goes away when it is disabled. Version 1: within a version members are only added. Typed and commented in [`src/integration/public-api.ts`](src/integration/public-api.ts); passport fields are in [`src/domain/passport.ts`](src/domain/passport.ts).
+
+```ts
+interface NaiStudioApi {
+  version: 1;
+  passports(scope?: { avatar?: string; persona?: boolean; chat?: boolean }): Passport[];
+  getPassport(id: string): Passport | null;
+  savePassport(
+    passport: Passport,
+    scope: 'card' | 'chat',
+    target?: { avatar?: string; persona?: boolean },
+  ): Promise<void>;
+  setOutfit(passportId: string, outfit: string, scope?: 'card' | 'chat'): Promise<void>;
+  setState(passportId: string, stateId: string, enabled: boolean, scope?: 'card' | 'chat'): Promise<void>;
+  clearChatOverride(passportId: string): Promise<void>;
+  on(event: 'passportsSaved' | 'imageReady', listener: (detail: unknown) => void): () => void;
+  registerSceneProvider(provider: {
+    id: string;
+    priority: number;
+    describe(context: { messageIndex: number; text: string }): Promise<SceneHint | null> | SceneHint | null;
+  }): () => void;
+}
+
+type SceneHint = { locationId?: string; locationName?: string; tags?: string; characters?: string[] };
+```
+
+- **Passports** are always returned as the current chat sees them (chat overrides applied), as copies.
+  - `savePassport(p, 'card')` writes the card (or `target.persona`).
+  - `savePassport(p, 'chat')` keeps only the fields that differ from the card in the chat metadata (`chat_metadata.nai_studio.passports`). A passport unknown to the cards becomes a passport of the chat itself.
+  - `setOutfit` / `setState` default to `'chat'`.
+  - `clearChatOverride` brings the card value back.
+- **Events.**
+  - `passportsSaved` `{ ids, scope, avatar?, persona? }` follows every passport save, including the ones made in NAI Studio's own UI.
+  - `imageReady` `{ messageIndex, kind, passportIds }` follows every image attached to a message once the chat is saved.
+- **Scene providers.**
+  - They are asked by descending priority; each field comes from the first provider that has it, the rest from the DES tracker and the text as before.
+  - Providers have 3 s to answer.
+  - Their `characters` are used by the automatic scene when the text names nobody.
+- **Maestro places.** With `globalThis.MAESTRO_PLACES` (version 1) scene continuity keys references by place id (`place:<id>`).
+  - References bound by name before are still found and move to the id on the next save.
+  - The place the story enters becomes current.
+  - Without it nothing changes.
 
 ## Development
 

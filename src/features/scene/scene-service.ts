@@ -1,6 +1,8 @@
 // Scene composer service (TZ Phase 4): candidates of the current chat (character / group members
 // and the user persona) with their passports, automatic assembly from a message, and generation
-// of a composed scene into a new message or inline into the last message.
+// of a composed scene into a new message or inline into the last message. Since v0.10 passports are
+// the chat's view of them (chat overrides, passports of the chat itself), and scene providers of
+// other extensions (registerSceneHintProvider) name the place, setting tags and who is present.
 import { ctx } from '../../core/context';
 import { NaiError } from '../../core/errors';
 import { log } from '../../core/logger';
@@ -29,18 +31,32 @@ import {
 } from '../../domain';
 import type {
     BuiltScene,
+    ChatPassports,
     MarkerCharacter,
     ModelCapabilities,
+    Passport,
     PosePreset,
     SceneCandidate,
     SceneSpec,
 } from '../../domain';
 import { avatarKey, readCharacterPrompt } from '../characters/character-prompts';
-import { cardPassports, currentPersonaKey, loadCharacter, personaPassport } from '../characters/passport-store';
+import {
+    chatCardIndexes,
+    chatPassportData,
+    currentPersonaKey,
+    loadCharacter,
+    PERSONA_OWNER_PREFIX,
+    resolvedCardPassports,
+    resolvedPersonaPassport,
+} from '../characters/passport-store';
+import { placeById } from '../continuity/places';
 import type { Pipeline, PictureResult } from '../generation/pipeline';
 import type { InlineImages } from '../inline/inline-service';
+import { sceneHint } from './scene-providers';
 
-export const PERSONA_PREFIX = 'persona:';
+export const PERSONA_PREFIX = PERSONA_OWNER_PREFIX;
+/** Key prefix of the candidates of passports that exist only in the chat ("chat#<passport id>"). */
+export const CHAT_PASSPORT_PREFIX = 'chat#';
 
 export function customPoses(): PosePreset[] {
     return settings().poses.custom.map((p) => ({
@@ -117,12 +133,12 @@ export const PASSPORT_KEY_SEPARATOR = '#';
  * a card without character passports is one candidate with its character prompt, unless it is a
  * scenario (then nobody is drawn for the card itself).
  */
-async function characterCandidates(index: number): Promise<SceneCandidate[]> {
+async function characterCandidates(index: number, chat: ChatPassports): Promise<SceneCandidate[]> {
     const character = await loadCharacter(index);
     if (!character) return [];
     const prompt = readCharacterPrompt(character);
     const key = avatarKey(character.avatar);
-    const list = cardPassports(character);
+    const list = resolvedCardPassports(character, chat);
     const people = list.filter((p) => p.kind === 'character' && !isPassportEmpty(p));
     if (people.length) {
         const main = primaryPassport(people, character.name);
@@ -154,15 +170,29 @@ async function characterCandidates(index: number): Promise<SceneCandidate[]> {
     ];
 }
 
-/** Card indexes of the current chat: the 1:1 character or every group member. */
-function chatCardIndexes(): number[] {
-    const c = ctx();
-    if (c.groupId) {
-        const members = c.groups.find((g) => g.id === c.groupId)?.members ?? [];
-        return members.map((avatar) => c.characters.findIndex((ch) => ch.avatar === avatar)).filter((i) => i >= 0);
-    }
-    if (c.characterId !== undefined && c.characterId !== null && c.characterId !== '') return [Number(c.characterId)];
-    return [];
+/** Named character passports that exist only in this chat (another extension wrote them). */
+function chatOnlyCandidates(chat: ChatPassports): SceneCandidate[] {
+    return chat.extra
+        .filter((p) => p.kind === 'character' && p.name.trim() && !isPassportEmpty(p))
+        .map((passport) => ({
+            key: `${CHAT_PASSPORT_PREFIX}${passport.id}`,
+            name: passport.name,
+            aliases: [...new Set([...passport.aliases, ...aliasesOf(passport.name)])],
+            passport,
+            fallbackPrompt: '',
+            fallbackNegative: '',
+            isUser: false,
+        }));
+}
+
+const namesOne = (name: string, candidate: SceneCandidate): boolean =>
+    mentionIndex(name, [candidate.name, ...candidate.aliases]) >= 0 || mentionIndex(candidate.name, [name]) >= 0;
+
+/** Candidates a scene provider says are present get `present` (the automatic scene falls back to them). */
+function markPresent(list: SceneCandidate[], names: readonly string[] | undefined): SceneCandidate[] {
+    if (!names?.length) return list;
+    for (const candidate of list) if (names.some((name) => namesOne(name, candidate))) candidate.present = true;
+    return list;
 }
 
 export interface SceneLocation {
@@ -177,25 +207,38 @@ export interface SceneLocation {
  */
 export async function sceneSetting(
     query: SceneQuery = {},
-): Promise<{ world: string; locations: SceneLocation[]; location: string }> {
+): Promise<{ world: string; locations: SceneLocation[]; location: string; locationId?: string }> {
     const world: string[] = [];
     const locations: SceneLocation[] = [];
+    const chat = chatPassportData();
+    const collect = (passport: Passport) => {
+        if (passport.kind === 'world' || passport.kind === 'scenario') world.push(passport.tags);
+        else if (passport.kind === 'location' && passport.name && passport.tags.trim())
+            locations.push({ name: passport.name, aliases: passport.aliases, tags: passport.tags });
+    };
     for (const index of chatCardIndexes()) {
-        for (const passport of cardPassports(await loadCharacter(index))) {
-            if (passport.kind === 'world' || passport.kind === 'scenario') world.push(passport.tags);
-            else if (passport.kind === 'location' && passport.name && passport.tags.trim())
-                locations.push({ name: passport.name, aliases: passport.aliases, tags: passport.tags });
-        }
+        for (const passport of resolvedCardPassports(await loadCharacter(index), chat)) collect(passport);
     }
+    for (const passport of chat.extra) collect(passport);
+    // Scene providers of other extensions first, field by field; then the tracker integration.
+    const hint = await sceneHint(query);
     let tracked = { tags: [] as string[], location: '' };
-    if (provider) {
+    if (provider && (hint.tags === undefined || hint.locationName === undefined)) {
         try {
             tracked = await provider.setting(query);
         } catch (error) {
             log.warn('scene provider: setting not available', error);
         }
     }
-    return { world: joinTags(...world, tracked.tags.join(', ')), locations, location: tracked.location };
+    const tags = hint.tags ?? tracked.tags.join(', ');
+    const location =
+        hint.locationName ?? (hint.locationId ? placeById(hint.locationId)?.name : undefined) ?? tracked.location;
+    return {
+        world: joinTags(...world, tags),
+        locations,
+        location,
+        ...(hint.locationId ? { locationId: hint.locationId } : {}),
+    };
 }
 
 /** Tags of the locations a text names (whole-word name or alias). */
@@ -206,19 +249,22 @@ export function mentionedLocationTags(text: string, locations: readonly SceneLoc
 /** Characters of the current chat (the 1:1 character or every group member) and the persona. */
 export async function sceneCandidates(query: SceneQuery = {}): Promise<SceneCandidate[]> {
     const c = ctx();
+    const chat = chatPassportData();
     const result: SceneCandidate[] = [];
-    for (const index of chatCardIndexes()) result.push(...(await characterCandidates(index)));
+    for (const index of chatCardIndexes()) result.push(...(await characterCandidates(index, chat)));
+    result.push(...chatOnlyCandidates(chat));
     const personaKey = await currentPersonaKey();
     result.push({
         key: `${PERSONA_PREFIX}${personaKey}`,
         name: c.name1,
         aliases: aliasesOf(c.name1),
-        passport: personaPassport(personaKey),
+        passport: resolvedPersonaPassport(personaKey, chat),
         fallbackPrompt: '',
         fallbackNegative: '',
         isUser: true,
     });
-    return await withProvided(result, query);
+    const merged = await withProvided(result, query);
+    return markPresent(merged, (await sceneHint(query)).characters);
 }
 
 function sentencesMentioning(text: string, candidate: SceneCandidate): string {
@@ -281,7 +327,11 @@ export class SceneService {
         const source = text !== undefined ? { text, speakerKey: undefined } : lastMessage();
         const caps = currentCaps();
         const max = caps.maxCharacters > 0 ? caps.maxCharacters : 3;
-        const found = detectParticipants(source.text, candidates, { speakerKey: source.speakerKey, max });
+        let found = detectParticipants(source.text, candidates, { speakerKey: source.speakerKey, max });
+        // Nobody named in the text: the people a scene provider says are present, before the speaker.
+        const present = candidates.filter((c) => c.present);
+        if (present.length && !candidates.some((c) => mentionIndex(source.text, [c.name, ...c.aliases]) >= 0))
+            found = present.slice(0, max);
         const library = poseLibrary();
         const positions = autoLayout(
             found.length,
@@ -428,6 +478,7 @@ export class SceneService {
                 scene: built.prompt,
                 mode: MODE.FREE,
                 overrides,
+                passportIds: built.passportIds,
             });
             return entry?.id ?? null;
         }
@@ -437,6 +488,7 @@ export class SceneService {
             scene: built.prompt,
             mode: MODE.FREE,
             overrides,
+            passportIds: built.passportIds,
         });
     }
 }

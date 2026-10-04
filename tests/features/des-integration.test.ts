@@ -81,6 +81,10 @@ vi.mock('../../src/integration/des/des-adapter', () => ({
 }));
 vi.mock('../../src/features/characters/passport-store', () => ({
     cardPassports: () => state.cardPassports,
+    resolvedCardPassports: () => state.cardPassports,
+    chatPassportData: () => ({ overrides: {}, extra: [] }),
+    chatCardIndexes: () => (state.characters.length ? [0] : []),
+    locatePassport: () => null,
     loadCharacter: async () => state.characters[0],
     onPassportsSaved: vi.fn(),
     saveCardPassport: vi.fn(async (_i: number, p: Passport) => {

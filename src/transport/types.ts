@@ -104,10 +104,18 @@ export class TransportError extends Error {
     readonly status: number | undefined;
     readonly serverMessage: string | undefined;
     readonly bodyPreview: string | undefined;
+    /** Seconds the server asked to wait before a retry (Retry-After), when it said so. */
+    readonly retryAfter: number | undefined;
 
     constructor(
         kind: TransportErrorKind,
-        options: { status?: number; serverMessage?: string; bodyPreview?: string; message?: string } = {},
+        options: {
+            status?: number;
+            serverMessage?: string;
+            bodyPreview?: string;
+            message?: string;
+            retryAfter?: number;
+        } = {},
     ) {
         super(options.message ?? `${kind}${options.status ? ` ${options.status}` : ''}`);
         this.name = 'TransportError';
@@ -115,6 +123,7 @@ export class TransportError extends Error {
         this.status = options.status;
         this.serverMessage = options.serverMessage;
         this.bodyPreview = options.bodyPreview;
+        this.retryAfter = options.retryAfter;
     }
 }
 

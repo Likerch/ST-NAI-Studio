@@ -9,7 +9,7 @@ A NovelAI image studio for [SillyTavern](https://github.com/SillyTavern/SillyTav
 | SillyTavern          | 1.19.0 or newer                            |
 | NovelAI subscription | any; free generations are tracked for Opus |
 | Interface            | English, Russian                           |
-| Server plugin        | optional, recommended (0.4.1)              |
+| Server plugin        | optional, recommended (0.4.2)              |
 | License              | AGPL-3.0                                   |
 
 ## Why
@@ -29,6 +29,7 @@ The built-in Image Generation treats NovelAI as one backend among many. NAI Stud
 - Sampler, scheduler, guidance, rescale, seed, steps, size presets, quality and UC presets.
 - **Live previews** of denoising steps while the image is being drawn (plugin); a progress estimate otherwise. Cancelling really aborts the request.
 - Payload inspector and raw JSON override for experiments.
+- **One queue for NovelAI** (0.13.1): NovelAI draws one picture per account at a time, so every request of the extension — the panel, commands, the composer, image markers, automatic pictures, DES portraits, sprites, comics, Maestro's backgrounds, image tools, vibe encodings — waits in one queue and goes alone. Your own requests go first, then the pictures of the current reply, then DES portraits, then background work. When NovelAI answers that another generation is still running (429), the request keeps its turn and is sent again after about 2, 5 and 12 s (or as long as NovelAI asks); only then the error and "Retry" appear. A retry never asks for the cost again. Placeholders show "In the queue: N" or the retry countdown; the Generate tab shows what is drawn, how many wait, and "Clear the queue". Another chat, a deleted or swiped message drops the requests that were waiting for it.
 
 ### In the chat
 
@@ -52,7 +53,7 @@ The built-in Image Generation treats NovelAI as one backend among many. NAI Stud
 ### Pictures in the chat model's replies
 
 - The chat model writes an image marker where a picture fits — `<img data-nai='{"prompt": "...", "caption": "..."}'>` — and the picture appears in its place. The instruction is added to the prompt for you (plain-language or tag descriptions, or your own text), with a configurable number of pictures per reply.
-- **Generation starts while the reply is still streaming**, as soon as a marker is complete; one generation at a time.
+- **Generation starts while the reply is still streaming**, as soon as a marker is complete; the pictures wait in the one NovelAI queue.
 - Every marker parameter: description, undesired content, characters by name (their appearance passports, position, pose, action), aspect ratio and size, model, style, in-image text, seed, steps, guidance, rescale, sampler, quality and UC presets, Variety+, transparency, location, an earlier picture as the base (`ref`), a vibe by name, number of variants, caption, spoiler, alignment, width.
 - Older formats are understood too: image URLs of a self-hosted generation microservice, sillyimages and Auto Illustrator markers.
 - HTML widgets made with regex scripts keep working: they receive every picture as an `<img>`.
@@ -108,7 +109,7 @@ When [Doom's Enhancement Suite](https://github.com/DangerDaza/Dooms-Enhancement-
 3. **Server plugin (recommended):**
    - copy the plugin with `install-server.ps1 -SillyTavern "C:\path\to\SillyTavern"` (Windows) or `./install-server.sh /path/to/SillyTavern` (Linux, macOS, Docker host);
    - enable plugins: `enableServerPlugins: true` in `config.yaml` (or env `SILLYTAVERN_ENABLESERVERPLUGINS=true`);
-   - restart SillyTavern. The panel shows "Server plugin 0.4.1".
+   - restart SillyTavern. The panel shows "Server plugin 0.4.2".
 
 Details, Docker notes and uninstalling — [docs/DEPLOY.md](docs/DEPLOY.md).
 

@@ -59,6 +59,9 @@ export class Panel {
     private imagesTab: ImagesTab | null = null;
     private takeoverTab: TakeoverTab | null = null;
     private tokens: TokenMeter | null = null;
+    /** The panel's own picture is being made (other requests only queue it). */
+    private generating = false;
+    private queueTimer: ReturnType<typeof setTimeout> | null = null;
 
     constructor(
         private readonly controller: StudioController,
@@ -107,6 +110,8 @@ export class Panel {
         this.mountTabs();
         this.controller.subscribe((state) => this.onState(state));
         this.onState(this.controller.state);
+        this.controller.queue.subscribe(() => this.renderQueue());
+        this.renderQueue();
     }
 
     private tabPanel(name: string): HTMLElement {
@@ -474,6 +479,10 @@ export class Panel {
         $id(r, 'naist_inspect').addEventListener('click', () => void this.inspect());
         $id(r, 'naist_generate').addEventListener('click', () => void this.generate());
         $id(r, 'naist_cancel').addEventListener('click', () => this.controller.cancel());
+        $id(r, 'naist_queue_clear').addEventListener('click', () => {
+            const count = this.controller.queue.clear();
+            if (count) toastr.info(t('naist.queue.cleared', { count }), t('naist.queue.title'));
+        });
     }
 
     // ---- state ---------------------------------------------------------------------------
@@ -518,7 +527,7 @@ export class Panel {
             account.textContent = t('naist.account.loading');
         }
 
-        $id(r, 'naist_generate').classList.toggle('disabled', state.busy);
+        $id(r, 'naist_generate').classList.toggle('disabled', this.generating);
         $id(r, 'naist_cancel').classList.toggle('naist-hidden', !state.busy);
         if (selection) this.applyTransportFeatures(selection.transport.features);
         this.scheduleRefresh();
@@ -707,14 +716,34 @@ export class Panel {
         }
     }
 
+    /** The one NovelAI queue (v0.13.1): what is drawn now, how many wait, "Clear the queue". */
+    private renderQueue(): void {
+        const { running, waiting } = this.controller.queue.snapshot();
+        const parts: string[] = [];
+        if (running) {
+            parts.push(t('naist.queue.running', { kind: t(`naist.queue.kind.${running.kind}`) }));
+            if (running.retryIn !== null) parts.push(t('naist.queue.retryIn', { seconds: running.retryIn }));
+        }
+        if (waiting.length) parts.push(t('naist.queue.waitingCount', { count: waiting.length }));
+        $id(this.root, 'naist_queue').classList.toggle('naist-hidden', !parts.length);
+        $id(this.root, 'naist_queue_text').textContent = parts.join(' · ');
+        $id(this.root, 'naist_queue_clear').classList.toggle('naist-hidden', !waiting.length);
+        // The countdown to a retry ticks every second.
+        if (this.queueTimer) clearTimeout(this.queueTimer);
+        this.queueTimer = running?.retryIn ? setTimeout(() => this.renderQueue(), 1000) : null;
+    }
+
     private async generate(): Promise<void> {
-        if (this.controller.state.busy) return;
+        if (this.generating) return;
         const prompt = settings().generation.prompt;
         if (!prompt.trim()) {
             this.showInfo(t('naist.panel.emptyPrompt'));
             return;
         }
-        this.showInfo(t('naist.panel.generating'));
+        // Another request in flight: this one waits for its turn, ahead of automatic ones.
+        this.showInfo(t(this.controller.queue.busy ? 'naist.panel.queued' : 'naist.panel.generating'));
+        this.generating = true;
+        $id(this.root, 'naist_generate').classList.add('disabled');
         try {
             const result = await this.pipeline.generatePicture({
                 initiator: 'panel',
@@ -730,6 +759,9 @@ export class Panel {
             }
             log.warn('generation failed', naiError.code, naiError.status ?? '');
             this.showError(naiError);
+        } finally {
+            this.generating = false;
+            $id(this.root, 'naist_generate').classList.remove('disabled');
         }
     }
 }

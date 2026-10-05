@@ -24,6 +24,7 @@ import { setupTools } from './integration/tools-setup';
 import { setupIntegrations } from './integration/setup';
 import { installPublicApi, uninstallPublicApi } from './integration/public-api';
 import { setupQualityGates } from './integration/quality-setup';
+import { setupGenerationQueue } from './integration/queue-setup';
 import { stopPlaceFollowing } from './features/continuity/continuity-service';
 import { syncFunctionTool } from './integration/tools';
 import { Panel } from './ui/panel/panel';
@@ -91,6 +92,8 @@ export async function onActivate(): Promise<void> {
     new AutoGenerator(studio, pipeline).attach();
     // Automatic drawings of a reply wait for the quality gates of other extensions (Maestro, v0.11).
     setupQualityGates();
+    // One queue for every NovelAI request (v0.13.1): it follows chat changes, deletions and swipes.
+    setupGenerationQueue();
     // NAI_STUDIO_API for other extensions (Maestro): passports, events, scene and passport providers,
     // quality gates, passports from a description, backgrounds of places.
     installPublicApi({ backgrounds: new BackgroundService(pipeline) });

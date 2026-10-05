@@ -60,7 +60,7 @@ export function pluginFeatures(version: string | null): TransportFeatures {
 }
 
 interface PluginErrorBody {
-    error?: { kind?: string; status?: number; message?: string; preview?: string };
+    error?: { kind?: string; status?: number; message?: string; preview?: string; retryAfter?: number };
 }
 
 interface PluginImagesBody {
@@ -99,6 +99,7 @@ async function toTransportError(response: Response): Promise<TransportError> {
         status: body.error?.status ?? response.status,
         serverMessage: body.error?.message,
         bodyPreview: body.error?.preview,
+        ...(typeof body.error?.retryAfter === 'number' ? { retryAfter: body.error.retryAfter } : {}),
     });
 }
 

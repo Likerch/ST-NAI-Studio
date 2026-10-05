@@ -28,6 +28,7 @@ import {
 } from '../../src/domain';
 import type { DropReason, NotFreeReason, VibeAvailability, WarningCode } from '../../src/domain';
 import type { MigrationKey } from '../../src/features/takeover/migration';
+import { QUEUE_KINDS } from '../../src/features/generation/queue';
 import { IGNORED_ARGS } from '../../src/integration/command-args';
 import type { LostFeature } from '../../src/transport';
 import en from '../../src/i18n/en-us.json';
@@ -256,6 +257,7 @@ describe('source code', () => {
                 (s) => `naist.size.${s}`,
             ),
             ...['plugin', 'native'].map((s) => `naist.transport.${s}`),
+            ...QUEUE_KINDS.map((k) => `naist.queue.kind.${k}`),
         ];
         expect(keys.filter((k) => !(k in EN))).toEqual([]);
     });

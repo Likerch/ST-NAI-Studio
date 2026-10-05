@@ -16,6 +16,7 @@ import { activeSwipe, displayStyle, markerDimensions, PLACEHOLDER_PATTERN } from
 import type { InlineImage, InlineSwipe } from '../domain';
 import type { InlineImages } from '../features/inline/inline-service';
 import { getBlob } from '../features/inline/inline-store';
+import type { QueueStatus } from '../features/generation/queue';
 
 export const IMG_ATTR = 'data-naist-img';
 /** Transparent pixel used by placeholder and streaming <img> tags; the fragment carries the id. */
@@ -37,6 +38,8 @@ export interface MarkerHooks {
     isRunning(imageId: string): boolean;
     /** The drawing waits for the quality gates (Maestro, v0.11). */
     isWaiting?(imageId: string): boolean;
+    /** The drawing waits in the queue or for a retry of a busy NovelAI (v0.13.1). */
+    queueStatus?(imageId: string): QueueStatus | undefined;
     retry(messageId: number, imageId: string): Promise<void>;
 }
 
@@ -354,12 +357,15 @@ export class InlineRenderer {
         const status = el('span', 'naist-marker-status');
         if (state === 'pending') {
             const waiting = this.markers?.isWaiting?.(entry.id) ?? false;
-            status.append(
-                el('i', 'fa-solid fa-spinner fa-spin'),
-                document.createTextNode(
-                    ` ${waiting ? t('naist.markers.qualityWaiting') : t('naist.markers.generating')}`,
-                ),
-            );
+            const queued = this.markers?.queueStatus?.(entry.id);
+            const text = waiting
+                ? t('naist.markers.qualityWaiting')
+                : queued?.state === 'queued'
+                  ? t('naist.queue.waiting', { count: queued.ahead })
+                  : queued?.state === 'retry'
+                    ? t('naist.queue.retryIn', { seconds: queued.seconds })
+                    : t('naist.markers.generating');
+            status.append(el('i', 'fa-solid fa-spinner fa-spin'), document.createTextNode(` ${text}`));
         } else {
             status.append(
                 el('i', `fa-solid ${state === 'error' ? 'fa-triangle-exclamation' : 'fa-circle-pause'}`),

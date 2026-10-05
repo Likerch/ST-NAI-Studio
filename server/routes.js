@@ -19,6 +19,7 @@ function errorBody(error, token) {
             status: error.status,
             message: redact(error.message, token),
             preview: redact(error.preview, token),
+            ...(error.retryAfter !== undefined ? { retryAfter: error.retryAfter } : {}),
         };
     }
     if (error?.name === 'AbortError') return { kind: 'aborted' };

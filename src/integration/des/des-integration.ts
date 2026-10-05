@@ -104,7 +104,13 @@ export class DesIntegration {
     private readonly lines = new Map<string, string>();
     private readonly passportJobs = new Map<string, Promise<Found | null>>();
     private readonly failed = new Set<string>();
+    /**
+     * DES portraits are asked one by one and in order; each one's NovelAI request then waits in the
+     * one queue of the extension behind the pictures of the reply (priority "portrait", v0.13.1).
+     */
     private portraitQueue: Promise<unknown> = Promise.resolve();
+    /** Portraits asked for from the menu: the user's own requests in the NovelAI queue. */
+    private readonly manualPortraits = new Set<string>();
     private lastLocation = '';
     private timer: ReturnType<typeof setTimeout> | null = null;
     private readonly listeners = new Set<() => void>();
@@ -532,6 +538,7 @@ export class DesIntegration {
             scene: joinTags(identity, look, s.des.portraitTags),
             ...(found?.passport.negative ? { negative: found.passport.negative } : {}),
             generation: { width: size.width, height: size.height, seed: stableSeed(name), characters: [] },
+            priority: this.manualPortraits.has(normalizeLine(name)) ? 'user' : 'portrait',
         };
     }
 
@@ -591,8 +598,13 @@ export class DesIntegration {
             const look = this.latestTracker()?.characters.find((ch) => sameName(ch.name, name))?.look ?? '';
             this.syncLine(name, found?.passport ?? null, look);
             toastr.info(t('naist.des.portraitStarted', { name }), t('naist.des.title'));
-            const url = await this.api.regeneratePortrait(name);
-            if (url) this.api.refreshPortraits();
+            this.manualPortraits.add(normalizeLine(name));
+            try {
+                const url = await this.api.regeneratePortrait(name);
+                if (url) this.api.refreshPortraits();
+            } finally {
+                this.manualPortraits.delete(normalizeLine(name));
+            }
         } else if (action === 'scene') {
             const params: MarkerParams = { prompt: name, chars: [{ name }], ratio: 'portrait' };
             await this.markers.illustrate(this.lastReplyId(), params);

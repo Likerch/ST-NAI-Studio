@@ -62,11 +62,7 @@ export class AutoGenerator {
             if (decision.blockedBy) log.debug('auto generation held by', decision.blockedBy);
             return;
         }
-        if (this.controller.state.busy) {
-            log.info('auto generation skipped: another generation is running');
-            return;
-        }
-
+        // Another generation in flight no longer skips it: the request waits for its turn (v0.13.1).
         const budget = autoBudget(settings().anlas.freeOnly, rules.allowPaid);
         // Check the price before spending LLM tokens on a prompt that could not be sent anyway.
         try {
@@ -86,10 +82,6 @@ export class AutoGenerator {
                 log.info(`auto generation skipped by the quality gate (${verdict})`);
                 return;
             }
-            if (this.controller.state.busy) {
-                log.info('auto generation skipped: another generation is running');
-                return;
-            }
         }
 
         meta.auto = decision.state;
@@ -104,6 +96,7 @@ export class AutoGenerator {
                 maxCost: budget,
                 // Paid auto generation was opted into in advance; with budget 0 a paid request is refused anyway.
                 skipCostConfirm: true,
+                queue: { priority: 'reply', kind: 'auto' },
             });
             log.info('auto generation fired by', decision.reason);
         } catch (error) {

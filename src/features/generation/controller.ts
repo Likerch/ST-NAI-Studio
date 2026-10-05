@@ -8,6 +8,8 @@ import { selectTransport } from '../../transport';
 import type { GenerateResult, StreamFrame, TransportEnv, TransportSelection } from '../../transport';
 import { accountFromSubscription, UNKNOWN_ACCOUNT } from './account';
 import type { AccountView } from './account';
+import { generationQueue } from './queue';
+import type { GenerationQueue, QueueJob } from './queue';
 import { prepareGeneration, sendPrepared } from './service';
 import type { Prepared } from './service';
 
@@ -15,6 +17,7 @@ export interface StudioState {
     selection: TransportSelection | null;
     account: AccountView;
     accountError: NaiError | null;
+    /** A NovelAI request is in flight (any of the queue, v0.13.1). */
     busy: boolean;
 }
 
@@ -23,9 +26,17 @@ type Listener = (state: StudioState) => void;
 export class StudioController {
     readonly state: StudioState = { selection: null, account: UNKNOWN_ACCOUNT, accountError: null, busy: false };
     private readonly listeners = new Set<Listener>();
-    private abort: AbortController | null = null;
 
-    constructor(private readonly env: TransportEnv) {}
+    constructor(
+        private readonly env: TransportEnv,
+        readonly queue: GenerationQueue = generationQueue,
+    ) {
+        queue.subscribe(() => {
+            if (this.state.busy === queue.busy) return;
+            this.state.busy = queue.busy;
+            this.emit();
+        });
+    }
 
     subscribe(listener: Listener): () => void {
         this.listeners.add(listener);
@@ -75,32 +86,33 @@ export class StudioController {
         }
     }
 
-    /** Sends a prepared request. One generation at a time; blocked requests never leave. */
+    /**
+     * Sends a prepared request through the one NovelAI queue (v0.13.1): it waits for its turn, goes
+     * alone and is sent again when NovelAI answers that another generation is running. The cost was
+     * confirmed before; a retry asks nothing. Blocked requests never leave.
+     */
     async send(
         prepared: Prepared,
         signal?: AbortSignal,
         onProgress?: (frame: StreamFrame) => void,
+        job: QueueJob = {},
     ): Promise<GenerateResult> {
-        const transport = this.state.selection?.transport;
-        if (!transport) throw new NaiError('plugin-unavailable', 'install-plugin');
-        if (this.state.busy) throw new NaiError('busy', 'none');
-        this.abort = new AbortController();
-        const onAbort = () => this.abort?.abort();
-        signal?.addEventListener('abort', onAbort, { once: true });
-        this.state.busy = true;
-        this.emit();
+        if (!this.state.selection?.transport) throw new NaiError('plugin-unavailable', 'install-plugin');
+        let sent = false;
         try {
-            return await sendPrepared(prepared, transport, this.state.account, this.abort.signal, onProgress);
+            return await this.queue.run({ ...job, ...(signal ? { signal } : {}) }, async (jobSignal) => {
+                const transport = this.state.selection?.transport;
+                if (!transport) throw new NaiError('plugin-unavailable', 'install-plugin');
+                sent = true;
+                return await sendPrepared(prepared, transport, this.state.account, jobSignal, onProgress);
+            });
         } finally {
-            signal?.removeEventListener('abort', onAbort);
-            this.state.busy = false;
-            this.abort = null;
-            this.emit();
-            void this.refreshAccount();
+            if (sent) void this.refreshAccount();
         }
     }
 
+    /** Aborts the NovelAI request in flight. */
     cancel(): void {
-        this.abort?.abort();
+        this.queue.cancelRunning();
     }
 }

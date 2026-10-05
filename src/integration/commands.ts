@@ -9,6 +9,7 @@ import { applyStyle } from '../features/generation/styles';
 import type { GenerationSettings } from '../core/settings-schema';
 import { MODE, MODEL_IDS, NOISE_SCHEDULES, QUALITY_PRESETS, SAMPLERS, TRIGGER_WORDS, UC_PRESETS } from '../domain';
 import type { Pipeline } from '../features/generation/pipeline';
+import type { QueuePriority } from '../features/generation/queue';
 import { IGNORED_ARGS, MODEL_ALIASES, parseCommandArgs } from './command-args';
 
 interface AbortLike {
@@ -61,6 +62,8 @@ export interface PortraitPlan {
     scene: string;
     negative?: string;
     generation?: Partial<GenerationSettings>;
+    /** Its turn in the NovelAI queue: "portrait" (automatic), "user" for one asked for from the menu. */
+    priority?: QueuePriority;
 }
 
 let portraitHook: ((prompt: string) => Promise<PortraitPlan | null>) | null = null;
@@ -94,12 +97,16 @@ function imagineCallback(pipeline: Pipeline) {
                           generation: { ...parsed.overrides.generation, ...plan.generation },
                       },
                       signal: controller.signal,
+                      // A DES portrait waits behind the pictures of the reply (v0.13.1).
+                      queue: { priority: plan.priority ?? 'portrait', kind: 'portrait' },
                   })
                 : await pipeline.generatePicture({
                       initiator: 'command',
                       trigger,
                       overrides: parsed.overrides,
                       signal: controller.signal,
+                      // Quiet calls come from scripts and other extensions (DES portraits of its own).
+                      ...(parsed.overrides.quiet ? { queue: { priority: 'portrait' as const } } : {}),
                   });
             return result?.path ?? '';
         } catch (error) {

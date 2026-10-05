@@ -1223,6 +1223,16 @@ img.naist-marker-failed {
     border-radius: 8px;
 }
 
+/* ---- one NovelAI queue (v0.13.1) ------------------------------------------------------------- */
+
+.naist-queue {
+    font-size: 0.9em;
+}
+
+.naist-progress-queue:empty {
+    display: none;
+}
+
 /* ---- style editor (v0.13) ------------------------------------------------------------------- */
 
 .naist-style-effective {

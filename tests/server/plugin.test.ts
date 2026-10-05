@@ -64,6 +64,10 @@ beforeAll(async () => {
                 return state.hits[scenario]! < 2
                     ? send(429, { statusCode: 429, message: 'Too many' })
                     : send(200, { images: [{ image: PNG_B64, index: 0 }] });
+            case 'always-busy':
+                res.writeHead(429, { 'Content-Type': 'application/json', 'Retry-After': '0' });
+                res.end(JSON.stringify({ statusCode: 429, message: 'Concurrent generation is locked' }));
+                return;
             case 'flaky':
                 return state.hits[scenario]! < 2
                     ? send(503, { statusCode: 503, message: 'busy' })
@@ -153,7 +157,7 @@ const request = (input: string) => ({
 describe('NAI Studio server plugin', () => {
     it('health reports version and token source, never the token', async () => {
         const res = await call(mountPlugin(), 'GET', '/health');
-        expect(res.payload).toEqual({ ok: true, version: '0.4.1', tokenSource: 'config' });
+        expect(res.payload).toEqual({ ok: true, version: '0.4.2', tokenSource: 'config' });
         expect(JSON.stringify(res.payload)).not.toContain(TOKEN);
         expect(res.headers['Cache-Control']).toBe('no-store');
         expect(
@@ -204,6 +208,15 @@ describe('NAI Studio server plugin', () => {
         const retried = await call(mountPlugin(), 'POST', '/generate', { ...request('flaky'), retryable: true });
         expect(retried.statusCode).toBe(200);
         expect(state.hits.flaky).toBe(2);
+    });
+
+    it('passes a 429 that outlasts the retries on with its Retry-After (0.4.2)', async () => {
+        const res = await call(mountPlugin(), 'POST', '/generate', request('always-busy'));
+        expect(res.statusCode).toBe(502);
+        expect(res.payload).toMatchObject({
+            error: { kind: 'http', status: 429, retryAfter: 0, message: 'Concurrent generation is locked' },
+        });
+        expect(state.hits['always-busy']).toBe(4);
     });
 
     it('reports a non-JSON answer with its first bytes', async () => {

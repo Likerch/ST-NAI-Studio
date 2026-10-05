@@ -30,6 +30,7 @@ import { avatarKey, readCharacterPrompt } from '../characters/character-prompts'
 import { cardPassport, cardPassports } from '../characters/passport-store';
 import { randomSeed } from '../generation/form';
 import type { Pipeline } from '../generation/pipeline';
+import { generationQueue } from '../generation/queue';
 import { base64ToBlob, blobToBase64, toPngBlob } from '../images/image-utils';
 import { unzipImages } from '../tools/tool-common';
 
@@ -149,6 +150,7 @@ export class SpriteService {
             mode: MODE.FREE,
             noContinuity: true,
             signal: options.signal,
+            queue: { priority: 'background', kind: 'sprites' },
             overrides: {
                 edit: false,
                 generation: {
@@ -184,7 +186,11 @@ export class SpriteService {
         if (cost > 0) throw new NaiError('free-only-blocked', 'enable-free-only', { cost });
         const image = await blobToBase64(await toPngBlob(blob, size));
         const body = directorBody('emotion', image, size, { emotion, defry: 0, prompt: '' });
-        const zip = await transport.extras.augment(body, { retryable: true, signal });
+        const extras = transport.extras;
+        const zip = await generationQueue.run(
+            { priority: 'background', kind: 'sprites', ...(signal ? { signal } : {}) },
+            (jobSignal) => extras.augment(body, { retryable: true, signal: jobSignal }),
+        );
         const [first] = await unzipImages(zip);
         if (!first) throw new NaiError('invalid-response', 'none', { preview: 'empty ZIP' });
         return first;

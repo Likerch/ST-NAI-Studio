@@ -51,6 +51,7 @@ import { imageReady } from '../events/studio-events';
 import type { StudioController } from './controller';
 import { appendToMessage, imageFolder, messageText, postToChat, saveImages } from './output';
 import type { GenerationMeta, MediaAttachmentData } from './output';
+import type { QueueJob } from './queue';
 import type { Prepared } from './service';
 import { styleNegative } from './styles';
 
@@ -118,6 +119,11 @@ export interface PictureRequest {
     vibes?: PlannedVibe[];
     /** Passports drawn in this picture (reported with the "imageReady" event, v0.10). */
     passportIds?: string[];
+    /**
+     * Its turn in the one NovelAI queue (v0.13.1): priority (default "user"), what it draws, whether it
+     * is still wanted when its turn comes, its queue status ("in the queue: N", "retry in N s").
+     */
+    queue?: Pick<QueueJob, 'priority' | 'kind' | 'stale' | 'onStatus'>;
 }
 
 export interface PictureResult {
@@ -144,12 +150,16 @@ export interface Produced extends ProducedImages {
 
 /** Vibes applied to generations (TZ Phase 5); encoding happens before the request is built. */
 export interface VibeProvider {
-    /** `extra`: vibes of this request only (a marker's "vibe"), added to the active ones. */
+    /**
+     * `extra`: vibes of this request only (a marker's "vibe"), added to the active ones. `queue`: the
+     * turn of encodings in the NovelAI queue (the request's priority and chat).
+     */
     prepare(
         caps: ModelCapabilities,
         transport: Transport,
         signal?: AbortSignal,
         extra?: PlannedVibe[],
+        queue?: Pick<QueueJob, 'priority' | 'chatId'>,
     ): Promise<VibeReference[]>;
 }
 
@@ -614,7 +624,11 @@ export class Pipeline {
         const model = String(assembled.overrides.model ?? s.generation.model);
         const caps = getCapabilities(isModelId(model) ? model : DEFAULT_MODEL);
         if (patch.vibes === undefined && this.vibes && transport && patch.mode !== 'inpaint') {
-            const vibes = await this.vibes.prepare(caps, transport, req.signal, req.vibes);
+            const chatId = c.getCurrentChatId();
+            const vibes = await this.vibes.prepare(caps, transport, req.signal, req.vibes, {
+                priority: req.queue?.priority ?? 'user',
+                ...(chatId !== undefined ? { chatId } : {}),
+            });
             if (vibes.length) patch.vibes = vibes;
         }
         // Scene continuity (TZ Phase 6): the last image of the location as the img2img base.
@@ -668,14 +682,31 @@ export class Pipeline {
         });
         try {
             const chatId = c.getCurrentChatId();
-            this.ui.progress?.start({
-                steps: prepared.request.steps,
-                streaming: prepared.build.endpoint === 'generate-stream',
-                transport: prepared.transportId,
-            });
+            // The progress card belongs to the request in flight: it starts when this one's turn comes.
+            let started = false;
+            const queue = req.queue ?? {};
+            const job: QueueJob = {
+                priority: queue.priority ?? 'user',
+                kind: queue.kind ?? 'picture',
+                ...(chatId !== undefined ? { chatId } : {}),
+                ...(queue.stale ? { stale: queue.stale } : {}),
+                onStatus: (status) => {
+                    if (status.state === 'running' && !started) {
+                        started = true;
+                        this.ui.progress?.start({
+                            steps: prepared.request.steps,
+                            streaming: prepared.build.endpoint === 'generate-stream',
+                            transport: prepared.transportId,
+                        });
+                    }
+                    queue.onStatus?.(status);
+                },
+            };
             const result = await this.controller
-                .send(prepared, abort.signal, (frame) => this.ui.progress?.frame(frame))
-                .finally(() => this.ui.progress?.end());
+                .send(prepared, abort.signal, (frame) => this.ui.progress?.frame(frame), job)
+                .finally(() => {
+                    if (started) this.ui.progress?.end();
+                });
             if (!result.images.length) throw new NaiError('invalid-response', 'none', { preview: '' });
             const generation = o.generation ?? {};
             const legacy: GenerationMeta = {

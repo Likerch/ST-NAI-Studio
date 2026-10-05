@@ -2,8 +2,8 @@
 // vibe encoding, Director Tools (ZIP passed to the browser as base64; the browser unzips it with
 // SillyTavern's JSZip, RECON P-4), upscale and subscription; chat completions of NovelAI's text
 // models (GLM-4.6, Xialong) for the human-language prompt converter (TZ Phase 7).
-// Retries: 429 always (request was not processed); 5xx only when the caller marked it retryable
-// (free request), so a paid request is never sent twice.
+// Retries: 429 always (request was not processed), after NovelAI's Retry-After when it sends one;
+// 5xx only when the caller marked it retryable (free request), so a paid request is never sent twice.
 import { abortError } from './queue.js';
 
 export const DEFAULT_BASE_URL = 'https://image.novelai.net';
@@ -53,7 +53,7 @@ export function correlationId() {
 export class UpstreamError extends Error {
     /**
      * @param {'http'|'network'|'timeout'|'aborted'|'invalid-response'} kind
-     * @param {{status?: number, message?: string, preview?: string}} [details]
+     * @param {{status?: number, message?: string, preview?: string, retryAfter?: number}} [details]
      */
     constructor(kind, details = {}) {
         super(details.message ?? kind);
@@ -61,7 +61,24 @@ export class UpstreamError extends Error {
         this.kind = kind;
         this.status = details.status;
         this.preview = details.preview;
+        this.retryAfter = details.retryAfter;
     }
+}
+
+/** Longest wait a Retry-After may ask for before the next attempt. */
+const MAX_RETRY_AFTER_MS = 30000;
+
+/**
+ * Seconds of a Retry-After header (a number of seconds or an HTTP date); undefined without one.
+ * @param {Response} response
+ */
+export function retryAfterSeconds(response, now = Date.now()) {
+    const raw = response.headers?.get?.('retry-after');
+    if (!raw) return undefined;
+    const seconds = Number(raw);
+    if (Number.isFinite(seconds) && seconds >= 0) return seconds;
+    const date = Date.parse(raw);
+    return Number.isFinite(date) ? Math.max(0, Math.ceil((date - now) / 1000)) : undefined;
 }
 
 /** Removes the token from any text that may travel back to the browser or into logs. */
@@ -140,7 +157,20 @@ export function createNovelAiClient({
         } catch {
             // not JSON: keep the raw preview
         }
-        return new UpstreamError('http', { status: response.status, message, preview: text.slice(0, 200) });
+        const retryAfter = retryAfterSeconds(response);
+        return new UpstreamError('http', {
+            status: response.status,
+            message,
+            preview: text.slice(0, 200),
+            ...(retryAfter !== undefined ? { retryAfter } : {}),
+        });
+    }
+
+    /** Wait before the next attempt: the backoff, or longer when NovelAI asked (Retry-After). */
+    function retryWait(response, attempt) {
+        const asked = response.status === 429 ? retryAfterSeconds(response) : undefined;
+        const backoff = backoffMs * 2 ** attempt;
+        return asked === undefined ? backoff : Math.max(backoff, Math.min(asked * 1000, MAX_RETRY_AFTER_MS));
     }
 
     return {
@@ -196,8 +226,9 @@ export function createNovelAiClient({
                 const retry =
                     (response.status === 429 || (retryable && response.status >= 500)) && attempt < maxRetries;
                 if (!retry) throw await failure(response, token);
+                const wait = retryWait(response, attempt);
                 await response.text().catch(() => '');
-                await sleep(backoffMs * 2 ** attempt, signal);
+                await sleep(wait, signal);
             }
         },
 
@@ -225,8 +256,9 @@ export function createNovelAiClient({
                 const retry =
                     (response.status === 429 || (retryable && response.status >= 500)) && attempt < maxRetries;
                 if (!retry) throw await failure(response, token);
+                const wait = retryWait(response, attempt);
                 await response.text().catch(() => '');
-                await sleep(backoffMs * 2 ** attempt, signal);
+                await sleep(wait, signal);
             }
         },
 
@@ -279,24 +311,32 @@ export function createNovelAiClient({
 
         /**
          * Generation with step previews: NovelAI answers text/event-stream (stream: "sse"); every
-         * chunk is handed to onChunk as it arrives. Throws before the first chunk on HTTP errors.
+         * chunk is handed to onChunk as it arrives. Throws before the first chunk on HTTP errors;
+         * 429 (another generation of the account still running) is retried before anything is sent.
          */
         async generateStream({ request, token, signal, onChunk }) {
-            const response = await once(
-                '/ai/generate-image-stream',
-                {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'x-correlation-id': correlationId(),
-                        'x-initiated-at': new Date().toISOString(),
+            let response;
+            for (let attempt = 0; ; attempt++) {
+                response = await once(
+                    '/ai/generate-image-stream',
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'x-correlation-id': correlationId(),
+                            'x-initiated-at': new Date().toISOString(),
+                        },
+                        body: JSON.stringify(request),
                     },
-                    body: JSON.stringify(request),
-                },
-                token,
-                signal,
-            );
-            if (!response.ok) throw await failure(response, token);
+                    token,
+                    signal,
+                );
+                if (response.ok) break;
+                if (response.status !== 429 || attempt >= maxRetries) throw await failure(response, token);
+                const wait = retryWait(response, attempt);
+                await response.text().catch(() => '');
+                await sleep(wait, signal);
+            }
             const body = response.body;
             // The request signal no longer covers the body once headers arrived: stop reading
             // (and close the upstream connection) when the browser goes away.
@@ -356,8 +396,9 @@ export function createNovelAiClient({
                 );
                 if (response.ok) return chatCompletionText(await response.text());
                 if (response.status === 429 && attempt < maxRetries) {
+                    const wait = retryWait(response, attempt);
                     await response.text().catch(() => '');
-                    await sleep(backoffMs * 2 ** attempt, signal);
+                    await sleep(wait, signal);
                     continue;
                 }
                 throw await failure(response, token);

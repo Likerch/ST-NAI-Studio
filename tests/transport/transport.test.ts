@@ -11,6 +11,7 @@ import {
     TransportError,
 } from '../../src/transport';
 import type { TransportEnv } from '../../src/transport';
+import { toNaiError } from '../../src/core/errors';
 import { createNativeTransport } from '../../src/transport/st-native';
 import { createPluginTransport } from '../../src/transport/plugin';
 import { FAKE_IMAGE, loadCapture, normalizeImages } from '../helpers/captures';
@@ -198,6 +199,20 @@ describe('plugin transport', () => {
             status: 402,
             serverMessage: 'Not enough Anlas',
         });
+    });
+
+    it('carries the Retry-After of a busy NovelAI (plugin 0.4.2) into the error', async () => {
+        const plugin = createPluginTransport(
+            envWith(() =>
+                json(
+                    { error: { kind: 'http', status: 429, message: 'Concurrent generation is locked', retryAfter: 4 } },
+                    502,
+                ),
+            ),
+        );
+        const error = await plugin.generate(body(), { endpoint: 'generate', retryable: false }).catch((e) => e);
+        expect(error).toMatchObject({ kind: 'http', status: 429, retryAfter: 4 });
+        expect(toNaiError(error)).toMatchObject({ code: 'rate-limited', action: 'retry', params: { retryAfter: 4 } });
     });
 
     it('maps 404, non-JSON errors, empty results and network failures', async () => {

@@ -18,6 +18,8 @@ import type { Transport } from '../../transport';
 import { avatarKey } from '../characters/character-prompts';
 import { blobToBase64, thumbnail, toPngBlob } from '../images/image-utils';
 import type { VibeProvider } from '../generation/pipeline';
+import { generationQueue } from '../generation/queue';
+import type { QueueJob } from '../generation/queue';
 import type { CostConfirm } from '../tools/tool-common';
 
 /** Encoding one vibe for one model (RECON §3.12). */
@@ -124,6 +126,7 @@ export class VibeLibraryProvider implements VibeProvider {
         transport: Transport,
         signal?: AbortSignal,
         extra: PlannedVibe[] = [],
+        queue: Pick<QueueJob, 'priority' | 'chatId'> = {},
     ): Promise<VibeReference[]> {
         const active = activeVibes();
         const planned = [...active, ...extra.filter((e) => !active.some((a) => a.item.id === e.item.id))];
@@ -138,7 +141,7 @@ export class VibeLibraryProvider implements VibeProvider {
             return [];
         }
         if (caps.vibeKind === 'raw') return await this.raw(planned);
-        return await this.encoded(planned, caps.model, transport, signal);
+        return await this.encoded(planned, caps.model, transport, signal, queue);
     }
 
     /** V3: the reference image itself, 448x448 PNG (RECON §3.4). */
@@ -164,6 +167,7 @@ export class VibeLibraryProvider implements VibeProvider {
         model: string,
         transport: Transport,
         signal?: AbortSignal,
+        queue: Pick<QueueJob, 'priority' | 'chatId'> = {},
     ): Promise<VibeReference[]> {
         const extras = transport.extras;
         const encodings = new Map<string, string>();
@@ -213,9 +217,14 @@ export class VibeLibraryProvider implements VibeProvider {
                     // The stored PNG goes as-is: its base64 is what imageHash was computed from, so
                     // the plugin's disk cache key matches the lookup key.
                     const image = await blobToBase64(blob);
-                    const result = await extras!.encodeVibe(
-                        { image, model, informationExtracted: p.informationExtracted },
-                        signal,
+                    // An encoding is a NovelAI request too: it waits for its turn in the one queue.
+                    const result = await generationQueue.run(
+                        { ...queue, kind: 'vibe', ...(signal ? { signal } : {}) },
+                        (jobSignal) =>
+                            extras!.encodeVibe(
+                                { image, model, informationExtracted: p.informationExtracted },
+                                jobSignal,
+                            ),
                     );
                     if (!result.cached) paid++;
                     encodings.set(keyOf(p), result.encoding);

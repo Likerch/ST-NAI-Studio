@@ -115,6 +115,8 @@ export class BackgroundService {
             interpret: 'cyrillic',
             noContinuity: true,
             overrides: { edit: false, negative, generation, ...(style ? { style } : {}) },
+            // Maestro's backgrounds are background work: everything else draws first.
+            queue: { priority: 'background', kind: 'background' },
             // Free-only mode: a request that would still cost Anlas is refused before anything is sent.
             ...(s.anlas.freeOnly ? { maxCost: 0 } : {}),
             ...(signal ? { signal } : {}),

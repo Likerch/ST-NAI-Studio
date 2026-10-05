@@ -34,7 +34,8 @@ import {
 } from '../../domain';
 import type { GenerationRequest, InlineImage, MarkerMatch, MarkerParams, PlannedVibe, UcPresetId } from '../../domain';
 import { setCurrentLocation } from '../continuity/continuity-service';
-import type { CallOverrides, Pipeline, ProducedImages } from '../generation/pipeline';
+import type { CallOverrides, Pipeline, PictureRequest, ProducedImages } from '../generation/pipeline';
+import type { QueuePriority, QueueStatus } from '../generation/queue';
 import { blobToBase64, toPngBlob } from '../images/image-utils';
 import type { InlineImages } from '../inline/inline-service';
 import { qualityGatesActive, replyAbandoned, replyComplete, replyVerdict } from '../quality/quality-gate';
@@ -51,6 +52,8 @@ interface Job {
     verdict?: Promise<QualityVerdict>;
     /** The gates held the drawing back: the reply is redone (skip) or was swiped / deleted (cancelled). */
     held?: Exclude<QualityVerdict, 'draw'>;
+    /** Its place in the queue (v0.13.1): behind other markers, in the NovelAI queue, waiting for a retry. */
+    status?: QueueStatus;
 }
 
 interface StartOptions {
@@ -58,6 +61,21 @@ interface StartOptions {
     gated?: boolean;
     /** The reply still streams: the gates are asked once it is complete. */
     streaming?: boolean;
+    /** Default "reply"; a click (retry, a menu) is "user". */
+    priority?: QueuePriority;
+}
+
+/** The message a drawing is for no longer shows it: another chat, the message deleted or swiped. */
+function messageGone(messageId: number | undefined): (() => boolean) | undefined {
+    const c = ctx();
+    const message = messageId === undefined ? undefined : c.chat[messageId];
+    if (!message) return undefined;
+    const chatId = c.getCurrentChatId();
+    const swipe = message.swipe_id ?? 0;
+    return () => {
+        const now = ctx();
+        return now.getCurrentChatId() !== chatId || !now.chat.includes(message) || (message.swipe_id ?? 0) !== swipe;
+    };
 }
 
 /** The value of a promise, or undefined as soon as the signal aborts. */
@@ -98,7 +116,15 @@ export class MarkerService {
     /** Jobs started while the current reply streams, by ordinal + generation key. */
     private early = new Map<string, Job>();
     private generationType = '';
+    /**
+     * Marker jobs prepare one at a time and in order (scene, passports, the language model); their
+     * NovelAI request then waits in the one queue of the extension with every other request (v0.13.1).
+     */
     private queue: Promise<unknown> = Promise.resolve();
+    /** Marker jobs waiting behind the one that prepares, in order. */
+    private readonly chain: Job[] = [];
+    /** The job drawing each placeholder, for its queue status. */
+    private readonly imageJobs = new Map<string, Job>();
     /** Images with a generation in flight (the renderer shows a spinner, not "interrupted"). */
     private readonly running = new Set<string>();
     /** Images whose drawing waits for the quality gates' verdict. */
@@ -128,6 +154,25 @@ export class MarkerService {
     /** The drawing of this image waits for the quality gates (v0.11). */
     isWaiting(imageId: string): boolean {
         return this.waiting.has(imageId);
+    }
+
+    /** Where the drawing of this image waits (v0.13.1): in the queue (N ahead) or for a retry; else undefined. */
+    queueStatus(imageId: string): QueueStatus | undefined {
+        const status = this.imageJobs.get(imageId)?.status;
+        return status?.state === 'queued' || status?.state === 'retry' ? status : undefined;
+    }
+
+    private setJobStatus(job: Job, status: QueueStatus): void {
+        job.status = status;
+        for (const [imageId, owner] of this.imageJobs) {
+            if (owner !== job) continue;
+            for (const listener of this.listeners) listener(imageId);
+        }
+    }
+
+    /** Jobs behind the preparing one: "in the queue: N". */
+    private chainChanged(): void {
+        this.chain.forEach((job, i) => this.setJobStatus(job, { state: 'queued', ahead: i + 1 }));
     }
 
     onRunningChange(listener: (imageId: string) => void): void {
@@ -299,7 +344,7 @@ export class MarkerService {
         const id = ctx().uuidv4();
         const entry = createPendingImage(id, params, this.inline.displayDefaults(markerDisplay(params)));
         await this.inline.addPending(messageId, `${m.mes}\n[nai:img:${id}]`, [entry]);
-        await this.deliver(messageId, id, this.start(params, { messageId, text: m.mes }));
+        await this.deliver(messageId, id, this.start(params, { messageId, text: m.mes }, { priority: 'user' }));
     }
 
     /** Generates a marker image again (after an error or an interrupted generation). */
@@ -308,13 +353,26 @@ export class MarkerService {
         if (!entry?.marker || this.running.has(imageId)) return;
         await this.inline.setMarkerStatus(messageId, imageId, 'pending');
         const text = ctx().chat[messageId]?.mes;
-        await this.deliver(messageId, imageId, this.start(entry.marker.params, { messageId, text }));
+        await this.deliver(
+            messageId,
+            imageId,
+            this.start(entry.marker.params, { messageId, text }, { priority: 'user' }),
+        );
     }
 
     // ---- generation -----------------------------------------------------------------------
 
-    private enqueue<T>(task: () => Promise<T>): Promise<T> {
-        const run = this.queue.then(task, task);
+    private enqueue<T>(job: Job, task: () => Promise<T>): Promise<T> {
+        this.chain.push(job);
+        this.chainChanged();
+        const start = () => {
+            const index = this.chain.indexOf(job);
+            if (index !== -1) this.chain.splice(index, 1);
+            this.setJobStatus(job, { state: 'running' });
+            this.chainChanged();
+            return task();
+        };
+        const run = this.queue.then(start, start);
         this.queue = run.catch(() => undefined);
         return run;
     }
@@ -340,8 +398,16 @@ export class MarkerService {
                     return null;
                 }
             }
-            return await this.enqueue(async () =>
-                abort.signal.aborted ? null : await this.produce(params, abort.signal, query),
+            const stale = messageGone(messageId);
+            return await this.enqueue(job, async () =>
+                abort.signal.aborted || stale?.()
+                    ? null
+                    : await this.produce(params, abort.signal, query, {
+                          priority: options.priority ?? 'reply',
+                          kind: 'marker',
+                          ...(stale ? { stale } : {}),
+                          onStatus: (status) => this.setJobStatus(job, status),
+                      }),
             );
         })();
         // An early job that is dropped must not end as an unhandled rejection.
@@ -351,6 +417,7 @@ export class MarkerService {
 
     private async deliver(hint: number, imageId: string, job: Job): Promise<void> {
         const chatId = ctx().getCurrentChatId();
+        this.imageJobs.set(imageId, job);
         this.setRunning(imageId, true);
         if (job.verdict) {
             this.setWaiting(imageId, true);
@@ -377,12 +444,18 @@ export class MarkerService {
                 );
             }
         } finally {
+            this.imageJobs.delete(imageId);
             this.setRunning(imageId, false);
         }
     }
 
     /** One marker as a generation request: every parameter it may carry. */
-    async produce(params: MarkerParams, signal?: AbortSignal, query: SceneQuery = {}): Promise<ProducedImages | null> {
+    async produce(
+        params: MarkerParams,
+        signal?: AbortSignal,
+        query: SceneQuery = {},
+        queue: PictureRequest['queue'] = { priority: 'reply', kind: 'marker' },
+    ): Promise<ProducedImages | null> {
         const s = settings();
         const freeOnly = s.anlas.freeOnly || !s.markers.allowPaid;
         const model = markerModel(params.model) ?? s.generation.model;
@@ -486,6 +559,7 @@ export class MarkerService {
             skipCostConfirm: true,
             maxCost: freeOnly ? 0 : s.markers.maxCost,
             ...(passportIds.length ? { passportIds } : {}),
+            queue,
         });
     }
 

@@ -27,6 +27,7 @@ import type { DirectorOptions, DirectorTool, ModeId } from '../../domain';
 import type { Transport, TransportFeatures } from '../../transport';
 import { base64ToBlob, blobToBase64, toPngBlob } from '../images/image-utils';
 import type { CallOverrides, Pipeline, ProducedImages } from '../generation/pipeline';
+import { generationQueue } from '../generation/queue';
 import type { InlineImages } from '../inline/inline-service';
 import { deliver, generatedSize, guardCost, sourcePng, toolMeta, unzipImages } from './tool-common';
 import type { CostConfirm, ImageSource } from './tool-common';
@@ -131,7 +132,9 @@ export class ToolsService {
         const image = await sourcePng(source, size);
         const body = directorBody(tool, image, size, options);
         await this.withLoader(t('naist.director.running', { tool: t(`naist.director.${tool}`) }), async (signal) => {
-            const zip = await transport.extras!.augment(body, { retryable: cost === 0, signal });
+            const zip = await generationQueue.run({ kind: 'tools', chatId: this.chatId(), signal }, (jobSignal) =>
+                transport.extras!.augment(body, { retryable: cost === 0, signal: jobSignal }),
+            );
             const images = await unzipImages(zip);
             const produced: ProducedImages = {
                 images: images.map((img) => ({ ...img, seed: source.meta?.seed })),
@@ -287,9 +290,8 @@ export class ToolsService {
         await guardCost(cost, t('naist.tool.upscale'), this.confirm);
         const image = await sourcePng(source);
         await this.withLoader(t('naist.tool.upscaling'), async (signal) => {
-            const images = await transport.extras!.upscale(
-                { image, width: source.width, height: source.height },
-                signal,
+            const images = await generationQueue.run({ kind: 'tools', chatId: this.chatId(), signal }, (jobSignal) =>
+                transport.extras!.upscale({ image, width: source.width, height: source.height }, jobSignal),
             );
             const first = images[0];
             const size = first ? await generatedSize(first) : { width: source.width * 2, height: source.height * 2 };

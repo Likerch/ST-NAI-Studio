@@ -82,6 +82,7 @@ export class ComicService {
                 mode: MODE.FREE,
                 noContinuity: true,
                 signal: req.signal,
+                queue: { priority: 'background', kind: 'comic' },
                 overrides: {
                     edit: false,
                     generation: {

@@ -92,6 +92,8 @@ interface ErrorShape {
     message?: string;
     serverMessage?: string;
     bodyPreview?: string;
+    /** Seconds NovelAI asked to wait before a retry (Retry-After), when it said so. */
+    retryAfter?: number;
     params?: Record<string, string | number>;
 }
 
@@ -112,6 +114,7 @@ function fromHttp(status: number, shape: ErrorShape, context: ErrorContext): Nai
         model: context.model ?? '',
         cost: context.cost ?? 0,
         balance: context.balance ?? 0,
+        ...(shape.retryAfter ? { retryAfter: shape.retryAfter } : {}),
     };
     if (status === 401) return new NaiError('unauthorized', 'open-token-help', params, status);
     if (status === 402 || /not enough anlas|training steps/i.test(server))

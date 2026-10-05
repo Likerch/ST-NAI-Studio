@@ -72,6 +72,23 @@ var EN = {
 	"naist.panel.generate": "Generate",
 	"naist.panel.cancel": "Cancel",
 	"naist.panel.generating": "Generating…",
+	"naist.panel.queued": "Another picture is being drawn: this one waits for its turn…",
+	"naist.queue.title": "NovelAI queue",
+	"naist.queue.running": "Drawing: {kind}",
+	"naist.queue.waiting": "In the queue: {count}",
+	"naist.queue.waitingCount": "waiting: {count}",
+	"naist.queue.retryIn": "NovelAI is busy, retry in {seconds} s",
+	"naist.queue.clear": "Clear the queue",
+	"naist.queue.cleared": "Removed from the queue: {count}",
+	"naist.queue.kind.picture": "picture",
+	"naist.queue.kind.marker": "image marker",
+	"naist.queue.kind.auto": "automatic picture",
+	"naist.queue.kind.portrait": "DES portrait",
+	"naist.queue.kind.sprites": "sprites",
+	"naist.queue.kind.comic": "comic",
+	"naist.queue.kind.background": "background",
+	"naist.queue.kind.tools": "image tool",
+	"naist.queue.kind.vibe": "vibe encoding",
 	"naist.model.v5Full": "NAI Diffusion V5 Full",
 	"naist.model.v5Curated": "NAI Diffusion V5 Curated",
 	"naist.model.v45Full": "NAI Diffusion V4.5 Full",
@@ -1752,7 +1769,8 @@ function fromHttp(status, shape, context) {
 		server,
 		model: context.model ?? "",
 		cost: context.cost ?? 0,
-		balance: context.balance ?? 0
+		balance: context.balance ?? 0,
+		...shape.retryAfter ? { retryAfter: shape.retryAfter } : {}
 	};
 	if (status === 401) return new NaiError("unauthorized", "open-token-help", params, status);
 	if (status === 402 || /not enough anlas|training steps/i.test(server)) return new NaiError("insufficient-anlas", "enable-free-only", params, status);
@@ -9207,10 +9225,6 @@ var AutoGenerator = class {
 			if (decision.blockedBy) log.debug("auto generation held by", decision.blockedBy);
 			return;
 		}
-		if (this.controller.state.busy) {
-			log.info("auto generation skipped: another generation is running");
-			return;
-		}
 		const budget = autoBudget(settings().anlas.freeOnly, rules.allowPaid);
 		try {
 			const preview = this.controller.prepare();
@@ -9228,10 +9242,6 @@ var AutoGenerator = class {
 				log.info(`auto generation skipped by the quality gate (${verdict})`);
 				return;
 			}
-			if (this.controller.state.busy) {
-				log.info("auto generation skipped: another generation is running");
-				return;
-			}
 		}
 		meta.auto = decision.state;
 		ctx().saveMetadata();
@@ -9243,7 +9253,11 @@ var AutoGenerator = class {
 				trigger,
 				message: mode === MODE.RAW_LAST ? message.mes : void 0,
 				maxCost: budget,
-				skipCostConfirm: true
+				skipCostConfirm: true,
+				queue: {
+					priority: "reply",
+					kind: "auto"
+				}
 			});
 			log.info("auto generation fired by", decision.reason);
 		} catch (error) {
@@ -9998,6 +10012,10 @@ var BackgroundService = class {
 				generation,
 				...style ? { style } : {}
 			},
+			queue: {
+				priority: "background",
+				kind: "background"
+			},
 			...s.anlas.freeOnly ? { maxCost: 0 } : {},
 			...signal ? { signal } : {}
 		});
@@ -10115,6 +10133,8 @@ var TransportError = class extends Error {
 	status;
 	serverMessage;
 	bodyPreview;
+	/** Seconds the server asked to wait before a retry (Retry-After), when it said so. */
+	retryAfter;
 	constructor(kind, options = {}) {
 		super(options.message ?? `${kind}${options.status ? ` ${options.status}` : ""}`);
 		this.name = "TransportError";
@@ -10122,6 +10142,7 @@ var TransportError = class extends Error {
 		this.status = options.status;
 		this.serverMessage = options.serverMessage;
 		this.bodyPreview = options.bodyPreview;
+		this.retryAfter = options.retryAfter;
 	}
 };
 function isAbort(error) {
@@ -10447,7 +10468,8 @@ async function toTransportError(response) {
 	].find((k) => k === kind) ?? "http", {
 		status: body.error?.status ?? response.status,
 		serverMessage: body.error?.message,
-		bodyPreview: body.error?.preview
+		bodyPreview: body.error?.preview,
+		...typeof body.error?.retryAfter === "number" ? { retryAfter: body.error.retryAfter } : {}
 	});
 }
 function createPluginTransport(env, version = null) {
@@ -10696,6 +10718,253 @@ var UNKNOWN_ACCOUNT = {
 	usagePercent: null
 };
 //#endregion
+//#region src/features/generation/queue.ts
+var RETRY_DELAYS_MS = [
+	2e3,
+	5e3,
+	12e3
+];
+var MAX_WAIT_MS = 6e4;
+var RANK = {
+	user: 0,
+	reply: 1,
+	portrait: 2,
+	background: 3
+};
+/** Answers that are about the account, not about another generation: never sent again. */
+var FINAL_CODES = /* @__PURE__ */ new Set([
+	"unauthorized",
+	"token-missing",
+	"insufficient-anlas",
+	"forbidden",
+	"aborted"
+]);
+var BUSY_TEXT = /concurrent generation|generation is locked|too many requests/i;
+/** NovelAI turned the request away because another generation of the account is running (429). */
+function isBusyAnswer(error) {
+	if (typeof error !== "object" || error === null) return false;
+	const e = error;
+	if (e.code && FINAL_CODES.has(e.code)) return false;
+	if (e.kind === "aborted" || e.name === "AbortError") return false;
+	if (e.code === "rate-limited" || e.status === 429 || e.params?.status === 429) return true;
+	const text = [
+		e.serverMessage,
+		e.bodyPreview,
+		e.params?.server,
+		e.params?.preview
+	].filter(Boolean).join(" ");
+	return BUSY_TEXT.test(text);
+}
+/** Seconds the server asked to wait (Retry-After), if it said so. */
+function retryAfterSeconds(error) {
+	const e = typeof error === "object" && error !== null ? error : {};
+	const value = Number(e.retryAfter ?? e.params?.retryAfter);
+	return Number.isFinite(value) && value > 0 ? value : void 0;
+}
+function abortableSleep(ms, signal) {
+	return new Promise((resolve, reject) => {
+		if (signal.aborted) {
+			reject(new NaiError("aborted", "none"));
+			return;
+		}
+		const timer = setTimeout(() => {
+			signal.removeEventListener("abort", onAbort);
+			resolve();
+		}, ms);
+		const onAbort = () => {
+			clearTimeout(timer);
+			reject(new NaiError("aborted", "none"));
+		};
+		signal.addEventListener("abort", onAbort, { once: true });
+	});
+}
+var GenerationQueue = class {
+	running = null;
+	waiting = [];
+	seq = 0;
+	listeners = /* @__PURE__ */ new Set();
+	delays;
+	random;
+	now;
+	sleep;
+	constructor(options = {}) {
+		this.delays = options.delays ?? RETRY_DELAYS_MS;
+		this.random = options.random ?? Math.random;
+		this.now = options.now ?? Date.now;
+		this.sleep = options.sleep ?? abortableSleep;
+	}
+	/** Runs `task` when it is its turn, alone; a busy answer is retried with the same turn. */
+	run(job, task) {
+		return new Promise((resolve, reject) => {
+			if (job.signal?.aborted) {
+				reject(new NaiError("aborted", "none"));
+				return;
+			}
+			const entry = {
+				id: ++this.seq,
+				job,
+				priority: job.priority ?? "user",
+				kind: job.kind ?? "picture",
+				task,
+				resolve,
+				reject,
+				abort: new AbortController(),
+				retryAt: null,
+				detach: () => {}
+			};
+			const signal = job.signal;
+			if (signal) {
+				const onAbort = () => {
+					if (this.waiting.includes(entry)) this.drop(entry, "aborted");
+					else entry.abort.abort();
+				};
+				signal.addEventListener("abort", onAbort, { once: true });
+				entry.detach = () => signal.removeEventListener("abort", onAbort);
+			}
+			const at = this.waiting.findIndex((other) => RANK[other.priority] > RANK[entry.priority]);
+			if (at === -1) this.waiting.push(entry);
+			else this.waiting.splice(at, 0, entry);
+			log.info(`queue: ${entry.kind} (${entry.priority}) added, ${this.waiting.length + (this.running ? 1 : 0)} in the queue`);
+			this.pump();
+			this.changed();
+		});
+	}
+	/** A request is in flight (or waits for its retry). */
+	get busy() {
+		return this.running !== null;
+	}
+	get size() {
+		return this.waiting.length;
+	}
+	snapshot() {
+		return {
+			running: this.running ? this.view(this.running) : null,
+			waiting: this.waiting.map((e) => this.view(e))
+		};
+	}
+	subscribe(listener) {
+		this.listeners.add(listener);
+		return () => this.listeners.delete(listener);
+	}
+	/** Drops every waiting request ("Clear the queue"); the running one finishes. */
+	clear() {
+		return this.dropWhere(() => true, "cleared");
+	}
+	/** Another chat is open: waiting requests of other chats are dropped. */
+	dropOtherChats(chatId) {
+		return this.dropWhere((e) => e.job.chatId !== void 0 && e.job.chatId !== chatId, "chat changed");
+	}
+	/** Messages were deleted or swiped: waiting requests that lost their message are dropped. */
+	revalidate() {
+		return this.dropWhere((e) => this.isStale(e), "message gone");
+	}
+	/** Aborts the request in flight (the panel's Cancel). */
+	cancelRunning() {
+		this.running?.abort.abort();
+	}
+	view(entry) {
+		return {
+			id: entry.id,
+			priority: entry.priority,
+			kind: entry.kind,
+			...entry.job.chatId !== void 0 ? { chatId: entry.job.chatId } : {},
+			retryIn: entry.retryAt === null ? null : Math.max(0, Math.ceil((entry.retryAt - this.now()) / 1e3))
+		};
+	}
+	isStale(entry) {
+		try {
+			return entry.job.stale?.() === true;
+		} catch {
+			return false;
+		}
+	}
+	dropWhere(test, reason) {
+		const dropped = this.waiting.filter(test);
+		for (const entry of dropped) this.drop(entry, reason, false);
+		if (dropped.length) this.changed();
+		return dropped.length;
+	}
+	drop(entry, reason, notify = true) {
+		const index = this.waiting.indexOf(entry);
+		if (index === -1) return;
+		this.waiting.splice(index, 1);
+		entry.detach();
+		log.info(`queue: ${entry.kind} (${entry.priority}) dropped: ${reason}`);
+		entry.job.onStatus?.({ state: "done" });
+		entry.reject(new NaiError("aborted", "none"));
+		if (notify) this.changed();
+	}
+	changed() {
+		const offset = this.running ? 1 : 0;
+		this.waiting.forEach((entry, i) => entry.job.onStatus?.({
+			state: "queued",
+			ahead: i + offset
+		}));
+		for (const listener of this.listeners) try {
+			listener();
+		} catch (error) {
+			log.warn("queue listener failed", error);
+		}
+	}
+	pump() {
+		if (this.running) return;
+		let next = this.waiting.shift();
+		while (next && this.isStale(next)) {
+			next.detach();
+			log.info(`queue: ${next.kind} (${next.priority}) dropped: message gone`);
+			next.job.onStatus?.({ state: "done" });
+			next.reject(new NaiError("aborted", "none"));
+			next = this.waiting.shift();
+		}
+		if (!next) return;
+		this.running = next;
+		this.execute(next);
+	}
+	async execute(entry) {
+		entry.job.onStatus?.({ state: "running" });
+		try {
+			entry.resolve(await this.attempt(entry));
+		} catch (error) {
+			entry.reject(error);
+		} finally {
+			entry.detach();
+			entry.job.onStatus?.({ state: "done" });
+			this.running = null;
+			this.pump();
+			this.changed();
+		}
+	}
+	async attempt(entry) {
+		for (let attempt = 0;; attempt++) try {
+			return await entry.task(entry.abort.signal);
+		} catch (error) {
+			const delay = this.delays[attempt];
+			if (entry.abort.signal.aborted || delay === void 0 || !isBusyAnswer(error)) throw error;
+			const jitter = .8 + .4 * this.random();
+			const asked = retryAfterSeconds(error);
+			const ms = Math.min(MAX_WAIT_MS, Math.max(Math.round(delay * jitter), asked ? asked * 1e3 : 0));
+			const seconds = Math.ceil(ms / 1e3);
+			log.warn(`queue: NovelAI is busy with another generation, ${entry.kind} sent again in ${seconds} s (${attempt + 1}/${this.delays.length})`);
+			entry.retryAt = this.now() + ms;
+			entry.job.onStatus?.({
+				state: "retry",
+				seconds,
+				attempt: attempt + 1
+			});
+			this.changed();
+			try {
+				await this.sleep(ms, entry.abort.signal);
+			} finally {
+				entry.retryAt = null;
+			}
+			entry.job.onStatus?.({ state: "running" });
+			this.changed();
+		}
+	}
+};
+/** The queue of the extension: every NovelAI image request goes through it. */
+var generationQueue = new GenerationQueue();
+//#endregion
 //#region src/features/generation/form.ts
 var MAX_SEED = 2 ** 32 - 1;
 function pick(value, allowed, fallback) {
@@ -10836,6 +11105,7 @@ async function sendPrepared(prepared, transport, account, signal, onProgress) {
 //#region src/features/generation/controller.ts
 var StudioController = class {
 	env;
+	queue;
 	state = {
 		selection: null,
 		account: UNKNOWN_ACCOUNT,
@@ -10843,9 +11113,14 @@ var StudioController = class {
 		busy: false
 	};
 	listeners = /* @__PURE__ */ new Set();
-	abort = null;
-	constructor(env) {
+	constructor(env, queue = generationQueue) {
 		this.env = env;
+		this.queue = queue;
+		queue.subscribe(() => {
+			if (this.state.busy === queue.busy) return;
+			this.state.busy = queue.busy;
+			this.emit();
+		});
 	}
 	subscribe(listener) {
 		this.listeners.add(listener);
@@ -10890,28 +11165,31 @@ var StudioController = class {
 			throw toNaiError(error);
 		}
 	}
-	/** Sends a prepared request. One generation at a time; blocked requests never leave. */
-	async send(prepared, signal, onProgress) {
-		const transport = this.state.selection?.transport;
-		if (!transport) throw new NaiError("plugin-unavailable", "install-plugin");
-		if (this.state.busy) throw new NaiError("busy", "none");
-		this.abort = new AbortController();
-		const onAbort = () => this.abort?.abort();
-		signal?.addEventListener("abort", onAbort, { once: true });
-		this.state.busy = true;
-		this.emit();
+	/**
+	* Sends a prepared request through the one NovelAI queue (v0.13.1): it waits for its turn, goes
+	* alone and is sent again when NovelAI answers that another generation is running. The cost was
+	* confirmed before; a retry asks nothing. Blocked requests never leave.
+	*/
+	async send(prepared, signal, onProgress, job = {}) {
+		if (!this.state.selection?.transport) throw new NaiError("plugin-unavailable", "install-plugin");
+		let sent = false;
 		try {
-			return await sendPrepared(prepared, transport, this.state.account, this.abort.signal, onProgress);
+			return await this.queue.run({
+				...job,
+				...signal ? { signal } : {}
+			}, async (jobSignal) => {
+				const transport = this.state.selection?.transport;
+				if (!transport) throw new NaiError("plugin-unavailable", "install-plugin");
+				sent = true;
+				return await sendPrepared(prepared, transport, this.state.account, jobSignal, onProgress);
+			});
 		} finally {
-			signal?.removeEventListener("abort", onAbort);
-			this.state.busy = false;
-			this.abort = null;
-			this.emit();
-			this.refreshAccount();
+			if (sent) this.refreshAccount();
 		}
 	}
+	/** Aborts the NovelAI request in flight. */
 	cancel() {
-		this.abort?.abort();
+		this.queue.cancelRunning();
 	}
 };
 //#endregion
@@ -11523,7 +11801,11 @@ var Pipeline = class {
 		const model = String(assembled.overrides.model ?? s.generation.model);
 		const caps = getCapabilities(isModelId(model) ? model : DEFAULT_MODEL);
 		if (patch.vibes === void 0 && this.vibes && transport && patch.mode !== "inpaint") {
-			const vibes = await this.vibes.prepare(caps, transport, req.signal, req.vibes);
+			const chatId = c.getCurrentChatId();
+			const vibes = await this.vibes.prepare(caps, transport, req.signal, req.vibes, {
+				priority: req.queue?.priority ?? "user",
+				...chatId !== void 0 ? { chatId } : {}
+			});
 			if (vibes.length) patch.vibes = vibes;
 		}
 		if (this.continuity && !req.noContinuity && !isSwipe && patch.mode === void 0 && patch.image === void 0) {
@@ -11565,12 +11847,28 @@ var Pipeline = class {
 		});
 		try {
 			const chatId = c.getCurrentChatId();
-			this.ui.progress?.start({
-				steps: prepared.request.steps,
-				streaming: prepared.build.endpoint === "generate-stream",
-				transport: prepared.transportId
+			let started = false;
+			const queue = req.queue ?? {};
+			const job = {
+				priority: queue.priority ?? "user",
+				kind: queue.kind ?? "picture",
+				...chatId !== void 0 ? { chatId } : {},
+				...queue.stale ? { stale: queue.stale } : {},
+				onStatus: (status) => {
+					if (status.state === "running" && !started) {
+						started = true;
+						this.ui.progress?.start({
+							steps: prepared.request.steps,
+							streaming: prepared.build.endpoint === "generate-stream",
+							transport: prepared.transportId
+						});
+					}
+					queue.onStatus?.(status);
+				}
+			};
+			const result = await this.controller.send(prepared, abort.signal, (frame) => this.ui.progress?.frame(frame), job).finally(() => {
+				if (started) this.ui.progress?.end();
 			});
-			const result = await this.controller.send(prepared, abort.signal, (frame) => this.ui.progress?.frame(frame)).finally(() => this.ui.progress?.end());
 			if (!result.images.length) throw new NaiError("invalid-response", "none", { preview: "" });
 			const generation = o.generation ?? {};
 			const legacy = {
@@ -13752,7 +14050,9 @@ var InlineRenderer = class {
 		const status = el("span", "naist-marker-status");
 		if (state === "pending") {
 			const waiting = this.markers?.isWaiting?.(entry.id) ?? false;
-			status.append(el("i", "fa-solid fa-spinner fa-spin"), document.createTextNode(` ${waiting ? t("naist.markers.qualityWaiting") : t("naist.markers.generating")}`));
+			const queued = this.markers?.queueStatus?.(entry.id);
+			const text = waiting ? t("naist.markers.qualityWaiting") : queued?.state === "queued" ? t("naist.queue.waiting", { count: queued.ahead }) : queued?.state === "retry" ? t("naist.queue.retryIn", { seconds: queued.seconds }) : t("naist.markers.generating");
+			status.append(el("i", "fa-solid fa-spinner fa-spin"), document.createTextNode(` ${text}`));
 		} else status.append(el("i", `fa-solid ${state === "error" ? "fa-triangle-exclamation" : "fa-circle-pause"}`), document.createTextNode(` ${state === "error" ? t("naist.markers.failed") : t("naist.markers.interrupted")}`));
 		box.append(status);
 		if (marker.error) {
@@ -14603,7 +14903,7 @@ var VibeLibraryProvider = class {
 		this.noticed.add(key);
 		this.notify(notice);
 	}
-	async prepare(caps, transport, signal, extra = []) {
+	async prepare(caps, transport, signal, extra = [], queue = {}) {
 		const active = activeVibes();
 		const planned = [...active, ...extra.filter((e) => !active.some((a) => a.item.id === e.item.id))];
 		if (!planned.length) return [];
@@ -14617,7 +14917,7 @@ var VibeLibraryProvider = class {
 			return [];
 		}
 		if (caps.vibeKind === "raw") return await this.raw(planned);
-		return await this.encoded(planned, caps.model, transport, signal);
+		return await this.encoded(planned, caps.model, transport, signal, queue);
 	}
 	/** V3: the reference image itself, 448x448 PNG (RECON §3.4). */
 	async raw(planned) {
@@ -14642,7 +14942,7 @@ var VibeLibraryProvider = class {
 		}
 		return refs;
 	}
-	async encoded(planned, model, transport, signal) {
+	async encoded(planned, model, transport, signal, queue = {}) {
 		const extras = transport.extras;
 		const encodings = /* @__PURE__ */ new Map();
 		const keyOf = (p) => encodingCacheKey(p.item.imageHash, model, p.informationExtracted);
@@ -14686,11 +14986,15 @@ var VibeLibraryProvider = class {
 						continue;
 					}
 					const image = await blobToBase64$1(blob);
-					const result = await extras.encodeVibe({
+					const result = await generationQueue.run({
+						...queue,
+						kind: "vibe",
+						...signal ? { signal } : {}
+					}, (jobSignal) => extras.encodeVibe({
 						image,
 						model,
 						informationExtracted: p.informationExtracted
-					}, signal);
+					}, jobSignal));
 					if (!result.cached) paid++;
 					encodings.set(keyOf(p), result.encoding);
 					await store().setItem(keyOf(p), result.encoding);
@@ -15344,6 +15648,10 @@ var SpriteService = class {
 			mode: MODE.FREE,
 			noContinuity: true,
 			signal: options.signal,
+			queue: {
+				priority: "background",
+				kind: "sprites"
+			},
 			overrides: {
 				edit: false,
 				generation: {
@@ -15381,10 +15689,15 @@ var SpriteService = class {
 			defry: 0,
 			prompt: ""
 		});
-		const [first] = await unzipImages(await transport.extras.augment(body, {
+		const extras = transport.extras;
+		const [first] = await unzipImages(await generationQueue.run({
+			priority: "background",
+			kind: "sprites",
+			...signal ? { signal } : {}
+		}, (jobSignal) => extras.augment(body, {
 			retryable: true,
-			signal
-		}));
+			signal: jobSignal
+		})));
 		if (!first) throw new NaiError("invalid-response", "none", { preview: "empty ZIP" });
 		return first;
 	}
@@ -16196,12 +16509,17 @@ function imagineCallback(pipeline) {
 						...plan.generation
 					}
 				},
-				signal: controller.signal
+				signal: controller.signal,
+				queue: {
+					priority: plan.priority ?? "portrait",
+					kind: "portrait"
+				}
 			}) : await pipeline.generatePicture({
 				initiator: "command",
 				trigger,
 				overrides: parsed.overrides,
-				signal: controller.signal
+				signal: controller.signal,
+				...parsed.overrides.quiet ? { queue: { priority: "portrait" } } : {}
 			}))?.path ?? "";
 		} catch (error) {
 			reportGenerationError(error);
@@ -17392,7 +17710,13 @@ var DesIntegration = class {
 	lines = /* @__PURE__ */ new Map();
 	passportJobs = /* @__PURE__ */ new Map();
 	failed = /* @__PURE__ */ new Set();
+	/**
+	* DES portraits are asked one by one and in order; each one's NovelAI request then waits in the
+	* one queue of the extension behind the pictures of the reply (priority "portrait", v0.13.1).
+	*/
 	portraitQueue = Promise.resolve();
+	/** Portraits asked for from the menu: the user's own requests in the NovelAI queue. */
+	manualPortraits = /* @__PURE__ */ new Set();
 	lastLocation = "";
 	timer = null;
 	listeners = /* @__PURE__ */ new Set();
@@ -17778,7 +18102,8 @@ var DesIntegration = class {
 				height: size.height,
 				seed: stableSeed(name),
 				characters: []
-			}
+			},
+			priority: this.manualPortraits.has(normalizeLine(name)) ? "user" : "portrait"
 		};
 	}
 	lastReplyId() {
@@ -17839,7 +18164,12 @@ var DesIntegration = class {
 			const look = this.latestTracker()?.characters.find((ch) => sameName(ch.name, name))?.look ?? "";
 			this.syncLine(name, found?.passport ?? null, look);
 			toastr.info(t("naist.des.portraitStarted", { name }), t("naist.des.title"));
-			if (await this.api.regeneratePortrait(name)) this.api.refreshPortraits();
+			this.manualPortraits.add(normalizeLine(name));
+			try {
+				if (await this.api.regeneratePortrait(name)) this.api.refreshPortraits();
+			} finally {
+				this.manualPortraits.delete(normalizeLine(name));
+			}
 		} else if (action === "scene") {
 			const params = {
 				prompt: name,
@@ -18009,6 +18339,18 @@ function setupDes(markers) {
 }
 //#endregion
 //#region src/features/markers/marker-service.ts
+/** The message a drawing is for no longer shows it: another chat, the message deleted or swiped. */
+function messageGone(messageId) {
+	const c = ctx();
+	const message = messageId === void 0 ? void 0 : c.chat[messageId];
+	if (!message) return void 0;
+	const chatId = c.getCurrentChatId();
+	const swipe = message.swipe_id ?? 0;
+	return () => {
+		const now = ctx();
+		return now.getCurrentChatId() !== chatId || !now.chat.includes(message) || (message.swipe_id ?? 0) !== swipe;
+	};
+}
 /** The value of a promise, or undefined as soon as the signal aborts. */
 function untilAborted(promise, signal) {
 	if (signal.aborted) return Promise.resolve(void 0);
@@ -18037,7 +18379,15 @@ var MarkerService = class {
 	/** Jobs started while the current reply streams, by ordinal + generation key. */
 	early = /* @__PURE__ */ new Map();
 	generationType = "";
+	/**
+	* Marker jobs prepare one at a time and in order (scene, passports, the language model); their
+	* NovelAI request then waits in the one queue of the extension with every other request (v0.13.1).
+	*/
 	queue = Promise.resolve();
+	/** Marker jobs waiting behind the one that prepares, in order. */
+	chain = [];
+	/** The job drawing each placeholder, for its queue status. */
+	imageJobs = /* @__PURE__ */ new Map();
 	/** Images with a generation in flight (the renderer shows a spinner, not "interrupted"). */
 	running = /* @__PURE__ */ new Set();
 	/** Images whose drawing waits for the quality gates' verdict. */
@@ -18063,6 +18413,25 @@ var MarkerService = class {
 	/** The drawing of this image waits for the quality gates (v0.11). */
 	isWaiting(imageId) {
 		return this.waiting.has(imageId);
+	}
+	/** Where the drawing of this image waits (v0.13.1): in the queue (N ahead) or for a retry; else undefined. */
+	queueStatus(imageId) {
+		const status = this.imageJobs.get(imageId)?.status;
+		return status?.state === "queued" || status?.state === "retry" ? status : void 0;
+	}
+	setJobStatus(job, status) {
+		job.status = status;
+		for (const [imageId, owner] of this.imageJobs) {
+			if (owner !== job) continue;
+			for (const listener of this.listeners) listener(imageId);
+		}
+	}
+	/** Jobs behind the preparing one: "in the queue: N". */
+	chainChanged() {
+		this.chain.forEach((job, i) => this.setJobStatus(job, {
+			state: "queued",
+			ahead: i + 1
+		}));
 	}
 	onRunningChange(listener) {
 		this.listeners.add(listener);
@@ -18220,7 +18589,7 @@ var MarkerService = class {
 		await this.deliver(messageId, id, this.start(params, {
 			messageId,
 			text: m.mes
-		}));
+		}, { priority: "user" }));
 	}
 	/** Generates a marker image again (after an error or an interrupted generation). */
 	async retry(messageId, imageId) {
@@ -18231,10 +18600,19 @@ var MarkerService = class {
 		await this.deliver(messageId, imageId, this.start(entry.marker.params, {
 			messageId,
 			text
-		}));
+		}, { priority: "user" }));
 	}
-	enqueue(task) {
-		const run = this.queue.then(task, task);
+	enqueue(job, task) {
+		this.chain.push(job);
+		this.chainChanged();
+		const start = () => {
+			const index = this.chain.indexOf(job);
+			if (index !== -1) this.chain.splice(index, 1);
+			this.setJobStatus(job, { state: "running" });
+			this.chainChanged();
+			return task();
+		};
+		const run = this.queue.then(start, start);
 		this.queue = run.catch(() => void 0);
 		return run;
 	}
@@ -18258,13 +18636,20 @@ var MarkerService = class {
 					return null;
 				}
 			}
-			return await this.enqueue(async () => abort.signal.aborted ? null : await this.produce(params, abort.signal, query));
+			const stale = messageGone(messageId);
+			return await this.enqueue(job, async () => abort.signal.aborted || stale?.() ? null : await this.produce(params, abort.signal, query, {
+				priority: options.priority ?? "reply",
+				kind: "marker",
+				...stale ? { stale } : {},
+				onStatus: (status) => this.setJobStatus(job, status)
+			}));
 		})();
 		job.promise.catch(() => void 0);
 		return job;
 	}
 	async deliver(hint, imageId, job) {
 		const chatId = ctx().getCurrentChatId();
+		this.imageJobs.set(imageId, job);
 		this.setRunning(imageId, true);
 		if (job.verdict) {
 			this.setWaiting(imageId, true);
@@ -18283,11 +18668,15 @@ var MarkerService = class {
 			log.warn("marker image failed:", naiError.code);
 			if (ctx().getCurrentChatId() === chatId) await this.inline.setMarkerStatus(hint, imageId, "error", naiError.code === "aborted" ? t("naist.markers.cancelled") : naiError.text);
 		} finally {
+			this.imageJobs.delete(imageId);
 			this.setRunning(imageId, false);
 		}
 	}
 	/** One marker as a generation request: every parameter it may carry. */
-	async produce(params, signal, query = {}) {
+	async produce(params, signal, query = {}, queue = {
+		priority: "reply",
+		kind: "marker"
+	}) {
 		const s = settings();
 		const freeOnly = s.anlas.freeOnly || !s.markers.allowPaid;
 		const model = markerModel(params.model) ?? s.generation.model;
@@ -18375,7 +18764,8 @@ var MarkerService = class {
 			signal,
 			skipCostConfirm: true,
 			maxCost: freeOnly ? 0 : s.markers.maxCost,
-			...passportIds.length ? { passportIds } : {}
+			...passportIds.length ? { passportIds } : {},
+			queue
 		});
 	}
 	/** "ref": an earlier image of the chat (marker id or image id) as the img2img base. */
@@ -18516,6 +18906,7 @@ function setupMarkers(pipeline, inline, scenes) {
 	renderer?.setMarkerHooks({
 		isRunning: (id) => markers.isRunning(id),
 		isWaiting: (id) => markers.isWaiting(id),
+		queueStatus: (id) => markers.queueStatus(id),
 		retry: (messageId, imageId) => markers.retry(messageId, imageId)
 	});
 	markers.onRunningChange((id) => renderer?.refreshImage(id));
@@ -18613,6 +19004,10 @@ var ComicService = class {
 				mode: MODE.FREE,
 				noContinuity: true,
 				signal: req.signal,
+				queue: {
+					priority: "background",
+					kind: "comic"
+				},
 				overrides: {
 					edit: false,
 					generation: {
@@ -18675,7 +19070,7 @@ var ComicService = class {
 };
 //#endregion
 //#region package.json
-var version = "0.13.0";
+var version = "0.13.1";
 //#endregion
 //#region src/features/settings-io/settings-io.ts
 async function exportSettingsFile(includeImages) {
@@ -19555,10 +19950,14 @@ var ToolsService = class {
 		await guardCost(cost, t(`naist.director.${tool}`), this.confirm);
 		const body = directorBody(tool, await sourcePng(source, size), size, options);
 		await this.withLoader(t("naist.director.running", { tool: t(`naist.director.${tool}`) }), async (signal) => {
-			const images = await unzipImages(await transport.extras.augment(body, {
-				retryable: cost === 0,
+			const images = await unzipImages(await generationQueue.run({
+				kind: "tools",
+				chatId: this.chatId(),
 				signal
-			}));
+			}, (jobSignal) => transport.extras.augment(body, {
+				retryable: cost === 0,
+				signal: jobSignal
+			})));
 			const produced = {
 				images: images.map((img) => ({
 					...img,
@@ -19711,11 +20110,15 @@ var ToolsService = class {
 		await guardCost(cost, t("naist.tool.upscale"), this.confirm);
 		const image = await sourcePng(source);
 		await this.withLoader(t("naist.tool.upscaling"), async (signal) => {
-			const images = await transport.extras.upscale({
+			const images = await generationQueue.run({
+				kind: "tools",
+				chatId: this.chatId(),
+				signal
+			}, (jobSignal) => transport.extras.upscale({
 				image,
 				width: source.width,
 				height: source.height
-			}, signal);
+			}, jobSignal));
 			const first = images[0];
 			const size = first ? await generatedSize(first) : {
 				width: source.width * 2,
@@ -21063,11 +21466,26 @@ function setupQualityGates() {
 	});
 }
 //#endregion
+//#region src/integration/queue-setup.ts
+function setupGenerationQueue() {
+	const c = ctx();
+	const on = (name, handler) => {
+		const event = c.eventTypes[name];
+		if (event) c.eventSource.on(event, handler);
+	};
+	on("CHAT_CHANGED", () => void generationQueue.dropOtherChats(ctx().getCurrentChatId()));
+	for (const name of [
+		"MESSAGE_DELETED",
+		"MESSAGE_SWIPED",
+		"MESSAGE_SWIPE_DELETED"
+	]) on(name, () => void generationQueue.revalidate());
+}
+//#endregion
 //#region src/ui/templates/character-row.html?raw
 var character_row_default = "<div class=\"naist-character\" data-index=\"{{index}}\">\n    <div class=\"naist-row\">\n        <label class=\"checkbox_label\"><input type=\"checkbox\" class=\"naist-char-enabled\" {{#if enabled}}checked{{/if}}><span data-i18n=\"naist.character.enabled\"></span></label>\n        <span class=\"naist-muted\">#{{number}}</span>\n        <div class=\"menu_button fa-solid fa-trash-can naist-char-remove\" data-i18n=\"[title]naist.character.remove\"></div>\n    </div>\n    <textarea class=\"text_pole textarea_compact naist-char-prompt\" rows=\"2\" data-i18n=\"[placeholder]naist.character.prompt\">{{prompt}}</textarea>\n    <input type=\"text\" class=\"text_pole naist-char-negative\" value=\"{{negative}}\" data-i18n=\"[placeholder]naist.character.negative\">\n    <div class=\"naist-grid2 naist-char-position\">\n        <label><span data-i18n=\"naist.character.x\"></span> <input type=\"number\" class=\"text_pole naist-char-x\" min=\"0\" max=\"1\" step=\"0.1\" value=\"{{x}}\"></label>\n        <label><span data-i18n=\"naist.character.y\"></span> <input type=\"number\" class=\"text_pole naist-char-y\" min=\"0\" max=\"1\" step=\"0.1\" value=\"{{y}}\"></label>\n    </div>\n</div>\n";
 //#endregion
 //#region src/ui/templates/panel.html?raw
-var panel_default = "<div class=\"naist-panel\" id=\"naist_panel\">\n    <div class=\"inline-drawer\">\n        <div class=\"inline-drawer-toggle inline-drawer-header\">\n            <b data-i18n=\"naist.panel.title\"></b>\n            <div class=\"inline-drawer-icon fa-solid fa-circle-chevron-down down\"></div>\n        </div>\n        <div class=\"inline-drawer-content\">\n            <div class=\"naist-content\">\n                <div class=\"naist-row naist-status\">\n                    <label for=\"naist_transport_mode\" data-i18n=\"naist.panel.transport\"></label>\n                    <select id=\"naist_transport_mode\" class=\"text_pole naist-grow\">\n                        <option value=\"auto\" data-i18n=\"naist.transport.auto\"></option>\n                        <option value=\"plugin\" data-i18n=\"naist.transport.plugin\"></option>\n                        <option value=\"native\" data-i18n=\"naist.transport.native\"></option>\n                    </select>\n                    <div\n                        id=\"naist_refresh\"\n                        class=\"menu_button fa-solid fa-rotate\"\n                        data-i18n=\"[title]naist.panel.refresh\"\n                    ></div>\n                </div>\n                <div id=\"naist_transport_badge\" class=\"naist-badge\"></div>\n                <div id=\"naist_account\" class=\"naist-account\"></div>\n\n                <div id=\"naist_takeover_banner\" class=\"naist-banner naist-hidden\">\n                    <span data-i18n=\"naist.takeover.banner\"></span>\n                    <div id=\"naist_banner_open\" class=\"menu_button\" data-i18n=\"naist.takeover.bannerAction\"></div>\n                </div>\n\n                <div class=\"naist-tabs\" role=\"tablist\">\n                    <div\n                        class=\"naist-tab menu_button\"\n                        role=\"tab\"\n                        data-tab=\"generate\"\n                        data-i18n=\"naist.tab.generate\"\n                    ></div>\n                    <div\n                        class=\"naist-tab menu_button\"\n                        role=\"tab\"\n                        data-tab=\"prompts\"\n                        data-i18n=\"naist.tab.prompts\"\n                    ></div>\n                    <div class=\"naist-tab menu_button\" role=\"tab\" data-tab=\"chat\" data-i18n=\"naist.tab.chat\"></div>\n                    <div class=\"naist-tab menu_button\" role=\"tab\" data-tab=\"images\" data-i18n=\"naist.tab.images\"></div>\n                    <div\n                        class=\"naist-tab menu_button\"\n                        role=\"tab\"\n                        data-tab=\"takeover\"\n                        data-i18n=\"naist.tab.takeover\"\n                    ></div>\n                </div>\n\n                <div class=\"naist-tabpanel\" data-tabpanel=\"generate\">\n                    <label for=\"naist_model\" data-i18n=\"naist.panel.model\"></label>\n                    <select id=\"naist_model\" class=\"text_pole\">\n                        {{#each models}}\n                        <option value=\"{{id}}\" data-i18n=\"{{nameKey}}\"></option>\n                        {{/each}}\n                    </select>\n\n                    <label for=\"naist_prompt\" data-i18n=\"naist.panel.prompt\"></label>\n                    <textarea\n                        id=\"naist_prompt\"\n                        class=\"text_pole textarea_compact\"\n                        rows=\"4\"\n                        data-i18n=\"[placeholder]naist.panel.promptPlaceholder\"\n                    ></textarea>\n\n                    <label for=\"naist_negative\" data-i18n=\"naist.panel.negative\"></label>\n                    <textarea id=\"naist_negative\" class=\"text_pole textarea_compact\" rows=\"2\"></textarea>\n                    <div id=\"naist_negative_style\" class=\"naist-hint\"></div>\n\n                    <div class=\"naist-grid2\">\n                        <div>\n                            <label for=\"naist_uc_preset\" data-i18n=\"naist.panel.ucPreset\"></label>\n                            <select id=\"naist_uc_preset\" class=\"text_pole\"></select>\n                        </div>\n                        <div>\n                            <label for=\"naist_quality\" data-i18n=\"naist.panel.quality\"></label>\n                            <select id=\"naist_quality\" class=\"text_pole\"></select>\n                        </div>\n                    </div>\n\n                    <div\n                        id=\"naist_characters_block\"\n                        class=\"naist-block\"\n                        data-cap=\"characters\"\n                        data-feature=\"characters\"\n                    >\n                        <div class=\"naist-row\">\n                            <b data-i18n=\"naist.panel.characters\"></b>\n                            <span id=\"naist_characters_count\" class=\"naist-muted\"></span>\n                            <div\n                                id=\"naist_add_character\"\n                                class=\"menu_button fa-solid fa-user-plus\"\n                                data-i18n=\"[title]naist.panel.addCharacter\"\n                            ></div>\n                        </div>\n                        <label class=\"checkbox_label\"\n                            ><input type=\"checkbox\" id=\"naist_use_coords\" /><span\n                                data-i18n=\"naist.panel.useCoords\"\n                            ></span\n                        ></label>\n                        <div id=\"naist_characters\"></div>\n                        <div class=\"naist-feature-hint\" data-hint-for=\"characters\"></div>\n                    </div>\n\n                    <label for=\"naist_size_preset\" data-i18n=\"naist.panel.size\"></label>\n                    <div class=\"naist-grid3\">\n                        <select id=\"naist_size_preset\" class=\"text_pole\"></select>\n                        <input\n                            id=\"naist_width\"\n                            type=\"number\"\n                            class=\"text_pole\"\n                            step=\"64\"\n                            min=\"64\"\n                            data-i18n=\"[title]naist.panel.width\"\n                        />\n                        <input\n                            id=\"naist_height\"\n                            type=\"number\"\n                            class=\"text_pole\"\n                            step=\"64\"\n                            min=\"64\"\n                            data-i18n=\"[title]naist.panel.height\"\n                        />\n                    </div>\n\n                    <div class=\"naist-grid2\">\n                        <div>\n                            <label for=\"naist_sampler\" data-i18n=\"naist.panel.sampler\"></label>\n                            <select id=\"naist_sampler\" class=\"text_pole\"></select>\n                        </div>\n                        <div data-cap=\"noiseSchedule\">\n                            <label for=\"naist_schedule\" data-i18n=\"naist.panel.schedule\"></label>\n                            <select id=\"naist_schedule\" class=\"text_pole\"></select>\n                        </div>\n                    </div>\n                    <div class=\"naist-grid3\">\n                        <div>\n                            <label for=\"naist_steps\" data-i18n=\"naist.panel.steps\"></label>\n                            <input id=\"naist_steps\" type=\"number\" min=\"1\" max=\"50\" class=\"text_pole\" />\n                        </div>\n                        <div>\n                            <label for=\"naist_scale\" data-i18n=\"naist.panel.scale\"></label>\n                            <input id=\"naist_scale\" type=\"number\" step=\"0.1\" min=\"0\" max=\"10\" class=\"text_pole\" />\n                        </div>\n                        <div data-feature=\"cfgRescale\">\n                            <label for=\"naist_cfg_rescale\" data-i18n=\"naist.panel.cfgRescale\"></label>\n                            <input id=\"naist_cfg_rescale\" type=\"number\" step=\"0.02\" min=\"0\" max=\"1\" class=\"text_pole\" />\n                        </div>\n                    </div>\n                    <div class=\"naist-grid2\">\n                        <div>\n                            <label for=\"naist_seed\" data-i18n=\"naist.panel.seed\"></label>\n                            <input\n                                id=\"naist_seed\"\n                                type=\"number\"\n                                min=\"-1\"\n                                class=\"text_pole\"\n                                data-i18n=\"[title]naist.panel.seedHint\"\n                            />\n                        </div>\n                        <div data-feature=\"multipleSamples\">\n                            <label for=\"naist_samples\" data-i18n=\"naist.panel.samples\"></label>\n                            <input id=\"naist_samples\" type=\"number\" min=\"1\" max=\"8\" class=\"text_pole\" />\n                        </div>\n                    </div>\n                    <div class=\"naist-feature-hint\" data-hint-for=\"multipleSamples\"></div>\n\n                    <div class=\"naist-flags\">\n                        <label class=\"checkbox_label\" data-cap=\"smea\"\n                            ><input type=\"checkbox\" id=\"naist_smea\" /><span data-i18n=\"naist.panel.smea\"></span\n                        ></label>\n                        <label class=\"checkbox_label\" data-cap=\"smeaDyn\"\n                            ><input type=\"checkbox\" id=\"naist_smea_dyn\" /><span data-i18n=\"naist.panel.smeaDyn\"></span\n                        ></label>\n                        <label class=\"checkbox_label\" data-cap=\"autoSmea\"\n                            ><input type=\"checkbox\" id=\"naist_auto_smea\" /><span data-i18n=\"naist.panel.autoSmea\"></span\n                        ></label>\n                        <label class=\"checkbox_label\" data-cap=\"decrisper\"\n                            ><input type=\"checkbox\" id=\"naist_decrisper\" /><span\n                                data-i18n=\"naist.panel.decrisper\"\n                            ></span\n                        ></label>\n                        <label class=\"checkbox_label\" data-cap=\"varietyBoost\"\n                            ><input type=\"checkbox\" id=\"naist_variety\" /><span data-i18n=\"naist.panel.variety\"></span\n                        ></label>\n                        <label class=\"checkbox_label\" data-cap=\"transparency\" data-feature=\"transparency\"\n                            ><input type=\"checkbox\" id=\"naist_transparent\" /><span\n                                data-i18n=\"naist.panel.transparent\"\n                            ></span\n                        ></label>\n                        <label class=\"checkbox_label\" data-cap=\"legacyUc\"\n                            ><input type=\"checkbox\" id=\"naist_legacy_uc\" /><span data-i18n=\"naist.panel.legacyUc\"></span\n                        ></label>\n                    </div>\n                    <div class=\"naist-feature-hint\" data-hint-for=\"transparency\"></div>\n\n                    <hr />\n                    <label class=\"checkbox_label\"\n                        ><input type=\"checkbox\" id=\"naist_free_only\" /><span data-i18n=\"naist.panel.freeOnly\"></span\n                    ></label>\n                    <div id=\"naist_cost\" class=\"naist-cost\"></div>\n                    <div id=\"naist_lost\" class=\"naist-hint\"></div>\n\n                    <details class=\"naist-override\">\n                        <summary data-i18n=\"naist.panel.override\"></summary>\n                        <div class=\"naist-warning\" data-i18n=\"naist.panel.overrideWarning\"></div>\n                        <label class=\"checkbox_label\"\n                            ><input type=\"checkbox\" id=\"naist_override_enabled\" /><span\n                                data-i18n=\"naist.panel.overrideEnable\"\n                            ></span\n                        ></label>\n                        <textarea\n                            id=\"naist_override_json\"\n                            class=\"text_pole textarea_compact monospace\"\n                            rows=\"4\"\n                        ></textarea>\n                    </details>\n                </div>\n                <div class=\"naist-tabpanel naist-hidden\" data-tabpanel=\"prompts\"></div>\n                <div class=\"naist-tabpanel naist-hidden\" data-tabpanel=\"chat\"></div>\n                <div class=\"naist-tabpanel naist-hidden\" data-tabpanel=\"images\"></div>\n                <div class=\"naist-tabpanel naist-hidden\" data-tabpanel=\"takeover\"></div>\n\n                <label class=\"checkbox_label\"\n                    ><input type=\"checkbox\" id=\"naist_inspect_before\" /><span\n                        data-i18n=\"naist.panel.inspectBeforeSend\"\n                    ></span\n                ></label>\n                <div class=\"naist-row naist-actions\">\n                    <div id=\"naist_inspect\" class=\"menu_button menu_button_icon\">\n                        <i class=\"fa-solid fa-magnifying-glass\"></i><span data-i18n=\"naist.panel.inspect\"></span>\n                    </div>\n                    <div id=\"naist_generate\" class=\"menu_button menu_button_icon\">\n                        <i class=\"fa-solid fa-paintbrush\"></i><span data-i18n=\"naist.panel.generate\"></span>\n                    </div>\n                    <div id=\"naist_cancel\" class=\"menu_button menu_button_icon naist-hidden\">\n                        <i class=\"fa-solid fa-stop\"></i><span data-i18n=\"naist.panel.cancel\"></span>\n                    </div>\n                </div>\n                <div id=\"naist_message\" class=\"naist-message\"></div>\n            </div>\n        </div>\n    </div>\n</div>\n";
+var panel_default = "<div class=\"naist-panel\" id=\"naist_panel\">\n    <div class=\"inline-drawer\">\n        <div class=\"inline-drawer-toggle inline-drawer-header\">\n            <b data-i18n=\"naist.panel.title\"></b>\n            <div class=\"inline-drawer-icon fa-solid fa-circle-chevron-down down\"></div>\n        </div>\n        <div class=\"inline-drawer-content\">\n            <div class=\"naist-content\">\n                <div class=\"naist-row naist-status\">\n                    <label for=\"naist_transport_mode\" data-i18n=\"naist.panel.transport\"></label>\n                    <select id=\"naist_transport_mode\" class=\"text_pole naist-grow\">\n                        <option value=\"auto\" data-i18n=\"naist.transport.auto\"></option>\n                        <option value=\"plugin\" data-i18n=\"naist.transport.plugin\"></option>\n                        <option value=\"native\" data-i18n=\"naist.transport.native\"></option>\n                    </select>\n                    <div\n                        id=\"naist_refresh\"\n                        class=\"menu_button fa-solid fa-rotate\"\n                        data-i18n=\"[title]naist.panel.refresh\"\n                    ></div>\n                </div>\n                <div id=\"naist_transport_badge\" class=\"naist-badge\"></div>\n                <div id=\"naist_account\" class=\"naist-account\"></div>\n\n                <div id=\"naist_takeover_banner\" class=\"naist-banner naist-hidden\">\n                    <span data-i18n=\"naist.takeover.banner\"></span>\n                    <div id=\"naist_banner_open\" class=\"menu_button\" data-i18n=\"naist.takeover.bannerAction\"></div>\n                </div>\n\n                <div class=\"naist-tabs\" role=\"tablist\">\n                    <div\n                        class=\"naist-tab menu_button\"\n                        role=\"tab\"\n                        data-tab=\"generate\"\n                        data-i18n=\"naist.tab.generate\"\n                    ></div>\n                    <div\n                        class=\"naist-tab menu_button\"\n                        role=\"tab\"\n                        data-tab=\"prompts\"\n                        data-i18n=\"naist.tab.prompts\"\n                    ></div>\n                    <div class=\"naist-tab menu_button\" role=\"tab\" data-tab=\"chat\" data-i18n=\"naist.tab.chat\"></div>\n                    <div class=\"naist-tab menu_button\" role=\"tab\" data-tab=\"images\" data-i18n=\"naist.tab.images\"></div>\n                    <div\n                        class=\"naist-tab menu_button\"\n                        role=\"tab\"\n                        data-tab=\"takeover\"\n                        data-i18n=\"naist.tab.takeover\"\n                    ></div>\n                </div>\n\n                <div class=\"naist-tabpanel\" data-tabpanel=\"generate\">\n                    <label for=\"naist_model\" data-i18n=\"naist.panel.model\"></label>\n                    <select id=\"naist_model\" class=\"text_pole\">\n                        {{#each models}}\n                        <option value=\"{{id}}\" data-i18n=\"{{nameKey}}\"></option>\n                        {{/each}}\n                    </select>\n\n                    <label for=\"naist_prompt\" data-i18n=\"naist.panel.prompt\"></label>\n                    <textarea\n                        id=\"naist_prompt\"\n                        class=\"text_pole textarea_compact\"\n                        rows=\"4\"\n                        data-i18n=\"[placeholder]naist.panel.promptPlaceholder\"\n                    ></textarea>\n\n                    <label for=\"naist_negative\" data-i18n=\"naist.panel.negative\"></label>\n                    <textarea id=\"naist_negative\" class=\"text_pole textarea_compact\" rows=\"2\"></textarea>\n                    <div id=\"naist_negative_style\" class=\"naist-hint\"></div>\n\n                    <div class=\"naist-grid2\">\n                        <div>\n                            <label for=\"naist_uc_preset\" data-i18n=\"naist.panel.ucPreset\"></label>\n                            <select id=\"naist_uc_preset\" class=\"text_pole\"></select>\n                        </div>\n                        <div>\n                            <label for=\"naist_quality\" data-i18n=\"naist.panel.quality\"></label>\n                            <select id=\"naist_quality\" class=\"text_pole\"></select>\n                        </div>\n                    </div>\n\n                    <div\n                        id=\"naist_characters_block\"\n                        class=\"naist-block\"\n                        data-cap=\"characters\"\n                        data-feature=\"characters\"\n                    >\n                        <div class=\"naist-row\">\n                            <b data-i18n=\"naist.panel.characters\"></b>\n                            <span id=\"naist_characters_count\" class=\"naist-muted\"></span>\n                            <div\n                                id=\"naist_add_character\"\n                                class=\"menu_button fa-solid fa-user-plus\"\n                                data-i18n=\"[title]naist.panel.addCharacter\"\n                            ></div>\n                        </div>\n                        <label class=\"checkbox_label\"\n                            ><input type=\"checkbox\" id=\"naist_use_coords\" /><span\n                                data-i18n=\"naist.panel.useCoords\"\n                            ></span\n                        ></label>\n                        <div id=\"naist_characters\"></div>\n                        <div class=\"naist-feature-hint\" data-hint-for=\"characters\"></div>\n                    </div>\n\n                    <label for=\"naist_size_preset\" data-i18n=\"naist.panel.size\"></label>\n                    <div class=\"naist-grid3\">\n                        <select id=\"naist_size_preset\" class=\"text_pole\"></select>\n                        <input\n                            id=\"naist_width\"\n                            type=\"number\"\n                            class=\"text_pole\"\n                            step=\"64\"\n                            min=\"64\"\n                            data-i18n=\"[title]naist.panel.width\"\n                        />\n                        <input\n                            id=\"naist_height\"\n                            type=\"number\"\n                            class=\"text_pole\"\n                            step=\"64\"\n                            min=\"64\"\n                            data-i18n=\"[title]naist.panel.height\"\n                        />\n                    </div>\n\n                    <div class=\"naist-grid2\">\n                        <div>\n                            <label for=\"naist_sampler\" data-i18n=\"naist.panel.sampler\"></label>\n                            <select id=\"naist_sampler\" class=\"text_pole\"></select>\n                        </div>\n                        <div data-cap=\"noiseSchedule\">\n                            <label for=\"naist_schedule\" data-i18n=\"naist.panel.schedule\"></label>\n                            <select id=\"naist_schedule\" class=\"text_pole\"></select>\n                        </div>\n                    </div>\n                    <div class=\"naist-grid3\">\n                        <div>\n                            <label for=\"naist_steps\" data-i18n=\"naist.panel.steps\"></label>\n                            <input id=\"naist_steps\" type=\"number\" min=\"1\" max=\"50\" class=\"text_pole\" />\n                        </div>\n                        <div>\n                            <label for=\"naist_scale\" data-i18n=\"naist.panel.scale\"></label>\n                            <input id=\"naist_scale\" type=\"number\" step=\"0.1\" min=\"0\" max=\"10\" class=\"text_pole\" />\n                        </div>\n                        <div data-feature=\"cfgRescale\">\n                            <label for=\"naist_cfg_rescale\" data-i18n=\"naist.panel.cfgRescale\"></label>\n                            <input id=\"naist_cfg_rescale\" type=\"number\" step=\"0.02\" min=\"0\" max=\"1\" class=\"text_pole\" />\n                        </div>\n                    </div>\n                    <div class=\"naist-grid2\">\n                        <div>\n                            <label for=\"naist_seed\" data-i18n=\"naist.panel.seed\"></label>\n                            <input\n                                id=\"naist_seed\"\n                                type=\"number\"\n                                min=\"-1\"\n                                class=\"text_pole\"\n                                data-i18n=\"[title]naist.panel.seedHint\"\n                            />\n                        </div>\n                        <div data-feature=\"multipleSamples\">\n                            <label for=\"naist_samples\" data-i18n=\"naist.panel.samples\"></label>\n                            <input id=\"naist_samples\" type=\"number\" min=\"1\" max=\"8\" class=\"text_pole\" />\n                        </div>\n                    </div>\n                    <div class=\"naist-feature-hint\" data-hint-for=\"multipleSamples\"></div>\n\n                    <div class=\"naist-flags\">\n                        <label class=\"checkbox_label\" data-cap=\"smea\"\n                            ><input type=\"checkbox\" id=\"naist_smea\" /><span data-i18n=\"naist.panel.smea\"></span\n                        ></label>\n                        <label class=\"checkbox_label\" data-cap=\"smeaDyn\"\n                            ><input type=\"checkbox\" id=\"naist_smea_dyn\" /><span data-i18n=\"naist.panel.smeaDyn\"></span\n                        ></label>\n                        <label class=\"checkbox_label\" data-cap=\"autoSmea\"\n                            ><input type=\"checkbox\" id=\"naist_auto_smea\" /><span data-i18n=\"naist.panel.autoSmea\"></span\n                        ></label>\n                        <label class=\"checkbox_label\" data-cap=\"decrisper\"\n                            ><input type=\"checkbox\" id=\"naist_decrisper\" /><span\n                                data-i18n=\"naist.panel.decrisper\"\n                            ></span\n                        ></label>\n                        <label class=\"checkbox_label\" data-cap=\"varietyBoost\"\n                            ><input type=\"checkbox\" id=\"naist_variety\" /><span data-i18n=\"naist.panel.variety\"></span\n                        ></label>\n                        <label class=\"checkbox_label\" data-cap=\"transparency\" data-feature=\"transparency\"\n                            ><input type=\"checkbox\" id=\"naist_transparent\" /><span\n                                data-i18n=\"naist.panel.transparent\"\n                            ></span\n                        ></label>\n                        <label class=\"checkbox_label\" data-cap=\"legacyUc\"\n                            ><input type=\"checkbox\" id=\"naist_legacy_uc\" /><span data-i18n=\"naist.panel.legacyUc\"></span\n                        ></label>\n                    </div>\n                    <div class=\"naist-feature-hint\" data-hint-for=\"transparency\"></div>\n\n                    <hr />\n                    <label class=\"checkbox_label\"\n                        ><input type=\"checkbox\" id=\"naist_free_only\" /><span data-i18n=\"naist.panel.freeOnly\"></span\n                    ></label>\n                    <div id=\"naist_cost\" class=\"naist-cost\"></div>\n                    <div id=\"naist_lost\" class=\"naist-hint\"></div>\n                    <div id=\"naist_queue\" class=\"naist-row naist-queue naist-hidden\">\n                        <i class=\"fa-solid fa-list-ol\"></i>\n                        <span id=\"naist_queue_text\" class=\"naist-grow\"></span>\n                        <div id=\"naist_queue_clear\" class=\"menu_button\" data-i18n=\"naist.queue.clear\"></div>\n                    </div>\n\n                    <details class=\"naist-override\">\n                        <summary data-i18n=\"naist.panel.override\"></summary>\n                        <div class=\"naist-warning\" data-i18n=\"naist.panel.overrideWarning\"></div>\n                        <label class=\"checkbox_label\"\n                            ><input type=\"checkbox\" id=\"naist_override_enabled\" /><span\n                                data-i18n=\"naist.panel.overrideEnable\"\n                            ></span\n                        ></label>\n                        <textarea\n                            id=\"naist_override_json\"\n                            class=\"text_pole textarea_compact monospace\"\n                            rows=\"4\"\n                        ></textarea>\n                    </details>\n                </div>\n                <div class=\"naist-tabpanel naist-hidden\" data-tabpanel=\"prompts\"></div>\n                <div class=\"naist-tabpanel naist-hidden\" data-tabpanel=\"chat\"></div>\n                <div class=\"naist-tabpanel naist-hidden\" data-tabpanel=\"images\"></div>\n                <div class=\"naist-tabpanel naist-hidden\" data-tabpanel=\"takeover\"></div>\n\n                <label class=\"checkbox_label\"\n                    ><input type=\"checkbox\" id=\"naist_inspect_before\" /><span\n                        data-i18n=\"naist.panel.inspectBeforeSend\"\n                    ></span\n                ></label>\n                <div class=\"naist-row naist-actions\">\n                    <div id=\"naist_inspect\" class=\"menu_button menu_button_icon\">\n                        <i class=\"fa-solid fa-magnifying-glass\"></i><span data-i18n=\"naist.panel.inspect\"></span>\n                    </div>\n                    <div id=\"naist_generate\" class=\"menu_button menu_button_icon\">\n                        <i class=\"fa-solid fa-paintbrush\"></i><span data-i18n=\"naist.panel.generate\"></span>\n                    </div>\n                    <div id=\"naist_cancel\" class=\"menu_button menu_button_icon naist-hidden\">\n                        <i class=\"fa-solid fa-stop\"></i><span data-i18n=\"naist.panel.cancel\"></span>\n                    </div>\n                </div>\n                <div id=\"naist_message\" class=\"naist-message\"></div>\n            </div>\n        </div>\n    </div>\n</div>\n";
 //#endregion
 //#region src/ui/token-meter.ts
 function bar(label, used, limit, approx) {
@@ -21830,6 +22248,9 @@ var Panel = class {
 	imagesTab = null;
 	takeoverTab = null;
 	tokens = null;
+	/** The panel's own picture is being made (other requests only queue it). */
+	generating = false;
+	queueTimer = null;
 	constructor(controller, pipeline, onSettingChange = () => {}, imageActions = {
 		openGallery: () => {},
 		setVisibility: () => {},
@@ -21874,6 +22295,8 @@ var Panel = class {
 		this.mountTabs();
 		this.controller.subscribe((state) => this.onState(state));
 		this.onState(this.controller.state);
+		this.controller.queue.subscribe(() => this.renderQueue());
+		this.renderQueue();
 	}
 	tabPanel(name) {
 		const panel = this.root.querySelector(`[data-tabpanel="${name}"]`);
@@ -22200,6 +22623,10 @@ var Panel = class {
 		$id(r, "naist_inspect").addEventListener("click", () => void this.inspect());
 		$id(r, "naist_generate").addEventListener("click", () => void this.generate());
 		$id(r, "naist_cancel").addEventListener("click", () => this.controller.cancel());
+		$id(r, "naist_queue_clear").addEventListener("click", () => {
+			const count = this.controller.queue.clear();
+			if (count) toastr.info(t("naist.queue.cleared", { count }), t("naist.queue.title"));
+		});
 	}
 	onState(state) {
 		const r = this.root;
@@ -22222,7 +22649,7 @@ var Panel = class {
 				usage
 			});
 		} else account.textContent = t("naist.account.loading");
-		$id(r, "naist_generate").classList.toggle("disabled", state.busy);
+		$id(r, "naist_generate").classList.toggle("disabled", this.generating);
 		$id(r, "naist_cancel").classList.toggle("naist-hidden", !state.busy);
 		if (selection) this.applyTransportFeatures(selection.transport.features);
 		this.scheduleRefresh();
@@ -22373,14 +22800,31 @@ var Panel = class {
 			this.showError(error instanceof NaiError ? error : toNaiError(error));
 		}
 	}
+	/** The one NovelAI queue (v0.13.1): what is drawn now, how many wait, "Clear the queue". */
+	renderQueue() {
+		const { running, waiting } = this.controller.queue.snapshot();
+		const parts = [];
+		if (running) {
+			parts.push(t("naist.queue.running", { kind: t(`naist.queue.kind.${running.kind}`) }));
+			if (running.retryIn !== null) parts.push(t("naist.queue.retryIn", { seconds: running.retryIn }));
+		}
+		if (waiting.length) parts.push(t("naist.queue.waitingCount", { count: waiting.length }));
+		$id(this.root, "naist_queue").classList.toggle("naist-hidden", !parts.length);
+		$id(this.root, "naist_queue_text").textContent = parts.join(" · ");
+		$id(this.root, "naist_queue_clear").classList.toggle("naist-hidden", !waiting.length);
+		if (this.queueTimer) clearTimeout(this.queueTimer);
+		this.queueTimer = running?.retryIn ? setTimeout(() => this.renderQueue(), 1e3) : null;
+	}
 	async generate() {
-		if (this.controller.state.busy) return;
+		if (this.generating) return;
 		const prompt = settings().generation.prompt;
 		if (!prompt.trim()) {
 			this.showInfo(t("naist.panel.emptyPrompt"));
 			return;
 		}
-		this.showInfo(t("naist.panel.generating"));
+		this.showInfo(t(this.controller.queue.busy ? "naist.panel.queued" : "naist.panel.generating"));
+		this.generating = true;
+		$id(this.root, "naist_generate").classList.add("disabled");
 		try {
 			const result = await this.pipeline.generatePicture({
 				initiator: "panel",
@@ -22396,6 +22840,9 @@ var Panel = class {
 			}
 			log.warn("generation failed", naiError.code, naiError.status ?? "");
 			this.showError(naiError);
+		} finally {
+			this.generating = false;
+			$id(this.root, "naist_generate").classList.remove("disabled");
 		}
 	}
 };
@@ -22406,9 +22853,10 @@ function mimeOf(base64) {
 	if (base64.startsWith("UklGR")) return "image/webp";
 	return "image/png";
 }
-function createProgressUi() {
+function createProgressUi(queue = generationQueue) {
 	let root = null;
 	let timer = null;
+	let queueTimer = null;
 	let steps = 0;
 	let started = 0;
 	const elements = () => {
@@ -22419,11 +22867,13 @@ function createProgressUi() {
 			root.innerHTML = `
                 <div class="naist-progress-head"><b></b><span class="naist-progress-step"></span></div>
                 <div class="naist-progress-bar"><span></span></div>
+                <div class="naist-progress-queue naist-hint"></div>
                 <img class="naist-progress-preview naist-hidden" alt="">`;
 			document.body.append(root);
 		}
 		return {
 			root,
+			queue: root.querySelector(".naist-progress-queue"),
 			title: root.querySelector("b"),
 			step: root.querySelector(".naist-progress-step"),
 			bar: root.querySelector(".naist-progress-bar span"),
@@ -22433,6 +22883,18 @@ function createProgressUi() {
 	const setBar = (fraction) => {
 		elements().bar.style.width = `${Math.round(Math.min(1, Math.max(0, fraction)) * 100)}%`;
 	};
+	/** Under the bar: a retry of a busy NovelAI, how many requests wait behind this one (v0.13.1). */
+	const showQueue = () => {
+		if (!root) return;
+		const { running, waiting } = queue.snapshot();
+		const parts = [];
+		if (running?.retryIn !== null && running?.retryIn !== void 0) parts.push(t("naist.queue.retryIn", { seconds: running.retryIn }));
+		if (waiting.length) parts.push(t("naist.queue.waitingCount", { count: waiting.length }));
+		elements().queue.textContent = parts.join(" · ");
+		if (queueTimer) clearTimeout(queueTimer);
+		queueTimer = running?.retryIn ? setTimeout(showQueue, 1e3) : null;
+	};
+	queue.subscribe(showQueue);
 	return {
 		start({ steps: total, streaming, transport }) {
 			const el = elements();
@@ -22443,6 +22905,7 @@ function createProgressUi() {
 			el.preview.classList.add("naist-hidden");
 			el.preview.removeAttribute("src");
 			el.root.classList.remove("naist-hidden");
+			showQueue();
 			setBar(0);
 			if (timer) clearInterval(timer);
 			timer = null;
@@ -22574,6 +23037,7 @@ async function onActivate() {
 	setupDes(setupMarkers(pipeline, inline, scenes));
 	new AutoGenerator(studio, pipeline).attach();
 	setupQualityGates();
+	setupGenerationQueue();
 	installPublicApi({ backgrounds: new BackgroundService(pipeline) });
 	studio.refreshTransport();
 	for (const name of [

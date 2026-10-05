@@ -81,6 +81,7 @@ vi.mock('../../src/ui/panel/tab-takeover', () => ({
 vi.stubGlobal('toastr', { info: vi.fn(), warning: vi.fn(), error: vi.fn(), success: vi.fn() });
 
 const { Panel } = await import('../../src/ui/panel/panel');
+const { GenerationQueue } = await import('../../src/features/generation/queue');
 const { applyStyle } = await import('../../src/features/generation/styles');
 
 const ink: StyleSettings = {
@@ -105,6 +106,7 @@ function mount(): HTMLElement {
         },
         subscribe: vi.fn(),
         refreshTransport: vi.fn(),
+        queue: new GenerationQueue(),
     };
     const pipeline = {
         previewFree: () => {

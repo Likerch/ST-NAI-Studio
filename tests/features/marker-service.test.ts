@@ -573,3 +573,89 @@ describe('MarkerService quality gate (v0.11)', () => {
         expect(produce).toHaveBeenCalledTimes(2);
     });
 });
+
+describe('MarkerService and the one NovelAI queue (v0.13.1)', () => {
+    interface Queued {
+        queue?: {
+            priority?: string;
+            kind?: string;
+            stale?: () => boolean;
+            onStatus?: (status: { state: string; ahead?: number; seconds?: number; attempt?: number }) => void;
+        };
+    }
+    const queueOf = (produce: ReturnType<typeof setup>['produce'], call = -1) =>
+        (produce.mock.calls.at(call)![0] as Queued).queue!;
+
+    it('waits in the queue as a drawing of the reply and shows where it waits', async () => {
+        const { service, produce } = setup();
+        let finish!: (value: unknown) => void;
+        produce.mockImplementationOnce(() => new Promise((r) => (finish = r)) as never);
+        const changed = vi.fn();
+        service.onRunningChange(changed);
+        reply('<img data-nai="a cat"> and <img data-nai="a dog">');
+        await service.finalize(0, 'normal');
+        await settle();
+        expect(produce).toHaveBeenCalledTimes(1);
+        const first = queueOf(produce);
+        expect(first).toMatchObject({ priority: 'reply', kind: 'marker' });
+        expect(first.stale?.()).toBe(false);
+        // The second marker waits behind the first one.
+        expect(service.queueStatus('id2')).toEqual({ state: 'queued', ahead: 1 });
+        expect(service.queueStatus('id1')).toBeUndefined();
+        // The NovelAI queue reports a retry of a busy NovelAI for the first one.
+        first.onStatus?.({ state: 'retry', seconds: 5, attempt: 1 });
+        expect(service.queueStatus('id1')).toEqual({ state: 'retry', seconds: 5, attempt: 1 });
+        expect(changed).toHaveBeenCalledWith('id1');
+        first.onStatus?.({ state: 'queued', ahead: 2 });
+        expect(service.queueStatus('id1')).toEqual({ state: 'queued', ahead: 2 });
+        first.onStatus?.({ state: 'running' });
+        expect(service.queueStatus('id1')).toBeUndefined();
+        finish(produced);
+        await settle();
+        await settle();
+        expect(produce).toHaveBeenCalledTimes(2);
+        expect(service.queueStatus('id2')).toBeUndefined();
+    });
+
+    it('is no longer wanted when its message is deleted, swiped or another chat is open', async () => {
+        const { service, produce, inline } = setup();
+        let finish!: (value: unknown) => void;
+        produce.mockImplementationOnce(() => new Promise((r) => (finish = r)) as never);
+        reply('<img data-nai="a cat"> and <img data-nai="a dog">');
+        await service.finalize(0, 'normal');
+        await settle();
+        const stale = queueOf(produce).stale!;
+        state.chat[0]!.swipe_id = 1;
+        expect(stale()).toBe(true);
+        state.chat[0]!.swipe_id = 0;
+        state.chatId = 'chat-2';
+        expect(stale()).toBe(true);
+        state.chatId = 'chat-1';
+        const message = state.chat.splice(0, 1)[0]!;
+        expect(stale()).toBe(true);
+        // The second marker of the deleted message never asks for its turn.
+        finish(produced);
+        await settle();
+        await settle();
+        expect(produce).toHaveBeenCalledTimes(1);
+        expect(inline.setMarkerStatus).toHaveBeenCalledWith(0, 'id2', 'error', 'naist.markers.cancelled');
+        state.chat.push(message);
+        expect(stale()).toBe(false);
+    });
+
+    it('a retry click and a picture from a menu are the user own requests', async () => {
+        const { service, produce } = setup();
+        produce.mockRejectedValueOnce(new Error('boom'));
+        reply('<img data-nai="a cat">');
+        await service.finalize(0, 'normal');
+        await settle();
+        await settle();
+        await service.retry(0, 'id1');
+        expect(queueOf(produce)).toMatchObject({ priority: 'user', kind: 'marker' });
+        await service.illustrate(0, { prompt: 'banner' });
+        expect(queueOf(produce)).toMatchObject({ priority: 'user', kind: 'marker' });
+        // Called directly (a tool), a marker is a drawing of the reply.
+        await service.produce({ prompt: 'x' });
+        expect(queueOf(produce)).toEqual({ priority: 'reply', kind: 'marker' });
+    });
+});

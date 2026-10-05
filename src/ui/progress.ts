@@ -3,6 +3,8 @@
 import { t } from '../core/i18n';
 import { saveSettings, settings } from '../core/settings';
 import type { ProgressUi } from '../features/generation/pipeline';
+import { generationQueue } from '../features/generation/queue';
+import type { GenerationQueue } from '../features/generation/queue';
 import type { StreamFrame } from '../transport';
 
 function mimeOf(base64: string): string {
@@ -11,9 +13,10 @@ function mimeOf(base64: string): string {
     return 'image/png';
 }
 
-export function createProgressUi(): ProgressUi {
+export function createProgressUi(queue: GenerationQueue = generationQueue): ProgressUi {
     let root: HTMLElement | null = null;
     let timer: ReturnType<typeof setInterval> | null = null;
+    let queueTimer: ReturnType<typeof setTimeout> | null = null;
     let steps = 0;
     let started = 0;
 
@@ -25,11 +28,13 @@ export function createProgressUi(): ProgressUi {
             root.innerHTML = `
                 <div class="naist-progress-head"><b></b><span class="naist-progress-step"></span></div>
                 <div class="naist-progress-bar"><span></span></div>
+                <div class="naist-progress-queue naist-hint"></div>
                 <img class="naist-progress-preview naist-hidden" alt="">`;
             document.body.append(root);
         }
         return {
             root,
+            queue: root.querySelector('.naist-progress-queue') as HTMLElement,
             title: root.querySelector('b') as HTMLElement,
             step: root.querySelector('.naist-progress-step') as HTMLElement,
             bar: root.querySelector('.naist-progress-bar span') as HTMLElement,
@@ -41,6 +46,20 @@ export function createProgressUi(): ProgressUi {
         elements().bar.style.width = `${Math.round(Math.min(1, Math.max(0, fraction)) * 100)}%`;
     };
 
+    /** Under the bar: a retry of a busy NovelAI, how many requests wait behind this one (v0.13.1). */
+    const showQueue = () => {
+        if (!root) return;
+        const { running, waiting } = queue.snapshot();
+        const parts: string[] = [];
+        if (running?.retryIn !== null && running?.retryIn !== undefined)
+            parts.push(t('naist.queue.retryIn', { seconds: running.retryIn }));
+        if (waiting.length) parts.push(t('naist.queue.waitingCount', { count: waiting.length }));
+        elements().queue.textContent = parts.join(' · ');
+        if (queueTimer) clearTimeout(queueTimer);
+        queueTimer = running?.retryIn ? setTimeout(showQueue, 1000) : null;
+    };
+    queue.subscribe(showQueue);
+
     return {
         start({ steps: total, streaming, transport }) {
             const el = elements();
@@ -51,6 +70,7 @@ export function createProgressUi(): ProgressUi {
             el.preview.classList.add('naist-hidden');
             el.preview.removeAttribute('src');
             el.root.classList.remove('naist-hidden');
+            showQueue();
             setBar(0);
             if (timer) clearInterval(timer);
             timer = null;

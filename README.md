@@ -77,7 +77,11 @@ When [Doom's Enhancement Suite](https://github.com/DangerDaza/Dooms-Enhancement-
 - **Scene from the tracker** in every picture: time of day, weather, indoors / outdoors and the location (with its location passport and scene continuity). DES writes its tracker at the start of a reply, so even pictures started while the reply streams know the scene; in separate / external mode pictures wait for the tracker.
 - **Characters of the tracker** take part in pictures with their **current look** (clothes and state from the tracker over the identity of their passport) — also NPCs without a card.
 - **Passports for new characters:** a character the cards of the chat do not know gets a passport written from the tracker and saved in the card; the passport becomes its DES Workshop "Portrait prompt".
-- **Portraits by NAI Studio:** DES's own auto portraits are switched off while the integration draws them — when a portrait is missing, when the look changes, or every reply — with a stable seed per character for the same face; DES keeps them with its history ("Restore Previous Portrait" works).
+- **Portraits by NAI Studio:** DES's own auto portraits are switched off while the integration draws them, with a stable seed per character for the same face; DES keeps them with its history ("Restore Previous Portrait" works). "Draw a portrait" (0.13.2):
+  - **when there is none** (default): once per character; a deleted portrait is drawn again;
+  - **when the look changes (passport, outfit, states)**: a new portrait only when the drawn identity changes — another passport, its tags, the active outfit or the enabled states (what Maestro's wardrobe changes). For a character without a passport the tracker look counts, compared by its words (case, punctuation, Russian and English stop words and word endings ignored): it has to differ clearly (word-set Jaccard below 0.6) from the look of the last portrait. The model rewording the same look does not redraw. A portrait drawn before 0.13.2 counts as current;
+  - **every reply**.
+  - "NAI Studio: new portrait" in the DES portrait menu always draws a new one, and it becomes the current portrait for "when the look changes".
 - **Emotions** of other characters of a card go to `characters/<name>`, where DES's expressions mode looks for them.
 - NAI Studio items in the DES portrait menu (passport, emotions, new portrait, picture with the character), "Illustrate" on scene banners, a passport button in the Workshop.
 

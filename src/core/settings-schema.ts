@@ -37,7 +37,7 @@ export interface CustomPoseSettings {
     name: string;
 }
 
-export const CURRENT_SCHEMA_VERSION = 11;
+export const CURRENT_SCHEMA_VERSION = 12;
 
 export type TransportMode = 'auto' | 'plugin' | 'native';
 
@@ -237,7 +237,13 @@ export interface NaiStudioSettings {
         autoPassports: boolean;
         /** NAI Studio draws the DES portraits (DES's own auto portraits are off meanwhile). */
         portraits: boolean;
+        /**
+         * When NAI Studio draws a portrait on its own: missing (once), state (the drawn identity changed:
+         * passport, outfit, states; the look of a character without a passport), every reply (v0.13.2).
+         */
         portraitPolicy: 'missing' | 'state' | 'every';
+        /** The user picked the policy in the panel (v0.13.2): migrations leave it as it is. */
+        portraitPolicyChosen: boolean;
         /** Framing tags of a portrait. */
         portraitTags: string;
         /** Emotions of another character of a card go to characters/<name>, where DES looks. */
@@ -486,7 +492,8 @@ export function defaultSettings(): NaiStudioSettings {
             characters: true,
             autoPassports: true,
             portraits: true,
-            portraitPolicy: 'state',
+            portraitPolicy: 'missing',
+            portraitPolicyChosen: false,
             portraitTags: 'portrait, upper body, looking at viewer',
             emotionsToDes: true,
             menu: true,
@@ -642,6 +649,20 @@ export const MIGRATIONS: readonly Migration[] = [
         to: 11,
         migrate(settings) {
             return { ...settings, schemaVersion: 11 };
+        },
+    },
+    {
+        // v12: a DES portrait is drawn once by default. The old default "state" drew a new portrait almost
+        // every reply (the tracker rewords the look), so "state" becomes "missing" unless the user picked
+        // it in the panel (the flag is new: settings saved before it have only the old default).
+        to: 12,
+        migrate(settings) {
+            const next: Raw = { ...settings, schemaVersion: 12 };
+            const des = isObject(settings.des) ? settings.des : null;
+            if (des && des.portraitPolicy === 'state' && des.portraitPolicyChosen === undefined) {
+                next.des = { ...des, portraitPolicy: 'missing' };
+            }
+            return next;
         },
     },
 ];

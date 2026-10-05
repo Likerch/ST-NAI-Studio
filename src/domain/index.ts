@@ -47,6 +47,7 @@ export * from './passport-gen';
 export * from './provided-passports';
 export * from './backgrounds';
 export * from './des';
+export * from './des-portraits';
 export * from './vision';
 export * from './explicit';
 export * from './negatives';

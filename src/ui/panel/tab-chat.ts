@@ -60,6 +60,12 @@ export class ChatTab {
     }
 
     private bindDes(): void {
+        // A policy picked here is the user's own: the settings migrations leave it as it is (v0.13.2).
+        $id<HTMLSelectElement>(this.root, 'naist_des_policy').addEventListener('change', () => {
+            if (settings().des.portraitPolicyChosen) return;
+            settings().des.portraitPolicyChosen = true;
+            saveSettings();
+        });
         const button = $id(this.root, 'naist_des_passports');
         button.addEventListener('click', () => {
             const des = desIntegration();

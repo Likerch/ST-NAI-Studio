@@ -50,7 +50,6 @@ describe('settings schema', () => {
             prompts: { prefix: 'ink', styles, activeStyle: 'Ink' },
         };
         const { settings, migrated, fromVersion } = migrateAndFill(stored, merge);
-        expect(CURRENT_SCHEMA_VERSION).toBe(11);
         expect({ migrated, fromVersion }).toEqual({ migrated: true, fromVersion: 10 });
         expect(settings.prompts).toMatchObject({
             prefix: 'ink',
@@ -62,6 +61,30 @@ describe('settings schema', () => {
         expect(settings.prompts.styles.every((style) => !('negativeMode' in style))).toBe(true);
         expect(settings.generation.negativePrompt).toBe('color');
         expect(stored.prompts).not.toHaveProperty('baseNegative');
+    });
+
+    it('v12: DES portraits are drawn once by default; the old default "state" becomes "missing"', () => {
+        expect(CURRENT_SCHEMA_VERSION).toBe(12);
+        expect(defaultSettings().des).toMatchObject({ portraitPolicy: 'missing', portraitPolicyChosen: false });
+        const old = migrateAndFill({ schemaVersion: 11, des: { portraitPolicy: 'state', menu: false } }, merge);
+        expect(old).toMatchObject({ migrated: true, fromVersion: 11 });
+        expect(old.settings.des).toMatchObject({ portraitPolicy: 'missing', portraitPolicyChosen: false, menu: false });
+        // No stored policy: the new default.
+        expect(migrateAndFill({ schemaVersion: 9 }, merge).settings.des.portraitPolicy).toBe('missing');
+    });
+
+    it('v12 leaves a policy the user picked: "every", or "state" with the flag of the panel', () => {
+        const every = migrateAndFill({ schemaVersion: 11, des: { portraitPolicy: 'every' } }, merge);
+        expect(every.settings.des.portraitPolicy).toBe('every');
+        const chosen = { schemaVersion: 11, des: { portraitPolicy: 'state', portraitPolicyChosen: true } };
+        expect(migrateAndFill(chosen, merge).settings.des).toMatchObject({
+            portraitPolicy: 'state',
+            portraitPolicyChosen: true,
+        });
+        // Settings of this version are not migrated again: "state" picked later stays.
+        const later = migrateAndFill({ schemaVersion: 12, des: { portraitPolicy: 'state' } }, merge);
+        expect(later.settings.des.portraitPolicy).toBe('state');
+        expect(chosen.des.portraitPolicy).toBe('state');
     });
 
     it('keeps the stored characters array as is (no index-wise merge)', () => {

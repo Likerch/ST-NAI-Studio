@@ -14,6 +14,9 @@
 // getting a new one written into the card; the cards and the chat still win.
 // Since v0.12.1 a tracker look that a passport outfit recorded (Outfit.looks, Maestro's wardrobe) draws
 // that outfit instead of the look.
+// Since v0.13.2 a portrait is drawn once by default; "state" redraws it only when the drawn identity changes
+// (passport, its outfit and states; a clearly different look without a passport), not when the tracker
+// rewords the same look (domain/des-portraits.ts).
 import { ctx } from '../../core/context';
 import { t } from '../../core/i18n';
 import { log } from '../../core/logger';
@@ -27,12 +30,14 @@ import {
     mentionIndex,
     outfitForLook,
     passportTags,
+    portraitDecision,
+    portraitRecord,
     resolveChatPassport,
     trackerFromSwipe,
     trackerFromText,
     withoutCountTags,
 } from '../../domain';
-import type { DesCharacter, DesTracker, MarkerParams, Passport, SceneCandidate } from '../../domain';
+import type { DesCharacter, DesPortraitRecord, DesTracker, MarkerParams, Passport, SceneCandidate } from '../../domain';
 import { generateTrackerPassport } from '../../features/characters/passport-generator';
 import { interpretForModel } from '../../features/language/interpreter';
 import {
@@ -91,12 +96,6 @@ function stableSeed(name: string): number {
     return hash % 4294967295;
 }
 
-function hashOf(text: string): string {
-    let hash = 0;
-    for (let i = 0; i < text.length; i++) hash = (Math.imul(31, hash) + text.charCodeAt(i)) | 0;
-    return (hash >>> 0).toString(16);
-}
-
 export class DesIntegration {
     private api: DesApi | null = null;
     private state: DesStatus['state'] = 'searching';
@@ -111,6 +110,12 @@ export class DesIntegration {
     private portraitQueue: Promise<unknown> = Promise.resolve();
     /** Portraits asked for from the menu: the user's own requests in the NovelAI queue. */
     private readonly manualPortraits = new Set<string>();
+    /**
+     * Automatic portraits on their way, by character name, with the record they get once drawn. A later
+     * tracker does not queue the same portrait again ("missing" draws once); it only updates the record,
+     * since the portrait is drawn from the newest tracker.
+     */
+    private readonly pendingPortraits = new Map<string, DesPortraitRecord>();
     private lastLocation = '';
     private timer: ReturnType<typeof setTimeout> | null = null;
     private readonly listeners = new Set<() => void>();
@@ -470,9 +475,14 @@ export class DesIntegration {
 
     // ---- portraits ------------------------------------------------------------------------
 
-    private portraitRecords(): Record<string, string> {
-        const meta = (ctx().chatMetadata.nai_studio ??= {}) as { desPortraits?: Record<string, string> };
+    /** Records of the drawn portraits by character name (DesPortraitRecord; a bare hash before v0.13.2). */
+    private portraitRecords(): Record<string, unknown> {
+        const meta = (ctx().chatMetadata.nai_studio ??= {}) as { desPortraits?: Record<string, unknown> };
         return (meta.desPortraits ??= {});
+    }
+
+    private saveRecords(): void {
+        void Promise.resolve(ctx().saveMetadata()).catch((error) => log.warn('DES: portrait record not saved', error));
     }
 
     private maybePortrait(
@@ -489,25 +499,44 @@ export class DesIntegration {
         if (existing && !records[name] && !api.settings.generatedPortraits?.[name]) return;
         const line = found ? passportTags(found.passport, { allowNsfw: false }) : character.look;
         if (!line.trim()) return;
-        const hash = hashOf(`${found?.passport.id ?? ''}|${line}|${character.look}`);
         const policy = settings().des.portraitPolicy;
-        const due = !existing || policy === 'every' || (policy === 'state' && records[name] !== hash);
-        if (!due) return;
+        const current = portraitRecord(found?.passport, character.look);
+        if (policy !== 'every' && this.pendingPortraits.has(name)) {
+            this.pendingPortraits.set(name, current);
+            return;
+        }
+        const decision = portraitDecision({
+            policy,
+            exists: Boolean(existing),
+            stored: records[name],
+            current,
+            passport: Boolean(found),
+        });
+        if (decision === 'adopt') {
+            // Drawn before v0.13.2 or by DES: the portrait counts as current and its record starts now.
+            records[name] = current;
+            this.saveRecords();
+            return;
+        }
+        if (decision !== 'draw') return;
+        this.pendingPortraits.set(name, current);
         const verdict = approval?.();
         this.portraitQueue = this.portraitQueue.then(async () => {
-            if (verdict && (await verdict) !== 'draw') {
-                log.info(`DES: portrait of ${name} skipped by the quality gate`);
-                return;
-            }
             try {
+                if (verdict && (await verdict) !== 'draw') {
+                    log.info(`DES: portrait of ${name} skipped by the quality gate`);
+                    return;
+                }
                 const url = await api.regeneratePortrait(name);
                 if (url) {
-                    records[name] = hash;
+                    records[name] = this.pendingPortraits.get(name) ?? current;
                     await ctx().saveMetadata();
                     api.refreshPortraits();
                 }
             } catch (error) {
                 log.warn(`DES: portrait of ${name} failed`, error);
+            } finally {
+                this.pendingPortraits.delete(name);
             }
         });
     }
@@ -601,7 +630,14 @@ export class DesIntegration {
             this.manualPortraits.add(normalizeLine(name));
             try {
                 const url = await this.api.regeneratePortrait(name);
-                if (url) this.api.refreshPortraits();
+                if (url) {
+                    // Always drawn; it is the current portrait for the "state" policy from now on.
+                    if (!this.isCardCharacter(name)) {
+                        this.portraitRecords()[name] = portraitRecord(found?.passport, look);
+                        this.saveRecords();
+                    }
+                    this.api.refreshPortraits();
+                }
             } finally {
                 this.manualPortraits.delete(normalizeLine(name));
             }

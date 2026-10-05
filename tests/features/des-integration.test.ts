@@ -2,7 +2,8 @@
 // Doom's Enhancement Suite integration with mocked SillyTavern and DES (v0.9): people and setting
 // from the tracker of a reply, passports found or written for new characters, the appearance line
 // in DES, portrait policy and the /sd plan, DES auto portraits off and back, the separate-mode gate,
-// automatic portraits behind the quality gate (v0.11).
+// automatic portraits behind the quality gate (v0.11), portraits drawn once by default and "state" following
+// the drawn identity, not the tracker's wording (v0.13.2).
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { defaultSettings } from '../../src/core/settings-schema';
 import type { NaiStudioSettings } from '../../src/core/settings-schema';
@@ -27,6 +28,7 @@ interface Plan {
 interface Internals {
     handleTracker(portraits: boolean): Promise<void>;
     portraitQueue: Promise<unknown>;
+    menuAction(action: string, name: string, isUser: boolean): Promise<void>;
 }
 
 const inner = (integration: unknown) => integration as Internals;
@@ -133,6 +135,12 @@ function reply(mes: string, extra: Record<string, unknown> = {}) {
 
 const markers = () => ({ setGate: vi.fn(), illustrate: vi.fn() }) as never;
 
+const desPortraits = () =>
+    ((state.meta.nai_studio as { desPortraits?: Record<string, unknown> } | undefined)?.desPortraits ?? {}) as Record<
+        string,
+        unknown
+    >;
+
 beforeEach(() => {
     state.settings = defaultSettings();
     state.chat = [];
@@ -146,7 +154,8 @@ beforeEach(() => {
         autoGenerateAvatars: true,
         npcAvatars: {},
     };
-    state.regenerate = vi.fn(async (name: string) => `/user/images/des-portraits/${name}.png`);
+    // DES keeps the new portrait in npcAvatars, as regenerateAvatar does.
+    state.regenerate = vi.fn(async (name: string) => (state.des.npcAvatars[name] = `/des-portraits/${name}.png`));
     state.meta = {};
     document.body.innerHTML = '<div id="chat"></div>';
 });
@@ -185,9 +194,10 @@ describe('DesIntegration', () => {
         expect(await state.provider.setting({})).toEqual({ tags: [], location: '' });
     });
 
-    it('writes a passport for a new character, links it to DES and draws the portrait by the policy', async () => {
+    it('writes a passport for a new character, links it to DES and draws the portrait once', async () => {
         const des = new DesIntegration(markers());
         await des.start();
+        expect(state.settings.des.portraitPolicy).toBe('missing');
         reply(tracker([{ name: 'Mira', details: { appearance: 'wet blue cloak' } }]));
         await inner(des).handleTracker(true);
         expect(state.generated).toEqual(['Mira']);
@@ -195,16 +205,146 @@ describe('DesIntegration', () => {
         expect(state.des.characterAppearance?.Mira).toBe('white hair, blue cloak');
         await inner(des).portraitQueue;
         expect(state.regenerate).toHaveBeenCalledWith('Mira');
-        // Same look again: the "state" policy does not draw a second time; a changed look does.
-        state.des.npcAvatars.Mira = '/user/images/des-portraits/Mira.png';
+        expect(desPortraits().Mira).toMatchObject({ look: 'wet blue cloak' });
+        // Every next reply, however the tracker words the look: no second portrait.
+        for (const look of ['wet blue cloak', 'red dress', 'armour; wounded']) {
+            state.chat[0]!.mes = tracker([{ name: 'Mira', details: { appearance: look } }]);
+            await inner(des).handleTracker(true);
+            await inner(des).portraitQueue;
+        }
+        expect(state.regenerate).toHaveBeenCalledTimes(1);
+        expect(state.generated).toEqual(['Mira']);
+    });
+
+    it('"missing" queues a portrait once while it is on its way; a deleted portrait is drawn again', async () => {
+        const des = new DesIntegration(markers());
+        await des.start();
+        let finish = () => {};
+        state.regenerate = vi.fn(
+            (name: string) =>
+                new Promise<string>((resolve) => {
+                    finish = () => resolve((state.des.npcAvatars[name] = `/des-portraits/${name}.png`));
+                }),
+        );
+        reply(tracker([{ name: 'Mira', details: { appearance: 'wet blue cloak' } }]));
+        await inner(des).handleTracker(true);
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        await inner(des).handleTracker(true);
+        await inner(des).handleTracker(true);
+        finish();
+        await inner(des).portraitQueue;
+        expect(state.regenerate).toHaveBeenCalledTimes(1);
+        delete state.des.npcAvatars.Mira;
+        state.regenerate = vi.fn(async (name: string) => (state.des.npcAvatars[name] = `/des-portraits/${name}.png`));
         await inner(des).handleTracker(true);
         await inner(des).portraitQueue;
         expect(state.regenerate).toHaveBeenCalledTimes(1);
-        state.chat[0]!.mes = tracker([{ name: 'Mira', details: { appearance: 'red dress' } }]);
+    });
+
+    it('"every" draws a portrait on every reply', async () => {
+        state.settings.des.portraitPolicy = 'every';
+        const des = new DesIntegration(markers());
+        await des.start();
+        reply(tracker([{ name: 'Mira', details: { appearance: 'wet blue cloak' } }]));
+        for (let i = 0; i < 3; i++) {
+            await inner(des).handleTracker(true);
+            await inner(des).portraitQueue;
+        }
+        expect(state.regenerate).toHaveBeenCalledTimes(3);
+    });
+
+    it('"state" with a passport: a reworded look keeps the portrait, outfit, states and passport redraw it', async () => {
+        state.settings.des.portraitPolicy = 'state';
+        const passport = defaultPassport('character', 'Mira', 'p-mira');
+        passport.slots.hair = 'white hair';
+        passport.slots.clothing = 'blue cloak';
+        passport.outfits = [{ name: 'Gala', tags: 'red evening gown' }];
+        state.cardPassports = [passport];
+        const des = new DesIntegration(markers());
+        await des.start();
+        reply(tracker([{ name: 'Mira', details: { appearance: 'wet blue cloak' } }]));
+        const turn = async (look: string) => {
+            state.chat[0]!.mes = tracker([{ name: 'Mira', details: { appearance: look } }]);
+            await inner(des).handleTracker(true);
+            await inner(des).portraitQueue;
+            return vi.mocked(state.regenerate).mock.calls.length;
+        };
+        expect(await turn('wet blue cloak')).toBe(1);
+        // The model rewrites the look nearly every reply: no new portrait.
+        expect(await turn('her blue cloak is soaked through')).toBe(1);
+        expect(await turn('Soaked, shivering, cloak dripping')).toBe(1);
+        // Maestro's wardrobe switches the outfit: a new portrait, once.
+        passport.activeOutfit = 'Gala';
+        expect(await turn('red evening gown')).toBe(2);
+        expect(await turn('a red gown for the ball')).toBe(2);
+        // A state switched on: a new portrait.
+        passport.states = passport.states.map((s) => (s.id === 'wet' ? { ...s, enabled: true } : s));
+        expect(await turn('red evening gown, wet')).toBe(3);
+        // The passport itself edited (or another passport): a new portrait.
+        passport.slots.hair = 'silver hair';
+        expect(await turn('red evening gown, wet')).toBe(4);
+        state.cardPassports = [{ ...passport, id: 'p-mira-2' }];
+        expect(await turn('red evening gown, wet')).toBe(5);
+        expect(await turn('red evening gown, wet')).toBe(5);
+    });
+
+    it('"state" without a passport: a small rewording keeps the portrait, a new look redraws it', async () => {
+        state.settings.des.portraitPolicy = 'state';
+        state.settings.des.autoPassports = false;
+        const des = new DesIntegration(markers());
+        await des.start();
+        reply(tracker([{ name: 'Mira', details: { appearance: 'Wet blue cloak, muddy boots' } }]));
+        const turn = async (look: string) => {
+            state.chat[0]!.mes = tracker([{ name: 'Mira', details: { appearance: look } }]);
+            await inner(des).handleTracker(true);
+            await inner(des).portraitQueue;
+            return vi.mocked(state.regenerate).mock.calls.length;
+        };
+        expect(await turn('Wet blue cloak, muddy boots')).toBe(1);
+        expect(await turn('muddy boots and a wet blue cloak')).toBe(1);
+        expect(await turn('высокая блондинка с голубыми глазами; в белом платье')).toBe(2);
+        expect(await turn('Высокая блондинка, голубые глаза; белое платье')).toBe(2);
+        expect(desPortraits().Mira).toMatchObject({ look: 'высокая блондинка с голубыми глазами; в белом платье' });
+        expect(await turn('red silk dress, pearl necklace')).toBe(3);
+    });
+
+    it('"state" takes a portrait drawn before 0.13.2 as current: no redraw, the record starts now', async () => {
+        state.settings.des.portraitPolicy = 'state';
+        state.settings.des.autoPassports = false;
+        state.des.npcAvatars.Mira = '/des-portraits/Mira.png';
+        state.meta = { nai_studio: { desPortraits: { Mira: '1a2b3c4d' } } };
+        const des = new DesIntegration(markers());
+        await des.start();
+        reply(tracker([{ name: 'Mira', details: { appearance: 'wet blue cloak' } }]));
         await inner(des).handleTracker(true);
         await inner(des).portraitQueue;
-        expect(state.regenerate).toHaveBeenCalledTimes(2);
-        expect(state.generated).toEqual(['Mira']);
+        expect(state.regenerate).not.toHaveBeenCalled();
+        expect(desPortraits().Mira).toMatchObject({ look: 'wet blue cloak' });
+        state.chat[0]!.mes = tracker([{ name: 'Mira', details: { appearance: 'red silk dress, pearl necklace' } }]);
+        await inner(des).handleTracker(true);
+        await inner(des).portraitQueue;
+        expect(state.regenerate).toHaveBeenCalledTimes(1);
+    });
+
+    it('"new portrait" in the DES menu always draws and becomes the current portrait', async () => {
+        const des = new DesIntegration(markers());
+        await des.start();
+        reply(tracker([{ name: 'Mira', details: { appearance: 'wet blue cloak' } }]));
+        await inner(des).handleTracker(true);
+        await inner(des).portraitQueue;
+        expect(state.regenerate).toHaveBeenCalledTimes(1);
+        await inner(des).menuAction('portrait', 'Mira', false);
+        await inner(des).menuAction('portrait', 'Mira', false);
+        expect(state.regenerate).toHaveBeenCalledTimes(3);
+        // With "state" the menu's portrait is the baseline: the next reply does not draw again.
+        state.settings.des.portraitPolicy = 'state';
+        state.chat[0]!.mes = tracker([{ name: 'Mira', details: { appearance: 'red dress' } }]);
+        await inner(des).menuAction('portrait', 'Mira', false);
+        expect(state.regenerate).toHaveBeenCalledTimes(4);
+        await inner(des).handleTracker(true);
+        await inner(des).portraitQueue;
+        expect(state.regenerate).toHaveBeenCalledTimes(4);
+        expect(desPortraits().Mira).toMatchObject({ look: 'red dress' });
     });
 
     it('draws automatic portraits only after the quality gate approved the reply of the tracker', async () => {

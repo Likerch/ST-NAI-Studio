@@ -37,7 +37,7 @@ export interface CustomPoseSettings {
     name: string;
 }
 
-export const CURRENT_SCHEMA_VERSION = 10;
+export const CURRENT_SCHEMA_VERSION = 11;
 
 export type TransportMode = 'auto' | 'plugin' | 'native';
 
@@ -89,6 +89,11 @@ export interface StyleSettings {
     negative: string;
     /** UC preset the style switches to (v0.9.5); absent = the current one stays. */
     ucPreset?: string;
+    /**
+     * How the style's negative works (v0.13): "replace" makes it the undesired content, "append" adds
+     * it after `prompts.baseNegative`. Absent (styles saved before) = "replace".
+     */
+    negativeMode?: 'replace' | 'append';
 }
 
 export interface CharacterPromptSettings {
@@ -111,6 +116,13 @@ export interface NaiStudioSettings {
         templates: Record<string, string>;
         styles: StyleSettings[];
         activeStyle: string;
+        /** Base negative of the styles in the "append" mode (v0.13). */
+        baseNegative: string;
+        /**
+         * Negative mode of the current fields (v0.13): the active style's, changed in the style editor.
+         * `generation.negativePrompt` always holds the effective undesired content.
+         */
+        negativeMode: 'replace' | 'append';
         /** Per-character prompt prefixes keyed by avatar file name without extension. */
         characterPrompts: Record<string, CharacterPromptSettings>;
     };
@@ -388,7 +400,16 @@ export function defaultSettings(): NaiStudioSettings {
         schemaVersion: CURRENT_SCHEMA_VERSION,
         transport: { mode: 'auto' },
         generation: defaultGeneration(),
-        prompts: { prefix: '', suffix: '', templates: {}, styles: [], activeStyle: '', characterPrompts: {} },
+        prompts: {
+            prefix: '',
+            suffix: '',
+            templates: {},
+            styles: [],
+            activeStyle: '',
+            baseNegative: '',
+            negativeMode: 'replace',
+            characterPrompts: {},
+        },
         modes: {
             refine: false,
             multimodal: false,
@@ -613,6 +634,14 @@ export const MIGRATIONS: readonly Migration[] = [
         to: 10,
         migrate(settings) {
             return { ...settings, schemaVersion: 10 };
+        },
+    },
+    {
+        // v11: style editor; the base negative starts empty and the current fields keep replacing the
+        // undesired content (the merge fills both). Stored styles stay as they are: no mode = "replace".
+        to: 11,
+        migrate(settings) {
+            return { ...settings, schemaVersion: 11 };
         },
     },
 ];

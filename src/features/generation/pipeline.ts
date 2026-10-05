@@ -7,7 +7,7 @@ import { NaiError, toNaiError } from '../../core/errors';
 import { t } from '../../core/i18n';
 import { log } from '../../core/logger';
 import { settings } from '../../core/settings';
-import type { GenerationSettings, Initiator } from '../../core/settings-schema';
+import type { GenerationSettings, Initiator, StyleSettings } from '../../core/settings-schema';
 import {
     applyFreeModeCharacter,
     assemblePrompt,
@@ -52,6 +52,7 @@ import type { StudioController } from './controller';
 import { appendToMessage, imageFolder, messageText, postToChat, saveImages } from './output';
 import type { GenerationMeta, MediaAttachmentData } from './output';
 import type { Prepared } from './service';
+import { styleNegative } from './styles';
 
 /** Per-call options coming from slash command arguments. */
 export interface CallOverrides {
@@ -64,6 +65,17 @@ export interface CallOverrides {
     snap?: boolean;
     minimalProcessing?: boolean;
     generation?: Partial<GenerationSettings>;
+    /**
+     * A saved style for this picture only (v0.13; a marker's or Maestro's `style`): its prefix, suffix
+     * and undesired content (with the base negative in the "append" mode) replace the current ones.
+     */
+    style?: StyleSettings;
+}
+
+/** The undesired content of a request before its own additions: an explicit one, the style's or the current. */
+function commonNegative(o: CallOverrides): string {
+    const s = settings();
+    return o.generation?.negativePrompt ?? (o.style ? styleNegative(s, o.style) : s.generation.negativePrompt);
 }
 
 export interface PictureRequest {
@@ -406,6 +418,7 @@ export class Pipeline {
         const s = settings();
         const c = ctx();
         const g = { ...s.generation, ...overrides.generation };
+        const style = overrides.style;
         const caps = getCapabilities(isModelId(g.model) ? g.model : DEFAULT_MODEL);
         const dims =
             forcedSize ?? modeDimensions(mode, g.width, g.height, overrides.snap ?? s.modes.snap, caps.sizePresets);
@@ -419,9 +432,9 @@ export class Pipeline {
         const character = currentCharacterPrompt();
         const assembled = assemblePrompt({
             scene: sceneText,
-            prefix: s.prompts.prefix,
-            suffix: s.prompts.suffix,
-            negative: g.negativePrompt,
+            prefix: style ? style.prefix : s.prompts.prefix,
+            suffix: style ? style.suffix : s.prompts.suffix,
+            negative: commonNegative(overrides),
             characterPositive: character.positive,
             characterNegative: character.negative,
             additionalNegative: negativeExtra,
@@ -548,7 +561,7 @@ export class Pipeline {
                 scene,
                 characters.map((ch) => ch.prompt),
                 s.scene.explicitNegative,
-                `${additionalNegative}, ${o.generation?.negativePrompt ?? s.generation.negativePrompt}`,
+                `${additionalNegative}, ${commonNegative(o)}`,
             );
             if (explicit) {
                 scene = explicit.scene;

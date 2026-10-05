@@ -1,5 +1,6 @@
 // Prompt assembly helpers mirroring SillyTavern's built-in Image Generation (RECON §2.1.7):
 // prefix/{prompt} combination, LLM reply cleanup, raw-last-message prompt, free-mode `char` prefix.
+import { insertBeforeTextBlock } from './text-block';
 
 /** Trims spaces and edge commas, joins with ", " or replaces `macro` in the first string. */
 export function combinePrefixes(first: string, second: string, macro = ''): string {
@@ -77,7 +78,8 @@ export interface AssembledPrompt {
 
 /**
  * Final positive and negative strings before UC presets and quality tags are added by the payload
- * builder: prefix (+ character prefix) with `{prompt}` support, then suffix; negatives combined.
+ * builder: prefix (+ character prefix) with `{prompt}` support, then suffix (before an in-image
+ * `text:` block, which must stay last); negatives combined.
  */
 export function assemblePrompt(input: {
     scene: string;
@@ -91,7 +93,8 @@ export function assemblePrompt(input: {
 }): AssembledPrompt {
     const prefix = input.useCharacterPrefix ? combinePrefixes(input.prefix, input.characterPositive) : input.prefix;
     const withScene = combinePrefixes(prefix, input.scene, '{prompt}');
-    const prompt = combinePrefixes(withScene, input.suffix);
+    const suffix = input.suffix.trim().replace(/^,|,$/g, '').trim();
+    const prompt = (suffix && insertBeforeTextBlock(withScene, suffix)) || combinePrefixes(withScene, suffix);
     const commonNegative = input.useCharacterPrefix
         ? combinePrefixes(input.negative, input.characterNegative)
         : input.negative;

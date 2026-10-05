@@ -9,9 +9,9 @@ import { ctx } from '../../core/context';
 import { toNaiError } from '../../core/errors';
 import { t } from '../../core/i18n';
 import { log } from '../../core/logger';
-import type { GenerationSettings } from '../../core/settings-schema';
+import type { GenerationSettings, StyleSettings } from '../../core/settings-schema';
 import { settings } from '../../core/settings';
-import { styleUcPreset } from '../generation/styles';
+import { findStyle, styleUcPreset } from '../generation/styles';
 import {
     activeSwipe,
     createPendingImage,
@@ -411,17 +411,17 @@ export class MarkerService {
         generation.samples = freeOnly ? 1 : clamp(Math.round(params.count ?? 1), 1, 4);
 
         let scene = params.prompt;
-        let negative = params.negative ?? '';
+        const negative = params.negative ?? '';
+        // A saved style draws this picture instead of the active one (v0.13): its prefix, suffix and
+        // undesired content replace the current ones in the pipeline. Unknown names are style tags.
         const style = params.style?.trim();
+        let savedStyle: StyleSettings | undefined;
         if (style) {
-            const saved = s.prompts.styles.find((st) => st.name.trim().toLowerCase() === style.toLowerCase());
-            const join = (...parts: string[]) => parts.filter((p) => p.trim()).join(', ');
-            if (saved) {
-                scene = join(saved.prefix, scene, saved.suffix);
-                negative = join(negative, saved.negative);
-                const preset = styleUcPreset(saved);
+            savedStyle = findStyle(s, style);
+            if (savedStyle) {
+                const preset = styleUcPreset(savedStyle);
                 if (preset && !params.uc) generation.ucPreset = preset;
-            } else scene = join(style, scene);
+            } else scene = [style, scene].filter((p) => p.trim()).join(', ');
         }
         // Characters with a passport named in the description take part without "chars" too. Only the
         // description counts: a caption often names who is looked at ("winks at Arthur"), not who is drawn.
@@ -465,7 +465,12 @@ export class MarkerService {
 
         const requestPatch = params.ref ? await this.refPatch(params.ref, dims) : undefined;
         const vibes = params.vibe ? this.namedVibe(params.vibe) : undefined;
-        const overrides: CallOverrides = { edit: false, negative, generation };
+        const overrides: CallOverrides = {
+            edit: false,
+            negative,
+            generation,
+            ...(savedStyle ? { style: savedStyle } : {}),
+        };
         return await this.pipeline.produce({
             initiator: 'message',
             trigger: scene,

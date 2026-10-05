@@ -1222,4 +1222,11 @@ img.naist-marker-failed {
     margin: 8px auto;
     border-radius: 8px;
 }
+
+/* ---- style editor (v0.13) ------------------------------------------------------------------- */
+
+.naist-style-effective {
+    max-height: 10em;
+    opacity: 0.85;
+}
 /*$vite$:1*/

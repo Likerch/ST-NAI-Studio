@@ -248,9 +248,8 @@ describe('MarkerService requests', () => {
 
     it('turns every parameter into the generation request within the free limit', async () => {
         const { service, produce } = setup();
-        state.settings.prompts.styles = [
-            { name: 'ink', prefix: 'ink drawing', suffix: 'monochrome', negative: 'color' },
-        ];
+        const ink = { name: 'ink', prefix: 'ink drawing', suffix: 'monochrome', negative: 'color' };
+        state.settings.prompts.styles = [ink];
         await service.produce(params);
         const req = lastRequest(produce);
         expect(req).toMatchObject({
@@ -260,10 +259,12 @@ describe('MarkerService requests', () => {
             interpretCharacters: 'cyrillic',
             skipCostConfirm: true,
             maxCost: 0,
-            scene: 'ink drawing, girl reading, monochrome, text: HELLO',
+            // The saved style replaces the active one in the pipeline (v0.13), not in the scene.
+            scene: 'girl reading, text: HELLO',
             overrides: {
                 edit: false,
-                negative: 'hat, color',
+                negative: 'hat',
+                style: ink,
                 generation: {
                     model: 'nai-diffusion-4-5-full',
                     width: 832,

@@ -34,7 +34,7 @@ export interface BackgroundRequest {
     passportId?: string;
     timeOfDay?: string;
     weather?: string;
-    /** A saved style by name, else style tags. */
+    /** A saved style by name (it replaces the active style for this picture), else style tags. */
     style?: string;
 }
 
@@ -90,7 +90,7 @@ export class BackgroundService {
             timeOfDay: request.timeOfDay ?? '',
             weather: request.weather ?? '',
         });
-        let negative = joinTags(BACKGROUND_NEGATIVE, passport?.negative ?? '');
+        const negative = joinTags(BACKGROUND_NEGATIVE, passport?.negative ?? '');
         // About 1 MP whatever the mode: free on Opus, like a marker of the default size.
         const generation: Partial<GenerationSettings> = {
             ...markerDimensions(BACKGROUND_RATIO, undefined, true),
@@ -98,16 +98,14 @@ export class BackgroundService {
             characters: [],
             transparentBackground: false,
         };
+        // A saved style replaces the active one for this picture (v0.13): its prefix, suffix and
+        // undesired content (with the base negative in the "append" mode) go in through the pipeline.
         const styleName = request.style?.trim();
-        if (styleName) {
-            const style = findStyle(s, styleName);
-            if (style) {
-                scene = join(style.prefix, scene, style.suffix);
-                negative = join(negative, style.negative);
-                const preset = styleUcPreset(style);
-                if (preset) generation.ucPreset = preset;
-            } else scene = join(styleName, scene);
-        }
+        const style = styleName ? findStyle(s, styleName) : undefined;
+        if (style) {
+            const preset = styleUcPreset(style);
+            if (preset) generation.ucPreset = preset;
+        } else if (styleName) scene = join(styleName, scene);
         const produced = await this.pipeline.produce({
             initiator: 'panel',
             trigger: scene,
@@ -116,7 +114,7 @@ export class BackgroundService {
             // Passport tags are curated: only Russian words (a place name, a tracker's weather) are converted.
             interpret: 'cyrillic',
             noContinuity: true,
-            overrides: { edit: false, negative, generation },
+            overrides: { edit: false, negative, generation, ...(style ? { style } : {}) },
             // Free-only mode: a request that would still cost Anlas is refused before anything is sent.
             ...(s.anlas.freeOnly ? { maxCost: 0 } : {}),
             ...(signal ? { signal } : {}),

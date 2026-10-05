@@ -10,6 +10,7 @@ import { convertWeights, defaultCenter, getCapabilities, isModelId, MODE, MODELS
 import type { ModelCapabilities } from '../../domain';
 import type { StudioController, StudioState } from '../../features/generation/controller';
 import type { Pipeline } from '../../features/generation/pipeline';
+import { activeStyle, currentNegativeMode, styleChanged } from '../../features/generation/styles';
 import { isBuiltInActive } from '../../features/takeover/takeover';
 import type { Prepared } from '../../features/generation/service';
 import type { TransportFeatures } from '../../transport';
@@ -115,7 +116,10 @@ export class Panel {
     }
 
     private mountTabs(): void {
-        this.promptsTab = new PromptsTab(() => this.scheduleRefresh());
+        this.promptsTab = new PromptsTab(
+            () => this.scheduleRefresh(),
+            () => this.syncStyleFields(),
+        );
         this.promptsTab.mount(this.tabPanel('prompts'));
         this.chatTab = new ChatTab((path) => {
             this.onSettingChange(path);
@@ -188,6 +192,44 @@ export class Panel {
         $id<HTMLInputElement>(r, 'naist_inspect_before').checked = s.inspector.openBeforeSend;
         this.applyModel();
         this.renderCharacters();
+        this.renderStyleHint();
+    }
+
+    /** The style editor changed the current undesired content or UC preset (v0.13). */
+    private syncStyleFields(): void {
+        const g = settings().generation;
+        const negative = $id<HTMLTextAreaElement>(this.root, 'naist_negative');
+        if (negative.value !== g.negativePrompt) negative.value = g.negativePrompt;
+        const uc = $id<HTMLSelectElement>(this.root, 'naist_uc_preset');
+        if ([...uc.options].some((o) => o.value === g.ucPreset)) uc.value = g.ucPreset;
+        this.renderStyleHint();
+        this.scheduleRefresh();
+    }
+
+    /** Under the undesired content: which style it comes from and whether it was changed since. */
+    private renderStyleHint(): void {
+        const s = settings();
+        const style = activeStyle(s);
+        const hint = $id(this.root, 'naist_negative_style');
+        const changed = styleChanged(s, style);
+        hint.classList.toggle('naist-warning', changed);
+        if (!style) {
+            hint.textContent = '';
+            return;
+        }
+        const from = t(
+            currentNegativeMode(s) === 'append'
+                ? 'naist.panel.negativeStyleAppend'
+                : 'naist.panel.negativeStyleReplace',
+            { name: style.name },
+        );
+        hint.textContent = changed ? `${from} ${t('naist.panel.negativeStyleChanged')}` : from;
+    }
+
+    /** The undesired content or the UC preset was edited here: the style editor shows it as a change. */
+    private styleFieldEdited(): void {
+        this.promptsTab?.syncStyleFields();
+        this.renderStyleHint();
     }
 
     private caps(): ModelCapabilities {
@@ -325,6 +367,8 @@ export class Panel {
         text('naist_prompt', 'prompt');
         text('naist_negative', 'negativePrompt');
         select('naist_uc_preset', 'ucPreset');
+        $id(r, 'naist_negative').addEventListener('input', () => this.styleFieldEdited());
+        $id(r, 'naist_uc_preset').addEventListener('change', () => this.styleFieldEdited());
         select('naist_quality', 'qualityPreset');
         select('naist_sampler', 'sampler');
         select('naist_schedule', 'noiseSchedule');
@@ -349,6 +393,7 @@ export class Panel {
             this.convertWeightsFor(g().model);
             this.applyModel();
             this.renderCharacters();
+            this.styleFieldEdited();
             changed();
         });
         $id<HTMLSelectElement>(r, 'naist_size_preset').addEventListener('change', (e) => {
@@ -503,7 +548,7 @@ export class Panel {
         negative.after(this.tokens.element);
         attachPromptAssist(
             this.root,
-            '#naist_prompt, #naist_negative, .naist-char-prompt, .naist-char-negative, #naist_prefix, #naist_suffix',
+            '#naist_prompt, #naist_negative, .naist-char-prompt, .naist-char-negative, #naist_prefix, #naist_suffix, #naist_style_negative, #naist_base_negative',
             () => settings().generation.model,
         );
     }
@@ -530,6 +575,7 @@ export class Panel {
         }
         if (!changed) return;
         this.syncFromSettings();
+        this.promptsTab?.syncStyleFields();
         toastr.info(
             lossy.length
                 ? t('naist.weights.convertedLossy', { dropped: lossy.join(', ') })

@@ -481,9 +481,8 @@ describe('NAI_STUDIO_API.generateBackground (v0.12)', () => {
     it('draws one landscape image without people and uploads it into the backgrounds library', async () => {
         installPublicApi({ backgrounds: new BackgroundService({ produce } as never, () => NOW) });
         state.settings.anlas.freeOnly = false;
-        state.settings.prompts.styles = [
-            { name: 'Ink', prefix: 'ink wash', suffix: 'monochrome', negative: 'color', ucPreset: 'light' },
-        ];
+        const ink = { name: 'Ink', prefix: 'ink wash', suffix: 'monochrome', negative: 'color', ucPreset: 'light' };
+        state.settings.prompts.styles = [ink];
         const result = await api.generateBackground({
             locationName: 'Old Mill',
             passportId: 'l1',
@@ -498,12 +497,14 @@ describe('NAI_STUDIO_API.generateBackground (v0.12)', () => {
         expect(request).toMatchObject({
             initiator: 'panel',
             mode: 7,
-            scene: 'ink wash, no humans, scenery, watermill, stone bridge, autumn leaves, evening, rain, monochrome',
+            // The saved style replaces the active one in the pipeline (v0.13): prefix, suffix, negative.
+            scene: 'no humans, scenery, watermill, stone bridge, autumn leaves, evening, rain',
             interpret: 'cyrillic',
             noContinuity: true,
             overrides: {
                 edit: false,
-                negative: '1girl, 1boy, multiple girls, multiple boys, people, crowd, modern, color',
+                negative: '1girl, 1boy, multiple girls, multiple boys, people, crowd, modern',
+                style: ink,
                 generation: {
                     width: 1344,
                     height: 768,

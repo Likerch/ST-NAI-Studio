@@ -106,7 +106,7 @@ export interface BackgroundInput {
     timeOfDay?: string;
     /** As a tracker writes it ("rain, wind", Russian words too). */
     weather?: string;
-    /** A saved style of NAI Studio by name, else style tags. */
+    /** A saved style of NAI Studio by name (it replaces the active style for this picture), else style tags. */
     style?: string;
 }
 

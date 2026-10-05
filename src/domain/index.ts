@@ -49,3 +49,4 @@ export * from './backgrounds';
 export * from './des';
 export * from './vision';
 export * from './explicit';
+export * from './negatives';

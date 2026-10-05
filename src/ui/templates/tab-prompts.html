@@ -23,12 +23,62 @@
     ></label>
 </div>
 
-<div class="naist-section">
-    <label for="naist_prefix" data-i18n="naist.prompts.prefix"></label>
+<div id="naist_style_editor" class="naist-section">
+    <div class="naist-row">
+        <b data-i18n="naist.prompts.styles"></b>
+        <span
+            id="naist_style_dirty"
+            class="naist-badge naist-badge-warn naist-hidden"
+            data-i18n="naist.prompts.styleChanged"
+        ></span>
+    </div>
+    <div class="naist-row">
+        <select id="naist_style" class="text_pole naist-grow"></select>
+        <div id="naist_style_new" class="menu_button fa-solid fa-plus" data-i18n="[title]naist.prompts.styleNew"></div>
+        <div
+            id="naist_style_rename"
+            class="menu_button fa-solid fa-pencil"
+            data-i18n="[title]naist.prompts.styleRename"
+        ></div>
+        <div
+            id="naist_style_delete"
+            class="menu_button fa-solid fa-trash-can"
+            data-i18n="[title]naist.prompts.styleDelete"
+        ></div>
+    </div>
+    <div id="naist_style_status" class="naist-hint"></div>
+    <label id="naist_prefix_label" for="naist_prefix" data-i18n="naist.prompts.prefix"></label>
     <textarea id="naist_prefix" class="text_pole textarea_compact" rows="2" data-setting="prompts.prefix"></textarea>
-    <label for="naist_suffix" data-i18n="naist.prompts.suffix"></label>
+    <label id="naist_suffix_label" for="naist_suffix" data-i18n="naist.prompts.suffix"></label>
     <textarea id="naist_suffix" class="text_pole textarea_compact" rows="2" data-setting="prompts.suffix"></textarea>
     <div class="naist-hint" data-i18n="naist.prompts.prefixHint"></div>
+    <label id="naist_style_negative_label" for="naist_style_negative" data-i18n="naist.prompts.commonNegative"></label>
+    <textarea id="naist_style_negative" class="text_pole textarea_compact" rows="2"></textarea>
+    <div class="naist-grid2">
+        <div id="naist_style_mode_box">
+            <label for="naist_style_mode" data-i18n="naist.prompts.negativeMode"></label>
+            <select id="naist_style_mode" class="text_pole">
+                <option value="replace" data-i18n="naist.prompts.negativeModeReplace"></option>
+                <option value="append" data-i18n="naist.prompts.negativeModeAppend"></option>
+            </select>
+        </div>
+        <div>
+            <label id="naist_style_uc_label" for="naist_style_uc" data-i18n="naist.panel.ucPreset"></label>
+            <select id="naist_style_uc" class="text_pole"></select>
+        </div>
+    </div>
+    <div id="naist_style_effective_box" class="naist-hidden">
+        <label for="naist_style_effective" data-i18n="naist.prompts.effectiveNegative"></label>
+        <div id="naist_style_effective" class="naist-pre naist-style-effective"></div>
+    </div>
+    <div id="naist_style_actions" class="naist-row naist-hidden">
+        <div id="naist_style_save" class="menu_button" data-i18n="naist.prompts.styleSave"></div>
+        <div id="naist_style_revert" class="menu_button" data-i18n="naist.prompts.styleRevert"></div>
+    </div>
+    <label for="naist_base_negative" data-i18n="naist.prompts.baseNegative"></label>
+    <textarea id="naist_base_negative" class="text_pole textarea_compact" rows="2"></textarea>
+    <div class="naist-hint" data-i18n="naist.prompts.baseNegativeHint"></div>
+    <div class="naist-hint" data-i18n="naist.prompts.stylesHint"></div>
 </div>
 
 <div class="naist-section">
@@ -114,29 +164,6 @@
         ><input type="checkbox" data-setting="generation.autoText" /><span data-i18n="naist.tokens.autoText"></span
     ></label>
     <div class="naist-hint" data-i18n="naist.weights.hint"></div>
-</div>
-
-<div class="naist-section">
-    <b data-i18n="naist.prompts.styles"></b>
-    <div class="naist-row">
-        <select id="naist_style" class="text_pole naist-grow"></select>
-        <div
-            id="naist_style_save"
-            class="menu_button fa-solid fa-floppy-disk"
-            data-i18n="[title]naist.prompts.styleSave"
-        ></div>
-        <div
-            id="naist_style_rename"
-            class="menu_button fa-solid fa-pencil"
-            data-i18n="[title]naist.prompts.styleRename"
-        ></div>
-        <div
-            id="naist_style_delete"
-            class="menu_button fa-solid fa-trash-can"
-            data-i18n="[title]naist.prompts.styleDelete"
-        ></div>
-    </div>
-    <div class="naist-hint" data-i18n="naist.prompts.stylesHint"></div>
 </div>
 
 <div id="naist_char_prompt_block" class="naist-section">

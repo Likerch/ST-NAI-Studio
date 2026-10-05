@@ -1,12 +1,31 @@
-// "Prompts" tab: common prefix/suffix, styles, the current character's prompt, mode templates and
-// the human-language converter (TZ Phase 7).
+// "Prompts" tab: the style editor (prefix, suffix, undesired content and UC preset of the selected
+// style or the common fields, v0.13), the current character's prompt, mode templates and the
+// human-language converter (TZ Phase 7).
 import { ctx } from '../../core/context';
 import { localize, t } from '../../core/i18n';
 import { saveSettings, settings, notifyExternalChange } from '../../core/settings';
-import { applyStyle, styleFromSettings } from '../../features/generation/styles';
-import type { StyleSettings } from '../../core/settings-schema';
+import {
+    activeStyle,
+    applyStyle,
+    currentNegativeMode,
+    currentOwnNegative,
+    findStyle,
+    setBaseNegative,
+    setNegativeMode,
+    setOwnNegative,
+    styleChanged,
+    styleFromSettings,
+} from '../../features/generation/styles';
 import { reportGenerationError } from '../../core/notify';
-import { DEFAULT_TEMPLATES, TEMPLATE_MODES } from '../../domain';
+import {
+    combinePrefixes,
+    DEFAULT_MODEL,
+    DEFAULT_TEMPLATES,
+    getCapabilities,
+    isModelId,
+    negativeMode,
+    TEMPLATE_MODES,
+} from '../../domain';
 import {
     readCharacterPrompt,
     saveCharacterPrompt,
@@ -16,26 +35,40 @@ import { interpretForModel } from '../../features/language/interpreter';
 import { bindSettings, readFromSettings } from '../components/bind';
 import { $id, escapeHtml, fillSelect, render } from '../components/dom';
 import template from '../templates/tab-prompts.html?raw';
+import { createTokenMeter } from '../token-meter';
+import type { TokenMeter } from '../token-meter';
 
 export class PromptsTab {
     private root!: HTMLElement;
+    private styleTokens: TokenMeter | null = null;
 
-    constructor(private readonly onChange: () => void) {}
+    /**
+     * `onChange`: something that affects the preview changed. `onFields`: the style editor changed the
+     * current undesired content or UC preset, which the Generate tab shows too.
+     */
+    constructor(
+        private readonly onChange: () => void,
+        private readonly onFields: () => void = () => {},
+    ) {}
 
     mount(container: HTMLElement): void {
         container.innerHTML = render(template);
         this.root = container;
         localize(container);
         this.fillProfiles();
-        bindSettings(container, () => {
+        bindSettings(container, (path) => {
             this.applyLanguage();
+            if (path === 'prompts.prefix' || path === 'prompts.suffix') {
+                this.updateStyleStatus();
+                this.onFields();
+            }
             this.onChange();
         });
         this.bindLanguage();
         this.applyLanguage();
+        this.bindStyles();
         this.renderStyles();
         this.renderTemplates();
-        this.bindStyles();
         this.bindCharacter();
         this.refreshCharacter();
         const c = ctx();
@@ -105,6 +138,8 @@ export class PromptsTab {
     }
 
     // ---- styles ----------------------------------------------------------------------------
+    // The editor edits the current fields (what every picture uses); the selected style is what
+    // "Save style" writes them into and "Revert" brings back. Without a style they are the common fields.
 
     private renderStyles(): void {
         const prompts = settings().prompts;
@@ -112,64 +147,212 @@ export class PromptsTab {
             { value: '', label: t('naist.prompts.styleNone') },
             ...prompts.styles.map((s) => ({ value: s.name, label: s.name })),
         ];
-        fillSelect($id(this.root, 'naist_style'), options, prompts.activeStyle);
+        fillSelect($id(this.root, 'naist_style'), options, activeStyle(settings())?.name ?? '');
+        this.renderStyleEditor();
     }
 
-    private applyStyle(style: StyleSettings | undefined): void {
+    /** Re-reads the editor after the current fields changed elsewhere (the Generate tab, a command). */
+    syncStyleFields(): void {
+        this.renderStyleEditor();
+    }
+
+    private renderStyleEditor(): void {
         const s = settings();
-        if (style) applyStyle(s, style);
-        else s.prompts.activeStyle = '';
+        const r = this.root;
+        const style = activeStyle(s);
+        const own = $id<HTMLTextAreaElement>(r, 'naist_style_negative');
+        own.value = currentOwnNegative(s, own.value);
+        $id<HTMLSelectElement>(r, 'naist_style_mode').value = currentNegativeMode(s);
+        const model = s.generation.model;
+        fillSelect(
+            $id(r, 'naist_style_uc'),
+            getCapabilities(isModelId(model) ? model : DEFAULT_MODEL).ucPresets.map((id) => ({
+                value: id,
+                label: t(`naist.ucPreset.${id}`),
+            })),
+            s.generation.ucPreset,
+        );
+        const base = $id<HTMLTextAreaElement>(r, 'naist_base_negative');
+        if (base.value !== s.prompts.baseNegative) base.value = s.prompts.baseNegative;
+        const label = (id: string, key: string) => {
+            const el = $id(r, id);
+            el.setAttribute('data-i18n', key);
+            el.textContent = t(key);
+        };
+        label('naist_prefix_label', style ? 'naist.prompts.stylePrefix' : 'naist.prompts.prefix');
+        label('naist_suffix_label', style ? 'naist.prompts.styleSuffix' : 'naist.prompts.suffix');
+        label('naist_style_negative_label', style ? 'naist.prompts.styleNegative' : 'naist.prompts.commonNegative');
+        label('naist_style_uc_label', style ? 'naist.prompts.styleUc' : 'naist.panel.ucPreset');
+        $id(r, 'naist_style_mode_box').classList.toggle('naist-hidden', !style);
+        $id(r, 'naist_style_actions').classList.toggle('naist-hidden', !style);
+        $id(r, 'naist_style_rename').classList.toggle('disabled', !style);
+        $id(r, 'naist_style_delete').classList.toggle('disabled', !style);
+        $id(r, 'naist_style_status').textContent = style
+            ? t('naist.prompts.styleEditing', { name: style.name })
+            : t('naist.prompts.styleCommon');
+        this.updateStyleStatus();
+    }
+
+    /** The "changed" badge, the buttons, the effective undesired content and the token counter. */
+    private updateStyleStatus(): void {
+        const s = settings();
+        const r = this.root;
+        const style = activeStyle(s);
+        const changed = styleChanged(s, style);
+        $id(r, 'naist_style_dirty').classList.toggle('naist-hidden', !changed);
+        $id(r, 'naist_style_save').classList.toggle('disabled', !changed);
+        $id(r, 'naist_style_revert').classList.toggle('disabled', !changed);
+        const append = Boolean(style) && currentNegativeMode(s) === 'append';
+        $id(r, 'naist_style_effective_box').classList.toggle('naist-hidden', !append);
+        $id(r, 'naist_style_effective').textContent = s.generation.negativePrompt.trim()
+            ? s.generation.negativePrompt
+            : t('naist.prompts.effectiveEmpty');
+        const counter = s.promptTools.counter;
+        this.styleTokens?.element.classList.toggle('naist-hidden', !counter);
+        if (counter) {
+            this.styleTokens?.update({
+                model: s.generation.model,
+                prompt: combinePrefixes(s.prompts.prefix, s.prompts.suffix),
+                characters: [],
+                negative: s.generation.negativePrompt,
+                raw: [s.prompts.prefix, s.prompts.suffix, s.generation.negativePrompt].join('\n'),
+            });
+        }
+    }
+
+    /** A field of the editor changed the current fields: save, show it here and on the Generate tab. */
+    private styleFieldsChanged(): void {
+        saveSettings();
+        this.updateStyleStatus();
+        this.onFields();
+        this.onChange();
+    }
+
+    /** A style replaced the current fields: every tab re-reads its controls. */
+    private styleApplied(): void {
         saveSettings();
         readFromSettings(this.root);
+        this.renderStyles();
         this.onChange();
-        // The UC preset lives on the Generation tab.
+        // The undesired content and the UC preset are on the Generate tab too.
         notifyExternalChange();
+    }
+
+    private async confirm(text: string): Promise<boolean> {
+        const c = ctx();
+        return (await c.callGenericPopup(text, c.POPUP_TYPE.CONFIRM)) === c.POPUP_RESULT.AFFIRMATIVE;
+    }
+
+    private async selectStyle(name: string): Promise<void> {
+        const s = settings();
+        const current = activeStyle(s);
+        // Switching to another style loses unsaved edits; without a style they stay as the common fields.
+        if (
+            name &&
+            current &&
+            current.name !== name &&
+            styleChanged(s, current) &&
+            !(await this.confirm(t('naist.prompts.styleDiscardConfirm', { name: current.name })))
+        ) {
+            $id<HTMLSelectElement>(this.root, 'naist_style').value = current.name;
+            return;
+        }
+        const style = s.prompts.styles.find((x) => x.name === name);
+        if (style) {
+            $id<HTMLTextAreaElement>(this.root, 'naist_style_negative').value = style.negative;
+            applyStyle(s, style);
+        } else {
+            s.prompts.activeStyle = '';
+            s.prompts.negativeMode = 'replace';
+        }
+        this.styleApplied();
     }
 
     private bindStyles(): void {
         const c = ctx();
-        const select = $id<HTMLSelectElement>(this.root, 'naist_style');
-        select.addEventListener('change', () =>
-            this.applyStyle(settings().prompts.styles.find((s) => s.name === select.value)),
-        );
-        $id(this.root, 'naist_style_save').addEventListener('click', async () => {
-            const name = await c.callGenericPopup(
-                t('naist.prompts.styleNamePrompt'),
-                c.POPUP_TYPE.INPUT,
-                settings().prompts.activeStyle,
-            );
-            if (typeof name !== 'string' || !name.trim()) return;
-            const s = settings();
-            const style = styleFromSettings(s, name.trim());
-            const index = s.prompts.styles.findIndex((x) => x.name === style.name);
-            if (index >= 0) s.prompts.styles[index] = style;
-            else s.prompts.styles.push(style);
-            s.prompts.activeStyle = style.name;
-            saveSettings();
-            this.renderStyles();
+        const r = this.root;
+        const select = $id<HTMLSelectElement>(r, 'naist_style');
+        const own = $id<HTMLTextAreaElement>(r, 'naist_style_negative');
+        const mode = $id<HTMLSelectElement>(r, 'naist_style_mode');
+        this.styleTokens = createTokenMeter();
+        $id(r, 'naist_style_effective_box').after(this.styleTokens.element);
+        select.addEventListener('change', () => void this.selectStyle(select.value));
+        own.addEventListener('input', () => {
+            setOwnNegative(settings(), own.value);
+            this.styleFieldsChanged();
         });
-        $id(this.root, 'naist_style_rename').addEventListener('click', async () => {
+        mode.addEventListener('change', () => {
+            setNegativeMode(settings(), negativeMode(mode.value), own.value);
+            this.styleFieldsChanged();
+        });
+        $id<HTMLSelectElement>(r, 'naist_style_uc').addEventListener('change', (event) => {
+            settings().generation.ucPreset = (event.target as HTMLSelectElement).value;
+            this.styleFieldsChanged();
+        });
+        $id<HTMLTextAreaElement>(r, 'naist_base_negative').addEventListener('input', (event) => {
+            setBaseNegative(settings(), (event.target as HTMLTextAreaElement).value, own.value);
+            this.styleFieldsChanged();
+        });
+        $id(r, 'naist_style_save').addEventListener('click', () => {
             const s = settings();
-            const style = s.prompts.styles.find((x) => x.name === s.prompts.activeStyle);
+            const style = activeStyle(s);
+            if (!style || !styleChanged(s, style)) return;
+            const saved = styleFromSettings(s, style.name, own.value);
+            s.prompts.styles = s.prompts.styles.map((x) => (x === style ? saved : x));
+            own.value = saved.negative;
+            applyStyle(s, saved);
+            this.styleApplied();
+        });
+        $id(r, 'naist_style_revert').addEventListener('click', () => {
+            const s = settings();
+            const style = activeStyle(s);
             if (!style) return;
-            const name = await c.callGenericPopup(t('naist.prompts.styleNamePrompt'), c.POPUP_TYPE.INPUT, style.name);
-            if (typeof name !== 'string' || !name.trim() || s.prompts.styles.some((x) => x.name === name.trim()))
+            own.value = style.negative;
+            applyStyle(s, style);
+            this.styleApplied();
+        });
+        $id(r, 'naist_style_new').addEventListener('click', async () => {
+            const input = await c.callGenericPopup(t('naist.prompts.styleNamePrompt'), c.POPUP_TYPE.INPUT, '');
+            const name = typeof input === 'string' ? input.trim() : '';
+            if (!name) return;
+            const s = settings();
+            const existing = findStyle(s, name);
+            if (existing && !(await this.confirm(t('naist.prompts.styleOverwriteConfirm', { name: existing.name }))))
                 return;
-            style.name = name.trim();
-            s.prompts.activeStyle = style.name;
+            const style = styleFromSettings(s, name, own.value);
+            if (existing) s.prompts.styles = s.prompts.styles.map((x) => (x === existing ? style : x));
+            else s.prompts.styles.push(style);
+            own.value = style.negative;
+            applyStyle(s, style);
+            this.styleApplied();
+        });
+        $id(r, 'naist_style_rename').addEventListener('click', async () => {
+            const s = settings();
+            const style = activeStyle(s);
+            if (!style) return;
+            const input = await c.callGenericPopup(t('naist.prompts.styleNamePrompt'), c.POPUP_TYPE.INPUT, style.name);
+            const name = typeof input === 'string' ? input.trim() : '';
+            if (!name || name === style.name) return;
+            const taken = findStyle(s, name);
+            if (taken && taken !== style) {
+                toastr.warning(t('naist.prompts.styleNameTaken', { name: taken.name }));
+                return;
+            }
+            style.name = name;
+            s.prompts.activeStyle = name;
             saveSettings();
             this.renderStyles();
         });
-        $id(this.root, 'naist_style_delete').addEventListener('click', async () => {
+        $id(r, 'naist_style_delete').addEventListener('click', async () => {
             const s = settings();
-            const name = s.prompts.activeStyle;
-            if (!name) return;
-            const ok = await c.callGenericPopup(t('naist.prompts.styleDeleteConfirm', { name }), c.POPUP_TYPE.CONFIRM);
-            if (ok !== c.POPUP_RESULT.AFFIRMATIVE) return;
-            s.prompts.styles = s.prompts.styles.filter((x) => x.name !== name);
+            const style = activeStyle(s);
+            if (!style) return;
+            if (!(await this.confirm(t('naist.prompts.styleDeleteConfirm', { name: style.name })))) return;
+            // The fields stay as they are and become the common ones.
+            s.prompts.styles = s.prompts.styles.filter((x) => x !== style);
             s.prompts.activeStyle = '';
-            saveSettings();
-            this.renderStyles();
+            s.prompts.negativeMode = 'replace';
+            this.styleApplied();
         });
     }
 

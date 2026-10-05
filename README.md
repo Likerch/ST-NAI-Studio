@@ -41,6 +41,14 @@ The built-in Image Generation treats NovelAI as one backend among many. NAI Stud
 - Auto-generation rules (every N messages, keywords, scene change) with a mandatory cooldown — never spends Anlas in free-only mode.
 - `GenerateImage` tool for the LLM with structured arguments: who is in the frame, action, mood, framing, location.
 
+### Styles
+
+- A style keeps a prefix, a suffix, undesired content and a UC preset. Choose one on the **Prompts** tab, with `/nai-style`, by `style` in an image marker or from Maestro.
+- **Style editor** (0.13): the selected style's fields are edited right in the Styles section. Edits apply at once; **Save style** writes them into the style, **Revert** brings the saved ones back, and a "changed" badge shows unsaved edits. **New style** saves the current fields under a new name; rename and delete are next to it. Without a selected style the same fields are the common ones.
+- **Undesired content per style** in one of two modes: it _replaces the undesired content_ (styles saved before 0.13 work this way) or it is _added to the base negative_, a negative common to all styles that you write once; repeated tags are dropped and the order is kept. The editor shows the effective undesired content that goes to NovelAI.
+- The Generate tab shows the same effective undesired content and the style it comes from; editing it there marks the style as changed, so you can save it into the style.
+- A style named in an image marker or by Maestro replaces the active one for that picture only.
+
 ### Pictures in the chat model's replies
 
 - The chat model writes an image marker where a picture fits — `<img data-nai='{"prompt": "...", "caption": "..."}'>` — and the picture appears in its place. The instruction is added to the prompt for you (plain-language or tag descriptions, or your own text), with a configurable number of pictures per reply.
@@ -234,7 +242,7 @@ type Outfit = { name: string; tags: string; looks?: string[] };
   - The DES integration uses a provider's character passport for a new tracker character instead of writing one into the card.
 - **`generatePassport`** (0.12) runs NAI Studio's passport generator for one person, place, item or the world from a description (a lore entry) through the language backend chosen in NAI Studio. Nothing is saved: a full passport with a new id and the given name (the model's name becomes an alias), or `null` with a `requestFailed` event. `language` (`ru`) puts the name as that language spells it into the aliases. Invalid input rejects.
 - **`generateBackground`** (0.12) draws one background for a place.
-  - The prompt has nobody in it (`no humans, scenery`, people in the undesired content): the tags of `passportId` (a location or world passport of the chat or of a provider; else the place name), `tags`, and the time of day and weather as tags (tracker words are read like the DES scene: `evening`, `19:40`, `rain`, Russian too). `style` is a saved style by name, else style tags.
+  - The prompt has nobody in it (`no humans, scenery`, people in the undesired content): the tags of `passportId` (a location or world passport of the chat or of a provider; else the place name), `tags`, and the time of day and weather as tags (tracker words are read like the DES scene: `evening`, `19:40`, `rain`, Russian too). `style` is a saved style by name, which replaces the active style for this picture (its prefix, suffix, UC preset and undesired content, with the base negative in the append mode); a name that is not a saved style is used as style tags.
   - One 16:9 image within the free budget (1344×768) through the normal pipeline and its Anlas guards: in free-only mode a request that would cost Anlas is refused; otherwise the usual cost confirmation.
   - The image goes into SillyTavern's backgrounds library like ST's own upload (`POST /api/backgrounds/upload`, form field `avatar`) as `maestro-<slug>-<timestamp>.png`; resolves `{ file }` with the name the server stored. The background is not set: the caller does that.
   - On failure: `null`, a toast with the reason and a `requestFailed` event (a declined cost confirmation is `aborted`, without a toast).

@@ -29,7 +29,7 @@ describe('settings schema', () => {
 
     it('v10 gives existing settings the undesired content of explicit scenes, a user value stays', () => {
         const old = migrateAndFill({ schemaVersion: 9, scene: { allowNsfw: true } }, merge).settings;
-        expect(old.schemaVersion).toBe(10);
+        expect(old.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
         expect(old.scene.allowNsfw).toBe(true);
         expect(old.scene.explicitNegative).toBe('child, loli, shota, underage');
         const own = migrateAndFill(
@@ -37,6 +37,31 @@ describe('settings schema', () => {
             merge,
         );
         expect(own.settings.scene.explicitNegative).toBe('loli, shota, flat chest');
+    });
+
+    it('v11 adds an empty base negative and the replace mode, stored styles stay as they are', () => {
+        const styles = [
+            { name: 'Ink', prefix: 'ink', suffix: '', negative: 'color', ucPreset: 'light' },
+            { name: 'Old', prefix: 'old', suffix: 'x', negative: 'blurry' },
+        ];
+        const stored = {
+            schemaVersion: 10,
+            generation: { negativePrompt: 'color' },
+            prompts: { prefix: 'ink', styles, activeStyle: 'Ink' },
+        };
+        const { settings, migrated, fromVersion } = migrateAndFill(stored, merge);
+        expect(CURRENT_SCHEMA_VERSION).toBe(11);
+        expect({ migrated, fromVersion }).toEqual({ migrated: true, fromVersion: 10 });
+        expect(settings.prompts).toMatchObject({
+            prefix: 'ink',
+            activeStyle: 'Ink',
+            baseNegative: '',
+            negativeMode: 'replace',
+        });
+        expect(settings.prompts.styles).toEqual(styles);
+        expect(settings.prompts.styles.every((style) => !('negativeMode' in style))).toBe(true);
+        expect(settings.generation.negativePrompt).toBe('color');
+        expect(stored.prompts).not.toHaveProperty('baseNegative');
     });
 
     it('keeps the stored characters array as is (no index-wise merge)', () => {

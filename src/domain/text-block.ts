@@ -111,6 +111,21 @@ export function applyAutoText(prompt: string, characters: TextCharacter[], useCo
     return segments.join(SEGMENT);
 }
 
+/**
+ * Puts tags before the `text:` block of the first segment, which must stay last (everything after
+ * `text:` is drawn as text); null when the prompt has no block there.
+ */
+export function insertBeforeTextBlock(prompt: string, tags: string): string | null {
+    const segments = promptSegments(prompt);
+    const first = segments[0] ?? '';
+    const match = first.match(TEXT_BLOCK);
+    if (match?.index === undefined) return null;
+    const start = match.index + match[0].length - 'text:'.length;
+    const head = first.slice(0, start).replace(/[\s,]+$/, '');
+    segments[0] = `${head ? `${head}, ` : ''}${tags}, ${first.slice(start)}`;
+    return segments.join(SEGMENT);
+}
+
 /** The in-image text of a prompt (after the first `text:` of the first segment), or null. */
 export function textBlockOf(prompt: string): string | null {
     const first = promptSegments(prompt)[0] ?? '';

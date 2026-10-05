@@ -28,7 +28,19 @@ export const STATE_PRESETS: Readonly<Record<string, string>> = {
 export interface Outfit {
     name: string;
     tags: string;
+    /**
+     * Wordings of a scene tracker (DES) known to mean this outfit, any language, newest last (v0.12.1;
+     * Maestro's wardrobe writes them): a current look that says one of them draws this outfit instead.
+     */
+    looks?: string[];
 }
+
+/** At most this many tracker wordings per outfit (the newest are kept). */
+export const MAX_OUTFIT_LOOKS = 12;
+/** A tracker wording longer than this is cut. */
+export const MAX_LOOK_LENGTH = 300;
+/** Word-set similarity (Jaccard) from which a current look counts as a recorded wording. */
+export const LOOK_MATCH_THRESHOLD = 0.75;
 
 export interface PassportState {
     /** Preset id (STATE_PRESETS) or a custom name. */
@@ -100,6 +112,92 @@ function unit(value: unknown, fallback: number): number {
     return Number.isFinite(n) ? Math.min(1, Math.max(0, n)) : fallback;
 }
 
+/** The Cyrillic "yo" and "ye" (U+0451, U+0435): a tracker writes either. */
+const YO = new RegExp(String.fromCharCode(0x451), 'g');
+const YE = String.fromCharCode(0x435);
+
+/**
+ * A wording reduced for comparison: lower case, "yo" as "ye", punctuation (quotes, dashes, Russian
+ * ones too) and runs of spaces as one space.
+ */
+export function lookKey(text: string): string {
+    return text
+        .normalize('NFKC')
+        .toLowerCase()
+        .replace(YO, YE)
+        .replace(/[^\p{L}\p{N}]+/gu, ' ')
+        .trim();
+}
+
+/** Defensive parse of an outfit's tracker wordings: strings, trimmed, cut, no duplicates, the newest kept. */
+export function normalizeOutfitLooks(raw: unknown): string[] {
+    if (!Array.isArray(raw)) return [];
+    const seen = new Set<string>();
+    const result: string[] = [];
+    for (const item of raw) {
+        if (typeof item !== 'string') continue;
+        const look = item.trim().slice(0, MAX_LOOK_LENGTH).trim();
+        const key = lookKey(look);
+        if (!key || seen.has(key)) continue;
+        seen.add(key);
+        result.push(look);
+    }
+    return result.slice(-MAX_OUTFIT_LOOKS);
+}
+
+/** Defensive parse of a stored outfit; `looks` only when there are some. */
+export function normalizeOutfit(raw: unknown): Outfit {
+    const source = obj(raw);
+    const looks = normalizeOutfitLooks(source.looks);
+    return { name: str(source.name).trim(), tags: str(source.tags), ...(looks.length ? { looks } : {}) };
+}
+
+/** Words of a reduced wording (two letters or more). */
+function lookWords(key: string): Set<string> {
+    return new Set(key.split(' ').filter((word) => [...word].length >= 2));
+}
+
+function jaccard(a: ReadonlySet<string>, b: ReadonlySet<string>): number {
+    if (!a.size || !b.size) return 0;
+    let common = 0;
+    for (const item of a) if (b.has(item)) common++;
+    return common / (a.size + b.size - common);
+}
+
+/**
+ * The outfit a current look of a scene tracker stands for (v0.12.1): the outfit whose recorded wordings
+ * (`looks`) say the same, exactly after lookKey first, else by word sets (Jaccard >= 0.75). A tracker
+ * joins several fields into one look ("appearance; outfit; status"), so the look and each of its parts
+ * are compared. '' when none fits, or for a passport that is not a character.
+ */
+export function outfitForLook(passport: Passport | null | undefined, look: string | null | undefined): string {
+    if (!passport || passport.kind !== 'character' || typeof look !== 'string' || !look.trim()) return '';
+    const outfits = passport.outfits.filter((o) => o.name && o.looks?.length);
+    if (!outfits.length) return '';
+    const parts = look.split(/[;\n]+/);
+    const keys = [...new Set([look, ...(parts.length > 1 ? parts : [])].map(lookKey).filter(Boolean))];
+    for (const outfit of outfits) {
+        const recorded = new Set((outfit.looks ?? []).map(lookKey));
+        if (keys.some((key) => recorded.has(key))) return outfit.name;
+    }
+    const words = keys.map(lookWords);
+    let best = '';
+    let bestScore = 0;
+    for (const outfit of outfits) {
+        for (const wording of outfit.looks ?? []) {
+            const recorded = lookWords(lookKey(wording));
+            for (const set of words) {
+                const score = jaccard(set, recorded);
+                if (score >= LOOK_MATCH_THRESHOLD && score > bestScore) {
+                    best = outfit.name;
+                    bestScore = score;
+                }
+            }
+        }
+    }
+    return best;
+}
+
 /** Defensive parse of a stored passport (hand-edited cards, older versions). Null when absent. */
 export function normalizePassport(raw: unknown): Passport | null {
     if (raw === null || raw === undefined || typeof raw !== 'object' || Array.isArray(raw)) return null;
@@ -116,10 +214,7 @@ export function normalizePassport(raw: unknown): Passport | null {
     for (const slot of PASSPORT_SLOTS) result.slots[slot] = str(slots[slot]);
     const nsfw = obj(source.nsfw);
     result.nsfw = { enabled: nsfw.enabled === true, tags: str(nsfw.tags) };
-    result.outfits = (Array.isArray(source.outfits) ? source.outfits : [])
-        .map(obj)
-        .map((o) => ({ name: str(o.name).trim(), tags: str(o.tags) }))
-        .filter((o) => o.name);
+    result.outfits = (Array.isArray(source.outfits) ? source.outfits : []).map(normalizeOutfit).filter((o) => o.name);
     result.activeOutfit = result.outfits.some((o) => o.name === str(source.activeOutfit))
         ? str(source.activeOutfit)
         : '';

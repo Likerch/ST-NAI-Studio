@@ -2,7 +2,7 @@
 // participant's passport, pose, position and personal UC, framing and camera, pair poses, and the
 // resulting base prompt + character prompts. Pure; the composer shows the result for editing.
 import type { ModelCapabilities } from './capabilities';
-import { joinTags, passportTags, splitTags, isFutanari } from './passport';
+import { joinTags, outfitForLook, passportTags, splitTags, isFutanari } from './passport';
 import type { Passport } from './passport';
 import {
     CAMERA_ANGLES,
@@ -30,6 +30,11 @@ export interface SceneCandidate {
     isUser: boolean;
     /** What they wear and how they are right now (a scene tracker); replaces the passport's clothing. */
     currentLook?: string;
+    /**
+     * The tracker's own wording of the current look, before it was converted to tags (v0.12.1): a
+     * passport outfit that recorded it (Outfit.looks) is drawn instead of the look.
+     */
+    currentLookText?: string;
     /** Present in the scene by another extension's scene hint (v0.10). */
     present?: boolean;
 }
@@ -53,6 +58,8 @@ export interface SceneParticipant {
     negative: string;
     /** Current look from a scene tracker (see SceneCandidate.currentLook). */
     currentLook?: string;
+    /** The tracker's wording of that look (see SceneCandidate.currentLookText). */
+    currentLookText?: string;
 }
 
 export interface SceneSpec {
@@ -257,6 +264,7 @@ export function participantFrom(
         outfit: '',
         states: [],
         ...(candidate.currentLook ? { currentLook: candidate.currentLook } : {}),
+        ...(candidate.currentLookText ? { currentLookText: candidate.currentLookText } : {}),
         pose: pose?.id ?? candidate.passport?.pose.preset ?? '',
         poseTags: candidate.passport?.pose.custom ?? '',
         position,
@@ -314,6 +322,15 @@ function futaPairing(participants: readonly SceneParticipant[]): string {
     return [...tags].join(', ');
 }
 
+/**
+ * The passport outfit a participant's current look stands for (v0.12.1): by the tracker's own wording
+ * first, then by the look as given. '' without a passport, a look or a recorded wording that fits.
+ */
+export function lookOutfit(p: Pick<SceneParticipant, 'passport' | 'currentLook' | 'currentLookText'>): string {
+    if (!p.passport) return '';
+    return outfitForLook(p.passport, p.currentLookText) || outfitForLook(p.passport, p.currentLook);
+}
+
 export interface BuiltScene {
     /** Base prompt (count tags, scene, framing). */
     prompt: string;
@@ -347,14 +364,16 @@ export function buildScene(
     const pairTags = pair ? pairPoseTags(pair, caps.v4Prompt && capacity > 0) : null;
 
     const characterTags = kept.map((p) => {
-        // A current look (scene tracker) replaces the clothing of the passport, unless an outfit is chosen.
-        const look = p.outfit ? '' : (p.currentLook ?? '');
+        // A current look (scene tracker) replaces the clothing of the passport, unless an outfit is chosen
+        // or the look is one the passport knows as an outfit (v0.12.1): then that outfit is drawn.
+        const outfit = p.outfit || lookOutfit(p);
+        const look = outfit ? '' : (p.currentLook ?? '');
         // A futanari shows a bulge under clothes in ordinary scenes; explicit ones get the NSFW layer.
         const bulge = p.passport && !options.allowNsfw && isFutanari(p.passport) ? 'bulge' : '';
         const identity = p.passport
             ? joinTags(
                   passportTags(p.passport, {
-                      outfit: p.outfit || undefined,
+                      outfit: outfit || undefined,
                       states: p.states,
                       allowNsfw: options.allowNsfw,
                       withoutClothing: Boolean(look),

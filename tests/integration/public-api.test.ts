@@ -268,6 +268,35 @@ describe('NAI_STUDIO_API', () => {
         await expect(api.savePassport(passport('n1', 'New'), 'card')).rejects.toThrow(/target\.avatar/);
     });
 
+    it('keeps the tracker wordings of outfits (v0.12.1) in chat and card saves', async () => {
+        const bram = api.getPassport('p2')!;
+        bram.outfits[1] = { ...bram.outfits[1]!, looks: ['Стальные латы', '  steel plate armor  ', 42 as never] };
+        await api.savePassport(bram, 'chat');
+        const looks = ['Стальные латы', 'steel plate armor'];
+        expect(api.getPassport('p2')!.outfits[1]).toEqual({ name: 'Armor', tags: 'armor', looks });
+        expect(state.meta).toMatchObject({
+            nai_studio: {
+                passports: {
+                    overrides: {
+                        p2: {
+                            owner: 'Lyra.png',
+                            outfits: [
+                                { name: 'Ballgown', tags: 'ballgown' },
+                                { name: 'Armor', tags: 'armor', looks },
+                            ],
+                        },
+                    },
+                },
+            },
+        });
+        expect(cardPassports(0)[1]!.outfits[1]!.looks).toBeUndefined();
+        // Switching the outfit keeps them; so does a save into the card.
+        await api.setOutfit('p2', 'Armor');
+        expect(api.getPassport('p2')).toMatchObject({ activeOutfit: 'Armor', outfits: [{}, { looks }] });
+        await api.savePassport(api.getPassport('p2')!, 'card');
+        expect(cardPassports(0)[1]!.outfits[1]!.looks).toEqual(looks);
+    });
+
     it('reports images with the passports drawn', () => {
         const listener = vi.fn();
         const off = api.on('imageReady', listener);

@@ -12,6 +12,8 @@
 // Since v0.11 automatic portraits wait for the quality gates' verdict on the reply of the tracker.
 // Since v0.12 a character a passport provider knows (Maestro's lore entry) uses that passport instead of
 // getting a new one written into the card; the cards and the chat still win.
+// Since v0.12.1 a tracker look that a passport outfit recorded (Outfit.looks, Maestro's wardrobe) draws
+// that outfit instead of the look.
 import { ctx } from '../../core/context';
 import { t } from '../../core/i18n';
 import { log } from '../../core/logger';
@@ -23,6 +25,7 @@ import {
     joinTags,
     markerDimensions,
     mentionIndex,
+    outfitForLook,
     passportTags,
     resolveChatPassport,
     trackerFromSwipe,
@@ -312,7 +315,7 @@ export class DesIntegration {
                     fallbackPrompt: '',
                     fallbackNegative: '',
                     isUser: false,
-                    ...(look ? { currentLook: look } : {}),
+                    ...(look ? { currentLook: look, currentLookText: ch.look.trim() } : {}),
                 };
             }),
         );
@@ -509,12 +512,20 @@ export class DesIntegration {
         const name = this.lines.get(normalizeLine(prompt));
         if (!name) return null;
         const found = await this.findPassport(name, { provided: {} });
-        const look = await this.lookTags(
-            this.latestTracker()?.characters.find((ch) => sameName(ch.name, name))?.look ?? '',
-        );
+        const raw = this.latestTracker()?.characters.find((ch) => sameName(ch.name, name))?.look ?? '';
+        // A look the passport knows as an outfit draws that outfit; any other look replaces the clothing.
+        let outfit = found ? outfitForLook(found.passport, raw) : '';
+        let look = outfit ? '' : await this.lookTags(raw);
+        if (found && !outfit && look !== raw) {
+            outfit = outfitForLook(found.passport, look);
+            if (outfit) look = '';
+        }
         const s = settings();
         const identity = found
-            ? passportTags(found.passport, { allowNsfw: false, withoutClothing: Boolean(look) })
+            ? passportTags(
+                  found.passport,
+                  outfit ? { allowNsfw: false, outfit } : { allowNsfw: false, withoutClothing: Boolean(look) },
+              )
             : '';
         const size = markerDimensions('portrait', undefined, s.anlas.freeOnly);
         return {

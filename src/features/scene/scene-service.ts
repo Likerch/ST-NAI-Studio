@@ -125,7 +125,11 @@ async function withProvided(base: SceneCandidate[], query: SceneQuery): Promise<
     for (const person of extra) {
         const known = base.find((c) => !c.isUser && sameCandidate(c, person));
         if (known) {
-            if (person.currentLook) known.currentLook = person.currentLook;
+            if (person.currentLook) {
+                known.currentLook = person.currentLook;
+                if (person.currentLookText) known.currentLookText = person.currentLookText;
+                else delete known.currentLookText;
+            }
             known.aliases = [...new Set([...known.aliases, ...person.aliases])];
         } else base.push(person);
     }
@@ -474,7 +478,10 @@ export class SceneService {
             const pose = detectPose(`${ch.pose ?? ''} ${ch.action ?? ''}`, library);
             const participant = participantFrom(candidate, positions[i] ?? { x: 0.5, y: 0.5 }, pose);
             // What a known character wears in this picture replaces the passport's clothes.
-            if (ch.look?.trim()) participant.currentLook = ch.look.trim();
+            if (ch.look?.trim()) {
+                participant.currentLook = ch.look.trim();
+                delete participant.currentLookText;
+            }
             const extra = [pose ? '' : (ch.pose ?? ''), ch.action ?? ''].filter((x) => x.trim()).join(', ');
             if (extra) participant.poseTags = [participant.poseTags, extra].filter((x) => x.trim()).join(', ');
             return participant;

@@ -299,6 +299,37 @@ describe('DesIntegration', () => {
         expect(await state.hook('some other prompt')).toBeNull();
     });
 
+    it('draws the outfit a tracker look stands for (v0.12.1), any other look over the clothing', async () => {
+        const des = new DesIntegration(markers());
+        await des.start();
+        const passport = defaultPassport('character', 'Mira');
+        passport.slots.hair = 'white hair';
+        passport.slots.clothing = 'blue cloak';
+        passport.outfits = [{ name: 'Gala', tags: 'red evening gown', looks: ['Алое вечернее платье'] }];
+        state.cardPassports = [passport];
+        reply(tracker([{ name: 'Mira', details: { appearance: 'алое вечернее платье!' } }]));
+        await inner(des).handleTracker(false);
+        expect(await state.provider.candidates({ messageId: 0 })).toEqual([
+            expect.objectContaining({ currentLook: 'converted(21)', currentLookText: 'алое вечернее платье!' }),
+        ]);
+        expect((await state.hook('white hair, blue cloak'))?.scene).toBe(
+            'white hair, red evening gown, portrait, upper body, looking at viewer',
+        );
+        // A look no outfit recorded replaces the clothing, converted as before.
+        state.chat[0]!.mes = tracker([{ name: 'Mira', details: { appearance: 'серый плащ' } }]);
+        await inner(des).handleTracker(false);
+        expect((await state.hook('white hair, blue cloak'))?.scene).toBe(
+            'white hair, converted(10), portrait, upper body, looking at viewer',
+        );
+        // An English look is compared as written.
+        passport.outfits[0]!.looks = ['scarlet evening gown'];
+        state.chat[0]!.mes = tracker([{ name: 'Mira', details: { appearance: 'Scarlet evening gown.' } }]);
+        await inner(des).handleTracker(false);
+        expect((await state.hook('white hair, blue cloak'))?.scene).toBe(
+            'white hair, red evening gown, portrait, upper body, looking at viewer',
+        );
+    });
+
     it('holds early start and waits for the tracker in separate mode', async () => {
         const gate = vi.fn();
         const des = new DesIntegration({ setGate: gate, illustrate: vi.fn() } as never);

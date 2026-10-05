@@ -4326,6 +4326,82 @@ function unit(value, fallback) {
 	const n = Number(value);
 	return Number.isFinite(n) ? Math.min(1, Math.max(0, n)) : fallback;
 }
+/** The Cyrillic "yo" and "ye" (U+0451, U+0435): a tracker writes either. */
+var YO = new RegExp(String.fromCharCode(1105), "g");
+var YE = String.fromCharCode(1077);
+/**
+* A wording reduced for comparison: lower case, "yo" as "ye", punctuation (quotes, dashes, Russian
+* ones too) and runs of spaces as one space.
+*/
+function lookKey(text) {
+	return text.normalize("NFKC").toLowerCase().replace(YO, YE).replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+}
+/** Defensive parse of an outfit's tracker wordings: strings, trimmed, cut, no duplicates, the newest kept. */
+function normalizeOutfitLooks(raw) {
+	if (!Array.isArray(raw)) return [];
+	const seen = /* @__PURE__ */ new Set();
+	const result = [];
+	for (const item of raw) {
+		if (typeof item !== "string") continue;
+		const look = item.trim().slice(0, 300).trim();
+		const key = lookKey(look);
+		if (!key || seen.has(key)) continue;
+		seen.add(key);
+		result.push(look);
+	}
+	return result.slice(-12);
+}
+/** Defensive parse of a stored outfit; `looks` only when there are some. */
+function normalizeOutfit(raw) {
+	const source = obj$1(raw);
+	const looks = normalizeOutfitLooks(source.looks);
+	return {
+		name: str$3(source.name).trim(),
+		tags: str$3(source.tags),
+		...looks.length ? { looks } : {}
+	};
+}
+/** Words of a reduced wording (two letters or more). */
+function lookWords(key) {
+	return new Set(key.split(" ").filter((word) => [...word].length >= 2));
+}
+function jaccard(a, b) {
+	if (!a.size || !b.size) return 0;
+	let common = 0;
+	for (const item of a) if (b.has(item)) common++;
+	return common / (a.size + b.size - common);
+}
+/**
+* The outfit a current look of a scene tracker stands for (v0.12.1): the outfit whose recorded wordings
+* (`looks`) say the same, exactly after lookKey first, else by word sets (Jaccard >= 0.75). A tracker
+* joins several fields into one look ("appearance; outfit; status"), so the look and each of its parts
+* are compared. '' when none fits, or for a passport that is not a character.
+*/
+function outfitForLook(passport, look) {
+	if (!passport || passport.kind !== "character" || typeof look !== "string" || !look.trim()) return "";
+	const outfits = passport.outfits.filter((o) => o.name && o.looks?.length);
+	if (!outfits.length) return "";
+	const parts = look.split(/[;\n]+/);
+	const keys = [...new Set([look, ...parts.length > 1 ? parts : []].map(lookKey).filter(Boolean))];
+	for (const outfit of outfits) {
+		const recorded = new Set((outfit.looks ?? []).map(lookKey));
+		if (keys.some((key) => recorded.has(key))) return outfit.name;
+	}
+	const words = keys.map(lookWords);
+	let best = "";
+	let bestScore = 0;
+	for (const outfit of outfits) for (const wording of outfit.looks ?? []) {
+		const recorded = lookWords(lookKey(wording));
+		for (const set of words) {
+			const score = jaccard(set, recorded);
+			if (score >= .75 && score > bestScore) {
+				best = outfit.name;
+				bestScore = score;
+			}
+		}
+	}
+	return best;
+}
 /** Defensive parse of a stored passport (hand-edited cards, older versions). Null when absent. */
 function normalizePassport(raw) {
 	if (raw === null || raw === void 0 || typeof raw !== "object" || Array.isArray(raw)) return null;
@@ -4340,10 +4416,7 @@ function normalizePassport(raw) {
 		enabled: nsfw.enabled === true,
 		tags: str$3(nsfw.tags)
 	};
-	result.outfits = (Array.isArray(source.outfits) ? source.outfits : []).map(obj$1).map((o) => ({
-		name: str$3(o.name).trim(),
-		tags: str$3(o.tags)
-	})).filter((o) => o.name);
+	result.outfits = (Array.isArray(source.outfits) ? source.outfits : []).map(normalizeOutfit).filter((o) => o.name);
 	result.activeOutfit = result.outfits.some((o) => o.name === str$3(source.activeOutfit)) ? str$3(source.activeOutfit) : "";
 	if (Array.isArray(source.states)) {
 		const stored = source.states.map(obj$1).map((s) => ({
@@ -4467,7 +4540,12 @@ function obj(value) {
 }
 var isString = (value) => typeof value === "string";
 var sameStrings = (a, b) => a.length === b.length && a.every((item, i) => item === b[i]);
-var sameOutfits = (a, b) => a.length === b.length && a.every((o, i) => o.name === b[i]?.name && o.tags === b[i]?.tags);
+var sameOutfits = (a, b) => a.length === b.length && a.every((o, i) => o.name === b[i]?.name && o.tags === b[i]?.tags && sameStrings(o.looks ?? [], b[i]?.looks ?? []));
+/** A copy of an outfit (its tracker wordings too, v0.12.1). */
+var outfitCopy = (o) => ({
+	...o,
+	...o.looks ? { looks: [...o.looks] } : {}
+});
 var samePosition = (a, b) => a === null || b === null ? a === b : a.x === b.x && a.y === b.y;
 /** The fields of `edited` that differ from `base` (an empty object when nothing changed). */
 function passportDiff(base, edited) {
@@ -4483,7 +4561,7 @@ function passportDiff(base, edited) {
 	if (edited.nsfw.enabled !== base.nsfw.enabled) nsfw.enabled = edited.nsfw.enabled;
 	if (edited.nsfw.tags !== base.nsfw.tags) nsfw.tags = edited.nsfw.tags;
 	if (Object.keys(nsfw).length) diff.nsfw = nsfw;
-	if (!sameOutfits(edited.outfits, base.outfits)) diff.outfits = edited.outfits.map((o) => ({ ...o }));
+	if (!sameOutfits(edited.outfits, base.outfits)) diff.outfits = edited.outfits.map(outfitCopy);
 	if (edited.activeOutfit !== base.activeOutfit) diff.activeOutfit = edited.activeOutfit;
 	const states = edited.states.filter((state) => {
 		const original = base.states.find((s) => s.id === state.id);
@@ -4552,10 +4630,7 @@ function normalizeOverride(raw) {
 	if (typeof rawNsfw.enabled === "boolean") nsfw.enabled = rawNsfw.enabled;
 	if (isString(rawNsfw.tags)) nsfw.tags = rawNsfw.tags;
 	if (Object.keys(nsfw).length) result.nsfw = nsfw;
-	if (Array.isArray(source.outfits)) result.outfits = source.outfits.map(obj).filter((o) => isString(o.name) && o.name.trim()).map((o) => ({
-		name: String(o.name).trim(),
-		tags: isString(o.tags) ? o.tags : ""
-	}));
+	if (Array.isArray(source.outfits)) result.outfits = source.outfits.map(normalizeOutfit).filter((o) => o.name);
 	if (isString(source.activeOutfit)) result.activeOutfit = source.activeOutfit;
 	if (Array.isArray(source.states)) {
 		const states = source.states.map(obj).filter((s) => isString(s.id) && s.id.trim()).map((s) => ({
@@ -5482,6 +5557,7 @@ function participantFrom(candidate, position, pose) {
 		outfit: "",
 		states: [],
 		...candidate.currentLook ? { currentLook: candidate.currentLook } : {},
+		...candidate.currentLookText ? { currentLookText: candidate.currentLookText } : {},
 		pose: pose?.id ?? candidate.passport?.pose.preset ?? "",
 		poseTags: candidate.passport?.pose.custom ?? "",
 		position,
@@ -5537,6 +5613,14 @@ function futaPairing(participants) {
 	}
 	return [...tags].join(", ");
 }
+/**
+* The passport outfit a participant's current look stands for (v0.12.1): by the tracker's own wording
+* first, then by the look as given. '' without a passport, a look or a recorded wording that fits.
+*/
+function lookOutfit(p) {
+	if (!p.passport) return "";
+	return outfitForLook(p.passport, p.currentLookText) || outfitForLook(p.passport, p.currentLook);
+}
 /** Turns the composer state into the base prompt and character slots for the request. */
 function buildScene(spec, caps, options) {
 	const active = spec.participants.filter((p) => p.enabled);
@@ -5547,10 +5631,11 @@ function buildScene(spec, caps, options) {
 	const pair = spec.pair ? findPairPose(spec.pair.pose) : void 0;
 	const pairTags = pair ? pairPoseTags(pair, caps.v4Prompt && capacity > 0) : null;
 	const characterTags = kept.map((p) => {
-		const look = p.outfit ? "" : p.currentLook ?? "";
+		const outfit = p.outfit || lookOutfit(p);
+		const look = outfit ? "" : p.currentLook ?? "";
 		const bulge = p.passport && !options.allowNsfw && isFutanari(p.passport) ? "bulge" : "";
 		const identity = p.passport ? joinTags(passportTags(p.passport, {
-			outfit: p.outfit || void 0,
+			outfit: outfit || void 0,
 			states: p.states,
 			allowNsfw: options.allowNsfw,
 			withoutClothing: Boolean(look)
@@ -11971,7 +12056,11 @@ async function withProvided(base, query) {
 	for (const person of extra) {
 		const known = base.find((c) => !c.isUser && sameCandidate(c, person));
 		if (known) {
-			if (person.currentLook) known.currentLook = person.currentLook;
+			if (person.currentLook) {
+				known.currentLook = person.currentLook;
+				if (person.currentLookText) known.currentLookText = person.currentLookText;
+				else delete known.currentLookText;
+			}
 			known.aliases = [.../* @__PURE__ */ new Set([...known.aliases, ...person.aliases])];
 		} else base.push(person);
 	}
@@ -12265,7 +12354,10 @@ var SceneService = class {
 				x: .5,
 				y: .5
 			}, pose);
-			if (ch.look?.trim()) participant.currentLook = ch.look.trim();
+			if (ch.look?.trim()) {
+				participant.currentLook = ch.look.trim();
+				delete participant.currentLookText;
+			}
 			const extra = [pose ? "" : ch.pose ?? "", ch.action ?? ""].filter((x) => x.trim()).join(", ");
 			if (extra) participant.poseTags = [participant.poseTags, extra].filter((x) => x.trim()).join(", ");
 			return participant;
@@ -15524,10 +15616,14 @@ async function openEditor(name, drafts, initialScope, scopes, options) {
 	const readOutfits = () => {
 		const box = outfitsBox();
 		if (!box) return;
-		passport.outfits = [...box.querySelectorAll(".naist-outfit")].map((row) => ({
-			name: row.querySelector(".naist-outfit-name")?.value.trim() ?? "",
-			tags: row.querySelector(".naist-outfit-tags")?.value ?? ""
-		}));
+		passport.outfits = [...box.querySelectorAll(".naist-outfit")].map((row) => {
+			const looks = passport.outfits[Number(row.dataset.index)]?.looks;
+			return {
+				name: row.querySelector(".naist-outfit-name")?.value.trim() ?? "",
+				tags: row.querySelector(".naist-outfit-tags")?.value ?? "",
+				...looks?.length ? { looks: [...looks] } : {}
+			};
+		});
 	};
 	const readStates = () => {
 		statesBox()?.querySelectorAll(".naist-state").forEach((row) => {
@@ -17290,7 +17386,10 @@ var DesIntegration = class {
 				fallbackPrompt: "",
 				fallbackNegative: "",
 				isUser: false,
-				...look ? { currentLook: look } : {}
+				...look ? {
+					currentLook: look,
+					currentLookText: ch.look.trim()
+				} : {}
 			};
 		}));
 	}
@@ -17470,9 +17569,18 @@ var DesIntegration = class {
 		const name = this.lines.get(normalizeLine(prompt));
 		if (!name) return null;
 		const found = await this.findPassport(name, { provided: {} });
-		const look = await this.lookTags(this.latestTracker()?.characters.find((ch) => sameName(ch.name, name))?.look ?? "");
+		const raw = this.latestTracker()?.characters.find((ch) => sameName(ch.name, name))?.look ?? "";
+		let outfit = found ? outfitForLook(found.passport, raw) : "";
+		let look = outfit ? "" : await this.lookTags(raw);
+		if (found && !outfit && look !== raw) {
+			outfit = outfitForLook(found.passport, look);
+			if (outfit) look = "";
+		}
 		const s = settings();
-		const identity = found ? passportTags(found.passport, {
+		const identity = found ? passportTags(found.passport, outfit ? {
+			allowNsfw: false,
+			outfit
+		} : {
 			allowNsfw: false,
 			withoutClothing: Boolean(look)
 		}) : "";
@@ -18383,7 +18491,7 @@ var ComicService = class {
 };
 //#endregion
 //#region package.json
-var version = "0.12.0";
+var version = "0.12.1";
 //#endregion
 //#region src/features/settings-io/settings-io.ts
 async function exportSettingsFile(includeImages) {

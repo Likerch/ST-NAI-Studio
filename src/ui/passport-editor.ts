@@ -196,10 +196,15 @@ async function openEditor(
     const readOutfits = () => {
         const box = outfitsBox();
         if (!box) return;
-        passport.outfits = [...box.querySelectorAll<HTMLElement>('.naist-outfit')].map((row) => ({
-            name: row.querySelector<HTMLInputElement>('.naist-outfit-name')?.value.trim() ?? '',
-            tags: row.querySelector<HTMLInputElement>('.naist-outfit-tags')?.value ?? '',
-        }));
+        passport.outfits = [...box.querySelectorAll<HTMLElement>('.naist-outfit')].map((row) => {
+            // Tracker wordings of an outfit (v0.12.1) are not shown, but stay with their row.
+            const looks = passport.outfits[Number(row.dataset.index)]?.looks;
+            return {
+                name: row.querySelector<HTMLInputElement>('.naist-outfit-name')?.value.trim() ?? '',
+                tags: row.querySelector<HTMLInputElement>('.naist-outfit-tags')?.value ?? '',
+                ...(looks?.length ? { looks: [...looks] } : {}),
+            };
+        });
     };
     const readStates = () => {
         statesBox()

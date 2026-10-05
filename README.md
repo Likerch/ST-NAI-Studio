@@ -203,6 +203,8 @@ interface NaiStudioApi {
 }
 
 type SceneHint = { locationId?: string; locationName?: string; tags?: string; characters?: string[] };
+// A passport outfit; `looks` since 0.12.1.
+type Outfit = { name: string; tags: string; looks?: string[] };
 ```
 
 - **Passports** are always returned as the current chat sees them (chat overrides applied), as copies.
@@ -210,6 +212,7 @@ type SceneHint = { locationId?: string; locationName?: string; tags?: string; ch
   - `savePassport(p, 'chat')` keeps only the fields that differ from the card in the chat metadata (`chat_metadata.nai_studio.passports`). A passport unknown to the cards becomes a passport of the chat itself.
   - `setOutfit` / `setState` default to `'chat'`.
   - `clearChatOverride` brings the card value back.
+  - Outfits may carry `looks` (0.12.1): DES tracker wordings known to mean that outfit, any language (strings, up to 12, newest last, each up to 300 characters; Maestro's wardrobe writes them). When a character's current tracker look says one of them, NAI Studio draws that outfit's tags instead of the look: in scenes, image markers and DES portraits. A wording matches exactly after normalisation (case, punctuation, Russian quotes and dashes, ё as е) or by its words (Jaccard 0.75 or more, words of two letters or more); a look joined from several tracker fields is compared part by part. An outfit chosen in the composer still wins. NAI Studio's passport editor does not show `looks` but keeps them; chat overrides carry them.
 - **Events.**
   - `passportsSaved` `{ ids, scope, avatar?, persona? }` follows every passport save, including the ones made in NAI Studio's own UI.
   - `imageReady` `{ messageIndex, kind, passportIds }` follows every image attached to a message once the chat is saved.

@@ -267,6 +267,41 @@ describe('scene providers', () => {
         expect(first).not.toHaveBeenCalled();
     });
 
+    it('draw the outfit a tracker look stands for (v0.12.1); a marker look stays its own', async () => {
+        const p = lyra();
+        p.outfits[0]!.looks = ['Голубое бальное платье'];
+        state.characters = [card('Lyra', [p])];
+        scenes.setSceneProvider({
+            candidates: async () => [
+                {
+                    key: 'des:Lyra',
+                    name: 'Lyra',
+                    aliases: [],
+                    passport: null,
+                    fallbackPrompt: '',
+                    fallbackNegative: '',
+                    isUser: false,
+                    currentLook: 'pale blue dress',
+                    currentLookText: 'голубое бальное платье',
+                },
+            ],
+            setting: async () => ({ tags: [], location: '' }),
+        });
+        const service = new scenes.SceneService({} as never, {} as never);
+        const { spec } = await service.autoSpec('Lyra dances.');
+        expect(spec.participants[0]).toMatchObject({
+            currentLook: 'pale blue dress',
+            currentLookText: 'голубое бальное платье',
+        });
+        const prompt = service.build(spec).characters[0]!.prompt;
+        expect(prompt).toContain('blue ballgown');
+        expect(prompt).not.toContain('pale blue dress');
+        // The look a marker gives replaces the tracker's, wording and all.
+        const marker = await service.markerScene('ballroom', [{ name: 'Lyra', look: 'red cape' }]);
+        expect(marker!.characters[0]!.prompt).toContain('red cape');
+        expect(marker!.characters[0]!.prompt).not.toContain('ballgown');
+    });
+
     it('mark the people present, and the automatic scene falls back to them', async () => {
         const bram = defaultPassport('character', 'Bram', 'c9');
         bram.slots.base = '1boy';

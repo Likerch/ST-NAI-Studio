@@ -1,7 +1,7 @@
 // Chat-level passports (v0.10): a chat may change the passport of a card or persona without touching
 // the card (an override keeps only the fields that differ, so later card edits of other fields still
 // show through), and may have passports of its own. Stored in chat_metadata.nai_studio.passports. Pure.
-import { normalizePassport, normalizePassportList, PASSPORT_KINDS, PASSPORT_SLOTS } from './passport';
+import { normalizeOutfit, normalizePassport, normalizePassportList, PASSPORT_KINDS, PASSPORT_SLOTS } from './passport';
 import type { Outfit, Passport, PassportKind, PassportSlot, PassportState } from './passport';
 
 /** The fields of a passport a chat changes; absent fields come from the card. */
@@ -49,7 +49,11 @@ const sameStrings = (a: readonly string[], b: readonly string[]) =>
     a.length === b.length && a.every((item, i) => item === b[i]);
 
 const sameOutfits = (a: readonly Outfit[], b: readonly Outfit[]) =>
-    a.length === b.length && a.every((o, i) => o.name === b[i]?.name && o.tags === b[i]?.tags);
+    a.length === b.length &&
+    a.every((o, i) => o.name === b[i]?.name && o.tags === b[i]?.tags && sameStrings(o.looks ?? [], b[i]?.looks ?? []));
+
+/** A copy of an outfit (its tracker wordings too, v0.12.1). */
+const outfitCopy = (o: Outfit): Outfit => ({ ...o, ...(o.looks ? { looks: [...o.looks] } : {}) });
 
 const samePosition = (a: Passport['position'], b: Passport['position']) =>
     a === null || b === null ? a === b : a.x === b.x && a.y === b.y;
@@ -68,7 +72,7 @@ export function passportDiff(base: Passport, edited: Passport): PassportOverride
     if (edited.nsfw.enabled !== base.nsfw.enabled) nsfw.enabled = edited.nsfw.enabled;
     if (edited.nsfw.tags !== base.nsfw.tags) nsfw.tags = edited.nsfw.tags;
     if (Object.keys(nsfw).length) diff.nsfw = nsfw;
-    if (!sameOutfits(edited.outfits, base.outfits)) diff.outfits = edited.outfits.map((o) => ({ ...o }));
+    if (!sameOutfits(edited.outfits, base.outfits)) diff.outfits = edited.outfits.map(outfitCopy);
     if (edited.activeOutfit !== base.activeOutfit) diff.activeOutfit = edited.activeOutfit;
     const states = edited.states.filter((state) => {
         const original = base.states.find((s) => s.id === state.id);
@@ -136,11 +140,7 @@ export function normalizeOverride(raw: unknown): PassportOverride | null {
     if (typeof rawNsfw.enabled === 'boolean') nsfw.enabled = rawNsfw.enabled;
     if (isString(rawNsfw.tags)) nsfw.tags = rawNsfw.tags;
     if (Object.keys(nsfw).length) result.nsfw = nsfw;
-    if (Array.isArray(source.outfits))
-        result.outfits = source.outfits
-            .map(obj)
-            .filter((o) => isString(o.name) && o.name.trim())
-            .map((o) => ({ name: String(o.name).trim(), tags: isString(o.tags) ? o.tags : '' }));
+    if (Array.isArray(source.outfits)) result.outfits = source.outfits.map(normalizeOutfit).filter((o) => o.name);
     if (isString(source.activeOutfit)) result.activeOutfit = source.activeOutfit;
     if (Array.isArray(source.states)) {
         const states = source.states

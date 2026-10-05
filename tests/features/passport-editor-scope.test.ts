@@ -55,6 +55,26 @@ describe('passport editor scopes', () => {
         expect(await editPassport('Lyra', lyra('x'))).toBeNull();
     });
 
+    it('keeps the tracker wordings of outfits (v0.12.1) it does not show', async () => {
+        state.script = (root) => {
+            // Remove the first outfit, rename the second, add one: the wordings stay with their outfit.
+            root.querySelector<HTMLElement>('.naist-outfit-remove')!.click();
+            root.querySelector<HTMLInputElement>('.naist-outfit-name')!.value = 'Plate armor';
+            root.querySelector<HTMLElement>('.naist-outfit-add')!.click();
+            return 1;
+        };
+        const p = lyra('silver hair');
+        p.outfits = [
+            { name: 'Robe', tags: 'robe' },
+            { name: 'Armor', tags: 'armor', looks: ['стальные латы'] },
+        ];
+        const edited = await editPassport('Lyra', p);
+        expect(edited?.outfits).toEqual([
+            { name: 'Plate armor', tags: 'armor', looks: ['стальные латы'] },
+            { name: 'naist.passport.outfitDefault', tags: '' },
+        ]);
+    });
+
     it('switches between the card and the chat view, each with its own draft', async () => {
         state.script = (root) => {
             // The chat already changes the passport: it opens on the chat view.

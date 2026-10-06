@@ -578,3 +578,182 @@ describe('NAI_STUDIO_API.generateBackground (v0.12)', () => {
         expect(toastr.error).toHaveBeenCalledTimes(1);
     });
 });
+
+describe('NAI_STUDIO_API: excluded passports and DES portraits (v0.14)', () => {
+    const scenes = () => import('../../src/features/scene/scene-service');
+    const store = () => import('../../src/features/characters/passport-store');
+
+    it('names its features and keeps them frozen', () => {
+        expect(api.features).toEqual(['excludePassport', 'requestDesPortrait', 'chatNpcPassports', 'chatPortraits']);
+        expect(Object.isFrozen(api.features)).toBe(true);
+        for (const method of ['setPassportExcluded', 'isPassportExcluded', 'requestDesPortrait'] as const)
+            expect(typeof api[method]).toBe('function');
+    });
+
+    it('excludes a passport from the current chat only; every reader of the chat leaves it out', async () => {
+        const changed = vi.fn();
+        api.on('passportExcludedChanged', changed);
+        const lore = passport('lore-x', 'Ophelia');
+        const off = api.registerPassportProvider({ id: 'maestro', passports: () => [lore] });
+        try {
+            await api.setPassportExcluded('p2', true);
+            await api.setPassportExcluded('p2', true);
+            expect(changed).toHaveBeenCalledTimes(1);
+            expect(changed).toHaveBeenCalledWith({ id: 'p2', excluded: true });
+            expect(api.isPassportExcluded('p2')).toBe(true);
+            expect(state.meta).toMatchObject({
+                nai_studio: { passports: { overrides: { p2: { owner: 'Lyra.png', excluded: true } } } },
+            });
+            // The card is not touched.
+            expect(cardPassports(0).map((p) => p.id)).toEqual(['p1', 'p2']);
+            expect(api.passports().map((p) => p.id)).toEqual(['p1', 'me']);
+            expect(api.passports({ includeExcluded: true }).map((p) => p.id)).toEqual(['p1', 'p2', 'me']);
+            expect(api.passports({ avatar: 'Lyra.png' }).map((p) => p.id)).toEqual(['p1']);
+            expect(api.getPassport('p2')).toBeNull();
+            expect(api.getPassport('p2', { includeExcluded: true })?.name).toBe('Bram');
+            // Scenes and markers: no Bram, and no lore passport the chat excludes.
+            const { sceneCandidates } = await scenes();
+            expect((await sceneCandidates()).map((c) => c.name)).toEqual(['Lyra', 'Player', 'Ophelia']);
+            await api.setPassportExcluded('lore-x', true);
+            expect(await providedPassports({ messageId: 0 })).toEqual([]);
+            expect((await sceneCandidates()).map((c) => c.name)).toEqual(['Lyra', 'Player']);
+            // The persona and a passport of the chat itself.
+            await api.savePassport(passport('own', 'Guard'), 'chat');
+            await api.setPassportExcluded('me', true);
+            await api.setPassportExcluded('own', true);
+            expect(api.passports().map((p) => p.id)).toEqual(['p1']);
+            expect(api.passports({ chat: true, includeExcluded: true }).map((p) => p.id)).toEqual(['own']);
+            const people = await sceneCandidates();
+            expect(people.find((c) => c.isUser)?.passport).toBeNull();
+            expect(people.map((c) => c.name)).not.toContain('Guard');
+            // Used again.
+            await api.setPassportExcluded('p2', false);
+            expect(changed).toHaveBeenLastCalledWith({ id: 'p2', excluded: false });
+            expect(api.getPassport('p2')?.name).toBe('Bram');
+            expect(state.meta).toMatchObject({ nai_studio: { passports: { overrides: { me: { excluded: true } } } } });
+            expect(
+                (state.meta.nai_studio as { passports: { overrides: object } }).passports.overrides,
+            ).not.toHaveProperty('p2');
+            // Another chat does not exclude it.
+            state.meta = {};
+            state.chatId = 'chat-2';
+            expect(api.isPassportExcluded('me')).toBe(false);
+            expect(api.passports().map((p) => p.id)).toEqual(['p1', 'p2', 'me']);
+        } finally {
+            off();
+        }
+    });
+
+    it("keeps the card's own character in scenes, without a passport, when its passport is excluded", async () => {
+        const { sceneCandidates } = await scenes();
+        await api.setPassportExcluded('p1', true);
+        const people = (await sceneCandidates()).filter((c) => !c.isUser);
+        expect(people.map((c) => [c.key, c.name, c.passport?.id ?? null])).toEqual([
+            ['Lyra', 'Lyra', null],
+            ['Lyra#p2', 'Bram', 'p2'],
+        ]);
+    });
+
+    it('leaves an excluded place out of the setting and a background', async () => {
+        state.characters = [card('Lyra', [passport('p1'), passport('loc1', 'Old Mill', 'location')])];
+        const { sceneSetting } = await scenes();
+        expect((await sceneSetting()).locations.map((l) => l.name)).toEqual(['Old Mill']);
+        await api.setPassportExcluded('loc1', true);
+        expect((await sceneSetting()).locations).toEqual([]);
+    });
+
+    it('keeps the exclusion through chat saves and when the changes of the chat are dropped', async () => {
+        await api.setPassportExcluded('p2', true);
+        await api.setOutfit('p2', 'Armor');
+        expect(state.meta).toMatchObject({
+            nai_studio: {
+                passports: { overrides: { p2: { owner: 'Lyra.png', activeOutfit: 'Armor', excluded: true } } },
+            },
+        });
+        // An edit that ends up like the card keeps only the flag.
+        await api.setOutfit('p2', '');
+        expect(state.meta).toMatchObject({
+            nai_studio: { passports: { overrides: { p2: { owner: 'Lyra.png', excluded: true } } } },
+        });
+        await api.setOutfit('p2', 'Armor');
+        await api.clearChatOverride('p2');
+        expect(api.isPassportExcluded('p2')).toBe(true);
+        expect(api.getPassport('p2', { includeExcluded: true })?.activeOutfit).toBe('');
+        // Only the flag left: nothing of the passport to drop.
+        const { clearChatOverride, hasChatOverride } = await store();
+        expect(await clearChatOverride('p2')).toBe(false);
+        expect(hasChatOverride('p2', 'Lyra.png')).toBe(false);
+    });
+
+    it('refuses an exclusion it cannot store', async () => {
+        await expect(api.setPassportExcluded('', true)).rejects.toThrow(/passport id/);
+        await expect(api.setPassportExcluded('p2', 'yes' as never)).rejects.toThrow(/boolean/);
+        state.chatId = undefined;
+        await expect(api.setPassportExcluded('p2', true)).rejects.toThrow(/no chat/);
+        expect(api.isPassportExcluded('p2')).toBe(false);
+    });
+
+    it('moves a passport of the chat into the card, keeping its id and origin', async () => {
+        const saved = vi.fn();
+        api.on('passportsSaved', saved);
+        const npc = { ...passport('npc1', 'Ophelia'), origin: 'auto-des' as const };
+        const { defaultCardForChat, moveChatPassportToCard } = await store();
+        await api.savePassport(npc, 'chat');
+        expect(api.getPassport('npc1')?.origin).toBe('auto-des');
+        expect(defaultCardForChat()).toBe(0);
+        const edited = { ...api.getPassport('npc1')!, tags: '', aliases: ['Ophi'] };
+        expect(await moveChatPassportToCard('npc1', 0, edited)).toBe(true);
+        expect(cardPassports(0).find((p) => p.id === 'npc1')).toMatchObject({ origin: 'auto-des', aliases: ['Ophi'] });
+        expect(api.passports({ chat: true })).toEqual([]);
+        expect(api.getPassport('npc1')?.aliases).toEqual(['Ophi']);
+        expect(saved).toHaveBeenCalledWith({ ids: ['npc1'], scope: 'chat' });
+        expect(await moveChatPassportToCard('npc1', 0)).toBe(false);
+        // In a group the passport goes to the card of the last speaker by default.
+        state.groupId = 'g';
+        state.groups = [{ id: 'g', members: ['Lyra.png', 'Mira.png'] }];
+        state.chat = [{ mes: 'hi', is_user: false, is_system: false, original_avatar: 'Mira.png' }];
+        expect(defaultCardForChat()).toBe(1);
+    });
+
+    it('asks the DES integration for a portrait and says false without it', async () => {
+        expect(await api.requestDesPortrait('Mira')).toBe(false);
+        const request = vi.fn(async () => true);
+        installPublicApi({ desPortraits: request });
+        expect(await api.requestDesPortrait(' Mira ', { reason: 'outfit changed' })).toBe(true);
+        expect(request).toHaveBeenCalledWith('Mira', 'outfit changed');
+        expect(await api.requestDesPortrait('Mira')).toBe(true);
+        expect(request).toHaveBeenLastCalledWith('Mira', undefined);
+        request.mockRejectedValueOnce(new Error('boom'));
+        expect(await api.requestDesPortrait('Mira')).toBe(false);
+        await expect(api.requestDesPortrait('')).rejects.toThrow(/name/);
+        await expect(api.requestDesPortrait('Mira', { reason: 5 } as never)).rejects.toThrow(/reason/);
+    });
+
+    it('keeps a portrait given as a data URL as a file of the chat', async () => {
+        const { portraitReference, PORTRAIT_FOLDER } = await import('../../src/integration/des/chat-portraits');
+        const bodies: Record<string, unknown>[] = [];
+        const fetchMock = vi.fn(async (_url: string, init?: RequestInit) => {
+            bodies.push(JSON.parse(String(init?.body)) as Record<string, unknown>);
+            return new Response(JSON.stringify({ path: '/user/images/nai-studio-portraits/Mira-1.webp' }));
+        });
+        vi.stubGlobal('fetch', fetchMock);
+        try {
+            expect(await portraitReference('Mira', 'data:image/webp;base64,UklGRg==')).toBe(
+                '/user/images/nai-studio-portraits/Mira-1.webp',
+            );
+            expect(bodies[0]).toMatchObject({ image: 'UklGRg==', format: 'webp', ch_name: PORTRAIT_FOLDER });
+            expect(bodies[0]!.filename).toMatch(/^Mira-[0-9a-f]+$/);
+            // Any other path is kept as it is; nothing to keep is undefined.
+            expect(await portraitReference('Mira', '/user/images/Lyra/mira.png')).toBe('/user/images/Lyra/mira.png');
+            expect(await portraitReference('Mira', undefined)).toBeUndefined();
+            expect(await portraitReference('Mira', 'data:image/png,raw')).toBeUndefined();
+            // A failed upload never leaves a data URL in the chat.
+            fetchMock.mockResolvedValueOnce(new Response('', { status: 500 }));
+            expect(await portraitReference('Mira', 'data:image/png;base64,AA')).toBeUndefined();
+            expect(fetchMock).toHaveBeenCalledTimes(2);
+        } finally {
+            vi.unstubAllGlobals();
+            vi.stubGlobal('toastr', toastr);
+        }
+    });
+});

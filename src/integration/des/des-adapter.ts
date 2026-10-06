@@ -1,6 +1,8 @@
 // Doom's Enhancement Suite adapter (v0.9): the only place that knows where DES lives and which of
 // its modules and exports NAI Studio uses. DES is found by its manifest; its ES modules are imported
 // from the same address as DES's own script (one instance, live objects). Checked on DES 2.6.0.
+// Since v0.14 it also puts a chat's own portrait back into DES (npcAvatars, kept by bare name for every
+// chat) and tells whether DES's Workshop is open: its draft overwrites DES's stores when it is saved.
 import { ctx, importHost } from '../../core/context';
 import { log } from '../../core/logger';
 
@@ -21,6 +23,7 @@ type DesSettings = Record<string, unknown> & {
     autoGenerateAvatars?: boolean;
     portraitEnhancementMode?: string;
     npcAvatars?: Record<string, string>;
+    npcAvatarsFullRes?: Record<string, string>;
     generatedPortraits?: Record<string, unknown>;
     characterAppearance?: Record<string, string>;
     characterAliases?: Record<string, string[]>;
@@ -40,6 +43,13 @@ export interface DesApi {
     /** DES's own regeneration: old portrait to history, /sd with the Workshop appearance line, stored by DES. */
     regeneratePortrait(name: string): Promise<string | null>;
     refreshPortraits(): void;
+    /**
+     * Makes each url the portrait of its character (v0.14): npcAvatars, and the full-size copy when DES keeps
+     * one, so the sheet shows the same picture; saved once. DES's own history and files are left alone.
+     */
+    setPortraits(portraits: Readonly<Record<string, string>>): void;
+    /** DES's Workshop is open: its save overwrites the stores, so nothing writes them meanwhile. */
+    workshopOpen(): boolean;
 }
 
 interface Manifest {
@@ -87,6 +97,9 @@ function scriptOf(name: string, manifest: Manifest): string | null {
     }
     return null;
 }
+
+/** While open, DES's Workshop saves its draft over the character stores (Maestro's DES research). */
+const WORKSHOP_OPEN = '#character-workshop-popup.is-open';
 
 /** The imported settings are DES's live object (or share its nested objects before its first save). */
 function isLive(settings: unknown, saved: unknown): boolean {
@@ -174,5 +187,15 @@ export async function connectDes(timeoutMs = 60000): Promise<DesApi | null> {
                 log.warn('DES: portrait bar refresh failed', error);
             }
         },
+        setPortraits: (portraits: Readonly<Record<string, string>>) => {
+            const avatars = (settings.npcAvatars ??= {});
+            const full = settings.npcAvatarsFullRes;
+            for (const [character, url] of Object.entries(portraits)) {
+                avatars[character] = url;
+                if (full?.[character]) full[character] = url;
+            }
+            (namespaces.persistence!.saveSettings as () => void)();
+        },
+        workshopOpen: () => document.querySelector(WORKSHOP_OPEN) !== null,
     };
 }

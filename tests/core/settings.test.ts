@@ -64,7 +64,7 @@ describe('settings schema', () => {
     });
 
     it('v12: DES portraits are drawn once by default; the old default "state" becomes "missing"', () => {
-        expect(CURRENT_SCHEMA_VERSION).toBe(12);
+        expect(CURRENT_SCHEMA_VERSION).toBeGreaterThanOrEqual(12);
         expect(defaultSettings().des).toMatchObject({ portraitPolicy: 'missing', portraitPolicyChosen: false });
         const old = migrateAndFill({ schemaVersion: 11, des: { portraitPolicy: 'state', menu: false } }, merge);
         expect(old).toMatchObject({ migrated: true, fromVersion: 11 });
@@ -85,6 +85,34 @@ describe('settings schema', () => {
         const later = migrateAndFill({ schemaVersion: 12, des: { portraitPolicy: 'state' } }, merge);
         expect(later.settings.des.portraitPolicy).toBe('state');
         expect(chosen.des.portraitPolicy).toBe('state');
+    });
+
+    it('v13: passports of new DES characters go to the chat for everyone; the portrait snapshot is due', () => {
+        expect(CURRENT_SCHEMA_VERSION).toBe(13);
+        expect(defaultSettings().des).toMatchObject({ npcPassportTarget: 'chat', legacyPortraits: null });
+        // No stored target: the chat.
+        const old = migrateAndFill({ schemaVersion: 12, des: { autoPassports: true, menu: false } }, merge);
+        expect(old).toMatchObject({ migrated: true, fromVersion: 12 });
+        expect(old.settings.des).toMatchObject({
+            npcPassportTarget: 'chat',
+            legacyPortraits: null,
+            autoPassports: true,
+            menu: false,
+        });
+        // A stored target (a hand-edited or imported setting) becomes the chat as well, once.
+        const card = { schemaVersion: 12, des: { npcPassportTarget: 'card', legacyPortraits: { Mira: '/x.png' } } };
+        expect(migrateAndFill(card, merge).settings.des).toMatchObject({
+            npcPassportTarget: 'chat',
+            legacyPortraits: null,
+        });
+        expect(migrateAndFill({ schemaVersion: 7 }, merge).settings.des.npcPassportTarget).toBe('chat');
+        // Picked later in the panel: settings of this version are not migrated again.
+        const later = { schemaVersion: 13, des: { npcPassportTarget: 'card', legacyPortraits: { Mira: '/x.png' } } };
+        expect(migrateAndFill(later, merge)).toMatchObject({
+            migrated: false,
+            settings: { des: { npcPassportTarget: 'card', legacyPortraits: { Mira: '/x.png' } } },
+        });
+        expect(card.des.npcPassportTarget).toBe('card');
     });
 
     it('keeps the stored characters array as is (no index-wise merge)', () => {

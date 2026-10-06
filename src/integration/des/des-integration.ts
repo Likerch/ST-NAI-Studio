@@ -17,6 +17,16 @@
 // Since v0.13.2 a portrait is drawn once by default; "state" redraws it only when the drawn identity changes
 // (passport, its outfit and states; a clearly different look without a passport), not when the tracker
 // rewords the same look (domain/des-portraits.ts).
+// Since v0.14:
+// - a passport written for a new character goes to the chat that met it (des.npcPassportTarget "chat", the
+//   default; "card" as before) and says origin "auto-des"; a passport the chat excludes is absent here:
+//   no appearance line, no portrait from it, the character is treated as having none;
+// - per-chat portraits: DES keeps one portrait per bare name for every chat, so each chat records its own
+//   (chatMetadata.nai_studio.desPortraits[name].image, a file path) and gets it back into DES when it is
+//   opened (after DES loaded the chat, never while DES's Workshop is open). A character without a card
+//   passport has a portrait in a chat only when that chat recorded one (or it changed while the chat is
+//   open); what another chat left in DES counts as missing. Card passports share DES's portrait as before;
+// - requestPortrait (NAI_STUDIO_API.requestDesPortrait): a redraw now, through the same queue.
 import { ctx } from '../../core/context';
 import { t } from '../../core/i18n';
 import { log } from '../../core/logger';
@@ -25,29 +35,49 @@ import { notifyExternalChange, saveSettings, settings } from '../../core/setting
 import {
     defaultPassport,
     hasCyrillic,
+    isDrawnPortrait,
     joinTags,
+    legacyPortraitSnapshot,
     markerDimensions,
     mentionIndex,
     outfitForLook,
     passportTags,
     portraitDecision,
+    portraitPresence,
     portraitRecord,
+    portraitsToRestore,
+    readPortraitRecord,
+    recordWithImage,
     resolveChatPassport,
+    samePortrait,
     trackerFromSwipe,
     trackerFromText,
     withoutCountTags,
 } from '../../domain';
-import type { DesCharacter, DesPortraitRecord, DesTracker, MarkerParams, Passport, SceneCandidate } from '../../domain';
+import type {
+    DesCharacter,
+    DesPortraitRecord,
+    DesTracker,
+    MarkerParams,
+    Passport,
+    PortraitScope,
+    SceneCandidate,
+} from '../../domain';
 import { generateTrackerPassport } from '../../features/characters/passport-generator';
 import { interpretForModel } from '../../features/language/interpreter';
 import {
     chatCardIndexes,
+    chatOpen,
+    chatOwnPassports,
     chatPassportData,
+    defaultCardForChat,
     loadCharacter,
     locatePassport,
     onPassportsSaved,
+    passportExcluded,
     resolvedCardPassports,
     saveCardPassport,
+    saveChatPassport,
 } from '../../features/characters/passport-store';
 import { onStudioEvent } from '../../features/events/studio-events';
 import { setCurrentLocation } from '../../features/continuity/continuity-service';
@@ -63,6 +93,7 @@ import { editLocatedPassport } from '../../ui/passport-scope';
 import { setPortraitHook } from '../commands';
 import type { PortraitPlan } from '../commands';
 import { editPersonaPassport, openEmotions } from '../scene-setup';
+import { portraitReference } from './chat-portraits';
 import { connectDes } from './des-adapter';
 import type { DesApi } from './des-adapter';
 
@@ -83,6 +114,8 @@ export interface DesStatus {
 
 const TRACKER_EVENT = 'dooms_tracker_update_complete';
 const TRACKER_WAIT_MS = 120000;
+/** Putting a chat's portraits back waits this long for DES's Workshop to close, again and again. */
+const WORKSHOP_RETRY_MS = 2000;
 
 /** Letters and digits only: DES cleans /sd prompts (quotes, pipes, commas) before sending them. */
 const normalizeLine = (text: string) => text.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '');
@@ -116,8 +149,19 @@ export class DesIntegration {
      * since the portrait is drawn from the newest tracker.
      */
     private readonly pendingPortraits = new Map<string, DesPortraitRecord>();
+    /** Portraits another extension asked for (requestPortrait): a cost cap instead of a confirmation. */
+    private readonly requestedPortraits = new Set<string>();
+    /** Requests still looking for the passport (a second one meanwhile is the same request). */
+    private readonly requesting = new Set<string>();
+    /** The chat whose own portraits DES holds now (v0.14); null before the first chat. */
+    private portraitChat: string | null = null;
+    /** DES's portraits right after this chat's own were put back: what changes later is the chat's. */
+    private baseline: Record<string, string> = {};
+    private restoreTimer: ReturnType<typeof setTimeout> | null = null;
     private lastLocation = '';
     private timer: ReturnType<typeof setTimeout> | null = null;
+    /** A scheduled run handles portraits when any of the calls it merges asked for them. */
+    private scheduledPortraits = false;
     private readonly listeners = new Set<() => void>();
     /** Russian tracker looks converted to tags (kept apart from the passport tags they join). */
     private readonly looks = new Map<string, Promise<string>>();
@@ -156,6 +200,7 @@ export class DesIntegration {
         if (this.api) {
             log.info(`Doom's Enhancement Suite ${this.api.version ?? '?'} connected (${this.api.mode()})`);
             if (!this.api.verified) log.warn(`DES ${this.api.version}: integration checked on 2.6.0 only`);
+            this.snapshotLegacyPortraits();
             this.install();
         }
         this.changed();
@@ -188,6 +233,8 @@ export class DesIntegration {
         onStudioEvent('passportsSaved', (detail) => {
             if (detail.scope === 'chat') this.schedule(false);
         });
+        // The chat stopped or started using a passport (v0.14): appearance lines follow.
+        onStudioEvent('passportExcludedChanged', () => this.schedule(false));
         const received = c.eventTypes.MESSAGE_RECEIVED;
         const after = (_id: unknown, type: unknown) => {
             if (type !== 'quiet' && type !== 'impersonate') this.schedule(true);
@@ -203,6 +250,8 @@ export class DesIntegration {
         if (c.eventTypes.CHAT_CHANGED)
             c.eventSource.on(c.eventTypes.CHAT_CHANGED, () => {
                 this.lastLocation = '';
+                // A reply of the chat left asked for portraits: not the chat opened now.
+                this.scheduledPortraits = false;
                 this.schedule(false);
             });
         this.applyPortraitMode();
@@ -340,9 +389,11 @@ export class DesIntegration {
 
     private schedule(portraits: boolean): void {
         if (this.timer) clearTimeout(this.timer);
-        const withPortraits = portraits;
+        this.scheduledPortraits ||= portraits;
         this.timer = setTimeout(() => {
             this.timer = null;
+            const withPortraits = this.scheduledPortraits;
+            this.scheduledPortraits = false;
             void this.handleTracker(withPortraits).catch((error) => log.warn('DES tracker handling failed', error));
         }, 400);
     }
@@ -350,6 +401,9 @@ export class DesIntegration {
     /** After a tracker update: location, passports of new characters, appearance lines, portraits. */
     private async handleTracker(portraits: boolean): Promise<void> {
         if (!this.active()) return;
+        // The chat's own portraits go back into DES first (v0.14); while DES's Workshop is open nothing is
+        // written and no portrait is decided: the run comes again once it closes.
+        const restored = await this.restoreChatPortraits(portraits);
         const latest = this.latestTrackerAt();
         if (!latest) return;
         const { tracker, messageId } = latest;
@@ -372,7 +426,7 @@ export class DesIntegration {
                 (await this.findPassport(character.name, { provided: { messageId } })) ??
                 (d.autoPassports ? await this.createPassport(character) : null);
             this.syncLine(character.name, found?.passport ?? null, character.look);
-            if (portraits && d.portraits) this.maybePortrait(character, found, approval);
+            if (portraits && d.portraits && restored) this.maybePortrait(character, found, approval);
         }
     }
 
@@ -384,13 +438,16 @@ export class DesIntegration {
 
     /** Card new passports go to: the 1:1 character, in a group the speaker of the last reply. */
     private targetCard(): number | null {
-        const c = ctx();
-        const cards = this.chatCards();
-        if (cards.length <= 1) return cards[0] ?? null;
-        const last = [...c.chat].reverse().find((m) => !m.is_user && !m.is_system);
-        const avatar = typeof last?.original_avatar === 'string' ? last.original_avatar : '';
-        const speaker = c.characters.findIndex((ch) => ch.avatar === avatar);
-        return speaker >= 0 ? speaker : (cards[0] ?? null);
+        return defaultCardForChat();
+    }
+
+    /** The open chat (its id); '' without one. */
+    private chatKey(): string {
+        try {
+            return String(ctx().getCurrentChatId?.() ?? '');
+        } catch {
+            return '';
+        }
     }
 
     private isCardCharacter(name: string): boolean {
@@ -400,7 +457,8 @@ export class DesIntegration {
     /**
      * The character passport of a name in the cards of the chat (name, aliases, sound), then among the
      * passports of the chat itself; as the chat sees it. With `provided` (v0.12) then among the passports
-     * of the passport providers for that scene (stored nowhere: `cardIndex` null).
+     * of the passport providers for that scene (stored nowhere: `cardIndex` null). Passports the chat
+     * excludes (v0.14) are not found.
      */
     async findPassport(name: string, options: { provided?: SceneQuery } = {}): Promise<Found | null> {
         const chat = chatPassportData();
@@ -413,7 +471,7 @@ export class DesIntegration {
                 if (matches(passport, passport.name || card?.name || '')) return { cardIndex, passport };
             }
         }
-        const own = chat.extra.find((passport) => passport.name && matches(passport, passport.name));
+        const own = chatOwnPassports(chat).find((passport) => passport.name && matches(passport, passport.name));
         if (own) return { cardIndex: null, passport: own };
         if (!options.provided) return null;
         const provided = (await providedPassports(options.provided)).find((passport) =>
@@ -422,21 +480,34 @@ export class DesIntegration {
         return provided ? { cardIndex: null, passport: provided } : null;
     }
 
-    /** A passport written from the tracker for a character the cards do not know yet. */
+    /**
+     * A passport written from the tracker for a character the chat does not know yet: into this chat
+     * (v0.14 default) or into the card (des.npcPassportTarget), marked origin "auto-des".
+     */
     private createPassport(character: DesCharacter): Promise<Found | null> {
         const key = character.name.toLowerCase();
         if (this.failed.has(key)) return Promise.resolve(null);
         const running = this.passportJobs.get(key);
         if (running) return running;
         const job = (async (): Promise<Found | null> => {
+            const toCard = settings().des.npcPassportTarget === 'card';
             const cardIndex = this.targetCard();
-            if (cardIndex === null) return null;
+            if (toCard ? cardIndex === null : !chatOpen()) return null;
+            const chat = this.chatKey();
             try {
                 const passport = await generateTrackerPassport(character.name, character.look, cardIndex);
                 passport.aliases = [...new Set([...passport.aliases, ...this.aliasesOf(character.name)])];
-                await saveCardPassport(cardIndex, passport);
-                toastr.info(t('naist.des.passportCreated', { name: character.name }), t('naist.des.title'));
-                return { cardIndex, passport };
+                passport.origin = 'auto-des';
+                // Written for the chat that met the character: not into another one opened meanwhile.
+                if (this.chatKey() !== chat) return null;
+                if (toCard) {
+                    await saveCardPassport(cardIndex!, passport);
+                    toastr.info(t('naist.des.passportCreated', { name: character.name }), t('naist.des.title'));
+                    return { cardIndex, passport };
+                }
+                await saveChatPassport(null, passport);
+                toastr.info(t('naist.des.passportCreatedChat', { name: character.name }), t('naist.des.title'));
+                return { cardIndex: null, passport };
             } catch (error) {
                 this.failed.add(key);
                 log.warn(`DES: passport for ${character.name} not written`, error);
@@ -455,6 +526,8 @@ export class DesIntegration {
         const line = passport ? passportTags(passport, { allowNsfw: false }) : look.trim();
         if (!line) return;
         this.lines.set(normalizeLine(line), name);
+        // DES's Workshop saves its draft over the line (v0.14): written on a later tracker once it is closed.
+        if (this.api.workshopOpen()) return;
         const store = (this.api.settings.characterAppearance ??= {});
         if (store[name] === line) return;
         store[name] = line;
@@ -468,6 +541,8 @@ export class DesIntegration {
         // A card of this chat: its passports as the chat sees them.
         const chat = this.chatCards().includes(index) ? chatPassportData() : null;
         for (const stored of passports) {
+            // A passport this chat excludes (v0.14) writes no appearance line.
+            if (chat && passportExcluded(stored.id, card?.avatar, chat)) continue;
             const passport = chat ? resolveChatPassport(stored, card?.avatar, chat) : stored;
             if (passport.kind === 'character') this.syncLine(passport.name || cardName, passport);
         }
@@ -481,8 +556,157 @@ export class DesIntegration {
         return (meta.desPortraits ??= {});
     }
 
+    /** The records of the open chat without creating them. */
+    private readRecords(): Record<string, unknown> {
+        const meta = ctx().chatMetadata?.nai_studio as { desPortraits?: Record<string, unknown> } | undefined;
+        return meta?.desPortraits ?? {};
+    }
+
     private saveRecords(): void {
         void Promise.resolve(ctx().saveMetadata()).catch((error) => log.warn('DES: portrait record not saved', error));
+    }
+
+    /** DES's portraits when v0.14 first connected: the portraits of the chats recorded before (once). */
+    private snapshotLegacyPortraits(): void {
+        const d = settings().des;
+        if (d.legacyPortraits !== null && d.legacyPortraits !== undefined) return;
+        d.legacyPortraits = legacyPortraitSnapshot(this.api?.settings.npcAvatars);
+        saveSettings();
+    }
+
+    /**
+     * Puts the open chat's own portraits back into DES once per chat (v0.14): each record's image where DES
+     * holds another one, and for a record from before v0.14 the portrait of the snapshot (it becomes the
+     * record's image). Then DES's portraits are the chat's baseline. False while DES's Workshop is open:
+     * nothing is written, the run is tried again later (`portraits` says whether it decides portraits).
+     */
+    private async restoreChatPortraits(portraits: boolean): Promise<boolean> {
+        const api = this.api;
+        if (!api || !settings().des.portraits) return true;
+        const chat = this.chatKey();
+        if (chat === (this.portraitChat ?? '')) return true;
+        if (api.workshopOpen()) {
+            this.retryRestore(portraits);
+            return false;
+        }
+        const records = this.readRecords();
+        const restore = chat
+            ? portraitsToRestore(records, settings().des.legacyPortraits, api.settings.npcAvatars)
+            : [];
+        const writes: Record<string, string> = {};
+        for (const item of restore) {
+            if (!samePortrait(api.settings.npcAvatars?.[item.name], item.image)) writes[item.name] = item.image;
+        }
+        if (Object.keys(writes).length) {
+            api.setPortraits(writes);
+            api.refreshPortraits();
+            log.info(`DES: portraits of this chat put back: ${Object.keys(writes).join(', ')}`);
+        }
+        this.portraitChat = chat;
+        this.baseline = { ...(api.settings.npcAvatars ?? {}) };
+        const backfill = restore.filter((item) => item.backfill);
+        if (backfill.length) {
+            // The records from before v0.14 keep the snapshot portrait as their own (a copy, when DES owns it).
+            for (const item of backfill) {
+                const image = await portraitReference(item.name, item.image);
+                if (this.chatKey() !== chat) return true;
+                if (image) records[item.name] = recordWithImage(records[item.name], image);
+            }
+            this.saveRecords();
+        }
+        return true;
+    }
+
+    private retryRestore(portraits: boolean): void {
+        if (this.restoreTimer) return;
+        log.info("DES: the Workshop is open, this chat's portraits wait for it to close");
+        this.restoreTimer = setTimeout(() => {
+            this.restoreTimer = null;
+            this.schedule(portraits);
+        }, WORKSHOP_RETRY_MS);
+    }
+
+    /** DES's portrait of a name is the open chat's own again (after a portrait drawn for a chat left). */
+    private putBack(name: string): void {
+        const api = this.api;
+        if (!api) return;
+        const own = readPortraitRecord(this.readRecords()[name])?.image;
+        const now = api.settings.npcAvatars?.[name];
+        if (own && !samePortrait(own, now) && !api.workshopOpen()) {
+            api.setPortraits({ [name]: own });
+            api.refreshPortraits();
+        } else if (now) this.baseline[name] = now;
+    }
+
+    /**
+     * Records a portrait as the open chat's own: the record and the image (a path; a data URL saved as a
+     * file). Nothing when the chat was left meanwhile.
+     */
+    private async recordPortrait(name: string, record: DesPortraitRecord, value: string | undefined): Promise<void> {
+        const chat = this.chatKey();
+        const image = await portraitReference(name, value);
+        if (this.chatKey() !== chat) return;
+        this.portraitRecords()[name] = { ...record, ...(image ? { image } : {}) };
+        const now = this.api?.settings.npcAvatars?.[name];
+        if (now) this.baseline[name] = now;
+        this.saveRecords();
+    }
+
+    /** DES's regeneration; when it fails, the portrait DES moved to its history first comes back. */
+    private async drawPortrait(name: string): Promise<string | null> {
+        const api = this.api!;
+        const before = api.settings.npcAvatars?.[name];
+        const url = await api.regeneratePortrait(name);
+        if (!url && before && !api.settings.npcAvatars?.[name] && !api.workshopOpen()) {
+            api.setPortraits({ [name]: before });
+            api.refreshPortraits();
+        }
+        return url;
+    }
+
+    /** A portrait drawn for `chat`: recorded there, or, when that chat was left, the open one's put back. */
+    private async portraitDrawn(name: string, record: DesPortraitRecord, url: string, chat: string): Promise<void> {
+        if (this.chatKey() !== chat) {
+            log.info(`DES: the portrait of ${name} was drawn for a chat that is closed now`);
+            this.putBack(name);
+            return;
+        }
+        await this.recordPortrait(name, record, url);
+        this.api?.refreshPortraits();
+    }
+
+    /**
+     * Queues a portrait (one by one, in order); its NovelAI request then waits in the one queue. A portrait
+     * of a chat that was left before its turn is not drawn.
+     */
+    private queuePortrait(
+        name: string,
+        current: DesPortraitRecord,
+        options: { verdict?: Promise<QualityVerdict> | undefined; requested?: boolean } = {},
+    ): void {
+        const chat = this.chatKey();
+        this.pendingPortraits.set(name, current);
+        this.portraitQueue = this.portraitQueue.then(async () => {
+            const key = normalizeLine(name);
+            try {
+                if (options.verdict && (await options.verdict) !== 'draw') {
+                    log.info(`DES: portrait of ${name} skipped by the quality gate`);
+                    return;
+                }
+                if (this.chatKey() !== chat) {
+                    log.info(`DES: portrait of ${name} dropped, its chat was closed`);
+                    return;
+                }
+                if (options.requested) this.requestedPortraits.add(key);
+                const url = await this.drawPortrait(name);
+                if (url) await this.portraitDrawn(name, this.pendingPortraits.get(name) ?? current, url, chat);
+            } catch (error) {
+                log.warn(`DES: portrait of ${name} failed`, error);
+            } finally {
+                this.pendingPortraits.delete(name);
+                this.requestedPortraits.delete(key);
+            }
+        });
     }
 
     private maybePortrait(
@@ -494,9 +718,13 @@ export class DesIntegration {
         if (!api || this.isCardCharacter(character.name)) return;
         const name = character.name;
         const existing = api.settings.npcAvatars?.[name];
-        const records = this.portraitRecords();
-        // A portrait the user uploaded (DES did not generate it, nor did we): never replaced.
-        if (existing && !records[name] && !api.settings.generatedPortraits?.[name]) return;
+        const stored = this.readRecords()[name];
+        // A card passport shares DES's one portrait among the chats; any other character's is the chat's (v0.14).
+        const scope: PortraitScope = found && found.cardIndex !== null ? 'card' : 'chat';
+        const presence = portraitPresence({ scope, avatar: existing, stored, baseline: this.baseline[name] });
+        // A portrait the user uploaded (neither DES nor an /sd call drew it): never replaced.
+        const drawn = isDrawnPortrait(existing) || Boolean(api.settings.generatedPortraits?.[name]);
+        if (existing && !stored && !presence.adopt && !drawn) return;
         const line = found ? passportTags(found.passport, { allowNsfw: false }) : character.look;
         if (!line.trim()) return;
         const policy = settings().des.portraitPolicy;
@@ -505,40 +733,73 @@ export class DesIntegration {
             this.pendingPortraits.set(name, current);
             return;
         }
+        if (presence.adopt) {
+            // Changed while this chat is open (DES's Workshop or menu): the chat's portrait from now on.
+            void this.recordPortrait(name, current, existing);
+            return;
+        }
         const decision = portraitDecision({
             policy,
-            exists: Boolean(existing),
-            stored: records[name],
+            exists: presence.exists,
+            stored,
             current,
             passport: Boolean(found),
         });
         if (decision === 'adopt') {
             // Drawn before v0.13.2 or by DES: the portrait counts as current and its record starts now.
-            records[name] = current;
-            this.saveRecords();
+            void this.recordPortrait(name, current, readPortraitRecord(stored)?.image ?? existing);
             return;
         }
         if (decision !== 'draw') return;
-        this.pendingPortraits.set(name, current);
-        const verdict = approval?.();
-        this.portraitQueue = this.portraitQueue.then(async () => {
-            try {
-                if (verdict && (await verdict) !== 'draw') {
-                    log.info(`DES: portrait of ${name} skipped by the quality gate`);
-                    return;
-                }
-                const url = await api.regeneratePortrait(name);
-                if (url) {
-                    records[name] = this.pendingPortraits.get(name) ?? current;
-                    await ctx().saveMetadata();
-                    api.refreshPortraits();
-                }
-            } catch (error) {
-                log.warn(`DES: portrait of ${name} failed`, error);
-            } finally {
-                this.pendingPortraits.delete(name);
-            }
-        });
+        this.queuePortrait(name, current, { verdict: approval?.() });
+    }
+
+    /**
+     * A redraw of a DES character's portrait now (v0.14, NAI_STUDIO_API.requestDesPortrait): through the
+     * same queue and pipeline as the automatic portraits, from the passport as the chat sees it (its active
+     * outfit too), under the Anlas cap of image markers. True when queued (or one is already on its way);
+     * false when it cannot be: no DES, the integration or NAI Studio's DES portraits off, a name DES does not
+     * know, the user's or a card's character, nothing to draw from.
+     */
+    async requestPortrait(rawName: string, reason = ''): Promise<boolean> {
+        const api = this.api;
+        if (!api || !this.active() || !settings().des.portraits) return false;
+        const name = this.desName(rawName);
+        if (!name || this.isUserName(name) || this.isCardCharacter(name)) return false;
+        if (
+            this.pendingPortraits.has(name) ||
+            this.requesting.has(name) ||
+            this.manualPortraits.has(normalizeLine(name))
+        )
+            return true;
+        this.requesting.add(name);
+        try {
+            const found = await this.findPassport(name, { provided: {} });
+            const look = this.latestTracker()?.characters.find((ch) => sameName(ch.name, name))?.look ?? '';
+            const line = found ? passportTags(found.passport, { allowNsfw: false }) : look;
+            if (!line.trim()) return false;
+            this.syncLine(name, found?.passport ?? null, look);
+            log.info(`DES: portrait of ${name} requested${reason ? ` (${reason})` : ''}`);
+            this.queuePortrait(name, portraitRecord(found?.passport, look), { requested: true });
+            return true;
+        } finally {
+            this.requesting.delete(name);
+        }
+    }
+
+    /** The name DES knows a character by: in the latest tracker, else in DES's portraits or lines. */
+    private desName(raw: unknown): string | null {
+        const wanted = typeof raw === 'string' ? raw.trim() : '';
+        if (!wanted) return null;
+        const tracked = this.latestTracker()?.characters.find((ch) => sameName(ch.name, wanted));
+        if (tracked) return tracked.name;
+        const lower = wanted.toLowerCase();
+        const des = this.api?.settings;
+        for (const store of [des?.npcAvatars, des?.characterAppearance]) {
+            const key = Object.keys(store ?? {}).find((k) => k.toLowerCase() === lower);
+            if (key) return key;
+        }
+        return null;
     }
 
     /** DES's /sd call for an appearance line NAI Studio wrote: the full portrait request. */
@@ -563,11 +824,16 @@ export class DesIntegration {
               )
             : '';
         const size = markerDimensions('portrait', undefined, s.anlas.freeOnly);
+        // Asked for by another extension (v0.14): no confirmation, at most what a marker image may cost.
+        const requested = this.requestedPortraits.has(normalizeLine(name));
         return {
             scene: joinTags(identity, look, s.des.portraitTags),
             ...(found?.passport.negative ? { negative: found.passport.negative } : {}),
             generation: { width: size.width, height: size.height, seed: stableSeed(name), characters: [] },
             priority: this.manualPortraits.has(normalizeLine(name)) ? 'user' : 'portrait',
+            ...(requested
+                ? { skipCostConfirm: true, maxCost: s.anlas.freeOnly || !s.markers.allowPaid ? 0 : s.markers.maxCost }
+                : {}),
         };
     }
 
@@ -584,6 +850,14 @@ export class DesIntegration {
         if (!found) {
             const look = this.latestTracker()?.characters.find((ch) => sameName(ch.name, name))?.look ?? '';
             found = look ? await this.createPassport({ name, look }) : null;
+        }
+        if (!found && settings().des.npcPassportTarget !== 'card' && chatOpen()) {
+            // A new passport goes where passports of new characters go (v0.14): this chat.
+            const edited = await editPassport(name, defaultPassport('character', name), { identity: true });
+            if (!edited) return;
+            await saveChatPassport(null, edited);
+            toastr.success(t('naist.passport.savedChat', { name: edited.name || name }));
+            return;
         }
         if (!found) {
             const cardIndex = this.targetCard();
@@ -619,8 +893,10 @@ export class DesIntegration {
             else await this.openPassport(name);
         } else if (action === 'emotions') {
             const found = await this.ensureFound(name);
-            // Emotion sprites belong to a card: a passport of the chat itself has none.
+            // Emotion sprites belong to a card: a passport of the chat itself has to move there first.
             if (found && found.cardIndex !== null) openEmotions(found.cardIndex, found.passport.id);
+            else if (found && chatOwnPassports().some((p) => p.id === found.passport.id))
+                toastr.warning(t('naist.des.emotionsNeedCard', { name }), t('naist.des.title'));
             else toastr.warning(t('naist.des.noPassport', { name }));
         } else if (action === 'portrait' && this.api) {
             const found = (await this.findPassport(name, { provided: {} })) ?? (await this.ensureFound(name));
@@ -628,15 +904,14 @@ export class DesIntegration {
             this.syncLine(name, found?.passport ?? null, look);
             toastr.info(t('naist.des.portraitStarted', { name }), t('naist.des.title'));
             this.manualPortraits.add(normalizeLine(name));
+            const chat = this.chatKey();
             try {
-                const url = await this.api.regeneratePortrait(name);
+                const url = await this.drawPortrait(name);
                 if (url) {
-                    // Always drawn; it is the current portrait for the "state" policy from now on.
-                    if (!this.isCardCharacter(name)) {
-                        this.portraitRecords()[name] = portraitRecord(found?.passport, look);
-                        this.saveRecords();
-                    }
-                    this.api.refreshPortraits();
+                    // Always drawn; it is the chat's portrait and, for "state", the current one from now on.
+                    if (!this.isCardCharacter(name))
+                        await this.portraitDrawn(name, portraitRecord(found?.passport, look), url, chat);
+                    else this.api.refreshPortraits();
                 }
             } finally {
                 this.manualPortraits.delete(normalizeLine(name));

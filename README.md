@@ -76,7 +76,8 @@ When [Doom's Enhancement Suite](https://github.com/DangerDaza/Dooms-Enhancement-
 
 - **Scene from the tracker** in every picture: time of day, weather, indoors / outdoors and the location (with its location passport and scene continuity). DES writes its tracker at the start of a reply, so even pictures started while the reply streams know the scene; in separate / external mode pictures wait for the tracker.
 - **Characters of the tracker** take part in pictures with their **current look** (clothes and state from the tracker over the identity of their passport) — also NPCs without a card.
-- **Passports for new characters:** a character the cards of the chat do not know gets a passport written from the tracker and saved in the card; the passport becomes its DES Workshop "Portrait prompt".
+- **Passports for new characters:** a character the chat does not know gets a passport written from the tracker; the passport becomes its DES Workshop "Portrait prompt". Since 0.14 it is kept in that chat ("Where passports of new characters are kept": in this chat / in the card): a character with the same name in another chat is someone new. "Move to the card" in the passport editor makes a regular character shared by every chat of the card. A passport of the card can be left out of one chat ("Leave out of this chat" in the card's passports dialog).
+- **Portraits per chat** (0.14): DES keeps one portrait per name for every chat; NAI Studio remembers each chat's own portraits and puts them back when the chat opens. A character without a card passport whose portrait this chat never recorded gets a portrait of its own.
 - **Portraits by NAI Studio:** DES's own auto portraits are switched off while the integration draws them, with a stable seed per character for the same face; DES keeps them with its history ("Restore Previous Portrait" works). "Draw a portrait" (0.13.2):
   - **when there is none** (default): once per character; a deleted portrait is drawn again;
   - **when the look changes (passport, outfit, states)**: a new portrait only when the drawn identity changes — another passport, its tags, the active outfit or the enabled states (what Maestro's wardrobe changes). For a character without a passport the tracker look counts, compared by its words (case, punctuation, Russian and English stop words and word endings ignored): it has to differ clearly (word-set Jaccard below 0.6) from the look of the last portrait. The model rewording the same look does not redraw. A portrait drawn before 0.13.2 counts as current;
@@ -173,8 +174,10 @@ NAI Studio publishes `globalThis.NAI_STUDIO_API` for other extensions, Maestro f
 ```ts
 interface NaiStudioApi {
   version: 1;
-  passports(scope?: { avatar?: string; persona?: boolean; chat?: boolean }): Passport[];
-  getPassport(id: string): Passport | null;
+  // Since 0.14; absent before.
+  features: readonly string[]; // 'excludePassport', 'requestDesPortrait', 'chatNpcPassports', 'chatPortraits'
+  passports(scope?: { avatar?: string; persona?: boolean; chat?: boolean; includeExcluded?: boolean }): Passport[];
+  getPassport(id: string, options?: { includeExcluded?: boolean }): Passport | null;
   savePassport(
     passport: Passport,
     scope: 'card' | 'chat',
@@ -183,7 +186,10 @@ interface NaiStudioApi {
   setOutfit(passportId: string, outfit: string, scope?: 'card' | 'chat'): Promise<void>;
   setState(passportId: string, stateId: string, enabled: boolean, scope?: 'card' | 'chat'): Promise<void>;
   clearChatOverride(passportId: string): Promise<void>;
-  on(event: 'passportsSaved' | 'imageReady' | 'requestFailed', listener: (detail: unknown) => void): () => void;
+  on(
+    event: 'passportsSaved' | 'imageReady' | 'requestFailed' | 'passportExcludedChanged',
+    listener: (detail: unknown) => void,
+  ): () => void;
   registerSceneProvider(provider: {
     id: string;
     priority: number;
@@ -213,11 +219,16 @@ interface NaiStudioApi {
     weather?: string;
     style?: string;
   }): Promise<{ file: string } | null>;
+  // Since 0.14; absent before, check `features` or that they are functions.
+  setPassportExcluded(passportId: string, excluded: boolean): Promise<void>;
+  isPassportExcluded(passportId: string): boolean;
+  requestDesPortrait(name: string, options?: { reason?: string }): Promise<boolean>;
 }
 
 type SceneHint = { locationId?: string; locationName?: string; tags?: string; characters?: string[] };
 // A passport outfit; `looks` since 0.12.1.
 type Outfit = { name: string; tags: string; looks?: string[] };
+// Since 0.14 a passport NAI Studio wrote by itself from the DES tracker has origin: 'auto-des'.
 ```
 
 - **Passports** are always returned as the current chat sees them (chat overrides applied), as copies.
@@ -225,11 +236,22 @@ type Outfit = { name: string; tags: string; looks?: string[] };
   - `savePassport(p, 'chat')` keeps only the fields that differ from the card in the chat metadata (`chat_metadata.nai_studio.passports`). A passport unknown to the cards becomes a passport of the chat itself.
   - `setOutfit` / `setState` default to `'chat'`.
   - `clearChatOverride` brings the card value back.
+  - `origin: 'auto-des'` (0.14) marks a passport NAI Studio wrote by itself for a new DES tracker character; it is kept through saves, chat overrides and a move into the card.
   - Outfits may carry `looks` (0.12.1): DES tracker wordings known to mean that outfit, any language (strings, up to 12, newest last, each up to 300 characters; Maestro's wardrobe writes them). When a character's current tracker look says one of them, NAI Studio draws that outfit's tags instead of the look: in scenes, image markers and DES portraits. A wording matches exactly after normalisation (case, punctuation, Russian quotes and dashes, ё as е) or by its words (Jaccard 0.75 or more, words of two letters or more); a look joined from several tracker fields is compared part by part. An outfit chosen in the composer still wins. NAI Studio's passport editor does not show `looks` but keeps them; chat overrides carry them.
 - **Events.**
   - `passportsSaved` `{ ids, scope, avatar?, persona? }` follows every passport save, including the ones made in NAI Studio's own UI.
   - `imageReady` `{ messageIndex, kind, passportIds }` follows every image attached to a message once the chat is saved.
   - `requestFailed` `{ request: 'passport' | 'background', name, code, message }` (0.12) follows a `generatePassport` / `generateBackground` call that resolved `null`; `code` is NAI Studio's error code (`free-only-blocked`, `aborted` when the user declined the cost, …).
+  - `passportExcludedChanged` `{ id, excluded }` (0.14) follows a change of a passport's exclusion in the current chat (the API or NAI Studio's passport dialog); a call that changes nothing sends nothing.
+- **Excluded passports** (0.14, `features` has `excludePassport`).
+  - `setPassportExcluded(id, true)` switches a passport off in the current chat only: a flag `excluded` in the chat's overrides (`chat_metadata.nai_studio.passports.overrides[id]`), the card is not touched; `false` brings it back. Any passport of the chat's cards, the persona, the chat itself, or a passport provider's (by id). Rejects without a chat.
+  - An excluded passport does not exist in that chat for any NAI Studio feature: scenes, markers, the composer, `{{nai_characters}}`, places and backgrounds, DES appearance lines, portraits and emotions. A DES character of that name has no passport there: it gets a new passport of the chat (when enabled) and a portrait of its own.
+  - `passports()` and `getPassport()` leave it out unless `includeExcluded: true`; `isPassportExcluded(id)` answers for the current chat (`false` without one). Chat saves (`savePassport(…, 'chat')`, `setOutfit`, `setState`) and `clearChatOverride` keep the flag.
+- **Passports of new NPCs in the chat** (0.14, `chatNpcPassports`). The passport the DES integration writes for a new tracker character goes into the chat (`extra`) by default, not the card: a character with the same name in another chat is someone new. The setting `des.npcPassportTarget` (`'chat'` | `'card'`) is in the DES section of the Chat tab. The passport editor offers "Move to the card" for a passport of the chat (its id is kept).
+- **DES portraits per chat** (0.14, `chatPortraits`). DES keeps one portrait per bare name for every chat. NAI Studio records each DES character's portrait per chat (`chat_metadata.nai_studio.desPortraits[name].image`: a file path, never a data URL; a file in DES's own folder is copied to `/user/images/nai-studio-portraits/`, since DES deletes its files once nothing of its own points at them) and puts it back into DES when the chat opens and DES holds another one. While DES's Workshop is open nothing is written to DES's stores.
+  - A character whose passport is the chat's own, a provider's, excluded, or absent has no portrait in a chat that recorded none, even when DES holds one under that name from another chat; a portrait that appears or changes while the chat is open (the Workshop, DES's menu) becomes the chat's. A character with a (not excluded) card passport shares DES's portrait as before.
+  - Chats whose portrait records predate 0.14 get the portrait DES held when 0.14 first started.
+- **`requestDesPortrait(name, { reason })`** (0.14) redraws a DES character's portrait now: the same portrait queue (after the pictures of the reply) and pipeline, from the passport as the chat sees it (active outfit and states too), at most what an image marker may cost (free-only mode: free only; else up to `markers.maxCost` when paid markers are allowed), without a cost question. The new portrait becomes the current chat's. Resolves `true` when queued (or one for that character is already on its way), `false` when it cannot be: no DES, the DES integration or NAI Studio's DES portraits off, a name DES does not know, the user's or a card's own character, nothing to draw from. `reason` goes to the log.
 - **Scene providers.**
   - They are asked by descending priority; each field comes from the first provider that has it, the rest from the DES tracker and the text as before.
   - Providers have 3 s to answer.

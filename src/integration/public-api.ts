@@ -2,8 +2,9 @@
 // write passports in the card or for the current chat only, switch outfits and states, listen to
 // "passports saved" and "image ready", and register scene providers and (v0.11) quality gates.
 // v0.12: passport providers (lore entries in scenes), passports written from a description and
-// backgrounds of places. Installed on activation, removed on disable. Version 1: within a version
-// members are only added, never changed.
+// backgrounds of places. v0.14: a passport excluded from the current chat, a DES portrait redrawn on
+// request, `features` to detect what the running version has. Installed on activation, removed on
+// disable. Version 1: within a version members are only added, never changed.
 import { ctx } from '../core/context';
 import { toNaiError } from '../core/errors';
 import { t } from '../core/i18n';
@@ -15,18 +16,23 @@ import { generateEntryPassport } from '../features/characters/passport-generator
 import {
     cardIndexByAvatar,
     chatCardIndexes,
+    chatOpen,
+    chatOwnPassports,
     chatPassportData,
     clearChatOverride,
     currentPersonaKey,
     knownPersonaKey,
     loadCharacter,
     locatePassport,
+    ownerId,
+    passportExcluded,
     resolvedCardPassports,
     resolvedPersonaPassport,
     saveCardPassport,
     saveChatPassport,
     savePassportIn,
     savePersonaPassport,
+    setPassportExcluded,
 } from '../features/characters/passport-store';
 import type { LocatedPassport, PassportWhere } from '../features/characters/passport-store';
 import { emitStudioEvent, onStudioEvent, STUDIO_EVENTS } from '../features/events/studio-events';
@@ -40,6 +46,7 @@ import type { SceneHintContext } from '../features/scene/scene-providers';
 export type {
     ImageReadyDetail,
     ImageReadyKind,
+    PassportExcludedChangedDetail,
     PassportsSavedDetail,
     RequestFailedDetail,
     StudioEventName,
@@ -52,6 +59,15 @@ export type { QualityGate, QualityGateDetail } from '../features/quality/quality
 export const API_GLOBAL = 'NAI_STUDIO_API';
 export const API_VERSION = 1;
 
+/**
+ * What this version has beyond the members a consumer checks with `typeof` (v0.14): "excludePassport"
+ * (setPassportExcluded, isPassportExcluded, the "passportExcludedChanged" event, `includeExcluded`),
+ * "requestDesPortrait", "chatNpcPassports" (passports of new DES characters go to the chat by default and
+ * carry origin "auto-des"), "chatPortraits" (DES portraits remembered per chat).
+ */
+export const API_FEATURES = ['excludePassport', 'requestDesPortrait', 'chatNpcPassports', 'chatPortraits'] as const;
+export type ApiFeature = (typeof API_FEATURES)[number];
+
 /** Which passports to list; several flags add up, none lists everything of the current chat. */
 export interface PassportScopeFilter {
     /** One card by its avatar file ("Alice.png"; the extension may be left out). */
@@ -60,6 +76,18 @@ export interface PassportScopeFilter {
     persona?: boolean;
     /** Passports that exist only in the current chat. */
     chat?: boolean;
+    /** Since 0.14: also the passports the current chat excludes (left out otherwise). */
+    includeExcluded?: boolean;
+}
+
+/** Since 0.14: whether a reader of the current chat sees the passports it excludes. */
+export interface ExcludedFilter {
+    includeExcluded?: boolean;
+}
+
+/** Since 0.14: why a DES portrait is redrawn (logged). */
+export interface DesPortraitRequest {
+    reason?: string;
 }
 
 /** Where a passport lives when its id alone does not say (a new passport, ids shared by legacy cards). */
@@ -112,10 +140,18 @@ export interface BackgroundInput {
 
 export interface NaiStudioApi {
     readonly version: 1;
-    /** Passports as the current chat sees them (chat overrides applied), as copies. */
+    /** Since 0.14 (absent before): names of what this version has; see API_FEATURES. */
+    readonly features: readonly string[];
+    /**
+     * Passports as the current chat sees them (chat overrides applied), as copies. Since 0.14 the ones the
+     * chat excludes are left out unless `includeExcluded`.
+     */
     passports(scope?: PassportScopeFilter): Passport[];
-    /** One passport of the current chat (its cards, the persona, the chat's own) by id; null when absent. */
-    getPassport(id: string): Passport | null;
+    /**
+     * One passport of the current chat (its cards, the persona, the chat's own) by id; null when absent.
+     * Since 0.14 null for a passport the chat excludes unless `includeExcluded`.
+     */
+    getPassport(id: string, options?: ExcludedFilter): Passport | null;
     /**
      * "card": into the card (or the persona settings), replacing the passport with that id or adding it.
      * "chat": for the current chat only — over a card or persona passport as the fields that differ,
@@ -167,12 +203,34 @@ export interface NaiStudioApi {
      * and a "requestFailed" event say why; a cancelled confirmation is code "aborted").
      */
     generateBackground(input: BackgroundInput): Promise<{ file: string } | null>;
+    /**
+     * Since 0.14 (absent before: check that it is a function). Excludes a passport (of a card of the chat,
+     * the persona, the chat itself, or a passport provider's by id) from the current chat only, or uses it
+     * again: a flag in the chat's overrides, the card stays as it is. An excluded passport is absent in that
+     * chat for every feature (scenes, markers, the composer, DES lines and portraits, emotions, backgrounds,
+     * `passports()` and `getPassport()` unless `includeExcluded`); a DES character of that name has no
+     * passport there. "passportExcludedChanged" `{ id, excluded }` follows a change. Rejects without a chat.
+     */
+    setPassportExcluded(passportId: string, excluded: boolean): Promise<void>;
+    /** Since 0.14. The current chat excludes this passport (false without a chat). */
+    isPassportExcluded(passportId: string): boolean;
+    /**
+     * Since 0.14. Redraws the portrait of a DES character now through NAI Studio's portrait queue (after the
+     * pictures of the reply), from its passport as the chat sees it (active outfit and states too), at most
+     * what an image marker may cost (free-only mode: free only), without a confirmation. The portrait
+     * becomes the current chat's. True when queued (or one for that character is already on its way);
+     * false when it cannot be: no DES, the DES integration or its portraits off, a name DES does not know,
+     * the user's or a card's own character, nothing to draw from.
+     */
+    requestDesPortrait(name: string, options?: DesPortraitRequest): Promise<boolean>;
 }
 
 /** Unsubscriptions of everything registered through the API (dropped on disable). */
 const registrations = new Set<() => void>();
 /** Draws backgrounds (set on activation; null before). */
 let backgrounds: BackgroundService | null = null;
+/** Redraws DES portraits (the DES integration, set on activation; null before). */
+let desPortraits: DesPortraitRequester | null = null;
 
 function fail(message: string): never {
     throw new Error(`NAI Studio API: ${message}`);
@@ -217,17 +275,54 @@ function viewFor(found: LocatedPassport, scope: PassportSaveScope): Passport {
 function list(filter?: PassportScopeFilter): Passport[] {
     const data = chatPassportData();
     const all = !filter || (filter.avatar === undefined && !filter.persona && !filter.chat);
+    const options = { includeExcluded: filter?.includeExcluded === true };
     const result: Passport[] = [];
     let cards: number[] = [];
     if (all) cards = chatCardIndexes();
     else if (filter.avatar !== undefined) cards = [cardIndexByAvatar(filter.avatar)].filter((i) => i >= 0);
-    for (const index of cards) result.push(...resolvedCardPassports(ctx().characters[index], data));
+    for (const index of cards) result.push(...resolvedCardPassports(ctx().characters[index], data, options));
     if (all || filter.persona) {
-        const persona = resolvedPersonaPassport(knownPersonaKey(), data);
+        const persona = resolvedPersonaPassport(knownPersonaKey(), data, options);
         if (persona) result.push(persona);
     }
-    if (all || filter.chat) result.push(...data.extra);
+    if (all || filter.chat) result.push(...chatOwnPassports(data, options));
     return structuredClone(result);
+}
+
+function getPassport(id: string, options?: ExcludedFilter): Passport | null {
+    const found = typeof id === 'string' && id.trim() ? locatePassport(id.trim()) : null;
+    if (!found || (found.excluded && options?.includeExcluded !== true)) return null;
+    return structuredClone(found.resolved);
+}
+
+async function excludePassport(passportId: string, excluded: boolean): Promise<void> {
+    const id = requireId(passportId);
+    if (typeof excluded !== 'boolean') fail('excluded must be a boolean');
+    if (!chatOpen()) fail('no chat is open');
+    await prepare();
+    // The owner keeps the flag to the right passport where legacy cards share an id ("main").
+    const found = locatePassport(id);
+    await setPassportExcluded(id, excluded, found ? ownerId(found.owner) : undefined);
+}
+
+function isExcluded(passportId: string): boolean {
+    if (typeof passportId !== 'string' || !passportId.trim() || !chatOpen()) return false;
+    const id = passportId.trim();
+    const found = locatePassport(id);
+    return passportExcluded(id, found ? ownerId(found.owner) : undefined);
+}
+
+async function requestDesPortrait(name: string, options?: DesPortraitRequest): Promise<boolean> {
+    const wanted = requireId(name, 'name');
+    if (options !== undefined && (typeof options !== 'object' || options === null)) fail('options must be an object');
+    const reason = options ? optionalText(options, 'reason') : undefined;
+    if (!desPortraits) return false;
+    try {
+        return await desPortraits(wanted, reason);
+    } catch (error) {
+        log.warn(`${API_GLOBAL}: portrait of "${wanted}" not requested`, error);
+        return false;
+    }
 }
 
 async function savePassport(raw: Passport, scopeValue: PassportSaveScope, target?: PassportTarget): Promise<void> {
@@ -415,11 +510,9 @@ async function generateBackground(input: BackgroundInput): Promise<{ file: strin
 function createApi(): NaiStudioApi {
     return Object.freeze({
         version: API_VERSION as 1,
+        features: Object.freeze([...API_FEATURES]),
         passports: (scope?: PassportScopeFilter) => list(scope),
-        getPassport: (id: string) => {
-            const found = typeof id === 'string' && id.trim() ? locatePassport(id.trim()) : null;
-            return found ? structuredClone(found.resolved) : null;
-        },
+        getPassport,
         savePassport,
         setOutfit,
         setState,
@@ -432,19 +525,27 @@ function createApi(): NaiStudioApi {
         registerPassportProvider,
         generatePassport,
         generateBackground,
+        setPassportExcluded: excludePassport,
+        isPassportExcluded: isExcluded,
+        requestDesPortrait,
     });
 }
 
 let installed: NaiStudioApi | null = null;
 
+/** Redraws a DES portrait on request (v0.14): true when queued, false when it cannot be. */
+export type DesPortraitRequester = (name: string, reason?: string) => Promise<boolean>;
+
 /** Services the API needs from the running extension (activation passes them; enabling again keeps them). */
 export interface PublicApiServices {
     backgrounds?: BackgroundService;
+    desPortraits?: DesPortraitRequester;
 }
 
 /** Publishes globalThis.NAI_STUDIO_API (activation). */
 export function installPublicApi(services: PublicApiServices = {}): NaiStudioApi {
     if (services.backgrounds) backgrounds = services.backgrounds;
+    if (services.desPortraits) desPortraits = services.desPortraits;
     installed ??= createApi();
     (globalThis as Record<string, unknown>)[API_GLOBAL] = installed;
     // The persona key is read synchronously by passports(): load it now.

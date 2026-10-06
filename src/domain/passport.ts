@@ -2,6 +2,7 @@
 // (data.extensions.nai_studio) so it travels with export/import. Pure.
 // A card can carry several passports (v0.8): every character it describes, and the world,
 // locations, the scenario or objects (their visual tags), because a card is not always one person.
+// Since v0.14 a passport NAI Studio wrote on its own from the DES tracker says so (`origin`).
 
 export const PASSPORT_SLOTS = ['base', 'hair', 'eyes', 'body', 'skin', 'clothing', 'accessories', 'style'] as const;
 export type PassportSlot = (typeof PASSPORT_SLOTS)[number];
@@ -49,6 +50,10 @@ export interface PassportState {
     enabled: boolean;
 }
 
+/** Who made a passport when NAI Studio made it on its own (v0.14): "auto-des" = from the DES tracker. */
+export const PASSPORT_ORIGINS = ['auto-des'] as const;
+export type PassportOrigin = (typeof PASSPORT_ORIGINS)[number];
+
 export interface Passport {
     version: 1;
     /** Stable id inside the card. */
@@ -72,6 +77,11 @@ export interface Passport {
     pose: { preset: string; custom: string };
     /** Default canvas position, null = automatic layout. */
     position: { x: number; y: number } | null;
+    /**
+     * Absent for passports people wrote (v0.14); "auto-des" for one NAI Studio wrote by itself for a new
+     * character of the DES tracker. Kept through saves, chat overrides and moves into the card.
+     */
+    origin?: PassportOrigin;
 }
 
 export function newPassportId(): string {
@@ -236,6 +246,8 @@ export function normalizePassport(raw: unknown): Passport | null {
         source.position && typeof source.position === 'object'
             ? { x: unit(position.x, 0.5), y: unit(position.y, 0.5) }
             : null;
+    if ((PASSPORT_ORIGINS as readonly unknown[]).includes(source.origin))
+        result.origin = source.origin as PassportOrigin;
     return result;
 }
 

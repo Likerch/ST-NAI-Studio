@@ -96,7 +96,11 @@ export async function onActivate(): Promise<void> {
     setupGenerationQueue();
     // NAI_STUDIO_API for other extensions (Maestro): passports, events, scene and passport providers,
     // quality gates, passports from a description, backgrounds of places.
-    installPublicApi({ backgrounds: new BackgroundService(pipeline) });
+    installPublicApi({
+        backgrounds: new BackgroundService(pipeline),
+        // DES portraits redrawn on request (v0.14); false while DES is not connected.
+        desPortraits: async (name, reason) => (await desIntegration()?.requestPortrait(name, reason)) ?? false,
+    });
     // Network probing must not hold the 5 s activation window.
     void studio.refreshTransport();
     // A NovelAI key written, deleted or rotated in SillyTavern changes the token source and balance.

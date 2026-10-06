@@ -37,7 +37,7 @@ export interface CustomPoseSettings {
     name: string;
 }
 
-export const CURRENT_SCHEMA_VERSION = 12;
+export const CURRENT_SCHEMA_VERSION = 13;
 
 export type TransportMode = 'auto' | 'plugin' | 'native';
 
@@ -235,6 +235,11 @@ export interface NaiStudioSettings {
         characters: boolean;
         /** A new character without a passport gets one written from the tracker. */
         autoPassports: boolean;
+        /**
+         * Where such a passport goes (v0.14): "chat" keeps it in the chat that met the character (other
+         * chats of the card do not see it; "Move to the card" in the editor), "card" writes it into the card.
+         */
+        npcPassportTarget: 'chat' | 'card';
         /** NAI Studio draws the DES portraits (DES's own auto portraits are off meanwhile). */
         portraits: boolean;
         /**
@@ -254,6 +259,11 @@ export interface NaiStudioSettings {
         banners: boolean;
         /** DES auto-portrait settings kept while NAI Studio draws the portraits. */
         saved: { autoPortraitMode: string; autoGenerateAvatars: boolean } | null;
+        /**
+         * DES's portraits (file paths by name) when v0.14 first connected; null until then. A chat whose
+         * portrait records come from before v0.14 gets these back as its own (per-chat portraits).
+         */
+        legacyPortraits: Record<string, string> | null;
     };
     /** Quality gates of other extensions (Maestro, v0.11): automatic drawings of a reply wait for them. */
     quality: {
@@ -491,6 +501,7 @@ export function defaultSettings(): NaiStudioSettings {
             sceneTags: true,
             characters: true,
             autoPassports: true,
+            npcPassportTarget: 'chat',
             portraits: true,
             portraitPolicy: 'missing',
             portraitPolicyChosen: false,
@@ -499,6 +510,7 @@ export function defaultSettings(): NaiStudioSettings {
             menu: true,
             banners: true,
             saved: null,
+            legacyPortraits: null,
         },
         quality: { gateTimeoutMs: 20000 },
         gallery: { enabled: true, thumbSize: 256 },
@@ -663,6 +675,20 @@ export const MIGRATIONS: readonly Migration[] = [
                 next.des = { ...des, portraitPolicy: 'missing' };
             }
             return next;
+        },
+    },
+    {
+        // v13: passports of new DES characters go to the chat that met them, for everyone (a character
+        // named like one of another chat is no longer taken for them). The portraits DES holds now are
+        // snapshotted once on the next connection (legacyPortraits null) for the chats recorded before.
+        to: 13,
+        migrate(settings) {
+            const des = isObject(settings.des) ? settings.des : {};
+            return {
+                ...settings,
+                schemaVersion: 13,
+                des: { ...des, npcPassportTarget: 'chat', legacyPortraits: null },
+            };
         },
     },
 ];

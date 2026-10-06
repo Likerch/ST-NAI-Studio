@@ -1133,8 +1133,19 @@ var EN = {
 	"naist.passport.scopeCardHint": "Saved into the card: every chat with it sees the change.",
 	"naist.passport.scopeChatHint": "Only this chat sees the change; it is kept over the card and the card stays as it is. \"Back to the card\" and Save drop the changes of this chat.",
 	"naist.passport.scopeChatOnly": "This passport exists only in this chat.",
+	"naist.passport.moveToCard": "Move to the card",
+	"naist.passport.scopeChatOnlyMove": "This passport exists only in this chat. \"Move to the card\" makes it shared by every chat of the card.",
+	"naist.passport.moved": "{name} is now in the card {card}: every chat of it sees the passport.",
 	"naist.passport.savedChat": "The passport of {name} is saved for this chat.",
 	"naist.passports.chatOverride": "changed in this chat",
+	"naist.passports.exclude": "Leave out of this chat",
+	"naist.passports.include": "Back to this chat",
+	"naist.passports.excluded": "left out of this chat",
+	"naist.passports.excludedDone": "{name} no longer appears in the pictures of this chat. Other chats keep the passport as it was.",
+	"naist.passports.includedDone": "{name} appears in the pictures of this chat again.",
+	"naist.passports.chatTitle": "Only in this chat",
+	"naist.passports.chatHint": "Passports of characters met in this chat. Other chats do not get them; \"Move to the card\" shares one with every chat of the card.",
+	"naist.passports.removeChat": "Remove from this chat",
 	"naist.sprites.who": "For",
 	"naist.sprites.costume": "own folder",
 	"naist.macro.characters": "Characters of the chat with a NAI Studio passport (name them in an image marker, their looks are added).",
@@ -1148,7 +1159,11 @@ var EN = {
 	"naist.des.enabled": "Integrate with DES",
 	"naist.des.sceneTags": "Scene from the tracker: time of day, weather, indoors / outdoors, location",
 	"naist.des.characters": "Characters of the tracker in pictures, with their current look",
-	"naist.des.autoPassports": "New character without a passport: write one from the tracker (saved in the card)",
+	"naist.des.autoPassports": "New character without a passport: write one from the tracker",
+	"naist.des.passportTarget": "Where passports of new characters are kept",
+	"naist.des.passportTargetChat": "in this chat",
+	"naist.des.passportTargetCard": "in the card (every chat of it sees them)",
+	"naist.des.passportTargetHint": "A passport kept in the chat stays in that story: a character with the same name in another chat is someone new and gets a passport and a portrait of their own. A regular character can be moved into the card with \"Move to the card\" in the passport editor.",
 	"naist.des.portraits": "NAI Studio draws the DES portraits (DES's own auto portraits are off meanwhile)",
 	"naist.des.policy": "Draw a portrait",
 	"naist.des.policyMissing": "when there is none",
@@ -1162,7 +1177,9 @@ var EN = {
 	"naist.des.passportsButton": "Passports for the characters of the tracker",
 	"naist.des.passportsDone": "Passports written: {count}.",
 	"naist.des.passportCreated": "Passport written for {name} (saved in the card).",
+	"naist.des.passportCreatedChat": "A new character in the story: {name}. Their looks went into a passport of this chat; other chats do not get it.",
 	"naist.des.noPassport": "No passport for {name}: nothing to draw from.",
+	"naist.des.emotionsNeedCard": "Emotion sprites belong to the characters of a card, and the passport of {name} exists only in this chat. Move it into the card (\"Move to the card\" in the passport editor) and the emotions can be drawn.",
 	"naist.des.portraitStarted": "Drawing the portrait of {name}…",
 	"naist.des.menuPassport": "NAI Studio: passport",
 	"naist.des.menuEmotions": "NAI Studio: emotions",
@@ -1295,7 +1312,7 @@ function defaultGeneration() {
 }
 function defaultSettings() {
 	return {
-		schemaVersion: 12,
+		schemaVersion: 13,
 		transport: { mode: "auto" },
 		generation: defaultGeneration(),
 		prompts: {
@@ -1395,6 +1412,7 @@ function defaultSettings() {
 			sceneTags: true,
 			characters: true,
 			autoPassports: true,
+			npcPassportTarget: "chat",
 			portraits: true,
 			portraitPolicy: "missing",
 			portraitPolicyChosen: false,
@@ -1402,7 +1420,8 @@ function defaultSettings() {
 			emotionsToDes: true,
 			menu: true,
 			banners: true,
-			saved: null
+			saved: null,
+			legacyPortraits: null
 		},
 		quality: { gateTimeoutMs: 2e4 },
 		gallery: {
@@ -1622,13 +1641,28 @@ var MIGRATIONS = [
 			};
 			return next;
 		}
+	},
+	{
+		to: 13,
+		migrate(settings) {
+			const des = isObject$3(settings.des) ? settings.des : {};
+			return {
+				...settings,
+				schemaVersion: 13,
+				des: {
+					...des,
+					npcPassportTarget: "chat",
+					legacyPortraits: null
+				}
+			};
+		}
 	}
 ];
 /** Applies pending migrations, then fills missing keys from defaults (lodash.merge in the host). */
 function migrateAndFill(stored, merge) {
 	let raw = isObject$3(stored) ? structuredClone(stored) : {};
 	const fromVersion = typeof raw.schemaVersion === "number" ? raw.schemaVersion : 0;
-	if (fromVersion > 12) return {
+	if (fromVersion > 13) return {
 		settings: merge(defaultSettings(), raw),
 		fromVersion,
 		migrated: false
@@ -1651,11 +1685,11 @@ function migrateAndFill(stored, merge) {
 	if (Array.isArray(sprites.labels)) settings.sprites.labels = sprites.labels;
 	const takeover = isObject$3(raw.takeover) ? raw.takeover : {};
 	settings.takeover.migrationReport = Array.isArray(takeover.migrationReport) ? takeover.migrationReport : [];
-	settings.schemaVersion = 12;
+	settings.schemaVersion = 13;
 	return {
 		settings,
 		fromVersion,
-		migrated: fromVersion !== 12
+		migrated: fromVersion !== 13
 	};
 }
 //#endregion
@@ -4362,6 +4396,8 @@ var STATE_PRESETS = {
 	angry: "angry, frown",
 	happy: "smile, happy"
 };
+/** Who made a passport when NAI Studio made it on its own (v0.14): "auto-des" = from the DES tracker. */
+var PASSPORT_ORIGINS = ["auto-des"];
 function newPassportId() {
 	return `p${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`;
 }
@@ -4524,6 +4560,7 @@ function normalizePassport(raw) {
 		x: unit(position.x, .5),
 		y: unit(position.y, .5)
 	} : null;
+	if (PASSPORT_ORIGINS.includes(source.origin)) result.origin = source.origin;
 	return result;
 }
 /**
@@ -4615,6 +4652,8 @@ function isPassportEmpty(passport) {
 }
 //#endregion
 //#region src/domain/passport-overrides.ts
+/** Keys of an override that are not passport fields: whose it is and whether this chat excludes it. */
+var FLAG_KEYS = /* @__PURE__ */ new Set(["owner", "excluded"]);
 function emptyChatPassports() {
 	return {
 		overrides: {},
@@ -4659,9 +4698,43 @@ function passportDiff(base, edited) {
 	if (!samePosition(edited.position, base.position)) diff.position = edited.position ? { ...edited.position } : null;
 	return diff;
 }
-/** No field is overridden (the owner alone does not count). */
+/** No field is overridden (the owner and the exclusion flag do not count). */
 function isOverrideEmpty(override) {
-	return !override || Object.keys(override).every((key) => key === "owner");
+	return !override || Object.keys(override).every((key) => FLAG_KEYS.has(key));
+}
+/** The chat's override of a passport id when it is for that owner (or names none). */
+function overrideFor(data, id, owner) {
+	const override = Object.prototype.hasOwnProperty.call(data.overrides, id) ? data.overrides[id] : void 0;
+	return override && !(override.owner && owner && override.owner !== owner) ? override : void 0;
+}
+/** The chat does not use this passport (v0.14). `owner` as in resolveChatPassport. */
+function isExcludedIn(data, id, owner) {
+	return overrideFor(data, id, owner)?.excluded === true;
+}
+/**
+* The chat's passports with a passport excluded or used again (a copy). Excluding keeps the fields the
+* chat changed; using it again drops the override when only the flag was left.
+*/
+function withExcluded(data, id, excluded, owner) {
+	const next = {
+		overrides: { ...data.overrides },
+		extra: data.extra
+	};
+	const current = overrideFor(next, id, owner);
+	if (excluded) {
+		next.overrides[id] = {
+			...owner && !current?.owner ? { owner } : {},
+			...current,
+			excluded: true
+		};
+		return next;
+	}
+	if (!current) return next;
+	const rest = { ...current };
+	delete rest.excluded;
+	if (isOverrideEmpty(rest)) delete next.overrides[id];
+	else next.overrides[id] = rest;
+	return next;
 }
 /** The passport as the chat sees it: a new copy, the base untouched. */
 function applyPassportOverride(base, override) {
@@ -4743,6 +4816,7 @@ function normalizeOverride(raw) {
 			y: Math.min(1, Math.max(0, y))
 		} : null;
 	}
+	if (source.excluded === true) result.excluded = true;
 	return result;
 }
 /** Defensive parse of chat_metadata.nai_studio.passports. */
@@ -4751,7 +4825,7 @@ function normalizeChatPassports(raw) {
 	const overrides = {};
 	for (const [id, value] of Object.entries(obj(source.overrides))) {
 		const override = normalizeOverride(value);
-		if (id.trim() && override && !isOverrideEmpty(override)) overrides[id] = override;
+		if (id.trim() && override && (!isOverrideEmpty(override) || override.excluded)) overrides[id] = override;
 	}
 	return {
 		overrides,
@@ -4763,8 +4837,8 @@ function normalizeChatPassports(raw) {
 * override names one, the same owner). The base itself when there is none.
 */
 function resolveChatPassport(passport, owner, data) {
-	const override = Object.prototype.hasOwnProperty.call(data.overrides, passport.id) ? data.overrides[passport.id] : void 0;
-	if (!override || override.owner && owner && override.owner !== owner) return passport;
+	const override = overrideFor(data, passport.id, owner);
+	if (!override) return passport;
 	return applyPassportOverride(passport, override);
 }
 //#endregion
@@ -9027,7 +9101,8 @@ function readPortraitRecord(raw) {
 	if (typeof source.hash !== "string") return null;
 	return {
 		hash: source.hash,
-		...typeof source.look === "string" ? { look: source.look } : {}
+		...typeof source.look === "string" ? { look: source.look } : {},
+		...typeof source.image === "string" && source.image && !isDataUrl(source.image) ? { image: source.image } : {}
 	};
 }
 /** Whether an automatic portrait is due (the menu's "new portrait" always draws). */
@@ -9035,11 +9110,103 @@ function portraitDecision(check) {
 	if (!check.exists || check.policy === "every") return "draw";
 	if (check.policy !== "state") return "keep";
 	const before = readPortraitRecord(check.stored);
-	if (!before) return "adopt";
+	if (!before?.hash) return "adopt";
 	if (before.hash !== check.current.hash) return "draw";
 	if (check.passport) return "keep";
 	if (before.look === void 0) return "adopt";
 	return lookChanged(before.look, check.current.look ?? "") ? "draw" : "keep";
+}
+/** The folder of DES's own portrait files: DES deletes them when nothing of its own points at them. */
+var DES_PORTRAIT_FOLDER = "/user/images/des-portraits/";
+function isDataUrl(value) {
+	return typeof value === "string" && value.startsWith("data:");
+}
+/** A portrait file DES manages (and may delete): a copy keeps it for the chat. */
+function isDesManagedPortrait(value) {
+	return typeof value === "string" && value.includes(DES_PORTRAIT_FOLDER);
+}
+/** A portrait value without its cache-busting query: DES re-saves a file under the same name with "?t=". */
+function portraitKey(value) {
+	if (typeof value !== "string" || !value) return "";
+	if (isDataUrl(value)) return value;
+	const cut = value.search(/[?#]/);
+	return cut < 0 ? value : value.slice(0, cut);
+}
+function samePortrait(a, b) {
+	return portraitKey(a) === portraitKey(b);
+}
+/**
+* A portrait some /sd call drew (NAI Studio's and the built-in one save into /user/images) or a chat's
+* copy of one: not something the user uploaded in DES (DES keeps uploads in its own folder or as data).
+*/
+function isDrawnPortrait(value) {
+	const key = portraitKey(value);
+	return !isDataUrl(key) && key.startsWith("/user/images/") && !key.startsWith(DES_PORTRAIT_FOLDER);
+}
+/** A record with the chat's image; a bare pre-0.13.2 hash keeps "identity unknown" (an empty hash). */
+function recordWithImage(raw, image) {
+	return {
+		...readPortraitRecord(raw) ?? { hash: "" },
+		image
+	};
+}
+/** File name (without the extension) of a chat's copy of a portrait: the same source gives the same name. */
+function portraitFileName(name, source) {
+	return `${name.replace(/[^\p{L}\p{N}_-]+/gu, "_").slice(0, 40) || "npc"}-${textHash(portraitKey(source))}`;
+}
+/**
+* Whether the character has a portrait in this chat. A "chat" character counts only with a record of
+* this chat; a portrait that appeared or changed while the chat is open (the Workshop, DES's own menu) is
+* the chat's and is adopted; what another chat left in DES is missing here.
+*/
+function portraitPresence(input) {
+	if (!input.avatar) return {
+		exists: false,
+		adopt: false
+	};
+	if (input.scope === "card" || input.stored) return {
+		exists: true,
+		adopt: false
+	};
+	return samePortrait(input.avatar, input.baseline) ? {
+		exists: false,
+		adopt: false
+	} : {
+		exists: true,
+		adopt: true
+	};
+}
+/** A record written before v0.14 (a bare hash, or a record without an image). */
+function isLegacyRecord(raw) {
+	if (typeof raw === "string") return raw.length > 0;
+	const record = readPortraitRecord(raw);
+	return record !== null && !record.image;
+}
+/**
+* The portraits to put back into DES when a chat opens: each record's image, and for a record from before
+* v0.14 the portrait DES held for that name when v0.14 first started (what every chat saw then). Only
+* names whose DES portrait differs, plus records that get their image now.
+*/
+function portraitsToRestore(records, legacy, avatars) {
+	const result = [];
+	for (const [name, raw] of Object.entries(records)) {
+		const own = readPortraitRecord(raw)?.image;
+		const backfill = !own && isLegacyRecord(raw) && typeof legacy?.[name] === "string" && legacy[name] !== "";
+		const image = own ?? (backfill ? legacy[name] : "");
+		if (!image) continue;
+		if (backfill || !samePortrait(avatars?.[name], image)) result.push({
+			name,
+			image,
+			backfill
+		});
+	}
+	return result;
+}
+/** DES's portraits as a snapshot for chats recorded before v0.14: file paths only, no data URLs. */
+function legacyPortraitSnapshot(avatars) {
+	const snapshot = {};
+	for (const [name, value] of Object.entries(avatars ?? {})) if (typeof value === "string" && value && !isDataUrl(value)) snapshot[name] = value;
+	return snapshot;
 }
 //#endregion
 //#region src/domain/vision.ts
@@ -9577,12 +9744,14 @@ var AutoGenerator = class {
 var STUDIO_EVENTS = [
 	"passportsSaved",
 	"imageReady",
-	"requestFailed"
+	"requestFailed",
+	"passportExcludedChanged"
 ];
 var listeners = {
 	passportsSaved: /* @__PURE__ */ new Set(),
 	imageReady: /* @__PURE__ */ new Set(),
-	requestFailed: /* @__PURE__ */ new Set()
+	requestFailed: /* @__PURE__ */ new Set(),
+	passportExcludedChanged: /* @__PURE__ */ new Set()
 };
 function onStudioEvent(event, listener) {
 	const set = listeners[event];
@@ -9820,15 +9989,28 @@ async function writeChatPassports(data) {
 function requireChat() {
 	if (!chatOpen()) throw new Error("NAI Studio: no chat is open");
 }
-/** The passports of a card as the current chat sees them. */
-function resolvedCardPassports(character, data = chatPassportData()) {
+/** The passports of a card as the current chat sees them; the ones the chat excludes are left out. */
+function resolvedCardPassports(character, data = chatPassportData(), options = {}) {
 	const owner = character?.avatar;
-	return cardPassports(character).map((p) => resolveChatPassport(p, owner, data));
+	return cardPassports(character).filter((p) => options.includeExcluded || !isExcludedIn(data, p.id, owner)).map((p) => resolveChatPassport(p, owner, data));
 }
-/** The persona passport as the current chat sees it. */
-function resolvedPersonaPassport(key, data = chatPassportData()) {
+/** The persona passport as the current chat sees it; null when the chat excludes it. */
+function resolvedPersonaPassport(key, data = chatPassportData(), options = {}) {
 	const passport = personaPassport(key);
-	return passport ? resolveChatPassport(passport, personaOwner(key), data) : null;
+	if (!passport || !options.includeExcluded && isExcludedIn(data, passport.id, personaOwner(key))) return null;
+	return resolveChatPassport(passport, personaOwner(key), data);
+}
+/** Passports that exist only in this chat; the ones it excludes are left out. */
+function chatOwnPassports(data = chatPassportData(), options = {}) {
+	return options.includeExcluded ? data.extra : data.extra.filter((p) => !isExcludedIn(data, p.id));
+}
+/** The current chat does not use this passport (v0.14); false without a chat. */
+function passportExcluded(id, owner, data = chatPassportData()) {
+	return isExcludedIn(data, id, owner);
+}
+/** Leaves out the passports the current chat excludes (passport providers' ones, v0.14). */
+function withoutExcluded(list, data = chatPassportData()) {
+	return list.filter((p) => !isExcludedIn(data, p.id));
 }
 /**
 * Saves a passport for this chat only: over a card or persona passport (`base`) as the fields that
@@ -9842,11 +10024,13 @@ async function saveChatPassport(base, edited, owner) {
 			...edited,
 			id: base.id
 		});
-		if (isOverrideEmpty(diff)) delete data.overrides[base.id];
-		else data.overrides[base.id] = owner ? {
-			owner,
-			...diff
-		} : diff;
+		const excluded = isExcludedIn(data, base.id, owner);
+		if (isOverrideEmpty(diff) && !excluded) delete data.overrides[base.id];
+		else data.overrides[base.id] = {
+			...owner ? { owner } : {},
+			...diff,
+			...excluded ? { excluded } : {}
+		};
 	} else {
 		const at = data.extra.findIndex((p) => p.id === edited.id);
 		if (at >= 0) data.extra[at] = edited;
@@ -9865,8 +10049,14 @@ async function saveChatPassport(base, edited, owner) {
 async function clearChatOverride(id) {
 	requireChat();
 	const data = chatPassportData();
-	if (!(Object.prototype.hasOwnProperty.call(data.overrides, id) || data.extra.some((p) => p.id === id))) return false;
+	const override = Object.prototype.hasOwnProperty.call(data.overrides, id) ? data.overrides[id] : void 0;
+	const own = data.extra.some((p) => p.id === id);
+	if (!own && isOverrideEmpty(override)) return false;
 	delete data.overrides[id];
+	if (!own && override?.excluded) data.overrides[id] = {
+		...override.owner ? { owner: override.owner } : {},
+		excluded: true
+	};
 	data.extra = data.extra.filter((p) => p.id !== id);
 	await writeChatPassports(data);
 	emitStudioEvent("passportsSaved", {
@@ -9875,10 +10065,59 @@ async function clearChatOverride(id) {
 	});
 	return true;
 }
-/** The chat has an override for this passport of this owner. */
+/** The chat changes fields of this passport of this owner (an exclusion alone is not a change). */
 function hasChatOverride(id, owner, data = chatPassportData()) {
 	const override = Object.prototype.hasOwnProperty.call(data.overrides, id) ? data.overrides[id] : void 0;
-	return Boolean(override && !(override.owner && owner && override.owner !== owner));
+	return Boolean(override && !isOverrideEmpty(override) && !(override.owner && owner && override.owner !== owner));
+}
+/**
+* Excludes a passport from the current chat or uses it again (v0.14): a flag in the chat's overrides,
+* the card stays as it is. `owner` as in the overrides (the card's avatar, "persona:<key>"). True when
+* the state changed ("passportExcludedChanged" follows).
+*/
+async function setPassportExcluded(id, excluded, owner) {
+	requireChat();
+	const data = chatPassportData();
+	if (isExcludedIn(data, id, owner) === excluded) return false;
+	await writeChatPassports(withExcluded(data, id, excluded, owner));
+	emitStudioEvent("passportExcludedChanged", {
+		id,
+		excluded
+	});
+	return true;
+}
+/** The card a passport of the chat goes to by default: the 1:1 character, in a group the last speaker. */
+function defaultCardForChat() {
+	const c = ctx();
+	const cards = chatCardIndexes();
+	if (cards.length <= 1) return cards[0] ?? null;
+	const last = [...c.chat].reverse().find((m) => !m.is_user && !m.is_system);
+	const avatar = typeof last?.original_avatar === "string" ? last.original_avatar : "";
+	const speaker = c.characters.findIndex((ch) => ch.avatar === avatar);
+	return speaker >= 0 && cards.includes(speaker) ? speaker : cards[0] ?? null;
+}
+/**
+* Moves a passport of the chat itself into a card (v0.14), keeping its id: the card gets it (as `edited`
+* when given), the chat's copy goes; the chat's exclusion of it, if any, stays. False when the chat has
+* no passport with that id.
+*/
+async function moveChatPassportToCard(id, index, edited) {
+	requireChat();
+	const own = chatPassportData().extra.find((p) => p.id === id);
+	if (!own) return false;
+	if (!await loadCharacter(index)) throw new Error("NAI Studio: no such card");
+	await saveCardPassport(index, {
+		...edited ?? own,
+		id
+	});
+	const after = chatPassportData();
+	after.extra = after.extra.filter((p) => p.id !== id);
+	await writeChatPassports(after);
+	emitStudioEvent("passportsSaved", {
+		ids: [id],
+		scope: "chat"
+	});
+	return true;
 }
 function ownerId(owner) {
 	if (owner.type === "card") return owner.avatar;
@@ -9903,7 +10142,8 @@ function locatePassport(id, where = {}, data = chatPassportData()) {
 			},
 			base,
 			resolved: resolveChatPassport(base, character.avatar, data),
-			overridden: hasChatOverride(id, character.avatar, data)
+			overridden: hasChatOverride(id, character.avatar, data),
+			excluded: isExcludedIn(data, id, character.avatar)
 		};
 	};
 	const inPersona = (key) => {
@@ -9916,7 +10156,8 @@ function locatePassport(id, where = {}, data = chatPassportData()) {
 			},
 			base,
 			resolved: resolveChatPassport(base, personaOwner(key), data),
-			overridden: hasChatOverride(id, personaOwner(key), data)
+			overridden: hasChatOverride(id, personaOwner(key), data),
+			excluded: isExcludedIn(data, id, personaOwner(key))
 		};
 	};
 	if (where.persona !== void 0) return inPersona(where.persona);
@@ -9932,7 +10173,8 @@ function locatePassport(id, where = {}, data = chatPassportData()) {
 		owner: { type: "chat" },
 		base: null,
 		resolved: own,
-		overridden: true
+		overridden: true,
+		excluded: isExcludedIn(data, id)
 	} : null;
 }
 /** Saves an edited passport where it lives ("card": the card or persona settings) or for this chat. */
@@ -10233,14 +10475,14 @@ async function providedPassports(query = {}) {
 	const context = hintContext(query);
 	const key = `${context.messageIndex}\u0000${context.text}`;
 	const now = Date.now();
-	if (cache && cache.key === key && now - cache.at < CACHE_MS) return structuredClone(await cache.list);
+	if (cache && cache.key === key && now - cache.at < CACHE_MS) return withoutExcluded(structuredClone(await cache.list));
 	const list = Promise.all(ordered.map((provider) => ask$1(provider, context))).then((lists) => lists.flat());
 	cache = {
 		key,
 		at: now,
 		list
 	};
-	return structuredClone(await list);
+	return withoutExcluded(structuredClone(await list));
 }
 //#endregion
 //#region src/features/backgrounds/background-service.ts
@@ -10265,7 +10507,8 @@ async function uploadBackground(png, fileName) {
 /** The place passport with that id (the chat's view, else a passport provider's); a person does not count. */
 async function placePassport(id) {
 	for (const index of chatCardIndexes()) await loadCharacter(index);
-	const found = locatePassport(id)?.resolved ?? (await providedPassports()).find((p) => p.id === id) ?? null;
+	const located = locatePassport(id);
+	const found = (located && !located.excluded ? located.resolved : null) ?? (await providedPassports()).find((p) => p.id === id) ?? null;
 	if (!found || found.kind === "character") {
 		log.warn(`background: no place passport "${id}"`);
 		return null;
@@ -12857,18 +13100,31 @@ async function withProvided(base, query) {
 /**
 * The people of a card: one candidate per character passport (the main one keeps the card key);
 * a card without character passports is one candidate with its character prompt, unless it is a
-* scenario (then nobody is drawn for the card itself).
+* scenario (then nobody is drawn for the card itself). When the chat excludes the main passport (v0.14)
+* the card itself stays a candidate without a passport; another passport does not take its place.
 */
 async function characterCandidates(index, chat) {
 	const character = await loadCharacter(index);
 	if (!character) return [];
 	const prompt = readCharacterPrompt(character);
 	const key = avatarKey(character.avatar);
+	const isPerson = (p) => p.kind === "character" && !isPassportEmpty(p);
+	const cardName = character.name.trim().toLowerCase();
+	const own = resolvedCardPassports(character, chat, { includeExcluded: true }).filter(isPerson).find((p) => !p.name || p.name.trim().toLowerCase() === cardName) ?? null;
 	const list = resolvedCardPassports(character, chat);
-	const people = list.filter((p) => p.kind === "character" && !isPassportEmpty(p));
+	const people = list.filter(isPerson);
+	const ownExcluded = own !== null && !people.some((p) => p.id === own.id);
 	if (people.length) {
-		const main = primaryPassport(people, character.name);
-		return people.map((passport) => {
+		const main = ownExcluded ? null : primaryPassport(people, character.name);
+		return (ownExcluded ? [{
+			key,
+			name: character.name,
+			aliases: aliasesOf(character.name),
+			passport: null,
+			fallbackPrompt: prompt.positive,
+			fallbackNegative: prompt.negative,
+			isUser: false
+		}] : []).concat(people.map((passport) => {
 			const isMain = passport === main;
 			const name = passport.name || character.name;
 			return {
@@ -12880,7 +13136,7 @@ async function characterCandidates(index, chat) {
 				fallbackNegative: isMain ? prompt.negative : "",
 				isUser: false
 			};
-		});
+		}));
 	}
 	if (list.some((p) => p.kind === "scenario")) return [];
 	return [{
@@ -12907,7 +13163,7 @@ function passportCandidate(passport, prefix) {
 }
 /** Named character passports that exist only in this chat (another extension wrote them). */
 function chatOnlyCandidates(chat) {
-	return chat.extra.filter((p) => p.kind === "character" && p.name.trim() && !isPassportEmpty(p)).map((passport) => passportCandidate(passport, CHAT_PASSPORT_PREFIX));
+	return chatOwnPassports(chat).filter((p) => p.kind === "character" && p.name.trim() && !isPassportEmpty(p)).map((passport) => passportCandidate(passport, CHAT_PASSPORT_PREFIX));
 }
 /**
 * People of the passport providers (v0.12): after everyone the chat knows; one named like a card, the
@@ -12954,7 +13210,7 @@ async function sceneSetting(query = {}) {
 		else if (passport.kind === "object" && passport.name && passport.tags.trim()) objects.push(named);
 	};
 	for (const index of chatCardIndexes()) for (const passport of resolvedCardPassports(await loadCharacter(index), chat)) collect(passport);
-	for (const passport of chat.extra) collect(passport);
+	for (const passport of chatOwnPassports(chat)) collect(passport);
 	const [provided, hint] = await Promise.all([providedPassports(query), sceneHint(query)]);
 	const ofGroup = (group) => provided.filter((p) => passportGroup(p.kind) === group);
 	for (const passport of [
@@ -16312,6 +16568,8 @@ function poseSelectOptions(current, emptyKey = "naist.passport.noPose") {
 function stateLabel(state) {
 	return state.id in STATE_PRESETS ? t(`naist.state.${state.id}`) : state.id;
 }
+/** Result of the popup's "Move to the card" button. */
+var MOVE_RESULT = 4;
 /** Opens the editor; resolves with the edited passport or null when cancelled. */
 async function editPassport(name, initial, options = {}) {
 	return (await openEditor(name, {
@@ -16482,7 +16740,7 @@ async function openEditor(name, drafts, initialScope, scopes, options) {
 			radio.checked = radio.value === scope;
 		});
 		const hint = root.querySelector(".naist-passport-scope-hint");
-		if (hint) hint.textContent = t(!drafts.card ? "naist.passport.scopeChatOnly" : scope === "chat" ? "naist.passport.scopeChatHint" : "naist.passport.scopeCardHint");
+		if (hint) hint.textContent = t(!drafts.card ? scopes.movable ? "naist.passport.scopeChatOnlyMove" : "naist.passport.scopeChatOnly" : scope === "chat" ? "naist.passport.scopeChatHint" : "naist.passport.scopeCardHint");
 		root.querySelector(".naist-passport-scope-reset")?.classList.toggle("naist-hidden", scope !== "chat" || !scopes.card);
 	};
 	const renderForm = () => {
@@ -16581,13 +16839,28 @@ async function openEditor(name, drafts, initialScope, scopes, options) {
 	});
 	renderForm();
 	attachPromptAssist(root, ".naist-slot-input, .naist-nsfw-tags, .naist-negative", () => settings().generation.model);
-	if (await c.callGenericPopup(root, c.POPUP_TYPE.CONFIRM, "", {
+	const movable = Boolean(scopes && !scopes.card && scopes.movable);
+	const result = await c.callGenericPopup(root, c.POPUP_TYPE.CONFIRM, "", {
 		okButton: t("naist.passport.save"),
 		cancelButton: t("naist.inspector.cancel"),
 		wide: true,
 		large: true,
-		allowVerticalScrolling: true
-	}) !== c.POPUP_RESULT.AFFIRMATIVE) return null;
+		allowVerticalScrolling: true,
+		...movable ? { customButtons: [{
+			text: t("naist.passport.moveToCard"),
+			result: MOVE_RESULT,
+			classes: []
+		}] } : {}
+	});
+	if (movable && result === MOVE_RESULT) {
+		readForm();
+		return {
+			passport,
+			scope: "chat",
+			move: true
+		};
+	}
+	if (result !== c.POPUP_RESULT.AFFIRMATIVE) return null;
 	readForm();
 	return {
 		passport,
@@ -16596,8 +16869,11 @@ async function openEditor(name, drafts, initialScope, scopes, options) {
 }
 //#endregion
 //#region src/ui/passport-scope.ts
-/** Edits and saves; resolves with the passport as the chat now sees it, or null when cancelled. */
-async function editLocatedPassport(name, located, options = {}) {
+/**
+* Edits and saves; resolves with the passport as the chat now sees it, or null when cancelled. `moveTo`:
+* the card a passport of the chat itself moves into (the chat's default card when absent).
+*/
+async function editLocatedPassport(name, located, options = {}, place = {}) {
 	if (!chatOpen()) {
 		if (!located.base) return null;
 		const edited = await editPassport(name, located.base, options);
@@ -16606,15 +16882,28 @@ async function editLocatedPassport(name, located, options = {}) {
 		toastr.success(t("naist.passport.saved", { name: edited.name || name }));
 		return resolvedAfterSave(located, edited, "card");
 	}
+	const moveTo = located.owner.type === "chat" ? place.moveTo ?? defaultCardForChat() : null;
 	const scoped = await editPassportIn(name, {
 		card: located.base,
 		chat: located.resolved,
 		initial: located.overridden ? "chat" : "card",
-		persona: located.owner.type === "persona"
+		persona: located.owner.type === "persona",
+		movable: moveTo !== null
 	}, options);
 	if (!scoped) return null;
-	await savePassportIn(located, scoped.passport, scoped.scope);
 	const label = scoped.passport.name || name;
+	if (scoped.move && moveTo !== null) {
+		await moveChatPassportToCard(located.resolved.id, moveTo, scoped.passport);
+		toastr.success(t("naist.passport.moved", {
+			name: label,
+			card: ctx().characters[moveTo]?.name ?? ""
+		}));
+		return {
+			...scoped.passport,
+			id: located.resolved.id
+		};
+	}
+	await savePassportIn(located, scoped.passport, scoped.scope);
 	toastr.success(t(scoped.scope === "chat" ? "naist.passport.savedChat" : "naist.passport.saved", { name: label }));
 	return resolvedAfterSave(located, scoped.passport, scoped.scope);
 }
@@ -16815,6 +17104,8 @@ function imagineCallback(pipeline) {
 					}
 				},
 				signal: controller.signal,
+				...plan.maxCost !== void 0 ? { maxCost: plan.maxCost } : {},
+				...plan.skipCostConfirm ? { skipCostConfirm: true } : {},
 				queue: {
 					priority: plan.priority ?? "portrait",
 					kind: "portrait"
@@ -17459,24 +17750,45 @@ async function openPassportManager(index, actions) {
 	let dirty = false;
 	const root = document.createElement("div");
 	root.className = "naist-dialog naist-passports";
+	/** "Leave out of this chat" for a saved passport, or "Back to this chat" when it is left out (v0.14). */
+	const exclusionButton = (excluded) => excluded ? `<div class="menu_button naist-passport-include"><i class="fa-solid fa-rotate-left"></i> ${escapeHtml$2(t("naist.passports.include"))}</div>` : `<div class="menu_button fa-solid fa-eye-slash naist-passport-exclude" title="${escapeHtml$2(t("naist.passports.exclude"))}"></div>`;
+	const summaryLine = (p) => `<div class="naist-muted naist-passport-summary">${escapeHtml$2(passportTags(p, { allowNsfw: false }) || t("naist.passports.empty"))}</div>`;
+	/** Passports of the chat itself (v0.14): not in the card, with "Move to the card". */
+	const chatRows = (chat) => chatOwnPassports(chat, { includeExcluded: true }).map((p) => {
+		const excluded = passportExcluded(p.id, void 0, chat);
+		return `<div class="naist-passport-row${excluded ? " naist-passport-excluded" : ""}" data-chat-id="${escapeHtml$2(p.id)}">
+                    <i class="fa-solid ${KIND_ICON[p.kind]} naist-passport-kind-icon" title="${escapeHtml$2(t(`naist.passport.kind.${p.kind}`))}"></i>
+                    <div class="naist-grow">
+                        <div><b>${escapeHtml$2(p.name || t(`naist.passport.kind.${p.kind}`))}</b> <span class="naist-muted">${escapeHtml$2(t(`naist.passport.kind.${p.kind}`))}${p.aliases.length ? ` · ${escapeHtml$2(p.aliases.join(", "))}` : ""}${excluded ? ` · ${escapeHtml$2(t("naist.passports.excluded"))}` : ""}</span></div>
+                        ${summaryLine(p)}
+                    </div>
+                    ${exclusionButton(excluded)}
+                    <div class="menu_button fa-solid fa-file-import naist-passport-move" title="${escapeHtml$2(t("naist.passport.moveToCard"))}"></div>
+                    <div class="menu_button fa-solid fa-pen-to-square naist-passport-edit-chat" title="${escapeHtml$2(t("naist.passports.edit"))}"></div>
+                    <div class="menu_button fa-solid fa-trash-can naist-passport-remove-chat" title="${escapeHtml$2(t("naist.passports.removeChat"))}"></div>
+                </div>`;
+	}).join("");
 	const render = () => {
 		const main = primaryPassport(list, character.name);
 		const chat = inChat() ? chatPassportData() : null;
 		const rows = list.map((p, i) => {
 			const label = p.name || character.name;
 			const changed = chat !== null && hasChatOverride(p.id, character.avatar, chat);
-			const summary = passportTags(p, { allowNsfw: false });
-			return `<div class="naist-passport-row" data-index="${i}">
+			const saved = chat !== null && savedIds.has(p.id);
+			const excluded = saved && passportExcluded(p.id, character.avatar, chat);
+			return `<div class="naist-passport-row${excluded ? " naist-passport-excluded" : ""}" data-index="${i}">
                     <i class="fa-solid ${KIND_ICON[p.kind]} naist-passport-kind-icon" title="${escapeHtml$2(t(`naist.passport.kind.${p.kind}`))}"></i>
                     <div class="naist-grow">
-                        <div><b>${escapeHtml$2(label)}</b> <span class="naist-muted">${escapeHtml$2(t(`naist.passport.kind.${p.kind}`))}${p === main ? ` · ${escapeHtml$2(t("naist.passports.main"))}` : ""}${p.aliases.length ? ` · ${escapeHtml$2(p.aliases.join(", "))}` : ""}${changed ? ` · <i class="fa-solid fa-comments"></i> ${escapeHtml$2(t("naist.passports.chatOverride"))}` : ""}</span></div>
-                        <div class="naist-muted naist-passport-summary">${escapeHtml$2(summary || t("naist.passports.empty"))}</div>
+                        <div><b>${escapeHtml$2(label)}</b> <span class="naist-muted">${escapeHtml$2(t(`naist.passport.kind.${p.kind}`))}${p === main ? ` · ${escapeHtml$2(t("naist.passports.main"))}` : ""}${p.aliases.length ? ` · ${escapeHtml$2(p.aliases.join(", "))}` : ""}${changed ? ` · <i class="fa-solid fa-comments"></i> ${escapeHtml$2(t("naist.passports.chatOverride"))}` : ""}${excluded ? ` · ${escapeHtml$2(t("naist.passports.excluded"))}` : ""}</span></div>
+                        ${summaryLine(p)}
                     </div>
-                    ${p.kind === "character" ? `<div class="menu_button fa-solid fa-masks-theater naist-passport-emotions" title="${escapeHtml$2(t("naist.passports.emotions"))}"></div>` : ""}
+                    ${saved ? exclusionButton(excluded) : ""}
+                    ${p.kind === "character" && !excluded ? `<div class="menu_button fa-solid fa-masks-theater naist-passport-emotions" title="${escapeHtml$2(t("naist.passports.emotions"))}"></div>` : ""}
                     <div class="menu_button fa-solid fa-pen-to-square naist-passport-edit" title="${escapeHtml$2(t("naist.passports.edit"))}"></div>
                     <div class="menu_button fa-solid fa-trash-can naist-passport-remove" title="${escapeHtml$2(t("naist.passport.remove"))}"></div>
                 </div>`;
 		}).join("");
+		const own = chat ? chatRows(chat) : "";
 		root.innerHTML = `
             <h3>${escapeHtml$2(t("naist.passports.title", { name: character.name }))}</h3>
             <div class="naist-hint">${escapeHtml$2(t("naist.passports.hint"))}</div>
@@ -17488,8 +17800,51 @@ async function openPassportManager(index, actions) {
             <div class="naist-row">
                 <select class="text_pole naist-passports-kind">${PASSPORT_KINDS.map((k) => `<option value="${k}">${escapeHtml$2(t(`naist.passport.kind.${k}`))}</option>`).join("")}</select>
                 <div class="menu_button naist-passports-add"><i class="fa-solid fa-plus"></i> ${escapeHtml$2(t("naist.passports.add"))}</div>
-            </div>`;
+            </div>
+            ${own ? `<div class="naist-section naist-passports-chat">
+                <b>${escapeHtml$2(t("naist.passports.chatTitle"))}</b>
+                <div class="naist-hint">${escapeHtml$2(t("naist.passports.chatHint"))}</div>
+                <div class="naist-passport-list">${own}</div>
+            </div>` : ""}`;
 		localize(root);
+	};
+	/** Leaves a passport out of this chat or brings it back; saved at once (v0.14). */
+	const setExcluded = async (id, owner, label, excluded) => {
+		await setPassportExcluded(id, excluded, owner);
+		toastr.info(t(excluded ? "naist.passports.excludedDone" : "naist.passports.includedDone", { name: label }));
+		render();
+	};
+	/** A passport of the chat itself: edited where it lives, moved into this card, or removed (v0.14). */
+	const chatAction = async (action, id) => {
+		const own = chatPassportData().extra.find((p) => p.id === id);
+		if (!own) return;
+		const label = own.name || character.name;
+		if (action === "exclude" || action === "include") {
+			await setExcluded(id, void 0, label, action === "exclude");
+			return;
+		}
+		if (action === "remove") {
+			await clearChatOverride(id);
+			render();
+			return;
+		}
+		if (action === "move") {
+			if (!await moveChatPassportToCard(id, index)) return;
+			toastr.success(t("naist.passport.moved", {
+				name: label,
+				card: character.name
+			}));
+		} else {
+			const located = locatePassport(id);
+			if (!located) return;
+			await editLocatedPassport(character.name, located, { identity: true }, { moveTo: index });
+		}
+		const moved = cardPassports(await loadCharacter(index)).find((p) => p.id === id);
+		if (moved && !list.some((p) => p.id === id)) {
+			list.push(moved);
+			savedIds.add(id);
+		}
+		render();
 	};
 	const edit = async (i, fresh = false) => {
 		const current = list[i];
@@ -17527,7 +17882,19 @@ async function openPassportManager(index, actions) {
 	root.addEventListener("click", (event) => {
 		const target = event.target;
 		const row = target.closest(".naist-passport-row");
+		const chatId = row?.dataset.chatId;
+		if (chatId) {
+			const action = target.closest(".naist-passport-edit-chat") ? "edit" : target.closest(".naist-passport-move") ? "move" : target.closest(".naist-passport-remove-chat") ? "remove" : target.closest(".naist-passport-exclude") ? "exclude" : target.closest(".naist-passport-include") ? "include" : null;
+			if (action) chatAction(action, chatId).catch(reportGenerationError);
+			return;
+		}
 		const i = Number(row?.dataset.index);
+		const exclusion = target.closest(".naist-passport-exclude") ? true : target.closest(".naist-passport-include") ? false : null;
+		if (exclusion !== null) {
+			const passport = list[i];
+			if (passport) setExcluded(passport.id, character.avatar, passport.name || character.name, exclusion).catch(reportGenerationError);
+			return;
+		}
 		if (target.closest(".naist-passport-edit")) edit(i);
 		else if (target.closest(".naist-passport-remove")) {
 			list.splice(i, 1);
@@ -17868,6 +18235,44 @@ function setupScenes(pipeline, service) {
 		log.info("scene composer ready");
 	});
 }
+//#endregion
+//#region src/integration/des/chat-portraits.ts
+/** Folder in /user/images for the chats' copies of DES portraits. */
+var PORTRAIT_FOLDER = "nai-studio-portraits";
+function parseDataUrl(url) {
+	const comma = url.indexOf(",");
+	const head = comma > 0 ? url.slice(5, comma) : "";
+	if (!head.endsWith(";base64")) return null;
+	return {
+		mime: head.slice(0, -7) || "image/png",
+		base64: url.slice(comma + 1)
+	};
+}
+/**
+* What a chat records as its portrait: a path, never a data URL; undefined when there is nothing to keep
+* (no portrait, or a data URL that could not be saved).
+*/
+async function portraitReference(name, value) {
+	if (!value) return void 0;
+	try {
+		if (isDataUrl(value)) {
+			const data = parseDataUrl(value);
+			if (!data) return void 0;
+			return await uploadImage(data.base64, data.mime, PORTRAIT_FOLDER, portraitFileName(name, value));
+		}
+		if (isDesManagedPortrait(value)) {
+			const response = await fetch(value, { cache: "no-cache" });
+			if (!response.ok) return value;
+			const blob = await response.blob();
+			const mime = blob.type.startsWith("image/") ? blob.type : sniffMime(await blobToBytes(blob));
+			return await uploadImage(await blobToBase64$1(blob), mime, PORTRAIT_FOLDER, portraitFileName(name, value));
+		}
+	} catch (error) {
+		log.warn(`DES: the portrait of ${name} was not saved for this chat`, error);
+		return isDataUrl(value) ? void 0 : value;
+	}
+	return value;
+}
 var DES_VERIFIED = ["2.6.0"];
 var MODULES = {
 	state: {
@@ -17913,6 +18318,8 @@ function scriptOf(name, manifest) {
 	} catch {}
 	return null;
 }
+/** While open, DES's Workshop saves its draft over the character stores (Maestro's DES research). */
+var WORKSHOP_OPEN = "#character-workshop-popup.is-open";
 /** The imported settings are DES's live object (or share its nested objects before its first save). */
 function isLive(settings, saved) {
 	if (!settings || typeof settings !== "object") return false;
@@ -17986,13 +18393,25 @@ async function connectDes(timeoutMs = 6e4) {
 			} catch (error) {
 				log.warn("DES: portrait bar refresh failed", error);
 			}
-		}
+		},
+		setPortraits: (portraits) => {
+			const avatars = settings.npcAvatars ??= {};
+			const full = settings.npcAvatarsFullRes;
+			for (const [character, url] of Object.entries(portraits)) {
+				avatars[character] = url;
+				if (full?.[character]) full[character] = url;
+			}
+			namespaces.persistence.saveSettings();
+		},
+		workshopOpen: () => document.querySelector(WORKSHOP_OPEN) !== null
 	};
 }
 //#endregion
 //#region src/integration/des/des-integration.ts
 var TRACKER_EVENT = "dooms_tracker_update_complete";
 var TRACKER_WAIT_MS = 12e4;
+/** Putting a chat's portraits back waits this long for DES's Workshop to close, again and again. */
+var WORKSHOP_RETRY_MS = 2e3;
 /** Letters and digits only: DES cleans /sd prompts (quotes, pipes, commas) before sending them. */
 var normalizeLine = (text) => text.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "");
 var sameName = (a, b) => mentionIndex(a, [b]) >= 0 || mentionIndex(b, [a]) >= 0;
@@ -18023,8 +18442,19 @@ var DesIntegration = class {
 	* since the portrait is drawn from the newest tracker.
 	*/
 	pendingPortraits = /* @__PURE__ */ new Map();
+	/** Portraits another extension asked for (requestPortrait): a cost cap instead of a confirmation. */
+	requestedPortraits = /* @__PURE__ */ new Set();
+	/** Requests still looking for the passport (a second one meanwhile is the same request). */
+	requesting = /* @__PURE__ */ new Set();
+	/** The chat whose own portraits DES holds now (v0.14); null before the first chat. */
+	portraitChat = null;
+	/** DES's portraits right after this chat's own were put back: what changes later is the chat's. */
+	baseline = {};
+	restoreTimer = null;
 	lastLocation = "";
 	timer = null;
+	/** A scheduled run handles portraits when any of the calls it merges asked for them. */
+	scheduledPortraits = false;
 	listeners = /* @__PURE__ */ new Set();
 	/** Russian tracker looks converted to tags (kept apart from the passport tags they join). */
 	looks = /* @__PURE__ */ new Map();
@@ -18056,6 +18486,7 @@ var DesIntegration = class {
 		if (this.api) {
 			log.info(`Doom's Enhancement Suite ${this.api.version ?? "?"} connected (${this.api.mode()})`);
 			if (!this.api.verified) log.warn(`DES ${this.api.version}: integration checked on 2.6.0 only`);
+			this.snapshotLegacyPortraits();
 			this.install();
 		}
 		this.changed();
@@ -18083,6 +18514,7 @@ var DesIntegration = class {
 		onStudioEvent("passportsSaved", (detail) => {
 			if (detail.scope === "chat") this.schedule(false);
 		});
+		onStudioEvent("passportExcludedChanged", () => this.schedule(false));
 		const received = c.eventTypes.MESSAGE_RECEIVED;
 		const after = (_id, type) => {
 			if (type !== "quiet" && type !== "impersonate") this.schedule(true);
@@ -18094,6 +18526,7 @@ var DesIntegration = class {
 		if (c.eventTypes.MESSAGE_SWIPED) c.eventSource.on(c.eventTypes.MESSAGE_SWIPED, () => this.schedule(false));
 		if (c.eventTypes.CHAT_CHANGED) c.eventSource.on(c.eventTypes.CHAT_CHANGED, () => {
 			this.lastLocation = "";
+			this.scheduledPortraits = false;
 			this.schedule(false);
 		});
 		this.applyPortraitMode();
@@ -18221,15 +18654,18 @@ var DesIntegration = class {
 	}
 	schedule(portraits) {
 		if (this.timer) clearTimeout(this.timer);
-		const withPortraits = portraits;
+		this.scheduledPortraits ||= portraits;
 		this.timer = setTimeout(() => {
 			this.timer = null;
+			const withPortraits = this.scheduledPortraits;
+			this.scheduledPortraits = false;
 			this.handleTracker(withPortraits).catch((error) => log.warn("DES tracker handling failed", error));
 		}, 400);
 	}
 	/** After a tracker update: location, passports of new characters, appearance lines, portraits. */
 	async handleTracker(portraits) {
 		if (!this.active()) return;
+		const restored = await this.restoreChatPortraits(portraits);
 		const latest = this.latestTrackerAt();
 		if (!latest) return;
 		const { tracker, messageId } = latest;
@@ -18249,7 +18685,7 @@ var DesIntegration = class {
 			if (this.isUserName(character.name)) continue;
 			const found = await this.findPassport(character.name, { provided: { messageId } }) ?? (d.autoPassports ? await this.createPassport(character) : null);
 			this.syncLine(character.name, found?.passport ?? null, character.look);
-			if (portraits && d.portraits) this.maybePortrait(character, found, approval);
+			if (portraits && d.portraits && restored) this.maybePortrait(character, found, approval);
 		}
 	}
 	chatCards() {
@@ -18257,13 +18693,15 @@ var DesIntegration = class {
 	}
 	/** Card new passports go to: the 1:1 character, in a group the speaker of the last reply. */
 	targetCard() {
-		const c = ctx();
-		const cards = this.chatCards();
-		if (cards.length <= 1) return cards[0] ?? null;
-		const last = [...c.chat].reverse().find((m) => !m.is_user && !m.is_system);
-		const avatar = typeof last?.original_avatar === "string" ? last.original_avatar : "";
-		const speaker = c.characters.findIndex((ch) => ch.avatar === avatar);
-		return speaker >= 0 ? speaker : cards[0] ?? null;
+		return defaultCardForChat();
+	}
+	/** The open chat (its id); '' without one. */
+	chatKey() {
+		try {
+			return String(ctx().getCurrentChatId?.() ?? "");
+		} catch {
+			return "";
+		}
 	}
 	isCardCharacter(name) {
 		return this.chatCards().some((i) => sameName(ctx().characters[i]?.name ?? "", name));
@@ -18271,7 +18709,8 @@ var DesIntegration = class {
 	/**
 	* The character passport of a name in the cards of the chat (name, aliases, sound), then among the
 	* passports of the chat itself; as the chat sees it. With `provided` (v0.12) then among the passports
-	* of the passport providers for that scene (stored nowhere: `cardIndex` null).
+	* of the passport providers for that scene (stored nowhere: `cardIndex` null). Passports the chat
+	* excludes (v0.14) are not found.
 	*/
 	async findPassport(name, options = {}) {
 		const chat = chatPassportData();
@@ -18283,7 +18722,7 @@ var DesIntegration = class {
 				passport
 			};
 		}
-		const own = chat.extra.find((passport) => passport.name && matches(passport, passport.name));
+		const own = chatOwnPassports(chat).find((passport) => passport.name && matches(passport, passport.name));
 		if (own) return {
 			cardIndex: null,
 			passport: own
@@ -18295,22 +18734,37 @@ var DesIntegration = class {
 			passport: provided
 		} : null;
 	}
-	/** A passport written from the tracker for a character the cards do not know yet. */
+	/**
+	* A passport written from the tracker for a character the chat does not know yet: into this chat
+	* (v0.14 default) or into the card (des.npcPassportTarget), marked origin "auto-des".
+	*/
 	createPassport(character) {
 		const key = character.name.toLowerCase();
 		if (this.failed.has(key)) return Promise.resolve(null);
 		const running = this.passportJobs.get(key);
 		if (running) return running;
 		const job = (async () => {
+			const toCard = settings().des.npcPassportTarget === "card";
 			const cardIndex = this.targetCard();
-			if (cardIndex === null) return null;
+			if (toCard ? cardIndex === null : !chatOpen()) return null;
+			const chat = this.chatKey();
 			try {
 				const passport = await generateTrackerPassport(character.name, character.look, cardIndex);
 				passport.aliases = [.../* @__PURE__ */ new Set([...passport.aliases, ...this.aliasesOf(character.name)])];
-				await saveCardPassport(cardIndex, passport);
-				toastr.info(t("naist.des.passportCreated", { name: character.name }), t("naist.des.title"));
+				passport.origin = "auto-des";
+				if (this.chatKey() !== chat) return null;
+				if (toCard) {
+					await saveCardPassport(cardIndex, passport);
+					toastr.info(t("naist.des.passportCreated", { name: character.name }), t("naist.des.title"));
+					return {
+						cardIndex,
+						passport
+					};
+				}
+				await saveChatPassport(null, passport);
+				toastr.info(t("naist.des.passportCreatedChat", { name: character.name }), t("naist.des.title"));
 				return {
-					cardIndex,
+					cardIndex: null,
 					passport
 				};
 			} catch (error) {
@@ -18330,6 +18784,7 @@ var DesIntegration = class {
 		const line = passport ? passportTags(passport, { allowNsfw: false }) : look.trim();
 		if (!line) return;
 		this.lines.set(normalizeLine(line), name);
+		if (this.api.workshopOpen()) return;
 		const store = this.api.settings.characterAppearance ??= {};
 		if (store[name] === line) return;
 		store[name] = line;
@@ -18341,6 +18796,7 @@ var DesIntegration = class {
 		const cardName = card?.name ?? "";
 		const chat = this.chatCards().includes(index) ? chatPassportData() : null;
 		for (const stored of passports) {
+			if (chat && passportExcluded(stored.id, card?.avatar, chat)) continue;
 			const passport = chat ? resolveChatPassport(stored, card?.avatar, chat) : stored;
 			if (passport.kind === "character") this.syncLine(passport.name || cardName, passport);
 		}
@@ -18350,16 +18806,156 @@ var DesIntegration = class {
 		const meta = ctx().chatMetadata.nai_studio ??= {};
 		return meta.desPortraits ??= {};
 	}
+	/** The records of the open chat without creating them. */
+	readRecords() {
+		return (ctx().chatMetadata?.nai_studio)?.desPortraits ?? {};
+	}
 	saveRecords() {
 		Promise.resolve(ctx().saveMetadata()).catch((error) => log.warn("DES: portrait record not saved", error));
+	}
+	/** DES's portraits when v0.14 first connected: the portraits of the chats recorded before (once). */
+	snapshotLegacyPortraits() {
+		const d = settings().des;
+		if (d.legacyPortraits !== null && d.legacyPortraits !== void 0) return;
+		d.legacyPortraits = legacyPortraitSnapshot(this.api?.settings.npcAvatars);
+		saveSettings();
+	}
+	/**
+	* Puts the open chat's own portraits back into DES once per chat (v0.14): each record's image where DES
+	* holds another one, and for a record from before v0.14 the portrait of the snapshot (it becomes the
+	* record's image). Then DES's portraits are the chat's baseline. False while DES's Workshop is open:
+	* nothing is written, the run is tried again later (`portraits` says whether it decides portraits).
+	*/
+	async restoreChatPortraits(portraits) {
+		const api = this.api;
+		if (!api || !settings().des.portraits) return true;
+		const chat = this.chatKey();
+		if (chat === (this.portraitChat ?? "")) return true;
+		if (api.workshopOpen()) {
+			this.retryRestore(portraits);
+			return false;
+		}
+		const records = this.readRecords();
+		const restore = chat ? portraitsToRestore(records, settings().des.legacyPortraits, api.settings.npcAvatars) : [];
+		const writes = {};
+		for (const item of restore) if (!samePortrait(api.settings.npcAvatars?.[item.name], item.image)) writes[item.name] = item.image;
+		if (Object.keys(writes).length) {
+			api.setPortraits(writes);
+			api.refreshPortraits();
+			log.info(`DES: portraits of this chat put back: ${Object.keys(writes).join(", ")}`);
+		}
+		this.portraitChat = chat;
+		this.baseline = { ...api.settings.npcAvatars ?? {} };
+		const backfill = restore.filter((item) => item.backfill);
+		if (backfill.length) {
+			for (const item of backfill) {
+				const image = await portraitReference(item.name, item.image);
+				if (this.chatKey() !== chat) return true;
+				if (image) records[item.name] = recordWithImage(records[item.name], image);
+			}
+			this.saveRecords();
+		}
+		return true;
+	}
+	retryRestore(portraits) {
+		if (this.restoreTimer) return;
+		log.info("DES: the Workshop is open, this chat's portraits wait for it to close");
+		this.restoreTimer = setTimeout(() => {
+			this.restoreTimer = null;
+			this.schedule(portraits);
+		}, WORKSHOP_RETRY_MS);
+	}
+	/** DES's portrait of a name is the open chat's own again (after a portrait drawn for a chat left). */
+	putBack(name) {
+		const api = this.api;
+		if (!api) return;
+		const own = readPortraitRecord(this.readRecords()[name])?.image;
+		const now = api.settings.npcAvatars?.[name];
+		if (own && !samePortrait(own, now) && !api.workshopOpen()) {
+			api.setPortraits({ [name]: own });
+			api.refreshPortraits();
+		} else if (now) this.baseline[name] = now;
+	}
+	/**
+	* Records a portrait as the open chat's own: the record and the image (a path; a data URL saved as a
+	* file). Nothing when the chat was left meanwhile.
+	*/
+	async recordPortrait(name, record, value) {
+		const chat = this.chatKey();
+		const image = await portraitReference(name, value);
+		if (this.chatKey() !== chat) return;
+		this.portraitRecords()[name] = {
+			...record,
+			...image ? { image } : {}
+		};
+		const now = this.api?.settings.npcAvatars?.[name];
+		if (now) this.baseline[name] = now;
+		this.saveRecords();
+	}
+	/** DES's regeneration; when it fails, the portrait DES moved to its history first comes back. */
+	async drawPortrait(name) {
+		const api = this.api;
+		const before = api.settings.npcAvatars?.[name];
+		const url = await api.regeneratePortrait(name);
+		if (!url && before && !api.settings.npcAvatars?.[name] && !api.workshopOpen()) {
+			api.setPortraits({ [name]: before });
+			api.refreshPortraits();
+		}
+		return url;
+	}
+	/** A portrait drawn for `chat`: recorded there, or, when that chat was left, the open one's put back. */
+	async portraitDrawn(name, record, url, chat) {
+		if (this.chatKey() !== chat) {
+			log.info(`DES: the portrait of ${name} was drawn for a chat that is closed now`);
+			this.putBack(name);
+			return;
+		}
+		await this.recordPortrait(name, record, url);
+		this.api?.refreshPortraits();
+	}
+	/**
+	* Queues a portrait (one by one, in order); its NovelAI request then waits in the one queue. A portrait
+	* of a chat that was left before its turn is not drawn.
+	*/
+	queuePortrait(name, current, options = {}) {
+		const chat = this.chatKey();
+		this.pendingPortraits.set(name, current);
+		this.portraitQueue = this.portraitQueue.then(async () => {
+			const key = normalizeLine(name);
+			try {
+				if (options.verdict && await options.verdict !== "draw") {
+					log.info(`DES: portrait of ${name} skipped by the quality gate`);
+					return;
+				}
+				if (this.chatKey() !== chat) {
+					log.info(`DES: portrait of ${name} dropped, its chat was closed`);
+					return;
+				}
+				if (options.requested) this.requestedPortraits.add(key);
+				const url = await this.drawPortrait(name);
+				if (url) await this.portraitDrawn(name, this.pendingPortraits.get(name) ?? current, url, chat);
+			} catch (error) {
+				log.warn(`DES: portrait of ${name} failed`, error);
+			} finally {
+				this.pendingPortraits.delete(name);
+				this.requestedPortraits.delete(key);
+			}
+		});
 	}
 	maybePortrait(character, found, approval) {
 		const api = this.api;
 		if (!api || this.isCardCharacter(character.name)) return;
 		const name = character.name;
 		const existing = api.settings.npcAvatars?.[name];
-		const records = this.portraitRecords();
-		if (existing && !records[name] && !api.settings.generatedPortraits?.[name]) return;
+		const stored = this.readRecords()[name];
+		const presence = portraitPresence({
+			scope: found && found.cardIndex !== null ? "card" : "chat",
+			avatar: existing,
+			stored,
+			baseline: this.baseline[name]
+		});
+		const drawn = isDrawnPortrait(existing) || Boolean(api.settings.generatedPortraits?.[name]);
+		if (existing && !stored && !presence.adopt && !drawn) return;
 		if (!(found ? passportTags(found.passport, { allowNsfw: false }) : character.look).trim()) return;
 		const policy = settings().des.portraitPolicy;
 		const current = portraitRecord(found?.passport, character.look);
@@ -18367,38 +18963,62 @@ var DesIntegration = class {
 			this.pendingPortraits.set(name, current);
 			return;
 		}
+		if (presence.adopt) {
+			this.recordPortrait(name, current, existing);
+			return;
+		}
 		const decision = portraitDecision({
 			policy,
-			exists: Boolean(existing),
-			stored: records[name],
+			exists: presence.exists,
+			stored,
 			current,
 			passport: Boolean(found)
 		});
 		if (decision === "adopt") {
-			records[name] = current;
-			this.saveRecords();
+			this.recordPortrait(name, current, readPortraitRecord(stored)?.image ?? existing);
 			return;
 		}
 		if (decision !== "draw") return;
-		this.pendingPortraits.set(name, current);
-		const verdict = approval?.();
-		this.portraitQueue = this.portraitQueue.then(async () => {
-			try {
-				if (verdict && await verdict !== "draw") {
-					log.info(`DES: portrait of ${name} skipped by the quality gate`);
-					return;
-				}
-				if (await api.regeneratePortrait(name)) {
-					records[name] = this.pendingPortraits.get(name) ?? current;
-					await ctx().saveMetadata();
-					api.refreshPortraits();
-				}
-			} catch (error) {
-				log.warn(`DES: portrait of ${name} failed`, error);
-			} finally {
-				this.pendingPortraits.delete(name);
-			}
-		});
+		this.queuePortrait(name, current, { verdict: approval?.() });
+	}
+	/**
+	* A redraw of a DES character's portrait now (v0.14, NAI_STUDIO_API.requestDesPortrait): through the
+	* same queue and pipeline as the automatic portraits, from the passport as the chat sees it (its active
+	* outfit too), under the Anlas cap of image markers. True when queued (or one is already on its way);
+	* false when it cannot be: no DES, the integration or NAI Studio's DES portraits off, a name DES does not
+	* know, the user's or a card's character, nothing to draw from.
+	*/
+	async requestPortrait(rawName, reason = "") {
+		if (!this.api || !this.active() || !settings().des.portraits) return false;
+		const name = this.desName(rawName);
+		if (!name || this.isUserName(name) || this.isCardCharacter(name)) return false;
+		if (this.pendingPortraits.has(name) || this.requesting.has(name) || this.manualPortraits.has(normalizeLine(name))) return true;
+		this.requesting.add(name);
+		try {
+			const found = await this.findPassport(name, { provided: {} });
+			const look = this.latestTracker()?.characters.find((ch) => sameName(ch.name, name))?.look ?? "";
+			if (!(found ? passportTags(found.passport, { allowNsfw: false }) : look).trim()) return false;
+			this.syncLine(name, found?.passport ?? null, look);
+			log.info(`DES: portrait of ${name} requested${reason ? ` (${reason})` : ""}`);
+			this.queuePortrait(name, portraitRecord(found?.passport, look), { requested: true });
+			return true;
+		} finally {
+			this.requesting.delete(name);
+		}
+	}
+	/** The name DES knows a character by: in the latest tracker, else in DES's portraits or lines. */
+	desName(raw) {
+		const wanted = typeof raw === "string" ? raw.trim() : "";
+		if (!wanted) return null;
+		const tracked = this.latestTracker()?.characters.find((ch) => sameName(ch.name, wanted));
+		if (tracked) return tracked.name;
+		const lower = wanted.toLowerCase();
+		const des = this.api?.settings;
+		for (const store of [des?.npcAvatars, des?.characterAppearance]) {
+			const key = Object.keys(store ?? {}).find((k) => k.toLowerCase() === lower);
+			if (key) return key;
+		}
+		return null;
 	}
 	/** DES's /sd call for an appearance line NAI Studio wrote: the full portrait request. */
 	async portraitPlan(prompt) {
@@ -18422,6 +19042,7 @@ var DesIntegration = class {
 			withoutClothing: Boolean(look)
 		}) : "";
 		const size = markerDimensions("portrait", void 0, s.anlas.freeOnly);
+		const requested = this.requestedPortraits.has(normalizeLine(name));
 		return {
 			scene: joinTags(identity, look, s.des.portraitTags),
 			...found?.passport.negative ? { negative: found.passport.negative } : {},
@@ -18431,7 +19052,11 @@ var DesIntegration = class {
 				seed: stableSeed(name),
 				characters: []
 			},
-			priority: this.manualPortraits.has(normalizeLine(name)) ? "user" : "portrait"
+			priority: this.manualPortraits.has(normalizeLine(name)) ? "user" : "portrait",
+			...requested ? {
+				skipCostConfirm: true,
+				maxCost: s.anlas.freeOnly || !s.markers.allowPaid ? 0 : s.markers.maxCost
+			} : {}
 		};
 	}
 	lastReplyId() {
@@ -18447,6 +19072,13 @@ var DesIntegration = class {
 				name,
 				look
 			}) : null;
+		}
+		if (!found && settings().des.npcPassportTarget !== "card" && chatOpen()) {
+			const edited = await editPassport(name, defaultPassport("character", name), { identity: true });
+			if (!edited) return;
+			await saveChatPassport(null, edited);
+			toastr.success(t("naist.passport.savedChat", { name: edited.name || name }));
+			return;
 		}
 		if (!found) {
 			const cardIndex = this.targetCard();
@@ -18486,6 +19118,7 @@ var DesIntegration = class {
 		} else if (action === "emotions") {
 			const found = await this.ensureFound(name);
 			if (found && found.cardIndex !== null) openEmotions(found.cardIndex, found.passport.id);
+			else if (found && chatOwnPassports().some((p) => p.id === found.passport.id)) toastr.warning(t("naist.des.emotionsNeedCard", { name }), t("naist.des.title"));
 			else toastr.warning(t("naist.des.noPassport", { name }));
 		} else if (action === "portrait" && this.api) {
 			const found = await this.findPassport(name, { provided: {} }) ?? await this.ensureFound(name);
@@ -18493,13 +19126,12 @@ var DesIntegration = class {
 			this.syncLine(name, found?.passport ?? null, look);
 			toastr.info(t("naist.des.portraitStarted", { name }), t("naist.des.title"));
 			this.manualPortraits.add(normalizeLine(name));
+			const chat = this.chatKey();
 			try {
-				if (await this.api.regeneratePortrait(name)) {
-					if (!this.isCardCharacter(name)) {
-						this.portraitRecords()[name] = portraitRecord(found?.passport, look);
-						this.saveRecords();
-					}
-					this.api.refreshPortraits();
+				const url = await this.drawPortrait(name);
+				if (url) {
+					if (!this.isCardCharacter(name)) await this.portraitDrawn(name, portraitRecord(found?.passport, look), url, chat);
+					else this.api.refreshPortraits();
 				}
 			} finally {
 				this.manualPortraits.delete(normalizeLine(name));
@@ -19404,7 +20036,7 @@ var ComicService = class {
 };
 //#endregion
 //#region package.json
-var version = "0.13.2";
+var version = "0.14.0";
 //#endregion
 //#region src/features/settings-io/settings-io.ts
 async function exportSettingsFile(includeImages) {
@@ -19414,16 +20046,16 @@ async function exportSettingsFile(includeImages) {
 		const blob = await imageStore().getItem(key);
 		if (blob) images[key] = await blobToBase64$1(blob);
 	}
-	const data = buildSettingsExport(s, 12, version, images);
+	const data = buildSettingsExport(s, 13, version, images);
 	const name = `nai-studio-settings-${data.exportedAt.slice(0, 10)}.json`;
 	downloadBlob(new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }), name);
 	return name;
 }
 async function importSettingsText(text) {
-	const check = checkSettingsImport(text, 12);
+	const check = checkSettingsImport(text, 13);
 	if (!check.ok) throw new NaiError("import-failed", "none", { reason: t(`naist.io.reason.${check.reason}`, {
 		version: check.schemaVersion ?? "",
-		current: 12
+		current: 13
 	}) });
 	try {
 		const key = await backupSettings(settings(), settings().schemaVersion);
@@ -21506,10 +22138,24 @@ function setupIntegrations(pipeline) {
 //#endregion
 //#region src/integration/public-api.ts
 var API_GLOBAL = "NAI_STUDIO_API";
+/**
+* What this version has beyond the members a consumer checks with `typeof` (v0.14): "excludePassport"
+* (setPassportExcluded, isPassportExcluded, the "passportExcludedChanged" event, `includeExcluded`),
+* "requestDesPortrait", "chatNpcPassports" (passports of new DES characters go to the chat by default and
+* carry origin "auto-des"), "chatPortraits" (DES portraits remembered per chat).
+*/
+var API_FEATURES = [
+	"excludePassport",
+	"requestDesPortrait",
+	"chatNpcPassports",
+	"chatPortraits"
+];
 /** Unsubscriptions of everything registered through the API (dropped on disable). */
 var registrations = /* @__PURE__ */ new Set();
 /** Draws backgrounds (set on activation; null before). */
 var backgrounds = null;
+/** Redraws DES portraits (the DES integration, set on activation; null before). */
+var desPortraits = null;
 function fail(message) {
 	throw new Error(`NAI Studio API: ${message}`);
 }
@@ -21546,17 +22192,49 @@ function viewFor(found, scope) {
 function list(filter) {
 	const data = chatPassportData();
 	const all = !filter || filter.avatar === void 0 && !filter.persona && !filter.chat;
+	const options = { includeExcluded: filter?.includeExcluded === true };
 	const result = [];
 	let cards = [];
 	if (all) cards = chatCardIndexes();
 	else if (filter.avatar !== void 0) cards = [cardIndexByAvatar(filter.avatar)].filter((i) => i >= 0);
-	for (const index of cards) result.push(...resolvedCardPassports(ctx().characters[index], data));
+	for (const index of cards) result.push(...resolvedCardPassports(ctx().characters[index], data, options));
 	if (all || filter.persona) {
-		const persona = resolvedPersonaPassport(knownPersonaKey(), data);
+		const persona = resolvedPersonaPassport(knownPersonaKey(), data, options);
 		if (persona) result.push(persona);
 	}
-	if (all || filter.chat) result.push(...data.extra);
+	if (all || filter.chat) result.push(...chatOwnPassports(data, options));
 	return structuredClone(result);
+}
+function getPassport(id, options) {
+	const found = typeof id === "string" && id.trim() ? locatePassport(id.trim()) : null;
+	if (!found || found.excluded && options?.includeExcluded !== true) return null;
+	return structuredClone(found.resolved);
+}
+async function excludePassport(passportId, excluded) {
+	const id = requireId(passportId);
+	if (typeof excluded !== "boolean") fail("excluded must be a boolean");
+	if (!chatOpen()) fail("no chat is open");
+	await prepare();
+	const found = locatePassport(id);
+	await setPassportExcluded(id, excluded, found ? ownerId(found.owner) : void 0);
+}
+function isExcluded(passportId) {
+	if (typeof passportId !== "string" || !passportId.trim() || !chatOpen()) return false;
+	const id = passportId.trim();
+	const found = locatePassport(id);
+	return passportExcluded(id, found ? ownerId(found.owner) : void 0);
+}
+async function requestDesPortrait(name, options) {
+	const wanted = requireId(name, "name");
+	if (options !== void 0 && (typeof options !== "object" || options === null)) fail("options must be an object");
+	const reason = options ? optionalText(options, "reason") : void 0;
+	if (!desPortraits) return false;
+	try {
+		return await desPortraits(wanted, reason);
+	} catch (error) {
+		log.warn(`${API_GLOBAL}: portrait of "${wanted}" not requested`, error);
+		return false;
+	}
 }
 async function savePassport(raw, scopeValue, target) {
 	const scope = requireScope(scopeValue);
@@ -21745,11 +22423,9 @@ async function generateBackground(input) {
 function createApi() {
 	return Object.freeze({
 		version: 1,
+		features: Object.freeze([...API_FEATURES]),
 		passports: (scope) => list(scope),
-		getPassport: (id) => {
-			const found = typeof id === "string" && id.trim() ? locatePassport(id.trim()) : null;
-			return found ? structuredClone(found.resolved) : null;
-		},
+		getPassport,
 		savePassport,
 		setOutfit,
 		setState,
@@ -21761,13 +22437,17 @@ function createApi() {
 		registerQualityGate: registerGate,
 		registerPassportProvider,
 		generatePassport,
-		generateBackground
+		generateBackground,
+		setPassportExcluded: excludePassport,
+		isPassportExcluded: isExcluded,
+		requestDesPortrait
 	});
 }
 var installed = null;
 /** Publishes globalThis.NAI_STUDIO_API (activation). */
 function installPublicApi(services = {}) {
 	if (services.backgrounds) backgrounds = services.backgrounds;
+	if (services.desPortraits) desPortraits = services.desPortraits;
 	installed ??= createApi();
 	globalThis[API_GLOBAL] = installed;
 	currentPersonaKey();
@@ -21914,7 +22594,7 @@ function bindSettings(root, onChange = () => {}) {
 }
 //#endregion
 //#region src/ui/templates/tab-chat.html?raw
-var tab_chat_default = "<div class=\"naist-section\">\n    <b data-i18n=\"naist.chat.visibility\"></b>\n    <div class=\"naist-hint\" data-i18n=\"naist.chat.visibilityHint\"></div>\n    <div class=\"naist-flags\">\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"chat.visibility.panel\" /><span\n                data-i18n=\"naist.initiator.panel\"\n            ></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"chat.visibility.command\" /><span\n                data-i18n=\"naist.initiator.command\"\n            ></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"chat.visibility.wand\" /><span data-i18n=\"naist.initiator.wand\"></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"chat.visibility.interactive\" /><span\n                data-i18n=\"naist.initiator.interactive\"\n            ></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"chat.visibility.tool\" /><span data-i18n=\"naist.initiator.tool\"></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"chat.visibility.auto\" /><span data-i18n=\"naist.initiator.auto\"></span\n        ></label>\n    </div>\n    <div class=\"naist-grid2\">\n        <div>\n            <label for=\"naist_author\" data-i18n=\"naist.chat.author\"></label>\n            <select id=\"naist_author\" class=\"text_pole\" data-setting=\"chat.author\">\n                <option value=\"character\" data-i18n=\"naist.chat.authorCharacter\"></option>\n                <option value=\"user\" data-i18n=\"naist.chat.authorUser\"></option>\n            </select>\n        </div>\n        <div>\n            <label for=\"naist_confirm_above\" data-i18n=\"naist.chat.confirmAbove\"></label>\n            <input id=\"naist_confirm_above\" type=\"number\" min=\"0\" class=\"text_pole\" data-setting=\"anlas.confirmAbove\" />\n        </div>\n    </div>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"chat.hidePrompt\" /><span data-i18n=\"naist.chat.hidePrompt\"></span\n    ></label>\n</div>\n\n<div class=\"naist-section\">\n    <b data-i18n=\"naist.chat.prompting\"></b>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"modes.refine\" /><span data-i18n=\"naist.chat.refine\"></span\n    ></label>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"modes.multimodal\" /><span data-i18n=\"naist.chat.multimodal\"></span\n    ></label>\n    <div class=\"naist-grid2 naist-mm-source\">\n        <div>\n            <label for=\"naist_mm_api\" data-i18n=\"naist.multimodal.api\"></label>\n            <select id=\"naist_mm_api\" class=\"text_pole\" data-setting=\"modes.multimodalApi\"></select>\n        </div>\n        <div>\n            <label for=\"naist_mm_model\" data-i18n=\"naist.multimodal.model\"></label>\n            <input id=\"naist_mm_model\" class=\"text_pole\" data-setting=\"modes.multimodalModel\" />\n        </div>\n    </div>\n    <div class=\"naist-hint\" id=\"naist_mm_hint\"></div>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"modes.freeExtend\" /><span data-i18n=\"naist.chat.freeExtend\"></span\n    ></label>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"modes.snap\" /><span data-i18n=\"naist.chat.snap\"></span\n    ></label>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"modes.minimalProcessing\" /><span\n            data-i18n=\"naist.chat.minimalProcessing\"\n        ></span\n    ></label>\n</div>\n\n<div class=\"naist-section\">\n    <b data-i18n=\"naist.chat.llm\"></b>\n    <div class=\"naist-hint\" data-i18n=\"naist.chat.llmHint\"></div>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"chat.interactive\" /><span data-i18n=\"naist.chat.interactive\"></span\n    ></label>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"chat.functionTool\" /><span data-i18n=\"naist.chat.functionTool\"></span\n    ></label>\n    <label for=\"naist_tool_cooldown\" data-i18n=\"naist.chat.toolCooldown\"></label>\n    <input id=\"naist_tool_cooldown\" type=\"number\" min=\"0\" class=\"text_pole\" data-setting=\"chat.toolCooldownSeconds\" />\n</div>\n\n<div class=\"naist-section\">\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"auto.enabled\" /><b data-i18n=\"naist.auto.enabled\"></b\n    ></label>\n    <div class=\"naist-hint\" data-i18n=\"naist.auto.guardHint\"></div>\n    <label for=\"naist_auto_mode\" data-i18n=\"naist.auto.mode\"></label>\n    <select id=\"naist_auto_mode\" class=\"text_pole\" data-setting=\"auto.mode\" data-type=\"number\"></select>\n    <div class=\"naist-grid2\">\n        <div>\n            <label for=\"naist_auto_every\" data-i18n=\"naist.auto.everyMessages\"></label>\n            <input id=\"naist_auto_every\" type=\"number\" min=\"0\" class=\"text_pole\" data-setting=\"auto.everyMessages\" />\n        </div>\n        <div>\n            <label for=\"naist_auto_cooldown_messages\" data-i18n=\"naist.auto.cooldownMessages\"></label>\n            <input\n                id=\"naist_auto_cooldown_messages\"\n                type=\"number\"\n                min=\"1\"\n                class=\"text_pole\"\n                data-setting=\"auto.cooldownMessages\"\n            />\n        </div>\n    </div>\n    <label for=\"naist_auto_keywords\" data-i18n=\"naist.auto.keywords\"></label>\n    <input id=\"naist_auto_keywords\" type=\"text\" class=\"text_pole\" data-setting=\"auto.keywords\" />\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"auto.sceneChange\" /><span data-i18n=\"naist.auto.sceneChange\"></span\n    ></label>\n    <input\n        id=\"naist_auto_markers\"\n        type=\"text\"\n        class=\"text_pole\"\n        data-setting=\"auto.sceneMarkers\"\n        data-i18n=\"[title]naist.auto.sceneMarkers\"\n    />\n    <label for=\"naist_auto_cooldown_seconds\" data-i18n=\"naist.auto.cooldownSeconds\"></label>\n    <input\n        id=\"naist_auto_cooldown_seconds\"\n        type=\"number\"\n        min=\"0\"\n        class=\"text_pole\"\n        data-setting=\"auto.cooldownSeconds\"\n    />\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" id=\"naist_auto_allow_paid\" data-setting=\"auto.allowPaid\" /><span\n            data-i18n=\"naist.auto.allowPaid\"\n        ></span\n    ></label>\n</div>\n\n<div class=\"naist-section\" id=\"naist_markers_section\">\n    <b data-i18n=\"naist.markers.title\"></b>\n    <div class=\"naist-hint\" data-i18n=\"naist.markers.hint\"></div>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"markers.enabled\" /><span data-i18n=\"naist.markers.enabled\"></span\n    ></label>\n    <div class=\"naist-markers-options\">\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"markers.inject\" /><span data-i18n=\"naist.markers.inject\"></span\n        ></label>\n        <div class=\"naist-grid2\">\n            <div>\n                <label for=\"naist_markers_preset\" data-i18n=\"naist.markers.preset\"></label>\n                <select id=\"naist_markers_preset\" class=\"text_pole\" data-setting=\"markers.preset\">\n                    <option value=\"natural\" data-i18n=\"naist.markers.presetNatural\"></option>\n                    <option value=\"tags\" data-i18n=\"naist.markers.presetTags\"></option>\n                    <option value=\"custom\" data-i18n=\"naist.markers.presetCustom\"></option>\n                </select>\n            </div>\n            <div>\n                <label for=\"naist_markers_caption_lang\" data-i18n=\"naist.markers.captionLanguage\"></label>\n                <input id=\"naist_markers_caption_lang\" class=\"text_pole\" data-setting=\"markers.captionLanguage\" />\n            </div>\n        </div>\n        <div id=\"naist_markers_custom\" class=\"naist-hidden\">\n            <label for=\"naist_markers_template\" data-i18n=\"naist.markers.template\"></label>\n            <textarea\n                id=\"naist_markers_template\"\n                class=\"text_pole textarea_compact\"\n                rows=\"8\"\n                data-setting=\"markers.template\"\n            ></textarea>\n            <div class=\"naist-hint\" data-i18n=\"naist.markers.templateHint\"></div>\n            <div\n                id=\"naist_markers_template_default\"\n                class=\"menu_button\"\n                data-i18n=\"naist.markers.templateDefault\"\n            ></div>\n        </div>\n        <div class=\"naist-grid2\">\n            <div>\n                <label for=\"naist_markers_min\" data-i18n=\"naist.markers.min\"></label>\n                <input\n                    id=\"naist_markers_min\"\n                    type=\"number\"\n                    min=\"0\"\n                    max=\"10\"\n                    class=\"text_pole\"\n                    data-setting=\"markers.min\"\n                />\n            </div>\n            <div>\n                <label for=\"naist_markers_max\" data-i18n=\"naist.markers.max\"></label>\n                <input\n                    id=\"naist_markers_max\"\n                    type=\"number\"\n                    min=\"0\"\n                    max=\"10\"\n                    class=\"text_pole\"\n                    data-setting=\"markers.max\"\n                />\n            </div>\n            <div>\n                <label for=\"naist_markers_depth\" data-i18n=\"naist.markers.depth\"></label>\n                <input\n                    id=\"naist_markers_depth\"\n                    type=\"number\"\n                    min=\"0\"\n                    max=\"100\"\n                    class=\"text_pole\"\n                    data-setting=\"markers.depth\"\n                />\n            </div>\n            <div>\n                <label for=\"naist_markers_role\" data-i18n=\"naist.markers.role\"></label>\n                <select id=\"naist_markers_role\" class=\"text_pole\" data-setting=\"markers.role\">\n                    <option value=\"system\" data-i18n=\"naist.markers.roleSystem\"></option>\n                    <option value=\"user\" data-i18n=\"naist.markers.roleUser\"></option>\n                    <option value=\"assistant\" data-i18n=\"naist.markers.roleAssistant\"></option>\n                </select>\n            </div>\n        </div>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"markers.earlyStart\" /><span\n                data-i18n=\"naist.markers.earlyStart\"\n            ></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"markers.autoFill\" /><span data-i18n=\"naist.markers.autoFill\"></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"markers.legacy\" /><span data-i18n=\"naist.markers.legacy\"></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"inline.regexCompat\" /><span\n                data-i18n=\"naist.markers.regexCompat\"\n            ></span\n        ></label>\n        <div class=\"naist-row\">\n            <label class=\"checkbox_label\"\n                ><input id=\"naist_markers_allow_paid\" type=\"checkbox\" data-setting=\"markers.allowPaid\" /><span\n                    data-i18n=\"naist.markers.allowPaid\"\n                ></span\n            ></label>\n            <input\n                id=\"naist_markers_max_cost\"\n                type=\"number\"\n                min=\"0\"\n                class=\"text_pole naist-narrow\"\n                data-setting=\"markers.maxCost\"\n                data-i18n=\"[title]naist.markers.maxCost\"\n            />\n        </div>\n        <div id=\"naist_markers_preview\" class=\"menu_button\" data-i18n=\"naist.markers.preview\"></div>\n    </div>\n</div>\n\n<div class=\"naist-section\" id=\"naist_des_section\">\n    <b data-i18n=\"naist.des.title\"></b>\n    <div class=\"naist-hint\" data-i18n=\"naist.des.hint\"></div>\n    <div class=\"naist-muted\" id=\"naist_des_status\"></div>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"des.enabled\" /><span data-i18n=\"naist.des.enabled\"></span\n    ></label>\n    <div class=\"naist-des-options\">\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"des.sceneTags\" /><span data-i18n=\"naist.des.sceneTags\"></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"des.characters\" /><span data-i18n=\"naist.des.characters\"></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"des.autoPassports\" /><span data-i18n=\"naist.des.autoPassports\"></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"des.portraits\" /><span data-i18n=\"naist.des.portraits\"></span\n        ></label>\n        <div class=\"naist-grid2\">\n            <div>\n                <label for=\"naist_des_policy\" data-i18n=\"naist.des.policy\"></label>\n                <select id=\"naist_des_policy\" class=\"text_pole\" data-setting=\"des.portraitPolicy\">\n                    <option value=\"missing\" data-i18n=\"naist.des.policyMissing\"></option>\n                    <option value=\"state\" data-i18n=\"naist.des.policyState\"></option>\n                    <option value=\"every\" data-i18n=\"naist.des.policyEvery\"></option>\n                </select>\n            </div>\n            <div>\n                <label for=\"naist_des_framing\" data-i18n=\"naist.des.framing\"></label>\n                <input id=\"naist_des_framing\" class=\"text_pole\" data-setting=\"des.portraitTags\" />\n            </div>\n        </div>\n        <div class=\"naist-hint\" data-i18n=\"naist.des.policyHint\"></div>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"des.emotionsToDes\" /><span data-i18n=\"naist.des.emotionsToDes\"></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"des.menu\" /><span data-i18n=\"naist.des.menu\"></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"des.banners\" /><span data-i18n=\"naist.des.banners\"></span\n        ></label>\n        <div id=\"naist_des_passports\" class=\"menu_button\">\n            <i class=\"fa-solid fa-wand-magic-sparkles\"></i> <span data-i18n=\"naist.des.passportsButton\"></span>\n        </div>\n    </div>\n</div>\n\n<div class=\"naist-section naist-hidden\" id=\"naist_quality_section\">\n    <b data-i18n=\"naist.quality.title\"></b>\n    <div class=\"naist-hint\" data-i18n=\"naist.quality.hint\"></div>\n    <label for=\"naist_quality_timeout\" data-i18n=\"naist.quality.timeout\"></label>\n    <input id=\"naist_quality_timeout\" type=\"number\" min=\"1\" max=\"600\" step=\"1\" class=\"text_pole\" />\n</div>\n";
+var tab_chat_default = "<div class=\"naist-section\">\n    <b data-i18n=\"naist.chat.visibility\"></b>\n    <div class=\"naist-hint\" data-i18n=\"naist.chat.visibilityHint\"></div>\n    <div class=\"naist-flags\">\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"chat.visibility.panel\" /><span\n                data-i18n=\"naist.initiator.panel\"\n            ></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"chat.visibility.command\" /><span\n                data-i18n=\"naist.initiator.command\"\n            ></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"chat.visibility.wand\" /><span data-i18n=\"naist.initiator.wand\"></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"chat.visibility.interactive\" /><span\n                data-i18n=\"naist.initiator.interactive\"\n            ></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"chat.visibility.tool\" /><span data-i18n=\"naist.initiator.tool\"></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"chat.visibility.auto\" /><span data-i18n=\"naist.initiator.auto\"></span\n        ></label>\n    </div>\n    <div class=\"naist-grid2\">\n        <div>\n            <label for=\"naist_author\" data-i18n=\"naist.chat.author\"></label>\n            <select id=\"naist_author\" class=\"text_pole\" data-setting=\"chat.author\">\n                <option value=\"character\" data-i18n=\"naist.chat.authorCharacter\"></option>\n                <option value=\"user\" data-i18n=\"naist.chat.authorUser\"></option>\n            </select>\n        </div>\n        <div>\n            <label for=\"naist_confirm_above\" data-i18n=\"naist.chat.confirmAbove\"></label>\n            <input id=\"naist_confirm_above\" type=\"number\" min=\"0\" class=\"text_pole\" data-setting=\"anlas.confirmAbove\" />\n        </div>\n    </div>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"chat.hidePrompt\" /><span data-i18n=\"naist.chat.hidePrompt\"></span\n    ></label>\n</div>\n\n<div class=\"naist-section\">\n    <b data-i18n=\"naist.chat.prompting\"></b>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"modes.refine\" /><span data-i18n=\"naist.chat.refine\"></span\n    ></label>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"modes.multimodal\" /><span data-i18n=\"naist.chat.multimodal\"></span\n    ></label>\n    <div class=\"naist-grid2 naist-mm-source\">\n        <div>\n            <label for=\"naist_mm_api\" data-i18n=\"naist.multimodal.api\"></label>\n            <select id=\"naist_mm_api\" class=\"text_pole\" data-setting=\"modes.multimodalApi\"></select>\n        </div>\n        <div>\n            <label for=\"naist_mm_model\" data-i18n=\"naist.multimodal.model\"></label>\n            <input id=\"naist_mm_model\" class=\"text_pole\" data-setting=\"modes.multimodalModel\" />\n        </div>\n    </div>\n    <div class=\"naist-hint\" id=\"naist_mm_hint\"></div>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"modes.freeExtend\" /><span data-i18n=\"naist.chat.freeExtend\"></span\n    ></label>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"modes.snap\" /><span data-i18n=\"naist.chat.snap\"></span\n    ></label>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"modes.minimalProcessing\" /><span\n            data-i18n=\"naist.chat.minimalProcessing\"\n        ></span\n    ></label>\n</div>\n\n<div class=\"naist-section\">\n    <b data-i18n=\"naist.chat.llm\"></b>\n    <div class=\"naist-hint\" data-i18n=\"naist.chat.llmHint\"></div>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"chat.interactive\" /><span data-i18n=\"naist.chat.interactive\"></span\n    ></label>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"chat.functionTool\" /><span data-i18n=\"naist.chat.functionTool\"></span\n    ></label>\n    <label for=\"naist_tool_cooldown\" data-i18n=\"naist.chat.toolCooldown\"></label>\n    <input id=\"naist_tool_cooldown\" type=\"number\" min=\"0\" class=\"text_pole\" data-setting=\"chat.toolCooldownSeconds\" />\n</div>\n\n<div class=\"naist-section\">\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"auto.enabled\" /><b data-i18n=\"naist.auto.enabled\"></b\n    ></label>\n    <div class=\"naist-hint\" data-i18n=\"naist.auto.guardHint\"></div>\n    <label for=\"naist_auto_mode\" data-i18n=\"naist.auto.mode\"></label>\n    <select id=\"naist_auto_mode\" class=\"text_pole\" data-setting=\"auto.mode\" data-type=\"number\"></select>\n    <div class=\"naist-grid2\">\n        <div>\n            <label for=\"naist_auto_every\" data-i18n=\"naist.auto.everyMessages\"></label>\n            <input id=\"naist_auto_every\" type=\"number\" min=\"0\" class=\"text_pole\" data-setting=\"auto.everyMessages\" />\n        </div>\n        <div>\n            <label for=\"naist_auto_cooldown_messages\" data-i18n=\"naist.auto.cooldownMessages\"></label>\n            <input\n                id=\"naist_auto_cooldown_messages\"\n                type=\"number\"\n                min=\"1\"\n                class=\"text_pole\"\n                data-setting=\"auto.cooldownMessages\"\n            />\n        </div>\n    </div>\n    <label for=\"naist_auto_keywords\" data-i18n=\"naist.auto.keywords\"></label>\n    <input id=\"naist_auto_keywords\" type=\"text\" class=\"text_pole\" data-setting=\"auto.keywords\" />\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"auto.sceneChange\" /><span data-i18n=\"naist.auto.sceneChange\"></span\n    ></label>\n    <input\n        id=\"naist_auto_markers\"\n        type=\"text\"\n        class=\"text_pole\"\n        data-setting=\"auto.sceneMarkers\"\n        data-i18n=\"[title]naist.auto.sceneMarkers\"\n    />\n    <label for=\"naist_auto_cooldown_seconds\" data-i18n=\"naist.auto.cooldownSeconds\"></label>\n    <input\n        id=\"naist_auto_cooldown_seconds\"\n        type=\"number\"\n        min=\"0\"\n        class=\"text_pole\"\n        data-setting=\"auto.cooldownSeconds\"\n    />\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" id=\"naist_auto_allow_paid\" data-setting=\"auto.allowPaid\" /><span\n            data-i18n=\"naist.auto.allowPaid\"\n        ></span\n    ></label>\n</div>\n\n<div class=\"naist-section\" id=\"naist_markers_section\">\n    <b data-i18n=\"naist.markers.title\"></b>\n    <div class=\"naist-hint\" data-i18n=\"naist.markers.hint\"></div>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"markers.enabled\" /><span data-i18n=\"naist.markers.enabled\"></span\n    ></label>\n    <div class=\"naist-markers-options\">\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"markers.inject\" /><span data-i18n=\"naist.markers.inject\"></span\n        ></label>\n        <div class=\"naist-grid2\">\n            <div>\n                <label for=\"naist_markers_preset\" data-i18n=\"naist.markers.preset\"></label>\n                <select id=\"naist_markers_preset\" class=\"text_pole\" data-setting=\"markers.preset\">\n                    <option value=\"natural\" data-i18n=\"naist.markers.presetNatural\"></option>\n                    <option value=\"tags\" data-i18n=\"naist.markers.presetTags\"></option>\n                    <option value=\"custom\" data-i18n=\"naist.markers.presetCustom\"></option>\n                </select>\n            </div>\n            <div>\n                <label for=\"naist_markers_caption_lang\" data-i18n=\"naist.markers.captionLanguage\"></label>\n                <input id=\"naist_markers_caption_lang\" class=\"text_pole\" data-setting=\"markers.captionLanguage\" />\n            </div>\n        </div>\n        <div id=\"naist_markers_custom\" class=\"naist-hidden\">\n            <label for=\"naist_markers_template\" data-i18n=\"naist.markers.template\"></label>\n            <textarea\n                id=\"naist_markers_template\"\n                class=\"text_pole textarea_compact\"\n                rows=\"8\"\n                data-setting=\"markers.template\"\n            ></textarea>\n            <div class=\"naist-hint\" data-i18n=\"naist.markers.templateHint\"></div>\n            <div\n                id=\"naist_markers_template_default\"\n                class=\"menu_button\"\n                data-i18n=\"naist.markers.templateDefault\"\n            ></div>\n        </div>\n        <div class=\"naist-grid2\">\n            <div>\n                <label for=\"naist_markers_min\" data-i18n=\"naist.markers.min\"></label>\n                <input\n                    id=\"naist_markers_min\"\n                    type=\"number\"\n                    min=\"0\"\n                    max=\"10\"\n                    class=\"text_pole\"\n                    data-setting=\"markers.min\"\n                />\n            </div>\n            <div>\n                <label for=\"naist_markers_max\" data-i18n=\"naist.markers.max\"></label>\n                <input\n                    id=\"naist_markers_max\"\n                    type=\"number\"\n                    min=\"0\"\n                    max=\"10\"\n                    class=\"text_pole\"\n                    data-setting=\"markers.max\"\n                />\n            </div>\n            <div>\n                <label for=\"naist_markers_depth\" data-i18n=\"naist.markers.depth\"></label>\n                <input\n                    id=\"naist_markers_depth\"\n                    type=\"number\"\n                    min=\"0\"\n                    max=\"100\"\n                    class=\"text_pole\"\n                    data-setting=\"markers.depth\"\n                />\n            </div>\n            <div>\n                <label for=\"naist_markers_role\" data-i18n=\"naist.markers.role\"></label>\n                <select id=\"naist_markers_role\" class=\"text_pole\" data-setting=\"markers.role\">\n                    <option value=\"system\" data-i18n=\"naist.markers.roleSystem\"></option>\n                    <option value=\"user\" data-i18n=\"naist.markers.roleUser\"></option>\n                    <option value=\"assistant\" data-i18n=\"naist.markers.roleAssistant\"></option>\n                </select>\n            </div>\n        </div>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"markers.earlyStart\" /><span\n                data-i18n=\"naist.markers.earlyStart\"\n            ></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"markers.autoFill\" /><span data-i18n=\"naist.markers.autoFill\"></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"markers.legacy\" /><span data-i18n=\"naist.markers.legacy\"></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"inline.regexCompat\" /><span\n                data-i18n=\"naist.markers.regexCompat\"\n            ></span\n        ></label>\n        <div class=\"naist-row\">\n            <label class=\"checkbox_label\"\n                ><input id=\"naist_markers_allow_paid\" type=\"checkbox\" data-setting=\"markers.allowPaid\" /><span\n                    data-i18n=\"naist.markers.allowPaid\"\n                ></span\n            ></label>\n            <input\n                id=\"naist_markers_max_cost\"\n                type=\"number\"\n                min=\"0\"\n                class=\"text_pole naist-narrow\"\n                data-setting=\"markers.maxCost\"\n                data-i18n=\"[title]naist.markers.maxCost\"\n            />\n        </div>\n        <div id=\"naist_markers_preview\" class=\"menu_button\" data-i18n=\"naist.markers.preview\"></div>\n    </div>\n</div>\n\n<div class=\"naist-section\" id=\"naist_des_section\">\n    <b data-i18n=\"naist.des.title\"></b>\n    <div class=\"naist-hint\" data-i18n=\"naist.des.hint\"></div>\n    <div class=\"naist-muted\" id=\"naist_des_status\"></div>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"des.enabled\" /><span data-i18n=\"naist.des.enabled\"></span\n    ></label>\n    <div class=\"naist-des-options\">\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"des.sceneTags\" /><span data-i18n=\"naist.des.sceneTags\"></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"des.characters\" /><span data-i18n=\"naist.des.characters\"></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"des.autoPassports\" /><span data-i18n=\"naist.des.autoPassports\"></span\n        ></label>\n        <div>\n            <label for=\"naist_des_passport_target\" data-i18n=\"naist.des.passportTarget\"></label>\n            <select id=\"naist_des_passport_target\" class=\"text_pole\" data-setting=\"des.npcPassportTarget\">\n                <option value=\"chat\" data-i18n=\"naist.des.passportTargetChat\"></option>\n                <option value=\"card\" data-i18n=\"naist.des.passportTargetCard\"></option>\n            </select>\n            <div class=\"naist-hint\" data-i18n=\"naist.des.passportTargetHint\"></div>\n        </div>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"des.portraits\" /><span data-i18n=\"naist.des.portraits\"></span\n        ></label>\n        <div class=\"naist-grid2\">\n            <div>\n                <label for=\"naist_des_policy\" data-i18n=\"naist.des.policy\"></label>\n                <select id=\"naist_des_policy\" class=\"text_pole\" data-setting=\"des.portraitPolicy\">\n                    <option value=\"missing\" data-i18n=\"naist.des.policyMissing\"></option>\n                    <option value=\"state\" data-i18n=\"naist.des.policyState\"></option>\n                    <option value=\"every\" data-i18n=\"naist.des.policyEvery\"></option>\n                </select>\n            </div>\n            <div>\n                <label for=\"naist_des_framing\" data-i18n=\"naist.des.framing\"></label>\n                <input id=\"naist_des_framing\" class=\"text_pole\" data-setting=\"des.portraitTags\" />\n            </div>\n        </div>\n        <div class=\"naist-hint\" data-i18n=\"naist.des.policyHint\"></div>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"des.emotionsToDes\" /><span data-i18n=\"naist.des.emotionsToDes\"></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"des.menu\" /><span data-i18n=\"naist.des.menu\"></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"des.banners\" /><span data-i18n=\"naist.des.banners\"></span\n        ></label>\n        <div id=\"naist_des_passports\" class=\"menu_button\">\n            <i class=\"fa-solid fa-wand-magic-sparkles\"></i> <span data-i18n=\"naist.des.passportsButton\"></span>\n        </div>\n    </div>\n</div>\n\n<div class=\"naist-section naist-hidden\" id=\"naist_quality_section\">\n    <b data-i18n=\"naist.quality.title\"></b>\n    <div class=\"naist-hint\" data-i18n=\"naist.quality.hint\"></div>\n    <label for=\"naist_quality_timeout\" data-i18n=\"naist.quality.timeout\"></label>\n    <input id=\"naist_quality_timeout\" type=\"number\" min=\"1\" max=\"600\" step=\"1\" class=\"text_pole\" />\n</div>\n";
 //#endregion
 //#region src/ui/panel/tab-chat.ts
 var ChatTab = class {
@@ -23377,7 +24057,10 @@ async function onActivate() {
 	new AutoGenerator(studio, pipeline).attach();
 	setupQualityGates();
 	setupGenerationQueue();
-	installPublicApi({ backgrounds: new BackgroundService(pipeline) });
+	installPublicApi({
+		backgrounds: new BackgroundService(pipeline),
+		desPortraits: async (name, reason) => await desIntegration()?.requestPortrait(name, reason) ?? false
+	});
 	studio.refreshTransport();
 	for (const name of [
 		"SECRET_WRITTEN",

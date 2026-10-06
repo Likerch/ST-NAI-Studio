@@ -4,6 +4,7 @@
 // instead of appearance), and filling the form from the description through the language backend.
 // Since v0.10 a scope switch "Card / This chat": the chat scope shows the passport as this chat sees
 // it and is saved as a chat override (the card stays as it is); "back to the card" drops the override.
+// Since v0.14 a passport of the chat itself can be moved into the card ("Move to the card").
 import { ctx } from '../core/context';
 import { localize, t } from '../core/i18n';
 import { reportGenerationError } from '../core/notify';
@@ -37,12 +38,19 @@ export interface PassportScopes {
     initial: PassportScope;
     /** A persona passport: the card scope is labelled "Persona". */
     persona?: boolean;
+    /** A passport of the chat itself that can move into a card (v0.14): "Move to the card" is offered. */
+    movable?: boolean;
 }
 
 export interface ScopedEdit {
     passport: Passport;
     scope: PassportScope;
+    /** "Move to the card" was pressed (v0.14): the edited passport goes into the card, the chat's copy goes. */
+    move?: boolean;
 }
+
+/** Result of the popup's "Move to the card" button. */
+const MOVE_RESULT = 4;
 
 /** Opens the editor; resolves with the edited passport or null when cancelled. */
 export async function editPassport(
@@ -278,7 +286,9 @@ async function openEditor(
         if (hint)
             hint.textContent = t(
                 !drafts.card
-                    ? 'naist.passport.scopeChatOnly'
+                    ? scopes.movable
+                        ? 'naist.passport.scopeChatOnlyMove'
+                        : 'naist.passport.scopeChatOnly'
                     : scope === 'chat'
                       ? 'naist.passport.scopeChatHint'
                       : 'naist.passport.scopeCardHint',
@@ -394,13 +404,21 @@ async function openEditor(
 
     renderForm();
     attachPromptAssist(root, '.naist-slot-input, .naist-nsfw-tags, .naist-negative', () => settings().generation.model);
+    const movable = Boolean(scopes && !scopes.card && scopes.movable);
     const result = await c.callGenericPopup(root, c.POPUP_TYPE.CONFIRM, '', {
         okButton: t('naist.passport.save'),
         cancelButton: t('naist.inspector.cancel'),
         wide: true,
         large: true,
         allowVerticalScrolling: true,
+        ...(movable
+            ? { customButtons: [{ text: t('naist.passport.moveToCard'), result: MOVE_RESULT, classes: [] }] }
+            : {}),
     });
+    if (movable && result === MOVE_RESULT) {
+        readForm();
+        return { passport, scope: 'chat', move: true };
+    }
     if (result !== c.POPUP_RESULT.AFFIRMATIVE) return null;
     readForm();
     return { passport, scope };

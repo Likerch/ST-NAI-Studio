@@ -6,6 +6,7 @@
 // nothing changes.
 import { byPriority, normalizeProvidedPassports } from '../../domain';
 import type { Passport } from '../../domain';
+import { withoutExcluded } from '../characters/passport-store';
 import { askInTime, hintContext } from './scene-providers';
 import type { SceneHintContext } from './scene-providers';
 
@@ -62,8 +63,10 @@ export async function providedPassports(query: { messageId?: number; text?: stri
     const context = hintContext(query);
     const key = `${context.messageIndex}\u0000${context.text}`;
     const now = Date.now();
-    if (cache && cache.key === key && now - cache.at < CACHE_MS) return structuredClone(await cache.list);
+    // The ones the chat excludes (v0.14) are left out, as passports of the chat are.
+    if (cache && cache.key === key && now - cache.at < CACHE_MS)
+        return withoutExcluded(structuredClone(await cache.list));
     const list = Promise.all(ordered.map((provider) => ask(provider, context))).then((lists) => lists.flat());
     cache = { key, at: now, list };
-    return structuredClone(await list);
+    return withoutExcluded(structuredClone(await list));
 }

@@ -63,7 +63,12 @@ export async function uploadBackground(png: Blob, fileName: string): Promise<str
 /** The place passport with that id (the chat's view, else a passport provider's); a person does not count. */
 async function placePassport(id: string): Promise<Passport | null> {
     for (const index of chatCardIndexes()) await loadCharacter(index);
-    const found = locatePassport(id)?.resolved ?? (await providedPassports()).find((p) => p.id === id) ?? null;
+    // A passport the chat excludes (v0.14) is absent here.
+    const located = locatePassport(id);
+    const found =
+        (located && !located.excluded ? located.resolved : null) ??
+        (await providedPassports()).find((p) => p.id === id) ??
+        null;
     if (!found || found.kind === 'character') {
         log.warn(`background: no place passport "${id}"`);
         return null;

@@ -705,6 +705,15 @@ body.naist-inline-reading .naist-inline-group {
     width: 100%;
 }
 
+/* A passport the open chat leaves out (v0.14): greyed, its "Back to this chat" stays clear. */
+.naist-passport-excluded > :not(.naist-passport-include) {
+    opacity: 0.45;
+}
+
+.naist-passport-excluded .naist-passport-summary {
+    text-decoration: line-through;
+}
+
 .naist-outfit .text_pole,
 .naist-state .text_pole,
 .naist-custom-pose .text_pole {

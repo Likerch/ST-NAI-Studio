@@ -4,6 +4,7 @@
 // the chat's view of them (chat overrides, passports of the chat itself), and scene providers of
 // other extensions (registerSceneHintProvider) name the place, setting tags and who is present. Since
 // v0.12 passport providers (Maestro's lore entries) add people, places, items and the world after them.
+// Since v0.14 a passport the chat excludes takes no part (the readers of passport-store leave it out).
 import { ctx } from '../../core/context';
 import { NaiError } from '../../core/errors';
 import { log } from '../../core/logger';
@@ -46,6 +47,7 @@ import type {
 import { avatarKey, readCharacterPrompt } from '../characters/character-prompts';
 import {
     chatCardIndexes,
+    chatOwnPassports,
     chatPassportData,
     currentPersonaKey,
     loadCharacter,
@@ -142,30 +144,54 @@ export const PASSPORT_KEY_SEPARATOR = '#';
 /**
  * The people of a card: one candidate per character passport (the main one keeps the card key);
  * a card without character passports is one candidate with its character prompt, unless it is a
- * scenario (then nobody is drawn for the card itself).
+ * scenario (then nobody is drawn for the card itself). When the chat excludes the main passport (v0.14)
+ * the card itself stays a candidate without a passport; another passport does not take its place.
  */
 async function characterCandidates(index: number, chat: ChatPassports): Promise<SceneCandidate[]> {
     const character = await loadCharacter(index);
     if (!character) return [];
     const prompt = readCharacterPrompt(character);
     const key = avatarKey(character.avatar);
+    const isPerson = (p: Passport) => p.kind === 'character' && !isPassportEmpty(p);
+    // The card's own character: its unnamed passport or the one named like the card.
+    const cardName = character.name.trim().toLowerCase();
+    const own =
+        resolvedCardPassports(character, chat, { includeExcluded: true })
+            .filter(isPerson)
+            .find((p) => !p.name || p.name.trim().toLowerCase() === cardName) ?? null;
     const list = resolvedCardPassports(character, chat);
-    const people = list.filter((p) => p.kind === 'character' && !isPassportEmpty(p));
+    const people = list.filter(isPerson);
+    const ownExcluded = own !== null && !people.some((p) => p.id === own.id);
     if (people.length) {
-        const main = primaryPassport(people, character.name);
-        return people.map((passport) => {
-            const isMain = passport === main;
-            const name = passport.name || character.name;
-            return {
-                key: isMain ? key : `${key}${PASSPORT_KEY_SEPARATOR}${passport.id}`,
-                name,
-                aliases: [...new Set([...passport.aliases, ...aliasesOf(name)])],
-                passport,
-                fallbackPrompt: isMain ? prompt.positive : '',
-                fallbackNegative: isMain ? prompt.negative : '',
-                isUser: false,
-            };
-        });
+        const main = ownExcluded ? null : primaryPassport(people, character.name);
+        const itself: SceneCandidate[] = ownExcluded
+            ? [
+                  {
+                      key,
+                      name: character.name,
+                      aliases: aliasesOf(character.name),
+                      passport: null,
+                      fallbackPrompt: prompt.positive,
+                      fallbackNegative: prompt.negative,
+                      isUser: false,
+                  },
+              ]
+            : [];
+        return itself.concat(
+            people.map((passport) => {
+                const isMain = passport === main;
+                const name = passport.name || character.name;
+                return {
+                    key: isMain ? key : `${key}${PASSPORT_KEY_SEPARATOR}${passport.id}`,
+                    name,
+                    aliases: [...new Set([...passport.aliases, ...aliasesOf(name)])],
+                    passport,
+                    fallbackPrompt: isMain ? prompt.positive : '',
+                    fallbackNegative: isMain ? prompt.negative : '',
+                    isUser: false,
+                };
+            }),
+        );
     }
     if (list.some((p) => p.kind === 'scenario')) return [];
     return [
@@ -196,7 +222,7 @@ function passportCandidate(passport: Passport, prefix: string): SceneCandidate {
 
 /** Named character passports that exist only in this chat (another extension wrote them). */
 function chatOnlyCandidates(chat: ChatPassports): SceneCandidate[] {
-    return chat.extra
+    return chatOwnPassports(chat)
         .filter((p) => p.kind === 'character' && p.name.trim() && !isPassportEmpty(p))
         .map((passport) => passportCandidate(passport, CHAT_PASSPORT_PREFIX));
 }
@@ -266,7 +292,7 @@ export async function sceneSetting(query: SceneQuery = {}): Promise<SceneSetting
     for (const index of chatCardIndexes()) {
         for (const passport of resolvedCardPassports(await loadCharacter(index), chat)) collect(passport);
     }
-    for (const passport of chat.extra) collect(passport);
+    for (const passport of chatOwnPassports(chat)) collect(passport);
     const [provided, hint] = await Promise.all([providedPassports(query), sceneHint(query)]);
     // Lore passports of the scene (v0.12): what the chat already has by that name wins.
     const ofGroup = (group: string) => provided.filter((p) => passportGroup(p.kind) === group);

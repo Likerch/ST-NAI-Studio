@@ -7,7 +7,7 @@ import { defaultPassport } from '../../src/domain';
 import type { Passport } from '../../src/domain';
 
 const state = vi.hoisted(() => ({
-    script: (() => 1) as (root: HTMLElement) => number,
+    script: (() => 1) as (root: HTMLElement, options: { customButtons?: { text: string; result: number }[] }) => number,
 }));
 
 vi.mock('../../src/core/i18n', () => ({ t: (key: string) => key, localize: vi.fn() }));
@@ -19,7 +19,8 @@ vi.mock('../../src/core/context', () => ({
     ctx: () => ({
         POPUP_TYPE: { CONFIRM: 2 },
         POPUP_RESULT: { AFFIRMATIVE: 1, CANCELLED: 0 },
-        callGenericPopup: async (root: HTMLElement) => state.script(root),
+        callGenericPopup: async (root: HTMLElement, _type: number, _text: string, options: object) =>
+            state.script(root, options),
     }),
 }));
 
@@ -142,5 +143,41 @@ describe('passport editor scopes', () => {
         };
         const result = await editPassportIn('Mira', { card: null, chat: lyra('red hair'), initial: 'card' });
         expect(result?.scope).toBe('chat');
+    });
+
+    it('offers "Move to the card" for a passport of the chat itself (v0.14)', async () => {
+        state.script = (root, options) => {
+            expect(options.customButtons).toEqual([{ text: 'naist.passport.moveToCard', result: 4, classes: [] }]);
+            expect(root.querySelector('.naist-passport-scope-hint')!.textContent).toBe(
+                'naist.passport.scopeChatOnlyMove',
+            );
+            hairOf(root).value = 'auburn hair';
+            return 4;
+        };
+        const moved = await editPassportIn('Mira', {
+            card: null,
+            chat: lyra('red hair'),
+            initial: 'chat',
+            movable: true,
+        });
+        expect(moved).toMatchObject({
+            scope: 'chat',
+            move: true,
+            passport: { id: 'p1', slots: { hair: 'auburn hair' } },
+        });
+        // Saved as usual: no move.
+        state.script = () => 1;
+        expect(
+            await editPassportIn('Mira', { card: null, chat: lyra('red hair'), initial: 'chat', movable: true }),
+        ).not.toHaveProperty('move');
+        // A card passport, or a chat passport with no card to go to: no such button.
+        state.script = (_root, options) => {
+            expect(options.customButtons).toBeUndefined();
+            return 4;
+        };
+        expect(
+            await editPassportIn('Lyra', { card: lyra('a'), chat: lyra('b'), initial: 'card', movable: true }),
+        ).toBeNull();
+        expect(await editPassportIn('Mira', { card: null, chat: lyra('b'), initial: 'chat' })).toBeNull();
     });
 });

@@ -1,6 +1,8 @@
 // Chat-level passports (v0.10): a chat may change the passport of a card or persona without touching
 // the card (an override keeps only the fields that differ, so later card edits of other fields still
 // show through), and may have passports of its own. Stored in chat_metadata.nai_studio.passports. Pure.
+// Since v0.14 an override may only say that the passport is not used in this chat (`excluded`): every
+// feature then treats the passport as absent there, while the card keeps it for the other chats.
 import { normalizeOutfit, normalizePassport, normalizePassportList, PASSPORT_KINDS, PASSPORT_SLOTS } from './passport';
 import type { Outfit, Passport, PassportKind, PassportSlot, PassportState } from './passport';
 
@@ -24,7 +26,12 @@ export interface PassportOverride {
     negative?: string;
     pose?: { preset: string; custom: string };
     position?: { x: number; y: number } | null;
+    /** Not used in this chat at all (v0.14): a flag, not a field of the passport. */
+    excluded?: boolean;
 }
+
+/** Keys of an override that are not passport fields: whose it is and whether this chat excludes it. */
+const FLAG_KEYS = new Set(['owner', 'excluded']);
 
 export interface ChatPassports {
     /** Overrides by passport id. */
@@ -86,9 +93,40 @@ export function passportDiff(base: Passport, edited: Passport): PassportOverride
     return diff;
 }
 
-/** No field is overridden (the owner alone does not count). */
+/** No field is overridden (the owner and the exclusion flag do not count). */
 export function isOverrideEmpty(override: PassportOverride | null | undefined): boolean {
-    return !override || Object.keys(override).every((key) => key === 'owner');
+    return !override || Object.keys(override).every((key) => FLAG_KEYS.has(key));
+}
+
+/** The chat's override of a passport id when it is for that owner (or names none). */
+function overrideFor(data: ChatPassports, id: string, owner?: string): PassportOverride | undefined {
+    const override = Object.prototype.hasOwnProperty.call(data.overrides, id) ? data.overrides[id] : undefined;
+    return override && !(override.owner && owner && override.owner !== owner) ? override : undefined;
+}
+
+/** The chat does not use this passport (v0.14). `owner` as in resolveChatPassport. */
+export function isExcludedIn(data: ChatPassports, id: string, owner?: string): boolean {
+    return overrideFor(data, id, owner)?.excluded === true;
+}
+
+/**
+ * The chat's passports with a passport excluded or used again (a copy). Excluding keeps the fields the
+ * chat changed; using it again drops the override when only the flag was left.
+ */
+export function withExcluded(data: ChatPassports, id: string, excluded: boolean, owner?: string): ChatPassports {
+    const next: ChatPassports = { overrides: { ...data.overrides }, extra: data.extra };
+    const current = overrideFor(next, id, owner);
+    if (excluded) {
+        // An override of another owner's passport with the same id (legacy "main") gives way.
+        next.overrides[id] = { ...(owner && !current?.owner ? { owner } : {}), ...current, excluded: true };
+        return next;
+    }
+    if (!current) return next;
+    const rest = { ...current };
+    delete rest.excluded;
+    if (isOverrideEmpty(rest)) delete next.overrides[id];
+    else next.overrides[id] = rest;
+    return next;
 }
 
 /** The passport as the chat sees it: a new copy, the base untouched. */
@@ -170,6 +208,7 @@ export function normalizeOverride(raw: unknown): PassportOverride | null {
                 ? { x: Math.min(1, Math.max(0, x)), y: Math.min(1, Math.max(0, y)) }
                 : null;
     }
+    if (source.excluded === true) result.excluded = true;
     return result;
 }
 
@@ -179,7 +218,7 @@ export function normalizeChatPassports(raw: unknown): ChatPassports {
     const overrides: Record<string, PassportOverride> = {};
     for (const [id, value] of Object.entries(obj(source.overrides))) {
         const override = normalizeOverride(value);
-        if (id.trim() && override && !isOverrideEmpty(override)) overrides[id] = override;
+        if (id.trim() && override && (!isOverrideEmpty(override) || override.excluded)) overrides[id] = override;
     }
     return { overrides, extra: normalizePassportList(source.extra) };
 }
@@ -189,9 +228,7 @@ export function normalizeChatPassports(raw: unknown): ChatPassports {
  * override names one, the same owner). The base itself when there is none.
  */
 export function resolveChatPassport(passport: Passport, owner: string | undefined, data: ChatPassports): Passport {
-    const override = Object.prototype.hasOwnProperty.call(data.overrides, passport.id)
-        ? data.overrides[passport.id]
-        : undefined;
-    if (!override || (override.owner && owner && override.owner !== owner)) return passport;
+    const override = overrideFor(data, passport.id, owner);
+    if (!override) return passport;
     return applyPassportOverride(passport, override);
 }

@@ -64,6 +64,12 @@ export interface PortraitPlan {
     generation?: Partial<GenerationSettings>;
     /** Its turn in the NovelAI queue: "portrait" (automatic), "user" for one asked for from the menu. */
     priority?: QueuePriority;
+    /**
+     * A portrait another extension asked for (v0.14, requestDesPortrait): a hard Anlas cap instead of the
+     * cost confirmation, as image markers have it.
+     */
+    maxCost?: number;
+    skipCostConfirm?: boolean;
 }
 
 let portraitHook: ((prompt: string) => Promise<PortraitPlan | null>) | null = null;
@@ -97,6 +103,8 @@ function imagineCallback(pipeline: Pipeline) {
                           generation: { ...parsed.overrides.generation, ...plan.generation },
                       },
                       signal: controller.signal,
+                      ...(plan.maxCost !== undefined ? { maxCost: plan.maxCost } : {}),
+                      ...(plan.skipCostConfirm ? { skipCostConfirm: true } : {}),
                       // A DES portrait waits behind the pictures of the reply (v0.13.1).
                       queue: { priority: plan.priority ?? 'portrait', kind: 'portrait' },
                   })

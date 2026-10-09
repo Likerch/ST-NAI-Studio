@@ -8243,14 +8243,19 @@ var LABELS = {
 	npc: "Character",
 	entry: "Entry"
 };
+/** The persona prompt; with a story language the aliases also get the name as that language spells it. */
+function personaSystem(language) {
+	if (!language?.trim()) return SYSTEM_PERSONA;
+	return `${SYSTEM_PERSONA}\naliases: short names, nicknames and ${`the name as a ${languageName(language)} text spells it`}.`;
+}
 /** System and user messages for a card, a persona, one character of a scene tracker or a lorebook entry. */
 function passportGenMessages(source, target, options = {}) {
-	const system = target === "entry" ? entrySystem(options.kind ?? "character", options.language) : SYSTEMS[target];
+	const system = target === "entry" ? entrySystem(options.kind ?? "character", options.language) : target === "persona" ? personaSystem(options.language) : SYSTEMS[target];
 	const parts = [`${LABELS[target]}: ${source.name}`, `${target === "npc" ? "Tracker" : "Description"}:\n${clip(source.description, LIMITS.description)}`];
 	if (source.personality?.trim()) parts.push(`Personality:\n${clip(source.personality, LIMITS.personality)}`);
 	if (source.scenario?.trim()) parts.push(`${target === "npc" ? "Story card" : "Scenario"}:\n${clip(source.scenario, target === "npc" ? LIMITS.description : LIMITS.scenario)}`);
 	if (source.firstMessage?.trim()) parts.push(`First message:\n${clip(source.firstMessage, LIMITS.firstMessage)}`);
-	if (target === "entry" && options.language?.trim()) parts.push(`Story language: ${languageName(options.language)}`);
+	if ((target === "entry" || target === "persona") && options.language?.trim()) parts.push(`Story language: ${languageName(options.language)}`);
 	return {
 		system,
 		user: parts.join("\n\n")
@@ -9954,13 +9959,15 @@ function knownPersonaKey() {
 function personaPassport(key) {
 	return normalizePassport(settings().scene.personaPassports[key]);
 }
+/** Saves the passport of any persona (not only the current one) by its avatar file key. */
 function savePersonaPassport(key, passport) {
 	settings().scene.personaPassports[key] = passport;
 	saveSettings();
 	emitStudioEvent("passportsSaved", {
 		ids: [passport.id],
 		scope: "card",
-		persona: true
+		persona: true,
+		personaKey: key
 	});
 }
 function personaOwner(key) {
@@ -12352,8 +12359,8 @@ var Pipeline = class {
 			const chatId = c.getCurrentChatId();
 			const vibes = await this.vibes.prepare(caps, transport, req.signal, req.vibes, {
 				priority: req.queue?.priority ?? "user",
-				...chatId !== void 0 ? { chatId } : {}
-			});
+				...chatId !== void 0 && !req.chatless ? { chatId } : {}
+			}, { encode: req.noVibeEncoding !== true });
 			if (vibes.length) patch.vibes = vibes;
 		}
 		if (this.continuity && !req.noContinuity && !isSwipe && patch.mode === void 0 && patch.image === void 0) {
@@ -12400,7 +12407,7 @@ var Pipeline = class {
 			const job = {
 				priority: queue.priority ?? "user",
 				kind: queue.kind ?? "picture",
-				...chatId !== void 0 ? { chatId } : {},
+				...chatId !== void 0 && !req.chatless ? { chatId } : {},
 				...queue.stale ? { stale: queue.stale } : {},
 				onStatus: (status) => {
 					if (status.state === "running" && !started) {
@@ -15264,6 +15271,17 @@ async function askLlm(req) {
 }
 //#endregion
 //#region src/features/characters/passport-generator.ts
+/**
+* Answer budget per target: a card has many passports; a persona passport has its outfits (since 0.15
+* room for 5-6 of them); one tracker character or lore entry is short. NovelAI's text route through the
+* plugin allows up to 4096.
+*/
+var MAX_TOKENS = {
+	card: 3500,
+	persona: 2e3,
+	npc: 1200,
+	entry: 1200
+};
 async function ask(source, target, options = {}) {
 	if (!source.description.trim() && !source.firstMessage?.trim()) throw new NaiError("translation-failed", "none", { message: "the description is empty" });
 	const { system, user } = passportGenMessages(source, target, options);
@@ -15271,7 +15289,7 @@ async function ask(source, target, options = {}) {
 		system,
 		user,
 		schema: PASSPORT_GEN_SCHEMA,
-		maxTokens: target === "card" ? 3500 : 1200
+		maxTokens: MAX_TOKENS[target]
 	});
 	const passports = withoutUnstatedSpecies(parseGeneratedPassports(answer, source.name, options.kind), user);
 	if (!passports.length) {
@@ -15329,10 +15347,28 @@ async function generateEntryPassport(request) {
 		...request.language ? { language: request.language } : {}
 	})).find((p) => p.kind === request.kind);
 	if (!passport) throw new NaiError("translation-failed", "none", { message: `the answer had no ${request.kind} passport` });
-	const wanted = request.name.trim();
+	return named(passport, request.name);
+}
+/** The given name; the one the model wrote becomes an alias. */
+function named(passport, name) {
+	const wanted = name.trim();
 	passport.aliases = [.../* @__PURE__ */ new Set([passport.name, ...passport.aliases])].filter((alias) => alias.trim() && alias.trim().toLowerCase() !== wanted.toLowerCase());
 	passport.name = wanted;
 	return passport;
+}
+/**
+* One persona passport from a given description (since 0.15, NAI_STUDIO_API.generatePassport with
+* `persona: true`): the persona prompt with its outfits instead of the lore entry one. It keeps the given
+* name (the model's becomes an alias) and a new id; nothing is saved.
+*/
+async function generatePersonaPassportFrom(request) {
+	const c = ctx();
+	const passport = (await ask({
+		name: request.name,
+		description: c.substituteParams(request.description)
+	}, "persona", request.language ? { language: request.language } : {})).find((p) => p.kind === "character");
+	if (!passport) throw new NaiError("translation-failed", "none", { message: "the answer had no character passport" });
+	return named(passport, request.name);
 }
 /** One character passport from the current persona's description. */
 async function generatePersonaPassport() {
@@ -15464,7 +15500,7 @@ var VibeLibraryProvider = class {
 		this.noticed.add(key);
 		this.notify(notice);
 	}
-	async prepare(caps, transport, signal, extra = [], queue = {}) {
+	async prepare(caps, transport, signal, extra = [], queue = {}, options = {}) {
 		const active = activeVibes();
 		const planned = [...active, ...extra.filter((e) => !active.some((a) => a.item.id === e.item.id))];
 		if (!planned.length) return [];
@@ -15478,7 +15514,7 @@ var VibeLibraryProvider = class {
 			return [];
 		}
 		if (caps.vibeKind === "raw") return await this.raw(planned);
-		return await this.encoded(planned, caps.model, transport, signal, queue);
+		return await this.encoded(planned, caps.model, transport, signal, queue, options.encode !== false);
 	}
 	/** V3: the reference image itself, 448x448 PNG (RECON §3.4). */
 	async raw(planned) {
@@ -15503,7 +15539,7 @@ var VibeLibraryProvider = class {
 		}
 		return refs;
 	}
-	async encoded(planned, model, transport, signal, queue = {}) {
+	async encoded(planned, model, transport, signal, queue = {}, encode = true) {
 		const extras = transport.extras;
 		const encodings = /* @__PURE__ */ new Map();
 		const keyOf = (p) => encodingCacheKey(p.item.imageHash, model, p.informationExtracted);
@@ -15527,7 +15563,8 @@ var VibeLibraryProvider = class {
 			}
 			missing = missing.filter((p) => !encodings.has(keyOf(p)));
 		}
-		if (missing.length) {
+		if (missing.length && !encode) log.info(`vibes: ${missing.length} not encoded for ${model} yet, left out of a free-only request`);
+		else if (missing.length) {
 			const cost = missing.length * 2;
 			const reason = settings().anlas.freeOnly ? "free-only" : !extras ? "no-plugin" : settings().vibes.confirmEncoding && !await this.confirm(cost, "vibes") ? "declined" : null;
 			if (reason) this.notify({
@@ -17200,15 +17237,30 @@ function registerCommands$1(pipeline, compat) {
 //#region src/features/characters/persona-avatar.ts
 /** Framing of an avatar portrait. */
 var AVATAR_FRAMING = "portrait, upper body, looking at viewer, simple background";
-/** One portrait from the passport (free size on Opus); null when cancelled. */
-async function drawPersonaAvatar(pipeline, passport) {
+/** SillyTavern's endpoint for persona avatars (src/endpoints/avatars.js, 1.19). */
+var AVATAR_UPLOAD_URL = "/api/avatars/upload";
+/**
+* Aspect of SillyTavern's avatars (1.19): its crop popup proposes 2:3 (public/scripts/popup.js) and a
+* crop with `want_resize` is covered to 512x768 (src/endpoints/characters.js applyAvatarCropResize).
+*/
+var AVATAR_ASPECT = 2 / 3;
+/** The prompt and size of an avatar portrait: the passport without its NSFW layer, the free area. */
+function avatarPicture(passport) {
 	const scene = joinTags(passportTags(passport, { allowNsfw: false }), AVATAR_FRAMING);
 	const size = markerDimensions("portrait", void 0, true);
-	return (await pipeline.produce({
+	return {
 		initiator: "panel",
 		trigger: scene,
 		scene,
 		mode: MODE.FREE,
+		size
+	};
+}
+/** One portrait from the passport (free size on Opus); null when cancelled. */
+async function drawPersonaAvatar(pipeline, passport) {
+	const { size, ...picture } = avatarPicture(passport);
+	return (await pipeline.produce({
+		...picture,
 		interpret: "auto",
 		noContinuity: true,
 		overrides: {
@@ -17225,20 +17277,89 @@ async function drawPersonaAvatar(pipeline, passport) {
 		}
 	}))?.images[0] ?? null;
 }
+/**
+* One portrait that costs no Anlas (since 0.15): the free area, at most 28 steps, no vibe encoded for it,
+* and refused before anything is sent when it would still cost Anlas (`maxCost` 0 throws
+* "free-only-blocked": not Opus, unknown account, character references, too many vibes). No cost
+* question and no inspector. It waits in the one NovelAI queue as a portrait (after the pictures of a
+* reply); opening another chat does not drop it. Null when the pipeline declined it.
+*/
+async function drawFreePersonaAvatar(pipeline, passport, signal) {
+	const { size, ...picture } = avatarPicture(passport);
+	const generation = {
+		width: size.width,
+		height: size.height,
+		steps: Math.min(settings().generation.steps, 28),
+		seed: -1,
+		samples: 1,
+		characters: []
+	};
+	const produced = await pipeline.produce({
+		...picture,
+		interpret: "cyrillic",
+		noContinuity: true,
+		overrides: {
+			quiet: true,
+			edit: false,
+			negative: passport.negative,
+			generation
+		},
+		maxCost: 0,
+		skipCostConfirm: true,
+		noVibeEncoding: true,
+		chatless: true,
+		queue: {
+			priority: "portrait",
+			kind: "portrait"
+		},
+		...signal ? { signal } : {}
+	});
+	const image = produced?.images[0];
+	if (!produced || !image) return null;
+	return {
+		image,
+		width: produced.prepared.request.width,
+		height: produced.prepared.request.height
+	};
+}
 var imageDataUrl = (image) => `data:${image.mime};base64,${image.base64}`;
 /**
-* Replaces the avatar file of a persona. Returns false when the user closed the crop popup.
-* `file` is the persona's avatar file name (personas.js user_avatar).
+* The crop ST's popup proposes before the user moves it (autoCropArea 1): the largest centred box of
+* ST's avatar aspect, resized by ST to its avatar size.
 */
-async function uploadPersonaAvatar(file, image) {
+function centeredAvatarCrop(width, height, aspect = AVATAR_ASPECT) {
+	const w = Math.max(1, Math.min(width, Math.round(height * aspect)));
+	const h = Math.max(1, Math.min(height, Math.round(w / aspect)));
+	return {
+		x: Math.floor((width - w) / 2),
+		y: Math.floor((height - h) / 2),
+		width: w,
+		height: h,
+		want_resize: true
+	};
+}
+/** The upload URL with the crop (popup, or ST's default one for a known size); null when the popup closed. */
+async function uploadUrl(image, options) {
 	const c = ctx();
-	let url = "/api/avatars/upload";
-	if (c.powerUserSettings.never_resize_avatars !== true) {
-		const popup = new c.Popup("", c.POPUP_TYPE.CROP ?? 5, "", { cropImage: imageDataUrl(image) });
-		if (!await popup.show()) return false;
-		const crop = popup.cropData;
-		if (crop !== void 0) url += `?crop=${encodeURIComponent(JSON.stringify(crop))}`;
+	if (c.powerUserSettings.never_resize_avatars === true) return AVATAR_UPLOAD_URL;
+	if (options.size) {
+		const crop = centeredAvatarCrop(options.size.width, options.size.height);
+		return `${AVATAR_UPLOAD_URL}?crop=${encodeURIComponent(JSON.stringify(crop))}`;
 	}
+	const popup = new c.Popup("", c.POPUP_TYPE.CROP ?? 5, "", { cropImage: imageDataUrl(image) });
+	if (!await popup.show()) return null;
+	const crop = popup.cropData;
+	return crop === void 0 ? AVATAR_UPLOAD_URL : `${AVATAR_UPLOAD_URL}?crop=${encodeURIComponent(JSON.stringify(crop))}`;
+}
+/**
+* Replaces the avatar file of a persona, the current one or any other (the file is created when the
+* persona has none yet). `file` is the persona's avatar file name (personas.js user_avatar). Returns the
+* file name the server stored, or null when the user closed the crop popup.
+*/
+async function uploadPersonaAvatar(file, image, options = {}) {
+	const url = await uploadUrl(image, options);
+	if (url === null) return null;
+	const c = ctx();
 	const form = new FormData();
 	const extension = image.mime === "image/webp" ? "webp" : "png";
 	form.append("avatar", new File([base64ToBlob(image.base64, image.mime)], `avatar.${extension}`, { type: image.mime }));
@@ -17265,7 +17386,51 @@ async function uploadPersonaAvatar(file, image) {
 		img.src = "";
 		img.src = src;
 	});
-	return true;
+	return path;
+}
+/**
+* A new avatar for any persona from a passport (since 0.15): drawn free only (see drawFreePersonaAvatar),
+* then uploaded over that persona's avatar file with ST's default crop and no popup. A request that would
+* cost Anlas is "cost" without anything sent; an abort before the upload is "aborted".
+*/
+async function generatePersonaAvatarFile(pipeline, personaKey, passport, signal) {
+	if (signal?.aborted) return {
+		ok: false,
+		error: "aborted"
+	};
+	let drawn;
+	try {
+		drawn = await drawFreePersonaAvatar(pipeline, passport, signal);
+	} catch (error) {
+		const code = toNaiError(error).code;
+		log.warn(`persona avatar of "${personaKey}" not drawn:`, code);
+		return {
+			ok: false,
+			error: code === "free-only-blocked" ? "cost" : code
+		};
+	}
+	if (!drawn || signal?.aborted) return {
+		ok: false,
+		error: "aborted"
+	};
+	try {
+		const path = await uploadPersonaAvatar(personaKey, drawn.image, { size: drawn });
+		if (!path) return {
+			ok: false,
+			error: "aborted"
+		};
+		log.info(`persona avatar of "${personaKey}" set`);
+		return {
+			ok: true,
+			path
+		};
+	} catch (error) {
+		log.warn(`persona avatar of "${personaKey}" not uploaded`, error);
+		return {
+			ok: false,
+			error: "upload"
+		};
+	}
 }
 //#endregion
 //#region src/ui/components/json-view.ts
@@ -20036,7 +20201,7 @@ var ComicService = class {
 };
 //#endregion
 //#region package.json
-var version = "0.14.0";
+var version = "0.15.0";
 //#endregion
 //#region src/features/settings-io/settings-io.ts
 async function exportSettingsFile(includeImages) {
@@ -22142,13 +22307,16 @@ var API_GLOBAL = "NAI_STUDIO_API";
 * What this version has beyond the members a consumer checks with `typeof` (v0.14): "excludePassport"
 * (setPassportExcluded, isPassportExcluded, the "passportExcludedChanged" event, `includeExcluded`),
 * "requestDesPortrait", "chatNpcPassports" (passports of new DES characters go to the chat by default and
-* carry origin "auto-des"), "chatPortraits" (DES portraits remembered per chat).
+* carry origin "auto-des"), "chatPortraits" (DES portraits remembered per chat). Since 0.15 "personaKeys"
+* (getPersonaPassport, savePassport's `personaKey`, generatePassport's `persona`, generatePersonaAvatar,
+* `personaKey` in "passportsSaved").
 */
 var API_FEATURES = [
 	"excludePassport",
 	"requestDesPortrait",
 	"chatNpcPassports",
-	"chatPortraits"
+	"chatPortraits",
+	"personaKeys"
 ];
 /** Unsubscriptions of everything registered through the API (dropped on disable). */
 var registrations = /* @__PURE__ */ new Set();
@@ -22156,6 +22324,8 @@ var registrations = /* @__PURE__ */ new Set();
 var backgrounds = null;
 /** Redraws DES portraits (the DES integration, set on activation; null before). */
 var desPortraits = null;
+/** Draws persona avatars (since 0.15; set on activation, null before). */
+var pipeline = null;
 function fail(message) {
 	throw new Error(`NAI Studio API: ${message}`);
 }
@@ -22166,6 +22336,12 @@ function requireId(value, what = "passport id") {
 function requireScope(value) {
 	if (value !== "card" && value !== "chat") fail(`scope must be "card" or "chat"`);
 	return value;
+}
+/** A persona's avatar file key: a file name SillyTavern accepts as `overwrite_name` (no path). */
+function requirePersonaKey(value) {
+	const key = requireId(value, "personaKey");
+	if (/[/\\\0]/.test(key) || key === "." || key === "..") fail("personaKey must be a file name");
+	return key;
 }
 /** The persona and the cards of the chat are loaded before an async call looks for a passport. */
 async function prepare() {
@@ -22240,7 +22416,15 @@ async function savePassport(raw, scopeValue, target) {
 	const scope = requireScope(scopeValue);
 	const passport = normalizePassport(raw) ?? fail("passport must be an object");
 	const rawId = raw.id;
-	passport.id = typeof rawId === "string" && rawId.trim() ? rawId.trim() : newPassportId();
+	const givenId = typeof rawId === "string" && rawId.trim() ? rawId.trim() : "";
+	if (target?.personaKey !== void 0) {
+		const key = requirePersonaKey(target.personaKey);
+		if (target.avatar !== void 0) fail("target.avatar and target.personaKey exclude each other");
+		passport.id = givenId || personaPassport(key)?.id || newPassportId();
+		savePersonaPassport(key, passport);
+		return;
+	}
+	passport.id = givenId || newPassportId();
 	await prepare();
 	const where = whereOf(target);
 	const found = where ? locatePassport(passport.id, where) : locatePassport(passport.id);
@@ -22374,11 +22558,20 @@ function requestFailed(request, name, error) {
 async function generatePassport(input) {
 	if (typeof input !== "object" || input === null) fail("input must be an object");
 	const name = requireId(input.name, "name");
+	const persona = input.persona;
+	if (persona !== void 0 && typeof persona !== "boolean") fail("persona must be a boolean");
 	const kind = input.kind;
-	if (!ENTRY_PASSPORT_KINDS.includes(kind)) fail(`kind must be one of ${ENTRY_PASSPORT_KINDS.join(", ")}`);
+	if (persona === true) {
+		if (kind !== void 0 && kind !== "character") fail("a persona passport is of kind \"character\"");
+	} else if (!ENTRY_PASSPORT_KINDS.includes(kind)) fail(`kind must be one of ${ENTRY_PASSPORT_KINDS.join(", ")}`);
 	if (typeof input.description !== "string") fail("description must be a string");
 	const language = optionalText(input, "language");
 	try {
+		if (persona === true) return await generatePersonaPassportFrom({
+			name,
+			description: input.description,
+			...language ? { language } : {}
+		});
 		return await generateEntryPassport({
 			name,
 			kind,
@@ -22420,6 +22613,33 @@ async function generateBackground(input) {
 		return null;
 	}
 }
+function getPersonaPassport(personaKey) {
+	if (typeof personaKey !== "string" || !personaKey.trim()) return null;
+	const stored = personaPassport(personaKey.trim());
+	return stored ? structuredClone(stored) : null;
+}
+/** An AbortSignal of any realm. */
+function isSignal(value) {
+	const signal = value;
+	return typeof signal === "object" && signal !== null && typeof signal.aborted === "boolean" && typeof signal.addEventListener === "function";
+}
+async function generatePersonaAvatar(options) {
+	if (typeof options !== "object" || options === null) fail("options must be an object");
+	const key = requirePersonaKey(options.personaKey);
+	const given = options.passport;
+	const passport = given === void 0 || given === null ? personaPassport(key) : normalizePassport(given) ?? fail("passport must be an object");
+	const signal = options.signal;
+	if (signal !== void 0 && !isSignal(signal)) fail("signal must be an AbortSignal");
+	if (!passport || isPassportEmpty(passport)) return {
+		ok: false,
+		error: "no-passport"
+	};
+	if (!pipeline) return {
+		ok: false,
+		error: "inactive"
+	};
+	return await generatePersonaAvatarFile(pipeline, key, passport, signal);
+}
 function createApi() {
 	return Object.freeze({
 		version: 1,
@@ -22440,7 +22660,9 @@ function createApi() {
 		generateBackground,
 		setPassportExcluded: excludePassport,
 		isPassportExcluded: isExcluded,
-		requestDesPortrait
+		requestDesPortrait,
+		getPersonaPassport,
+		generatePersonaAvatar
 	});
 }
 var installed = null;
@@ -22448,6 +22670,7 @@ var installed = null;
 function installPublicApi(services = {}) {
 	if (services.backgrounds) backgrounds = services.backgrounds;
 	if (services.desPortraits) desPortraits = services.desPortraits;
+	if (services.pipeline) pipeline = services.pipeline;
 	installed ??= createApi();
 	globalThis[API_GLOBAL] = installed;
 	currentPersonaKey();
@@ -24059,7 +24282,8 @@ async function onActivate() {
 	setupGenerationQueue();
 	installPublicApi({
 		backgrounds: new BackgroundService(pipeline),
-		desPortraits: async (name, reason) => await desIntegration()?.requestPortrait(name, reason) ?? false
+		desPortraits: async (name, reason) => await desIntegration()?.requestPortrait(name, reason) ?? false,
+		pipeline
 	});
 	studio.refreshTransport();
 	for (const name of [

@@ -3,16 +3,18 @@
 // "passports saved" and "image ready", and register scene providers and (v0.11) quality gates.
 // v0.12: passport providers (lore entries in scenes), passports written from a description and
 // backgrounds of places. v0.14: a passport excluded from the current chat, a DES portrait redrawn on
-// request, `features` to detect what the running version has. Installed on activation, removed on
-// disable. Version 1: within a version members are only added, never changed.
+// request, `features` to detect what the running version has. Since 0.15 ("personaKeys"): any persona
+// by its avatar file key, current or not: its passport read and saved, a persona passport written from
+// a description, and a free avatar drawn from its passport and set without a popup. Installed on
+// activation, removed on disable. Version 1: within a version members are only added, never changed.
 import { ctx } from '../core/context';
 import { toNaiError } from '../core/errors';
 import { t } from '../core/i18n';
 import { log } from '../core/logger';
-import { ENTRY_PASSPORT_KINDS, newPassportId, normalizePassport } from '../domain';
+import { ENTRY_PASSPORT_KINDS, isPassportEmpty, newPassportId, normalizePassport } from '../domain';
 import type { EntryPassportKind, Passport, SceneHint } from '../domain';
 import type { BackgroundService } from '../features/backgrounds/background-service';
-import { generateEntryPassport } from '../features/characters/passport-generator';
+import { generateEntryPassport, generatePersonaPassportFrom } from '../features/characters/passport-generator';
 import {
     cardIndexByAvatar,
     chatCardIndexes,
@@ -26,6 +28,7 @@ import {
     locatePassport,
     ownerId,
     passportExcluded,
+    personaPassport,
     resolvedCardPassports,
     resolvedPersonaPassport,
     saveCardPassport,
@@ -35,8 +38,11 @@ import {
     setPassportExcluded,
 } from '../features/characters/passport-store';
 import type { LocatedPassport, PassportWhere } from '../features/characters/passport-store';
+import { generatePersonaAvatarFile } from '../features/characters/persona-avatar';
+import type { PersonaAvatarResult } from '../features/characters/persona-avatar';
 import { emitStudioEvent, onStudioEvent, STUDIO_EVENTS } from '../features/events/studio-events';
 import type { StudioEventName, StudioEvents, StudioRequestKind } from '../features/events/studio-events';
+import type { Pipeline } from '../features/generation/pipeline';
 import { registerQualityGate } from '../features/quality/quality-gate';
 import type { QualityGate } from '../features/quality/quality-gate';
 import { registerScenePassportProvider } from '../features/scene/passport-providers';
@@ -53,6 +59,7 @@ export type {
     StudioRequestKind,
 } from '../features/events/studio-events';
 export type { SceneHint } from '../domain';
+export type { PersonaAvatarResult } from '../features/characters/persona-avatar';
 export type { SceneHintContext } from '../features/scene/scene-providers';
 export type { QualityGate, QualityGateDetail } from '../features/quality/quality-gate';
 
@@ -63,9 +70,17 @@ export const API_VERSION = 1;
  * What this version has beyond the members a consumer checks with `typeof` (v0.14): "excludePassport"
  * (setPassportExcluded, isPassportExcluded, the "passportExcludedChanged" event, `includeExcluded`),
  * "requestDesPortrait", "chatNpcPassports" (passports of new DES characters go to the chat by default and
- * carry origin "auto-des"), "chatPortraits" (DES portraits remembered per chat).
+ * carry origin "auto-des"), "chatPortraits" (DES portraits remembered per chat). Since 0.15 "personaKeys"
+ * (getPersonaPassport, savePassport's `personaKey`, generatePassport's `persona`, generatePersonaAvatar,
+ * `personaKey` in "passportsSaved").
  */
-export const API_FEATURES = ['excludePassport', 'requestDesPortrait', 'chatNpcPassports', 'chatPortraits'] as const;
+export const API_FEATURES = [
+    'excludePassport',
+    'requestDesPortrait',
+    'chatNpcPassports',
+    'chatPortraits',
+    'personaKeys',
+] as const;
 export type ApiFeature = (typeof API_FEATURES)[number];
 
 /** Which passports to list; several flags add up, none lists everything of the current chat. */
@@ -93,7 +108,15 @@ export interface DesPortraitRequest {
 /** Where a passport lives when its id alone does not say (a new passport, ids shared by legacy cards). */
 export interface PassportTarget {
     avatar?: string;
+    /** The current persona. */
     persona?: boolean;
+    /**
+     * Since 0.15: any persona by its avatar file key (ST `user_avatar`, "1728000000000-Anna.png"), current
+     * or not, existing in ST yet or not. The passport replaces that persona's stored passport whatever the
+     * scope (no chat override); one without an id keeps the id of the passport it replaces. Wins over
+     * `persona`; rejects with `avatar`.
+     */
+    personaKey?: string;
 }
 
 export type PassportSaveScope = 'card' | 'chat';
@@ -116,11 +139,27 @@ export interface ExternalPassportProvider {
 /** v0.12: what `generatePassport` writes a passport for. */
 export interface PassportGenerationInput {
     name: string;
+    /** With `persona`: "character" (or left out); any other kind rejects. */
     kind: EntryPassportKind;
     /** The text describing it (a lorebook entry); macros like {{char}} are substituted. */
     description: string;
     /** Language of the story ("ru", "Russian"): the name as it spells it goes to the aliases. */
     language?: string;
+    /**
+     * Since 0.15: a persona passport (a persona made for a character): NAI Studio's persona prompt with
+     * its outfits instead of the lore entry one, and room for 5-6 outfits in the answer.
+     */
+    persona?: boolean;
+}
+
+/** Since 0.15: the persona whose avatar `generatePersonaAvatar` draws. */
+export interface PersonaAvatarRequest {
+    /** The persona's avatar file key (ST `user_avatar`, "1728000000000-Anna.png"): the file it writes. */
+    personaKey: string;
+    /** Drawn from this passport instead of the persona's stored one. */
+    passport?: Passport;
+    /** Aborts it while it is prepared, waits in the queue or is drawn; nothing is uploaded after it. */
+    signal?: AbortSignal;
 }
 
 /** v0.12: the background `generateBackground` draws. */
@@ -223,6 +262,25 @@ export interface NaiStudioApi {
      * the user's or a card's own character, nothing to draw from.
      */
     requestDesPortrait(name: string, options?: DesPortraitRequest): Promise<boolean>;
+    /**
+     * Since 0.15 (`features` has "personaKeys"). The stored passport of any persona by its avatar file key
+     * (ST `user_avatar` id such as "1728000000000-Anna.png"), current or not, as a copy without chat
+     * overrides; null when it has none (or the key is not a non-empty string).
+     */
+    getPersonaPassport(personaKey: string): Passport | null;
+    /**
+     * Since 0.15. Draws a portrait of a persona from its stored passport (or the given one) and makes it
+     * that persona's avatar, current or not. Free only: the free area, at most 28 steps, no vibe encoded
+     * for it; a request that would still cost Anlas resolves `{ ok: false, error: 'cost' }` before anything
+     * is sent. No cost question, no crop popup. It waits in NAI Studio's one queue as a portrait (after
+     * the pictures of a reply; another chat does not drop it). The image goes to `/api/avatars/upload`
+     * with `overwrite_name` = personaKey and ST's default crop (centred 2:3, resized by ST; none when ST
+     * never resizes avatars); ST's persona list is rendered again. `{ ok: true, path }` with the file
+     * name the server stored, or `{ ok: false, error }`: "cost", "aborted", "no-passport" (none stored and
+     * none given, or an empty one), "inactive" (NAI Studio not running), "upload", or NAI Studio's error
+     * code of a failed generation ("unauthorized", "rate-limited", ...). Invalid input rejects.
+     */
+    generatePersonaAvatar(options: PersonaAvatarRequest): Promise<PersonaAvatarResult>;
 }
 
 /** Unsubscriptions of everything registered through the API (dropped on disable). */
@@ -231,6 +289,8 @@ const registrations = new Set<() => void>();
 let backgrounds: BackgroundService | null = null;
 /** Redraws DES portraits (the DES integration, set on activation; null before). */
 let desPortraits: DesPortraitRequester | null = null;
+/** Draws persona avatars (since 0.15; set on activation, null before). */
+let pipeline: Pipeline | null = null;
 
 function fail(message: string): never {
     throw new Error(`NAI Studio API: ${message}`);
@@ -244,6 +304,13 @@ function requireId(value: unknown, what = 'passport id'): string {
 function requireScope(value: unknown): PassportSaveScope {
     if (value !== 'card' && value !== 'chat') fail(`scope must be "card" or "chat"`);
     return value;
+}
+
+/** A persona's avatar file key: a file name SillyTavern accepts as `overwrite_name` (no path). */
+function requirePersonaKey(value: unknown): string {
+    const key = requireId(value, 'personaKey');
+    if (/[/\\\0]/.test(key) || key === '.' || key === '..') fail('personaKey must be a file name');
+    return key;
 }
 
 /** The persona and the cards of the chat are loaded before an async call looks for a passport. */
@@ -329,7 +396,16 @@ async function savePassport(raw: Passport, scopeValue: PassportSaveScope, target
     const scope = requireScope(scopeValue);
     const passport = normalizePassport(raw) ?? fail('passport must be an object');
     const rawId = (raw as { id?: unknown }).id;
-    passport.id = typeof rawId === 'string' && rawId.trim() ? rawId.trim() : newPassportId();
+    const givenId = typeof rawId === 'string' && rawId.trim() ? rawId.trim() : '';
+    if (target?.personaKey !== undefined) {
+        // Any persona by its key (since 0.15): its stored passport, whatever the scope.
+        const key = requirePersonaKey(target.personaKey);
+        if (target.avatar !== undefined) fail('target.avatar and target.personaKey exclude each other');
+        passport.id = givenId || personaPassport(key)?.id || newPassportId();
+        savePersonaPassport(key, passport);
+        return;
+    }
+    passport.id = givenId || newPassportId();
     await prepare();
     const where = whereOf(target);
     const found = where ? locatePassport(passport.id, where) : locatePassport(passport.id);
@@ -465,15 +541,26 @@ function requestFailed(request: StudioRequestKind, name: string, error: unknown)
 async function generatePassport(input: PassportGenerationInput): Promise<Passport | null> {
     if (typeof input !== 'object' || input === null) fail('input must be an object');
     const name = requireId(input.name, 'name');
-    const kind = input.kind;
-    if (!(ENTRY_PASSPORT_KINDS as readonly unknown[]).includes(kind))
+    const persona = (input as { persona?: unknown }).persona;
+    if (persona !== undefined && typeof persona !== 'boolean') fail('persona must be a boolean');
+    const kind = input.kind as unknown;
+    if (persona === true) {
+        if (kind !== undefined && kind !== 'character') fail('a persona passport is of kind "character"');
+    } else if (!(ENTRY_PASSPORT_KINDS as readonly unknown[]).includes(kind))
         fail(`kind must be one of ${ENTRY_PASSPORT_KINDS.join(', ')}`);
     if (typeof input.description !== 'string') fail('description must be a string');
     const language = optionalText(input, 'language');
     try {
+        if (persona === true) {
+            return await generatePersonaPassportFrom({
+                name,
+                description: input.description,
+                ...(language ? { language } : {}),
+            });
+        }
         return await generateEntryPassport({
             name,
-            kind,
+            kind: kind as EntryPassportKind,
             description: input.description,
             ...(language ? { language } : {}),
         });
@@ -507,6 +594,38 @@ async function generateBackground(input: BackgroundInput): Promise<{ file: strin
     }
 }
 
+function getPersonaPassport(personaKey: string): Passport | null {
+    if (typeof personaKey !== 'string' || !personaKey.trim()) return null;
+    const stored = personaPassport(personaKey.trim());
+    return stored ? structuredClone(stored) : null;
+}
+
+/** An AbortSignal of any realm. */
+function isSignal(value: unknown): value is AbortSignal {
+    const signal = value as Partial<AbortSignal> | null;
+    return (
+        typeof signal === 'object' &&
+        signal !== null &&
+        typeof signal.aborted === 'boolean' &&
+        typeof signal.addEventListener === 'function'
+    );
+}
+
+async function generatePersonaAvatar(options: PersonaAvatarRequest): Promise<PersonaAvatarResult> {
+    if (typeof options !== 'object' || options === null) fail('options must be an object');
+    const key = requirePersonaKey(options.personaKey);
+    const given = options.passport as unknown;
+    const passport =
+        given === undefined || given === null
+            ? personaPassport(key)
+            : (normalizePassport(given) ?? fail('passport must be an object'));
+    const signal = options.signal as unknown;
+    if (signal !== undefined && !isSignal(signal)) fail('signal must be an AbortSignal');
+    if (!passport || isPassportEmpty(passport)) return { ok: false, error: 'no-passport' };
+    if (!pipeline) return { ok: false, error: 'inactive' };
+    return await generatePersonaAvatarFile(pipeline, key, passport, signal);
+}
+
 function createApi(): NaiStudioApi {
     return Object.freeze({
         version: API_VERSION as 1,
@@ -528,6 +647,8 @@ function createApi(): NaiStudioApi {
         setPassportExcluded: excludePassport,
         isPassportExcluded: isExcluded,
         requestDesPortrait,
+        getPersonaPassport,
+        generatePersonaAvatar,
     });
 }
 
@@ -540,12 +661,15 @@ export type DesPortraitRequester = (name: string, reason?: string) => Promise<bo
 export interface PublicApiServices {
     backgrounds?: BackgroundService;
     desPortraits?: DesPortraitRequester;
+    /** Draws persona avatars (since 0.15). */
+    pipeline?: Pipeline;
 }
 
 /** Publishes globalThis.NAI_STUDIO_API (activation). */
 export function installPublicApi(services: PublicApiServices = {}): NaiStudioApi {
     if (services.backgrounds) backgrounds = services.backgrounds;
     if (services.desPortraits) desPortraits = services.desPortraits;
+    if (services.pipeline) pipeline = services.pipeline;
     installed ??= createApi();
     (globalThis as Record<string, unknown>)[API_GLOBAL] = installed;
     // The persona key is read synchronously by passports(): load it now.

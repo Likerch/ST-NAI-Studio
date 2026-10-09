@@ -100,6 +100,8 @@ export async function onActivate(): Promise<void> {
         backgrounds: new BackgroundService(pipeline),
         // DES portraits redrawn on request (v0.14); false while DES is not connected.
         desPortraits: async (name, reason) => (await desIntegration()?.requestPortrait(name, reason)) ?? false,
+        // Free avatars of any persona (since 0.15).
+        pipeline,
     });
     // Network probing must not hold the 5 s activation window.
     void studio.refreshTransport();

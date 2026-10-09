@@ -18,9 +18,21 @@ const state = vi.hoisted(() => ({
     chat: [] as Record<string, unknown>[],
     meta: {} as Record<string, unknown>,
     chatId: 'chat-1' as string | undefined,
-    llm: [] as { system: string; user: string }[],
+    llm: [] as { system: string; user: string; maxTokens?: number }[],
     answer: '' as string | (() => never),
+    neverResize: false,
+    popups: 0,
+    rendered: [] as unknown[],
 }));
+
+class FakePopup {
+    constructor() {
+        state.popups++;
+    }
+    async show() {
+        return 1;
+    }
+}
 
 vi.mock('../../src/core/settings', () => ({ settings: () => state.settings, saveSettings: vi.fn() }));
 vi.mock('../../src/core/context', () => ({
@@ -40,14 +52,21 @@ vi.mock('../../src/core/context', () => ({
             const ch = state.characters[index] as { data: { extensions: Record<string, unknown> } };
             ch.data.extensions[key] = structuredClone(value);
         }),
+        powerUserSettings: { never_resize_avatars: state.neverResize },
+        Popup: FakePopup,
+        POPUP_TYPE: { CROP: 5 },
+        getThumbnailUrl: (type: string, file: string) => `/thumbnail?type=${type}&file=${file}`,
     }),
-    importHost: async () => ({ user_avatar: 'player.png' }),
+    importHost: async () => ({
+        user_avatar: 'player.png',
+        getUserAvatars: async (render: boolean, at: string) => state.rendered.push([render, at]),
+    }),
     requestHeaders: (omitContentType?: boolean) =>
         omitContentType ? { 'X-CSRF-Token': 'token' } : { 'X-CSRF-Token': 'token', 'Content-Type': 'application/json' },
 }));
 // The language backend: the test's answer instead of a model.
 vi.mock('../../src/features/language/llm', () => ({
-    askLlm: vi.fn(async (request: { system: string; user: string }) => {
+    askLlm: vi.fn(async (request: { system: string; user: string; maxTokens: number }) => {
         state.llm.push(request);
         return typeof state.answer === 'function' ? state.answer() : state.answer;
     }),
@@ -100,6 +119,9 @@ beforeEach(async () => {
     state.chat = [];
     state.meta = {};
     state.chatId = 'chat-1';
+    state.neverResize = false;
+    state.popups = 0;
+    state.rendered = [];
     const me = passport('me');
     state.settings.scene.personaPassports['player.png'] = me;
     api = installPublicApi();
@@ -208,7 +230,7 @@ describe('NAI_STUDIO_API', () => {
         expect(state.settings.scene.personaPassports['player.png']).toMatchObject({
             states: expect.arrayContaining([{ id: 'blush', tags: 'blush, embarrassed', enabled: true }]),
         });
-        expect(saved).toHaveBeenLastCalledWith({ ids: ['me'], scope: 'card', persona: true });
+        expect(saved).toHaveBeenLastCalledWith({ ids: ['me'], scope: 'card', persona: true, personaKey: 'player.png' });
         await api.setOutfit('p2', '');
         expect(api.getPassport('p2')!.activeOutfit).toBe('');
     });
@@ -584,7 +606,13 @@ describe('NAI_STUDIO_API: excluded passports and DES portraits (v0.14)', () => {
     const store = () => import('../../src/features/characters/passport-store');
 
     it('names its features and keeps them frozen', () => {
-        expect(api.features).toEqual(['excludePassport', 'requestDesPortrait', 'chatNpcPassports', 'chatPortraits']);
+        expect(api.features).toEqual([
+            'excludePassport',
+            'requestDesPortrait',
+            'chatNpcPassports',
+            'chatPortraits',
+            'personaKeys',
+        ]);
         expect(Object.isFrozen(api.features)).toBe(true);
         for (const method of ['setPassportExcluded', 'isPassportExcluded', 'requestDesPortrait'] as const)
             expect(typeof api[method]).toBe('function');
@@ -755,5 +783,257 @@ describe('NAI_STUDIO_API: excluded passports and DES portraits (v0.14)', () => {
             vi.unstubAllGlobals();
             vi.stubGlobal('toastr', toastr);
         }
+    });
+});
+
+describe('NAI_STUDIO_API: any persona by its key (0.15)', () => {
+    const ANNA = '1728000000000-Anna.png';
+
+    it('names the feature and has the members', () => {
+        expect(api.features).toContain('personaKeys');
+        for (const method of ['getPersonaPassport', 'generatePersonaAvatar'] as const)
+            expect(typeof api[method]).toBe('function');
+    });
+
+    it("reads and saves any persona's passport, current or not, whatever the scope", async () => {
+        const saved = vi.fn();
+        api.on('passportsSaved', saved);
+        expect(api.getPersonaPassport(ANNA)).toBeNull();
+        expect(api.getPersonaPassport('' as string)).toBeNull();
+        expect(api.getPersonaPassport(42 as never)).toBeNull();
+        const anna = { ...passport('', 'Anna'), negative: 'glasses' };
+        await api.savePassport(anna, 'card', { personaKey: ANNA });
+        const stored = api.getPersonaPassport(ANNA)!;
+        expect(stored).toMatchObject({ name: 'Anna', negative: 'glasses', kind: 'character' });
+        expect(stored.id).toMatch(/^p/);
+        expect(saved).toHaveBeenLastCalledWith({ ids: [stored.id], scope: 'card', persona: true, personaKey: ANNA });
+        // A copy; the current persona and the chat are not touched.
+        stored.name = 'changed';
+        expect(api.getPersonaPassport(ANNA)!.name).toBe('Anna');
+        expect(api.passports({ persona: true }).map((p) => p.id)).toEqual(['me']);
+        expect(state.meta).toEqual({});
+        // The chat scope does not apply to a persona by key: its stored passport is replaced, keeping its id.
+        await api.savePassport({ ...passport('', 'Anna'), negative: 'hat' }, 'chat', { personaKey: ANNA });
+        expect(api.getPersonaPassport(ANNA)).toMatchObject({ id: stored.id, negative: 'hat' });
+        expect(state.meta).toEqual({});
+        // An id given wins; the key wins over `persona`; the current persona by its key too.
+        await api.savePassport(passport('anna-2', 'Anna'), 'card', { personaKey: ANNA, persona: true });
+        expect(api.getPersonaPassport(ANNA)!.id).toBe('anna-2');
+        expect(api.getPersonaPassport('player.png')!.id).toBe('me');
+        await api.savePassport({ ...passport('me'), negative: 'scar' }, 'card', { personaKey: 'player.png' });
+        expect(api.getPassport('me')!.negative).toBe('scar');
+        // The stored passport, without the chat's override of the current persona.
+        await api.setOutfit('me', 'Armor');
+        expect(api.getPassport('me')!.activeOutfit).toBe('Armor');
+        expect(api.getPersonaPassport('player.png')!.activeOutfit).toBe('');
+    });
+
+    it('rejects a persona key that is not a file name', async () => {
+        for (const key of ['', ' ', 'a/b.png', 'a\\b.png', '..', 5])
+            await expect(api.savePassport(passport('x'), 'card', { personaKey: key as never })).rejects.toThrow(
+                /personaKey/,
+            );
+        await expect(api.savePassport(passport('x'), 'card', { personaKey: ANNA, avatar: 'Lyra.png' })).rejects.toThrow(
+            /exclude each other/,
+        );
+        await expect(api.savePassport(passport('x'), 'world' as never, { personaKey: ANNA })).rejects.toThrow(/scope/);
+        expect(api.getPersonaPassport(ANNA)).toBeNull();
+    });
+
+    it('writes a persona passport from a description with the persona prompt and room for outfits', async () => {
+        state.llm = [];
+        state.answer = JSON.stringify({
+            passports: [
+                {
+                    kind: 'character',
+                    name: 'Anya',
+                    aliases: ['Ann'],
+                    base: '1girl, adult',
+                    hair: 'silver hair',
+                    clothing: 'black coat',
+                    outfits: [
+                        { name: 'Ballgown', tags: 'red ballgown' },
+                        { name: 'Armor', tags: 'steel armor' },
+                    ],
+                },
+            ],
+        });
+        const result = await api.generatePassport({
+            name: 'Anna',
+            kind: 'character',
+            description: '{{char}} has a sister, Anna, with silver hair.',
+            language: 'ru',
+            persona: true,
+        });
+        expect(result).toMatchObject({
+            kind: 'character',
+            name: 'Anna',
+            aliases: ['Anya', 'Ann'],
+            slots: { hair: 'silver hair', clothing: 'black coat' },
+            outfits: [
+                { name: 'Ballgown', tags: 'red ballgown' },
+                { name: 'Armor', tags: 'steel armor' },
+            ],
+        });
+        expect(result!.id).toMatch(/^p/);
+        expect(state.llm).toHaveLength(1);
+        const request = state.llm[0]!;
+        expect(request.system).toContain("player's persona");
+        expect(request.system).not.toContain('lorebook entry');
+        expect(request.system).toContain('the name as a Russian text spells it');
+        expect(request.user).toContain('Persona: Anna');
+        expect(request.user).toContain('Lyra has a sister');
+        expect(request.user).toContain('Story language: Russian');
+        expect(request.maxTokens).toBe(2000);
+        // The kind may be left out; nothing is saved.
+        await api.generatePassport({ name: 'Anna', description: 'x', persona: true } as never);
+        expect(state.llm[1]!.system).toContain("player's persona");
+        expect(state.llm[1]!.user).not.toContain('Story language');
+        expect(state.settings.scene.personaPassports).not.toHaveProperty('1728000000000-Anna.png');
+        // Without `persona` the lore entry prompt is used as before.
+        await api.generatePassport({ name: 'Anna', kind: 'character', description: 'x', persona: false });
+        expect(state.llm[2]!.system).toContain('lorebook entry');
+        expect(state.llm[2]!.maxTokens).toBe(1200);
+    });
+
+    it('rejects a persona passport of another kind or a persona flag that is not a boolean', async () => {
+        state.llm = [];
+        await expect(
+            api.generatePassport({ name: 'A', kind: 'location', description: 'x', persona: true }),
+        ).rejects.toThrow(/kind "character"/);
+        await expect(
+            api.generatePassport({ name: 'A', kind: 'character', description: 'x', persona: 'yes' as never }),
+        ).rejects.toThrow(/persona must be a boolean/);
+        expect(state.llm).toEqual([]);
+    });
+
+    describe('generatePersonaAvatar', () => {
+        const image = { base64: btoa('png bytes'), mime: 'image/png' as const, index: 0 };
+        let produce: ReturnType<typeof vi.fn>;
+        let fetchMock: ReturnType<typeof vi.fn>;
+
+        beforeEach(() => {
+            toastr.error.mockClear();
+            produce = vi.fn(async () => ({
+                images: [image],
+                prepared: { request: { width: 832, height: 1216 }, cost: { total: 0 } },
+            }));
+            fetchMock = vi.fn(async (url: string) =>
+                url.startsWith('/api/avatars/upload') ? new Response(JSON.stringify({ path: ANNA })) : new Response(''),
+            );
+            vi.stubGlobal('fetch', fetchMock);
+            vi.stubGlobal('document', { querySelectorAll: () => [] });
+            const anna = passport('anna', 'Anna');
+            anna.slots.hair = 'silver hair';
+            state.settings.scene.personaPassports[ANNA] = anna;
+        });
+
+        afterEach(() => {
+            vi.unstubAllGlobals();
+            vi.stubGlobal('toastr', toastr);
+        });
+
+        const uploads = () =>
+            fetchMock.mock.calls.filter((call) => String(call[0]).startsWith('/api/avatars/upload')) as [
+                string,
+                RequestInit,
+            ][];
+
+        it('says "inactive" before NAI Studio runs, and rejects input it cannot use', async () => {
+            expect(await api.generatePersonaAvatar({ personaKey: ANNA })).toEqual({ ok: false, error: 'inactive' });
+            await expect(api.generatePersonaAvatar(null as never)).rejects.toThrow(/options must be an object/);
+            await expect(api.generatePersonaAvatar({ personaKey: '../x.png' })).rejects.toThrow(/personaKey/);
+            await expect(api.generatePersonaAvatar({ personaKey: ANNA, passport: 'x' as never })).rejects.toThrow(
+                /passport must be an object/,
+            );
+            await expect(api.generatePersonaAvatar({ personaKey: ANNA, signal: {} as never })).rejects.toThrow(
+                /signal must be an AbortSignal/,
+            );
+            expect(fetchMock).not.toHaveBeenCalled();
+        });
+
+        it('draws the stored passport free only and sets it as the avatar of a persona that is not current', async () => {
+            installPublicApi({ pipeline: { produce } as never });
+            const abort = new AbortController();
+            const result = await api.generatePersonaAvatar({ personaKey: ANNA, signal: abort.signal });
+            expect(result).toEqual({ ok: true, path: ANNA });
+            expect(produce).toHaveBeenCalledTimes(1);
+            expect(produce.mock.calls[0]![0]).toMatchObject({
+                scene: expect.stringContaining('1girl, silver hair'),
+                maxCost: 0,
+                skipCostConfirm: true,
+                noVibeEncoding: true,
+                chatless: true,
+                queue: { priority: 'portrait', kind: 'portrait' },
+                signal: abort.signal,
+                overrides: { quiet: true },
+            });
+            // No crop popup: ST's default crop goes with the upload, overwriting the persona's file.
+            expect(state.popups).toBe(0);
+            const [url, init] = uploads()[0]!;
+            expect(url.startsWith('/api/avatars/upload?crop=')).toBe(true);
+            expect(JSON.parse(decodeURIComponent(url.split('?crop=')[1]!))).toEqual({
+                x: 10,
+                y: 0,
+                width: 811,
+                height: 1216,
+                want_resize: true,
+            });
+            expect(init).toMatchObject({ method: 'POST', headers: { 'X-CSRF-Token': 'token' }, cache: 'no-cache' });
+            const form = init.body as FormData;
+            expect(form.get('overwrite_name')).toBe(ANNA);
+            expect((form.get('avatar') as File).type).toBe('image/png');
+            // The persona list is rendered again at that persona; the cached files are reloaded.
+            expect(state.rendered).toEqual([[true, ANNA]]);
+            expect(fetchMock.mock.calls.map((call) => call[0])).toContain(`/User Avatars/${ANNA}`);
+            // The current persona and its passport are not touched.
+            expect(api.getPassport('me')).not.toBeNull();
+        });
+
+        it('uses the given passport, and uploads as it is when ST never resizes avatars', async () => {
+            installPublicApi({ pipeline: { produce } as never });
+            state.neverResize = true;
+            const given = passport('given', 'Anna');
+            given.slots.hair = 'pink hair';
+            expect(await api.generatePersonaAvatar({ personaKey: 'new-persona.png', passport: given })).toEqual({
+                ok: true,
+                path: ANNA,
+            });
+            expect((produce.mock.calls[0]![0] as { scene: string }).scene).toContain('pink hair');
+            expect(uploads()[0]![0]).toBe('/api/avatars/upload');
+            expect((uploads()[0]![1].body as FormData).get('overwrite_name')).toBe('new-persona.png');
+            expect(state.popups).toBe(0);
+        });
+
+        it('refuses a picture that would cost Anlas without uploading anything', async () => {
+            installPublicApi({ pipeline: { produce } as never });
+            produce.mockRejectedValueOnce(new NaiError('free-only-blocked', 'none', { cost: 6 }));
+            expect(await api.generatePersonaAvatar({ personaKey: ANNA })).toEqual({ ok: false, error: 'cost' });
+            expect(fetchMock).not.toHaveBeenCalled();
+            expect(state.popups).toBe(0);
+            expect(toastr.error).not.toHaveBeenCalled();
+        });
+
+        it('says "no-passport", "aborted" and "upload" when it cannot set one', async () => {
+            installPublicApi({ pipeline: { produce } as never });
+            expect(await api.generatePersonaAvatar({ personaKey: 'nobody.png' })).toEqual({
+                ok: false,
+                error: 'no-passport',
+            });
+            expect(
+                await api.generatePersonaAvatar({ personaKey: ANNA, passport: defaultPassport('character', 'Anna') }),
+            ).toEqual({ ok: false, error: 'no-passport' });
+            const abort = new AbortController();
+            abort.abort();
+            expect(await api.generatePersonaAvatar({ personaKey: ANNA, signal: abort.signal })).toEqual({
+                ok: false,
+                error: 'aborted',
+            });
+            expect(produce).not.toHaveBeenCalled();
+            produce.mockRejectedValueOnce(new NaiError('aborted', 'none'));
+            expect(await api.generatePersonaAvatar({ personaKey: ANNA })).toEqual({ ok: false, error: 'aborted' });
+            fetchMock.mockResolvedValueOnce(new Response('', { status: 500 }));
+            expect(await api.generatePersonaAvatar({ personaKey: ANNA })).toEqual({ ok: false, error: 'upload' });
+        });
     });
 });

@@ -225,6 +225,35 @@ describe('one NovelAI queue for every request', () => {
         await expect(run).rejects.toMatchObject({ code: 'aborted' });
     });
 
+    it('keeps a picture of no chat (a persona avatar, 0.15) queued when another chat opens', async () => {
+        let release!: () => void;
+        const first = new Promise<void>((resolve) => (release = resolve));
+        const { pipeline, queue, calls } = setup((_body, call) => (call === 1 ? first : undefined));
+        const running = draw(pipeline, 'one');
+        while (!calls.length) await settle();
+        const avatar = pipeline.produce({
+            initiator: 'panel',
+            trigger: 'avatar',
+            scene: 'avatar',
+            overrides: { quiet: true, edit: false },
+            chatless: true,
+            queue: { priority: 'portrait', kind: 'portrait' },
+        });
+        const marker = draw(pipeline, 'marker', { priority: 'reply', kind: 'marker' });
+        while (queue.size < 2) await settle();
+        expect(queue.snapshot().waiting.map((w) => [w.kind, w.chatId])).toEqual([
+            ['marker', 'chat-1'],
+            ['portrait', undefined],
+        ]);
+        state.chatId = 'chat-2';
+        expect(queue.dropOtherChats('chat-2')).toBe(1);
+        await expect(marker).rejects.toMatchObject({ code: 'aborted' });
+        release();
+        await running;
+        expect((await avatar)?.images).toHaveLength(1);
+        expect(calls).toEqual(['one', 'avatar']);
+    });
+
     it('drops waiting requests of the old chat and of deleted messages', async () => {
         setupGenerationQueue();
         const first = new Promise<string>((resolve) => setTimeout(() => resolve('first'), 30));

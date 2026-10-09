@@ -124,6 +124,13 @@ export interface PictureRequest {
      * is still wanted when its turn comes, its queue status ("in the queue: N", "retry in N s").
      */
     queue?: Pick<QueueJob, 'priority' | 'kind' | 'stale' | 'onStatus'>;
+    /**
+     * Since 0.15 (a persona avatar of another extension): no vibe is encoded for this request (an encoding
+     * costs Anlas); vibes already encoded are used.
+     */
+    noVibeEncoding?: boolean;
+    /** Since 0.15: the picture belongs to no chat (a persona avatar), so opening another chat keeps it queued. */
+    chatless?: boolean;
 }
 
 export interface PictureResult {
@@ -148,6 +155,15 @@ export interface Produced extends ProducedImages {
     prepared: Prepared;
 }
 
+/** How vibes are prepared for one request. */
+export interface VibePrepareOptions {
+    /**
+     * False (since 0.15, free-only requests of other extensions): vibes not encoded yet are left out, since
+     * an encoding costs Anlas; the ones already encoded (browser or plugin cache) are used.
+     */
+    encode?: boolean;
+}
+
 /** Vibes applied to generations (TZ Phase 5); encoding happens before the request is built. */
 export interface VibeProvider {
     /**
@@ -160,6 +176,7 @@ export interface VibeProvider {
         signal?: AbortSignal,
         extra?: PlannedVibe[],
         queue?: Pick<QueueJob, 'priority' | 'chatId'>,
+        options?: VibePrepareOptions,
     ): Promise<VibeReference[]>;
 }
 
@@ -625,10 +642,17 @@ export class Pipeline {
         const caps = getCapabilities(isModelId(model) ? model : DEFAULT_MODEL);
         if (patch.vibes === undefined && this.vibes && transport && patch.mode !== 'inpaint') {
             const chatId = c.getCurrentChatId();
-            const vibes = await this.vibes.prepare(caps, transport, req.signal, req.vibes, {
-                priority: req.queue?.priority ?? 'user',
-                ...(chatId !== undefined ? { chatId } : {}),
-            });
+            const vibes = await this.vibes.prepare(
+                caps,
+                transport,
+                req.signal,
+                req.vibes,
+                {
+                    priority: req.queue?.priority ?? 'user',
+                    ...(chatId !== undefined && !req.chatless ? { chatId } : {}),
+                },
+                { encode: req.noVibeEncoding !== true },
+            );
             if (vibes.length) patch.vibes = vibes;
         }
         // Scene continuity (TZ Phase 6): the last image of the location as the img2img base.
@@ -688,7 +712,8 @@ export class Pipeline {
             const job: QueueJob = {
                 priority: queue.priority ?? 'user',
                 kind: queue.kind ?? 'picture',
-                ...(chatId !== undefined ? { chatId } : {}),
+                // A picture of no chat is not dropped when another chat opens.
+                ...(chatId !== undefined && !req.chatless ? { chatId } : {}),
                 ...(queue.stale ? { stale: queue.stale } : {}),
                 onStatus: (status) => {
                     if (status.state === 'running' && !started) {

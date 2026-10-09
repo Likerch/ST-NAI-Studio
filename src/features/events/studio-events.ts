@@ -11,6 +11,8 @@ export interface PassportsSavedDetail {
     avatar?: string;
     /** The persona passport was saved (card scope). */
     persona?: boolean;
+    /** Since 0.15: which persona's passport (its avatar file key, ST `user_avatar`), with `persona`. */
+    personaKey?: string;
 }
 
 /**

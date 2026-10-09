@@ -175,13 +175,13 @@ NAI Studio publishes `globalThis.NAI_STUDIO_API` for other extensions, Maestro f
 interface NaiStudioApi {
   version: 1;
   // Since 0.14; absent before.
-  features: readonly string[]; // 'excludePassport', 'requestDesPortrait', 'chatNpcPassports', 'chatPortraits'
+  features: readonly string[]; // 'excludePassport', 'requestDesPortrait', 'chatNpcPassports', 'chatPortraits', 'personaKeys'
   passports(scope?: { avatar?: string; persona?: boolean; chat?: boolean; includeExcluded?: boolean }): Passport[];
   getPassport(id: string, options?: { includeExcluded?: boolean }): Passport | null;
   savePassport(
     passport: Passport,
     scope: 'card' | 'chat',
-    target?: { avatar?: string; persona?: boolean },
+    target?: { avatar?: string; persona?: boolean; personaKey?: string }, // personaKey since 0.15
   ): Promise<void>;
   setOutfit(passportId: string, outfit: string, scope?: 'card' | 'chat'): Promise<void>;
   setState(passportId: string, stateId: string, enabled: boolean, scope?: 'card' | 'chat'): Promise<void>;
@@ -210,6 +210,7 @@ interface NaiStudioApi {
     kind: 'character' | 'location' | 'object' | 'world';
     description: string;
     language?: string;
+    persona?: boolean; // since 0.15
   }): Promise<Passport | null>;
   generateBackground(input: {
     locationName: string;
@@ -223,6 +224,13 @@ interface NaiStudioApi {
   setPassportExcluded(passportId: string, excluded: boolean): Promise<void>;
   isPassportExcluded(passportId: string): boolean;
   requestDesPortrait(name: string, options?: { reason?: string }): Promise<boolean>;
+  // Since 0.15; absent before, check that `features` has 'personaKeys' or that they are functions.
+  getPersonaPassport(personaKey: string): Passport | null;
+  generatePersonaAvatar(options: {
+    personaKey: string;
+    passport?: Passport;
+    signal?: AbortSignal;
+  }): Promise<{ ok: boolean; path?: string; error?: string }>;
 }
 
 type SceneHint = { locationId?: string; locationName?: string; tags?: string; characters?: string[] };
@@ -232,14 +240,15 @@ type Outfit = { name: string; tags: string; looks?: string[] };
 ```
 
 - **Passports** are always returned as the current chat sees them (chat overrides applied), as copies.
-  - `savePassport(p, 'card')` writes the card (or `target.persona`).
+  - `savePassport(p, 'card')` writes the card (or `target.persona`, the current persona).
+  - `target.personaKey` (0.15) names any persona by its avatar file key; see "Personas by key" below.
   - `savePassport(p, 'chat')` keeps only the fields that differ from the card in the chat metadata (`chat_metadata.nai_studio.passports`). A passport unknown to the cards becomes a passport of the chat itself.
   - `setOutfit` / `setState` default to `'chat'`.
   - `clearChatOverride` brings the card value back.
   - `origin: 'auto-des'` (0.14) marks a passport NAI Studio wrote by itself for a new DES tracker character; it is kept through saves, chat overrides and a move into the card.
   - Outfits may carry `looks` (0.12.1): DES tracker wordings known to mean that outfit, any language (strings, up to 12, newest last, each up to 300 characters; Maestro's wardrobe writes them). When a character's current tracker look says one of them, NAI Studio draws that outfit's tags instead of the look: in scenes, image markers and DES portraits. A wording matches exactly after normalisation (case, punctuation, Russian quotes and dashes, ё as е) or by its words (Jaccard 0.75 or more, words of two letters or more); a look joined from several tracker fields is compared part by part. An outfit chosen in the composer still wins. NAI Studio's passport editor does not show `looks` but keeps them; chat overrides carry them.
 - **Events.**
-  - `passportsSaved` `{ ids, scope, avatar?, persona? }` follows every passport save, including the ones made in NAI Studio's own UI.
+  - `passportsSaved` `{ ids, scope, avatar?, persona?, personaKey? }` follows every passport save, including the ones made in NAI Studio's own UI. Since 0.15 a persona save also says which persona: `personaKey`, its avatar file key.
   - `imageReady` `{ messageIndex, kind, passportIds }` follows every image attached to a message once the chat is saved.
   - `requestFailed` `{ request: 'passport' | 'background', name, code, message }` (0.12) follows a `generatePassport` / `generateBackground` call that resolved `null`; `code` is NAI Studio's error code (`free-only-blocked`, `aborted` when the user declined the cost, …).
   - `passportExcludedChanged` `{ id, excluded }` (0.14) follows a change of a passport's exclusion in the current chat (the API or NAI Studio's passport dialog); a call that changes nothing sends nothing.
@@ -268,6 +277,15 @@ type Outfit = { name: string; tags: string; looks?: string[] };
   - Providers have 3 s; one that throws or is silent is skipped. Answers are reused for one picture (1.5 s).
   - The DES integration uses a provider's character passport for a new tracker character instead of writing one into the card.
 - **`generatePassport`** (0.12) runs NAI Studio's passport generator for one person, place, item or the world from a description (a lore entry) through the language backend chosen in NAI Studio. Nothing is saved: a full passport with a new id and the given name (the model's name becomes an alias), or `null` with a `requestFailed` event. `language` (`ru`) puts the name as that language spells it into the aliases. Invalid input rejects.
+- **Personas by key** (0.15, `features` has `personaKeys`). Every persona, the current one or any other, is named by its avatar file key: SillyTavern's `user_avatar` id such as `1728000000000-Anna.png`. Its passport lives in NAI Studio's settings (`extension_settings.nai_studio.scene.personaPassports[<key>]`). Maestro uses this to make a new persona for a character.
+  - `getPersonaPassport(key)` returns a copy of that persona's stored passport, without the chat overrides; `null` when it has none (or the key is not a non-empty string). For the current persona as the chat sees it, use `getPassport(id)` / `passports({ persona: true })` as before.
+  - `savePassport(p, scope, { personaKey })` replaces that persona's stored passport. The scope does not apply (no chat override is written), but it must still be `'card'` or `'chat'`. A passport without an id keeps the id of the passport it replaces (or gets a new one). The persona does not have to exist in SillyTavern yet. `personaKey` wins over `persona`; together with `avatar` it rejects. A key with a path (`/`, `\`) rejects. `passportsSaved` follows with `persona: true` and the `personaKey`.
+  - `generatePassport({ name, kind: 'character', description, language?, persona: true })` writes a persona passport from the description: NAI Studio's persona prompt (outfits included) instead of the lore entry one, with room for 5-6 outfits (2000 tokens of answer; the NovelAI text route allows up to 4096). `kind` may be left out; any kind other than `character` rejects. The given name is kept, the model's name becomes an alias, and `language` puts the name as that language spells it into the aliases. Nothing is saved.
+  - `generatePersonaAvatar({ personaKey, passport?, signal? })` draws a portrait of the persona from its stored passport (or `passport`) and makes it that persona's avatar, current or not:
+    - Free only. The picture uses the free area (about 1 MP, portrait framing), at most 28 steps, one sample, and no vibe is encoded for it (vibes already encoded are used). NAI Studio prices the request before it is sent; if it would still cost Anlas (not Opus, unknown account, character references, too many vibes), it resolves `{ ok: false, error: 'cost' }` and nothing is sent, whatever the free-only setting. No cost question and no inspector.
+    - It waits in NAI Studio's one NovelAI queue as a portrait (after your own requests and the pictures of a reply). Opening another chat does not drop it. `signal` drops it while it waits and aborts it while it is drawn; nothing is uploaded after an abort.
+    - The image goes to `POST /api/avatars/upload` with `overwrite_name` = `personaKey`, without SillyTavern's crop popup. The crop sent instead is the one ST's popup proposes before you move it: the largest centred 2:3 box with `want_resize: true`, which ST covers to its avatar size (512x768). When ST never resizes avatars (`never_resize_avatars`), no crop is sent and ST keeps the image as it is, as in its own upload. The avatar file and its thumbnail are reloaded, ST's persona list is rendered again at that persona, and avatars already on the page load the new file.
+    - Resolves `{ ok: true, path }` with the file name the server stored, or `{ ok: false, error }`: `cost`, `aborted`, `no-passport` (none stored and none given, or an empty passport), `inactive` (NAI Studio is not running), `upload` (the upload failed), or NAI Studio's error code of a failed generation (`unauthorized`, `rate-limited`, ...). Invalid input (no key, a key with a path, a passport that is not an object, a signal that is not an AbortSignal) rejects.
 - **`generateBackground`** (0.12) draws one background for a place.
   - The prompt has nobody in it (`no humans, scenery`, people in the undesired content): the tags of `passportId` (a location or world passport of the chat or of a provider; else the place name), `tags`, and the time of day and weather as tags (tracker words are read like the DES scene: `evening`, `19:40`, `rain`, Russian too). `style` is a saved style by name, which replaces the active style for this picture (its prefix, suffix, UC preset and undesired content, with the base negative in the append mode); a name that is not a saved style is used as style tags.
   - One 16:9 image within the free budget (1344×768) through the normal pipeline and its Anlas guards: in free-only mode a request that would cost Anlas is refused; otherwise the usual cost confirmation.

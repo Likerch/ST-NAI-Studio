@@ -115,6 +115,23 @@ describe('passports of lorebook entries', () => {
         expect(passportGenMessages({ name: 'X', description: 'y' }, 'card').system).toContain('character card');
     });
 
+    it('gives the persona prompt the story language for aliases when there is one (0.15)', () => {
+        const plain = passportGenMessages({ name: 'Anna', description: 'Silver hair.' }, 'persona');
+        expect(plain.system).toContain("player's persona");
+        expect(plain.system).not.toContain('text spells it');
+        expect(plain.user).toBe('Persona: Anna\n\nDescription:\nSilver hair.');
+        const russian = passportGenMessages({ name: 'Anna', description: 'Silver hair.' }, 'persona', {
+            language: 'ru',
+        });
+        expect(russian.system.startsWith(plain.system)).toBe(true);
+        expect(russian.system).toContain('aliases: short names, nicknames and the name as a Russian text spells it.');
+        expect(russian.user).toBe('Persona: Anna\n\nDescription:\nSilver hair.\n\nStory language: Russian');
+        // The other targets do not take a language.
+        expect(passportGenMessages({ name: 'X', description: 'y' }, 'npc', { language: 'ru' }).user).not.toContain(
+            'Story language',
+        );
+    });
+
     it('names languages by code and keeps anything else', () => {
         expect(languageName('ru-RU')).toBe('Russian');
         expect(languageName('EN')).toBe('English');

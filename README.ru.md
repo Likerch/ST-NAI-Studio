@@ -175,13 +175,13 @@ NAI Studio публикует `globalThis.NAI_STUDIO_API` для других р
 interface NaiStudioApi {
   version: 1;
   // С 0.14; раньше его нет.
-  features: readonly string[]; // 'excludePassport', 'requestDesPortrait', 'chatNpcPassports', 'chatPortraits'
+  features: readonly string[]; // 'excludePassport', 'requestDesPortrait', 'chatNpcPassports', 'chatPortraits', 'personaKeys'
   passports(scope?: { avatar?: string; persona?: boolean; chat?: boolean; includeExcluded?: boolean }): Passport[];
   getPassport(id: string, options?: { includeExcluded?: boolean }): Passport | null;
   savePassport(
     passport: Passport,
     scope: 'card' | 'chat',
-    target?: { avatar?: string; persona?: boolean },
+    target?: { avatar?: string; persona?: boolean; personaKey?: string }, // personaKey — с 0.15
   ): Promise<void>;
   setOutfit(passportId: string, outfit: string, scope?: 'card' | 'chat'): Promise<void>;
   setState(passportId: string, stateId: string, enabled: boolean, scope?: 'card' | 'chat'): Promise<void>;
@@ -210,6 +210,7 @@ interface NaiStudioApi {
     kind: 'character' | 'location' | 'object' | 'world';
     description: string;
     language?: string;
+    persona?: boolean; // с 0.15
   }): Promise<Passport | null>;
   generateBackground(input: {
     locationName: string;
@@ -223,6 +224,13 @@ interface NaiStudioApi {
   setPassportExcluded(passportId: string, excluded: boolean): Promise<void>;
   isPassportExcluded(passportId: string): boolean;
   requestDesPortrait(name: string, options?: { reason?: string }): Promise<boolean>;
+  // С 0.15; раньше их нет — проверяйте, что в `features` есть 'personaKeys', или что это функции.
+  getPersonaPassport(personaKey: string): Passport | null;
+  generatePersonaAvatar(options: {
+    personaKey: string;
+    passport?: Passport;
+    signal?: AbortSignal;
+  }): Promise<{ ok: boolean; path?: string; error?: string }>;
 }
 
 type SceneHint = { locationId?: string; locationName?: string; tags?: string; characters?: string[] };
@@ -239,7 +247,8 @@ type Outfit = { name: string; tags: string; looks?: string[] };
   - `chat` — паспорта, которые есть только в этом чате.
 - `getPassport(id)` ищет паспорт по id в том же наборе; `null`, если его нет.
 - `savePassport(p, 'card')` пишет в карточку: заменяет паспорт с тем же id или добавляет новый.
-  - `target.persona` — в паспорт персоны.
+  - `target.persona` — в паспорт текущей персоны.
+  - `target.personaKey` (0.15) — в паспорт любой персоны по ключу её файла аватара; см. «Персоны по ключу» ниже.
   - Новый паспорт в групповом чате требует `target.avatar`.
   - Паспорт без id получает новый id; он придёт в событии `passportsSaved`.
   - Паспорт «только этого чата», сохранённый в карточку, из чата убирается.
@@ -278,7 +287,7 @@ type Outfit = { name: string; tags: string; looks?: string[] };
 
 **События.** `on()` возвращает функцию отписки. Ошибка слушателя не мешает NAI Studio, каждый слушатель получает свою копию данных.
 
-- `passportsSaved` — `{ ids, scope: 'card' | 'chat', avatar?, persona? }`. Приходит после любого сохранения паспортов, в том числе из интерфейса NAI Studio.
+- `passportsSaved` — `{ ids, scope: 'card' | 'chat', avatar?, persona?, personaKey? }`. Приходит после любого сохранения паспортов, в том числе из интерфейса NAI Studio. С 0.15 при сохранении паспорта персоны есть и `personaKey` — ключ её файла аватара.
 - `imageReady` — `{ messageIndex, kind, passportIds }`. Приходит после того, как картинка добавлена в сообщение и чат сохранён.
   - `kind`: `message` — новое сообщение, `inline` — вставка в сообщение, `marker` — картинка метки в ответе, `swipe` — новый свайп, `tool` — результат инструмента.
   - `passportIds` — паспорта, нарисованные в сцене.
@@ -327,6 +336,17 @@ type Outfit = { name: string; tags: string; looks?: string[] };
 - Ничего не сохраняет. Возвращает полный паспорт с новым id и заданным именем (имя, которое написала модель, уходит в алиасы) или `null` с событием `requestFailed`.
 - `language` (`ru`) — язык истории: имя на нём попадает в алиасы. Макросы вроде `{{char}}` в описании подставляются.
 - Неверный ввод (нет имени, другой `kind`) — отклонённый `Promise`.
+
+**Персоны по ключу** (0.15, `features` содержит `personaKeys`). Любая персона — текущая или другая — называется ключом своего файла аватара: id `user_avatar` SillyTavern, например `1728000000000-Anna.png`. Её паспорт лежит в настройках NAI Studio (`extension_settings.nai_studio.scene.personaPassports[<ключ>]`). Так Maestro создаёт новую персону для персонажа.
+
+- `getPersonaPassport(key)` возвращает копию сохранённого паспорта этой персоны, без переопределений чата; `null`, если паспорта нет (или ключ — не непустая строка). Паспорт текущей персоны таким, каким его видит чат, — как раньше: `getPassport(id)` или `passports({ persona: true })`.
+- `savePassport(p, scope, { personaKey })` заменяет сохранённый паспорт этой персоны. `scope` здесь не действует (переопределение чата не пишется), но должен быть `'card'` или `'chat'`. Паспорт без id получает id того паспорта, который он заменяет (или новый). Персоны в SillyTavern может ещё не быть. `personaKey` главнее `persona`; вместе с `avatar` — ошибка. Ключ с путём (`/`, `\`) — ошибка. Затем приходит `passportsSaved` с `persona: true` и `personaKey`.
+- `generatePassport({ name, kind: 'character', description, language?, persona: true })` пишет паспорт персоны по описанию: промпт персоны NAI Studio (с нарядами) вместо промпта записи лора и место на 5–6 нарядов (ответ до 2000 токенов; текстовый путь NovelAI разрешает до 4096). `kind` можно не передавать; любой `kind`, кроме `character`, — ошибка. Заданное имя сохраняется, имя от модели уходит в алиасы, `language` добавляет в алиасы имя на этом языке. Ничего не сохраняет.
+- `generatePersonaAvatar({ personaKey, passport?, signal? })` рисует портрет персоны по её сохранённому паспорту (или по `passport`) и ставит его аватаром этой персоны — текущей или любой другой:
+  - Только бесплатно. Картинка — в бесплатной площади (около 1 Мп, портретная), не больше 28 шагов, один вариант; вайбы для неё не кодируются (уже закодированные используются). NAI Studio считает цену до отправки; если запрос всё равно стоил бы Anlas (не Opus, неизвестный аккаунт, референсы персонажей, слишком много вайбов), возвращается `{ ok: false, error: 'cost' }` и ничего не отправляется — при любой настройке «только бесплатные». Без вопроса о стоимости и без инспектора.
+  - Ждёт в общей очереди NovelAI как портрет (после ваших запросов и картинок ответа). Открытие другого чата его не убирает. `signal` убирает его из очереди и прерывает рисование; после отмены ничего не загружается.
+  - Картинка уходит в `POST /api/avatars/upload` с `overwrite_name` = `personaKey`, без окна обрезки SillyTavern. Вместо него отправляется обрезка, которую окно ST предлагает до того, как её двигают: самая большая рамка 2:3 по центру с `want_resize: true`, её ST приводит к размеру аватара (512×768). Если ST никогда не меняет размер аватаров (`never_resize_avatars`), обрезка не отправляется и картинка сохраняется как есть — как при загрузке в самом ST. Файл аватара и его миниатюра перезагружаются, список персон ST перерисовывается на этой персоне, аватары на странице подгружают новый файл.
+  - Возвращает `{ ok: true, path }` с именем файла, которое сохранил сервер, или `{ ok: false, error }`: `cost`, `aborted`, `no-passport` (паспорта нет и он не передан, или паспорт пустой), `inactive` (NAI Studio не запущен), `upload` (загрузка не удалась) или код ошибки NAI Studio при неудачной генерации (`unauthorized`, `rate-limited`, …). Неверный ввод (нет ключа, ключ с путём, паспорт — не объект, `signal` — не AbortSignal) — отклонённый `Promise`.
 
 **`generateBackground`** (0.12) — один фон для места.
 

@@ -161,8 +161,18 @@ const LABELS: Record<PassportTarget, string> = { card: 'Card', persona: 'Persona
 export interface PassportGenOptions {
     /** What the passport of an entry describes (the "entry" target; a character by default). */
     kind?: EntryPassportKind;
-    /** Language of the story ("ru", "Russian"): the name as it spells it goes to the aliases. */
+    /**
+     * Language of the story ("ru", "Russian"): the name as it spells it goes to the aliases. The "entry"
+     * target, and since 0.15 the "persona" one (a persona another extension creates for a character).
+     */
     language?: string;
+}
+
+/** The persona prompt; with a story language the aliases also get the name as that language spells it. */
+function personaSystem(language?: string): string {
+    if (!language?.trim()) return SYSTEM_PERSONA;
+    const spelled = `the name as a ${languageName(language)} text spells it`;
+    return `${SYSTEM_PERSONA}\naliases: short names, nicknames and ${spelled}.`;
 }
 
 /** System and user messages for a card, a persona, one character of a scene tracker or a lorebook entry. */
@@ -171,7 +181,12 @@ export function passportGenMessages(
     target: PassportTarget,
     options: PassportGenOptions = {},
 ): { system: string; user: string } {
-    const system = target === 'entry' ? entrySystem(options.kind ?? 'character', options.language) : SYSTEMS[target];
+    const system =
+        target === 'entry'
+            ? entrySystem(options.kind ?? 'character', options.language)
+            : target === 'persona'
+              ? personaSystem(options.language)
+              : SYSTEMS[target];
     const parts = [
         `${LABELS[target]}: ${source.name}`,
         `${target === 'npc' ? 'Tracker' : 'Description'}:\n${clip(source.description, LIMITS.description)}`,
@@ -182,7 +197,8 @@ export function passportGenMessages(
             `${target === 'npc' ? 'Story card' : 'Scenario'}:\n${clip(source.scenario, target === 'npc' ? LIMITS.description : LIMITS.scenario)}`,
         );
     if (source.firstMessage?.trim()) parts.push(`First message:\n${clip(source.firstMessage, LIMITS.firstMessage)}`);
-    if (target === 'entry' && options.language?.trim()) parts.push(`Story language: ${languageName(options.language)}`);
+    if ((target === 'entry' || target === 'persona') && options.language?.trim())
+        parts.push(`Story language: ${languageName(options.language)}`);
     return { system, user: parts.join('\n\n') };
 }
 

@@ -17,7 +17,7 @@ import type {
 import type { Transport } from '../../transport';
 import { avatarKey } from '../characters/character-prompts';
 import { blobToBase64, thumbnail, toPngBlob } from '../images/image-utils';
-import type { VibeProvider } from '../generation/pipeline';
+import type { VibePrepareOptions, VibeProvider } from '../generation/pipeline';
 import { generationQueue } from '../generation/queue';
 import type { QueueJob } from '../generation/queue';
 import type { CostConfirm } from '../tools/tool-common';
@@ -127,6 +127,7 @@ export class VibeLibraryProvider implements VibeProvider {
         signal?: AbortSignal,
         extra: PlannedVibe[] = [],
         queue: Pick<QueueJob, 'priority' | 'chatId'> = {},
+        options: VibePrepareOptions = {},
     ): Promise<VibeReference[]> {
         const active = activeVibes();
         const planned = [...active, ...extra.filter((e) => !active.some((a) => a.item.id === e.item.id))];
@@ -141,7 +142,7 @@ export class VibeLibraryProvider implements VibeProvider {
             return [];
         }
         if (caps.vibeKind === 'raw') return await this.raw(planned);
-        return await this.encoded(planned, caps.model, transport, signal, queue);
+        return await this.encoded(planned, caps.model, transport, signal, queue, options.encode !== false);
     }
 
     /** V3: the reference image itself, 448x448 PNG (RECON §3.4). */
@@ -168,6 +169,7 @@ export class VibeLibraryProvider implements VibeProvider {
         transport: Transport,
         signal?: AbortSignal,
         queue: Pick<QueueJob, 'priority' | 'chatId'> = {},
+        encode = true,
     ): Promise<VibeReference[]> {
         const extras = transport.extras;
         const encodings = new Map<string, string>();
@@ -195,7 +197,10 @@ export class VibeLibraryProvider implements VibeProvider {
             }
             missing = missing.filter((p) => !encodings.has(keyOf(p)));
         }
-        if (missing.length) {
+        if (missing.length && !encode) {
+            // A request that must stay free (since 0.15): the vibes not encoded yet are left out quietly.
+            log.info(`vibes: ${missing.length} not encoded for ${model} yet, left out of a free-only request`);
+        } else if (missing.length) {
             const cost = missing.length * ENCODE_PRICE;
             const reason = settings().anlas.freeOnly
                 ? 'free-only'

@@ -170,6 +170,26 @@ describe('VibeLibraryProvider', () => {
         expect(encodeVibe).not.toHaveBeenCalled();
     });
 
+    it('leaves out vibes not encoded yet when a request must stay free (0.15), using encoded ones', async () => {
+        state.settings.anlas.freeOnly = false;
+        state.settings.vibes.confirmEncoding = false;
+        await oneGlobalVibe();
+        const encodeVibe = vi.fn();
+        const confirm = vi.fn(async () => true);
+        const notify = vi.fn();
+        const provider = new VibeLibraryProvider(confirm, notify);
+        const missing = transportWith({ encodeVibe, lookupVibes: async () => [null] });
+        expect(await provider.prepare(v45, missing, undefined, [], {}, { encode: false })).toEqual([]);
+        expect(encodeVibe).not.toHaveBeenCalled();
+        expect(confirm).not.toHaveBeenCalled();
+        expect(notify).not.toHaveBeenCalled();
+        // An encoding the plugin already keeps costs nothing and is used.
+        const disk = transportWith({ encodeVibe, lookupVibes: async () => ['DISK'] });
+        const refs = await provider.prepare(v45, disk, undefined, [], {}, { encode: false });
+        expect(refs[0]?.data).toBe('DISK');
+        expect(encodeVibe).not.toHaveBeenCalled();
+    });
+
     it('does not count a plugin-side cache hit as spent Anlas', async () => {
         state.settings.anlas.freeOnly = false;
         await oneGlobalVibe();

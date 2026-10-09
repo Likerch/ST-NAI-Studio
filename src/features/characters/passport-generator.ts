@@ -16,6 +16,13 @@ import type { EntryPassportKind, Passport, PassportGenOptions, PassportSource, P
 import { askLlm } from '../language/llm';
 import { loadCharacter } from './passport-store';
 
+/**
+ * Answer budget per target: a card has many passports; a persona passport has its outfits (since 0.15
+ * room for 5-6 of them); one tracker character or lore entry is short. NovelAI's text route through the
+ * plugin allows up to 4096.
+ */
+const MAX_TOKENS: Record<PassportTarget, number> = { card: 3500, persona: 2000, npc: 1200, entry: 1200 };
+
 async function ask(
     source: PassportSource,
     target: PassportTarget,
@@ -29,7 +36,7 @@ async function ask(
         system,
         user,
         schema: PASSPORT_GEN_SCHEMA,
-        maxTokens: target === 'card' ? 3500 : 1200,
+        maxTokens: MAX_TOKENS[target],
     });
     const passports = withoutUnstatedSpecies(parseGeneratedPassports(answer, source.name, options.kind), user);
     if (!passports.length) {
@@ -107,12 +114,44 @@ export async function generateEntryPassport(request: EntryPassportRequest): Prom
     if (!passport) {
         throw new NaiError('translation-failed', 'none', { message: `the answer had no ${request.kind} passport` });
     }
-    const wanted = request.name.trim();
+    return named(passport, request.name);
+}
+
+/** The given name; the one the model wrote becomes an alias. */
+function named(passport: Passport, name: string): Passport {
+    const wanted = name.trim();
     passport.aliases = [...new Set([passport.name, ...passport.aliases])].filter(
         (alias) => alias.trim() && alias.trim().toLowerCase() !== wanted.toLowerCase(),
     );
     passport.name = wanted;
     return passport;
+}
+
+export interface PersonaPassportRequest {
+    name: string;
+    /** The description of the persona (or of the character it is made for); macros are substituted. */
+    description: string;
+    /** Language of the story ("ru"): the name as it spells it goes to the aliases. */
+    language?: string;
+}
+
+/**
+ * One persona passport from a given description (since 0.15, NAI_STUDIO_API.generatePassport with
+ * `persona: true`): the persona prompt with its outfits instead of the lore entry one. It keeps the given
+ * name (the model's becomes an alias) and a new id; nothing is saved.
+ */
+export async function generatePersonaPassportFrom(request: PersonaPassportRequest): Promise<Passport> {
+    const c = ctx();
+    const passports = await ask(
+        { name: request.name, description: c.substituteParams(request.description) },
+        'persona',
+        request.language ? { language: request.language } : {},
+    );
+    const passport = passports.find((p) => p.kind === 'character');
+    if (!passport) {
+        throw new NaiError('translation-failed', 'none', { message: 'the answer had no character passport' });
+    }
+    return named(passport, request.name);
 }
 
 /** One character passport from the current persona's description. */

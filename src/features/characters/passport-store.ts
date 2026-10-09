@@ -133,10 +133,11 @@ export function personaPassport(key: string): Passport | null {
     return normalizePassport(settings().scene.personaPassports[key]);
 }
 
+/** Saves the passport of any persona (not only the current one) by its avatar file key. */
 export function savePersonaPassport(key: string, passport: Passport): void {
     settings().scene.personaPassports[key] = passport;
     saveSettings();
-    emitStudioEvent('passportsSaved', { ids: [passport.id], scope: 'card', persona: true });
+    emitStudioEvent('passportsSaved', { ids: [passport.id], scope: 'card', persona: true, personaKey: key });
 }
 
 export function personaOwner(key: string): string {

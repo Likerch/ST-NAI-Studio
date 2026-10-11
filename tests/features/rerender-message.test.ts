@@ -174,6 +174,32 @@ describe('re-rendering a message after a picture', () => {
         expect(state.log).toEqual(['saved']);
     });
 
+    it('a picture that lands while the message is being edited keeps the editor and what was typed (0.15.2)', async () => {
+        const text = document.querySelector('#chat .mes[mesid="0"] .mes_text')!;
+        text.innerHTML = '<textarea id="curEditTextarea" class="edit_textarea">Hello, half-typed</textarea>';
+        const inline = new InlineImages({ notify: vi.fn() } as never);
+        expect(await inline.completePending(0, 'img-0001', produced as never)).toBe(true);
+        // Stored, not shown: no re-render, no event, the textarea and its text are where they were.
+        expect(state.log).toEqual(['saved']);
+        expect(document.querySelector<HTMLTextAreaElement>('#curEditTextarea')?.value).toBe('Hello, half-typed');
+        expect(state.chat[0]!.extra?.nai_images).toEqual([
+            expect.objectContaining({ id: 'img-0001', marker: expect.objectContaining({ status: 'done' }) }),
+        ]);
+        // ST closing the editor (Cancel or Save) re-renders from the chat and announces it: the picture and the
+        // cards are there.
+        updateMessageBlock(0, state.chat[0]!);
+        await eventSource.emit(EVENTS.MESSAGE_UPDATED, 0);
+        expect(cards()).toBe(true);
+    });
+
+    it('the reasoning editor counts as editing too', async () => {
+        document
+            .querySelector('#chat .mes[mesid="0"]')!
+            .insertAdjacentHTML('beforeend', '<textarea class="reasoning_edit_textarea">thinking</textarea>');
+        await rerenderMessage(0, state.chat[0]!);
+        expect(state.log).toEqual([]);
+    });
+
     it("NAI Studio's own MESSAGE_UPDATED listener (reconcile) does not loop", async () => {
         const inline = new InlineImages({ notify: vi.fn() } as never);
         eventSource.on(EVENTS.MESSAGE_UPDATED, (id) => void inline.reconcileMessage(Number(id)));

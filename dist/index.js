@@ -12529,8 +12529,23 @@ function isRendered(messageId) {
 	if (typeof document === "undefined") return false;
 	return document.querySelector(`#chat .mes[mesid="${messageId}"]`) !== null;
 }
-/** Re-renders a message and, when it is on screen, tells the other extensions with MESSAGE_UPDATED. */
+/** ST's message editor (or its reasoning editor) is open on this message: its textarea sits inside the block. */
+function isEditing(messageId) {
+	if (typeof document === "undefined") return false;
+	const block = `#chat .mes[mesid="${messageId}"]`;
+	return document.querySelector(`${block} .edit_textarea, ${block} .reasoning_edit_textarea`) !== null;
+}
+/**
+* Re-renders a message and, when it is on screen, tells the other extensions with MESSAGE_UPDATED. Not while the
+* user edits that message: the re-render would replace the editor and lose what he typed (a picture landing
+* mid-edit). What NAI Studio stored meanwhile is shown when the editor closes: ST re-renders the message from the
+* chat on Save and on Cancel alike and emits MESSAGE_UPDATED itself.
+*/
 async function rerenderMessage(messageId, message) {
+	if (isEditing(messageId)) {
+		log.debug(`message ${messageId} is being edited: shown when the editor closes`);
+		return;
+	}
 	const c = ctx();
 	c.updateMessageBlock(messageId, message);
 	const event = c.eventTypes?.MESSAGE_UPDATED;
@@ -20221,7 +20236,7 @@ var ComicService = class {
 };
 //#endregion
 //#region package.json
-var version = "0.15.1";
+var version = "0.15.2";
 //#endregion
 //#region src/features/settings-io/settings-io.ts
 async function exportSettingsFile(includeImages) {

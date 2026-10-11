@@ -6,6 +6,7 @@
 import { ctx } from '../../core/context';
 import { NaiError } from '../../core/errors';
 import { log } from '../../core/logger';
+import { rerenderMessage } from '../../core/messages';
 import { settings } from '../../core/settings';
 import {
     addSwipe,
@@ -75,7 +76,11 @@ function findEntry(messageId: number, imageId: string): { m: STChatMessage; entr
     return { m, entry };
 }
 
-/** Keeps the active swipe copy of the message in sync, saves the chat and re-renders. */
+/**
+ * Keeps the active swipe copy of the message in sync, saves the chat and re-renders. The re-render announces
+ * itself with MESSAGE_UPDATED (core/messages.ts): a picture that lands after the reply was laid out must not leave
+ * it without the decorations of other extensions (DES speaker cards, inline thoughts).
+ */
 async function commit(messageId: number, rerender = true): Promise<void> {
     const c = ctx();
     const m = c.chat[messageId];
@@ -87,7 +92,7 @@ async function commit(messageId: number, rerender = true): Promise<void> {
         if (info && typeof info === 'object') info.extra = structuredClone(m.extra);
     }
     await c.saveChat();
-    if (rerender) c.updateMessageBlock(messageId, m);
+    if (rerender) await rerenderMessage(messageId, m);
 }
 
 export class InlineImages {

@@ -12523,6 +12523,25 @@ var Pipeline = class {
 	}
 };
 //#endregion
+//#region src/core/messages.ts
+/** The message has a block in the chat on screen (not above "Show more messages", not another chat). */
+function isRendered(messageId) {
+	if (typeof document === "undefined") return false;
+	return document.querySelector(`#chat .mes[mesid="${messageId}"]`) !== null;
+}
+/** Re-renders a message and, when it is on screen, tells the other extensions with MESSAGE_UPDATED. */
+async function rerenderMessage(messageId, message) {
+	const c = ctx();
+	c.updateMessageBlock(messageId, message);
+	const event = c.eventTypes?.MESSAGE_UPDATED;
+	if (!event || !isRendered(messageId)) return;
+	try {
+		await c.eventSource.emit(event, messageId);
+	} catch (error) {
+		log.warn("MESSAGE_UPDATED listeners failed", error);
+	}
+}
+//#endregion
 //#region src/features/inline/inline-store.ts
 var PREFIX = "img:";
 /** Keys written but not yet referenced by a saved message (excluded from garbage collection). */
@@ -12603,7 +12622,11 @@ function findEntry(messageId, imageId) {
 		entry
 	};
 }
-/** Keeps the active swipe copy of the message in sync, saves the chat and re-renders. */
+/**
+* Keeps the active swipe copy of the message in sync, saves the chat and re-renders. The re-render announces
+* itself with MESSAGE_UPDATED (core/messages.ts): a picture that lands after the reply was laid out must not leave
+* it without the decorations of other extensions (DES speaker cards, inline thoughts).
+*/
 async function commit(messageId, rerender = true) {
 	const c = ctx();
 	const m = c.chat[messageId];
@@ -12615,7 +12638,7 @@ async function commit(messageId, rerender = true) {
 		if (info && typeof info === "object") info.extra = structuredClone(m.extra);
 	}
 	await c.saveChat();
-	if (rerender) c.updateMessageBlock(messageId, m);
+	if (rerender) await rerenderMessage(messageId, m);
 }
 var InlineImages = class {
 	pipeline;
@@ -20072,15 +20095,12 @@ function setupMarkers(pipeline, inline, scenes) {
 	refreshMarkerInstruction();
 	return markers;
 }
-/** Settings that change how messages are formatted: re-render the chat. */
+/** Settings that change how messages are formatted: re-render the chat (announced, see core/messages.ts). */
 function onMarkerSettingChange(path) {
 	if (path.startsWith("markers.")) refreshMarkerInstruction();
-	if (path === "markers.enabled" || path === "markers.legacy" || path === "inline.regexCompat") {
-		const c = ctx();
-		c.chat.forEach((m, id) => {
-			if (document.querySelector(`#chat .mes[mesid="${id}"]`)) c.updateMessageBlock(id, m);
-		});
-	}
+	if (path === "markers.enabled" || path === "markers.legacy" || path === "inline.regexCompat") ctx().chat.forEach((m, id) => {
+		if (document.querySelector(`#chat .mes[mesid="${id}"]`)) rerenderMessage(id, m);
+	});
 }
 //#endregion
 //#region src/features/comic/comic-service.ts
@@ -20201,7 +20221,7 @@ var ComicService = class {
 };
 //#endregion
 //#region package.json
-var version = "0.15.0";
+var version = "0.15.1";
 //#endregion
 //#region src/features/settings-io/settings-io.ts
 async function exportSettingsFile(includeImages) {

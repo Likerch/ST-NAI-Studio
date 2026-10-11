@@ -4,6 +4,7 @@
 // placeholders, hides one still being written, and gives widget regexes an <img> for every image.
 import { ctx } from '../core/context';
 import { log } from '../core/logger';
+import { rerenderMessage } from '../core/messages';
 import { settings } from '../core/settings';
 import {
     markerDimensions,
@@ -160,13 +161,12 @@ export function setupMarkers(pipeline: Pipeline, inline: InlineImages, scenes: S
     return markers;
 }
 
-/** Settings that change how messages are formatted: re-render the chat. */
+/** Settings that change how messages are formatted: re-render the chat (announced, see core/messages.ts). */
 export function onMarkerSettingChange(path: string): void {
     if (path.startsWith('markers.')) void refreshMarkerInstruction();
     if (path === 'markers.enabled' || path === 'markers.legacy' || path === 'inline.regexCompat') {
-        const c = ctx();
-        c.chat.forEach((m, id) => {
-            if (document.querySelector(`#chat .mes[mesid="${id}"]`)) c.updateMessageBlock(id, m);
+        ctx().chat.forEach((m, id) => {
+            if (document.querySelector(`#chat .mes[mesid="${id}"]`)) void rerenderMessage(id, m);
         });
     }
 }

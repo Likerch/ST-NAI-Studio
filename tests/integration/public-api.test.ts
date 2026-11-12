@@ -34,7 +34,11 @@ class FakePopup {
     }
 }
 
-vi.mock('../../src/core/settings', () => ({ settings: () => state.settings, saveSettings: vi.fn() }));
+vi.mock('../../src/core/settings', () => ({
+    settings: () => state.settings,
+    saveSettings: vi.fn(),
+    notifyExternalChange: vi.fn(),
+}));
 vi.mock('../../src/core/context', () => ({
     ctx: () => ({
         characters: state.characters,
@@ -612,6 +616,12 @@ describe('NAI_STUDIO_API: excluded passports and DES portraits (v0.14)', () => {
             'chatNpcPassports',
             'chatPortraits',
             'personaKeys',
+            'illustrator',
+            'requestImage',
+            'drawPicture',
+            'cardAvatar',
+            'backgroundFreeOnly',
+            'scenePoses',
         ]);
         expect(Object.isFrozen(api.features)).toBe(true);
         for (const method of ['setPassportExcluded', 'isPassportExcluded', 'requestDesPortrait'] as const)
@@ -1035,5 +1045,50 @@ describe('NAI_STUDIO_API: any persona by its key (0.15)', () => {
             fetchMock.mockResolvedValueOnce(new Response('', { status: 500 }));
             expect(await api.generatePersonaAvatar({ personaKey: ANNA })).toEqual({ ok: false, error: 'upload' });
         });
+    });
+});
+
+describe('NAI_STUDIO_API: the illustrator (v0.16)', () => {
+    const illustrator = () => import('../../src/features/markers/illustrator');
+
+    it('who writes the markers: the setting counts while an illustrator is registered; uninstall drops it', async () => {
+        const { resetIllustrator } = await illustrator();
+        resetIllustrator();
+        state.settings.markers.enabled = true;
+        expect(api.markerWriter()).toEqual({ setting: 'main', effective: 'main' });
+        api.setMarkerWriter('illustrator');
+        expect(state.settings.markers.writer).toBe('illustrator');
+        expect(api.markerWriter()).toEqual({ setting: 'illustrator', effective: 'main' });
+        api.registerIllustrator('maestro');
+        expect(api.markerWriter().effective).toBe('illustrator');
+        expect(() => api.setMarkerWriter('model' as never)).toThrow('writer must be one of');
+        expect(() => api.registerIllustrator('  ')).toThrow('illustrator id');
+        uninstallPublicApi();
+        expect(api.markerWriter().effective).toBe('main');
+    });
+
+    it('the rules for the illustrator: the ones of the last real prompt', async () => {
+        const { handlePrompt, resetIllustrator } = await illustrator();
+        resetIllustrator();
+        const rules = `<images><img data-nai='{"prompt":"[SCENE]"}'></images>`;
+        handlePrompt([{ role: 'system', content: rules }], { strip: false });
+        expect(await api.markerRules()).toBe(rules);
+        resetIllustrator();
+    });
+
+    it('requests check their input; without the running services they say "inactive"', async () => {
+        await expect(api.requestImage({ messageIndex: -1, marker: { prompt: 'x' } })).rejects.toThrow('index');
+        await expect(api.requestImage({ messageIndex: 0, marker: 'x' as never })).rejects.toThrow('marker');
+        expect(await api.requestImage({ messageIndex: 0, marker: { prompt: 'x' } })).toEqual({
+            ok: false,
+            error: 'inactive',
+        });
+        expect(await api.drawPicture({ marker: { prompt: 'x' } })).toEqual({ ok: false, error: 'inactive' });
+        expect(api.messageMarkers(0)).toEqual([]);
+        await expect(api.generateCardAvatar({ avatar: '' })).rejects.toThrow('avatar');
+        expect(await api.generateCardAvatar({ avatar: 'Nobody.png' })).toEqual({ ok: false, error: 'no-card' });
+        await expect(api.generateBackground({ locationName: 'Inn', freeOnly: 'yes' as never })).rejects.toThrow(
+            'freeOnly must be a boolean',
+        );
     });
 });

@@ -36,6 +36,11 @@ export interface BackgroundRequest {
     weather?: string;
     /** A saved style by name (it replaces the active style for this picture), else style tags. */
     style?: string;
+    /**
+     * v0.16: free only for this request whatever the free-only mode says (an agent's background): one that
+     * would cost Anlas is refused before anything is sent, with no cost question.
+     */
+    freeOnly?: boolean;
 }
 
 /** ST's endpoint for its backgrounds library (src/endpoints/backgrounds.js, 1.19). */
@@ -123,7 +128,8 @@ export class BackgroundService {
             // Maestro's backgrounds are background work: everything else draws first.
             queue: { priority: 'background', kind: 'background' },
             // Free-only mode: a request that would still cost Anlas is refused before anything is sent.
-            ...(s.anlas.freeOnly ? { maxCost: 0 } : {}),
+            ...(s.anlas.freeOnly || request.freeOnly ? { maxCost: 0 } : {}),
+            ...(request.freeOnly ? { skipCostConfirm: true } : {}),
             ...(signal ? { signal } : {}),
         });
         const image = produced?.images[0];

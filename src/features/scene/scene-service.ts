@@ -20,6 +20,7 @@ import {
     detectParticipants,
     detectPose,
     getCapabilities,
+    hintPose,
     isModelId,
     isPassportEmpty,
     joinTags,
@@ -42,6 +43,7 @@ import type {
     Passport,
     PosePreset,
     SceneCandidate,
+    SceneHint,
     SceneSpec,
 } from '../../domain';
 import { avatarKey, readCharacterPrompt } from '../characters/character-prompts';
@@ -500,7 +502,16 @@ export class SceneService {
             picked.map(({ candidate }, i) => wanted[i] ?? candidate.passport?.position ?? null),
         );
         const library = poseLibrary();
-        spec.participants = picked.map(({ candidate, ch }, i) => {
+        // v0.16: a person whose marker says nothing about the pose takes it from the scene hint (Maestro's staging).
+        const hint: SceneHint = picked.some(({ ch }) => !ch.pose?.trim() && !ch.action?.trim())
+            ? await sceneHint(query)
+            : {};
+        spec.participants = picked.map(({ candidate, ch: written }, i) => {
+            const hinted =
+                written.pose?.trim() || written.action?.trim()
+                    ? undefined
+                    : hintPose(hint, [candidate.name, written.name, ...candidate.aliases]);
+            const ch: MarkerCharacter = hinted ? { ...written, pose: hinted } : written;
             const pose = detectPose(`${ch.pose ?? ''} ${ch.action ?? ''}`, library);
             const participant = participantFrom(candidate, positions[i] ?? { x: 0.5, y: 0.5 }, pose);
             // What a known character wears in this picture replaces the passport's clothes.

@@ -5,15 +5,31 @@
 // backgrounds of places. v0.14: a passport excluded from the current chat, a DES portrait redrawn on
 // request, `features` to detect what the running version has. Since 0.15 ("personaKeys"): any persona
 // by its avatar file key, current or not: its passport read and saved, a persona passport written from
-// a description, and a free avatar drawn from its passport and set without a popup. Installed on
+// a description, and a free avatar drawn from its passport and set without a popup. Since 0.16
+// ("illustrator"): an illustrator of another extension writes the image markers of a reply in the same form
+// as the chat model (who writes them is NAI Studio's setting), pictures that go into no message (a chapter
+// cover), a card's avatar (the previous image backed up), free-only backgrounds, poses in scene hints. Installed on
 // activation, removed on disable. Version 1: within a version members are only added, never changed.
 import { ctx } from '../core/context';
 import { toNaiError } from '../core/errors';
 import { t } from '../core/i18n';
 import { log } from '../core/logger';
-import { ENTRY_PASSPORT_KINDS, isPassportEmpty, newPassportId, normalizePassport } from '../domain';
-import type { EntryPassportKind, Passport, SceneHint } from '../domain';
+import { notifyExternalChange, saveSettings, settings } from '../core/settings';
+import {
+    ENTRY_PASSPORT_KINDS,
+    isMarkerWriter,
+    isPassportEmpty,
+    MARKER_WRITERS,
+    newPassportId,
+    normalizePassport,
+} from '../domain';
+import type { EntryPassportKind, MarkerWriter, Passport, SceneHint } from '../domain';
 import type { BackgroundService } from '../features/backgrounds/background-service';
+import { cardMainPassport, generateCardAvatarFile } from '../features/characters/card-avatar';
+import type { CardAvatarResult } from '../features/characters/card-avatar';
+import { capturedRules, effectiveWriter, registerIllustrator, writerSetting } from '../features/markers/illustrator';
+import type { MessageMarker } from '../features/markers/marker-service';
+import { markerService, ownMarkerInstruction, refreshMarkerInstruction } from './markers-setup';
 import { generateEntryPassport, generatePersonaPassportFrom } from '../features/characters/passport-generator';
 import {
     cardIndexByAvatar,
@@ -58,7 +74,9 @@ export type {
     StudioEventName,
     StudioRequestKind,
 } from '../features/events/studio-events';
-export type { SceneHint } from '../domain';
+export type { MarkerWriter, SceneHint, ScenePose } from '../domain';
+export type { CardAvatarResult } from '../features/characters/card-avatar';
+export type { MessageMarker } from '../features/markers/marker-service';
 export type { PersonaAvatarResult } from '../features/characters/persona-avatar';
 export type { SceneHintContext } from '../features/scene/scene-providers';
 export type { QualityGate, QualityGateDetail } from '../features/quality/quality-gate';
@@ -72,7 +90,9 @@ export const API_VERSION = 1;
  * "requestDesPortrait", "chatNpcPassports" (passports of new DES characters go to the chat by default and
  * carry origin "auto-des"), "chatPortraits" (DES portraits remembered per chat). Since 0.15 "personaKeys"
  * (getPersonaPassport, savePassport's `personaKey`, generatePassport's `persona`, generatePersonaAvatar,
- * `personaKey` in "passportsSaved").
+ * `personaKey` in "passportsSaved"). Since 0.16 "illustrator" (registerIllustrator, markerWriter, setMarkerWriter,
+ * markerRules), "requestImage" (requestImage, messageMarkers), "drawPicture", "cardAvatar" (generateCardAvatar),
+ * "backgroundFreeOnly" (generateBackground's `freeOnly`), "scenePoses" (a scene hint's `poses`).
  */
 export const API_FEATURES = [
     'excludePassport',
@@ -80,6 +100,12 @@ export const API_FEATURES = [
     'chatNpcPassports',
     'chatPortraits',
     'personaKeys',
+    'illustrator',
+    'requestImage',
+    'drawPicture',
+    'cardAvatar',
+    'backgroundFreeOnly',
+    'scenePoses',
 ] as const;
 export type ApiFeature = (typeof API_FEATURES)[number];
 
@@ -175,6 +201,64 @@ export interface BackgroundInput {
     weather?: string;
     /** A saved style of NAI Studio by name (it replaces the active style for this picture), else style tags. */
     style?: string;
+    /**
+     * Since 0.16: free only whatever the free-only mode says: a request that would cost Anlas is refused
+     * ("free-only-blocked") before anything is sent, with no cost question.
+     */
+    freeOnly?: boolean;
+}
+
+/** Since 0.16: who writes the image markers — the setting, and who does now. */
+export interface MarkerWriterState {
+    /** NAI Studio's setting `markers.writer`. */
+    setting: MarkerWriter;
+    /** "main" unless markers are on and an illustrator is registered; else the setting. */
+    effective: MarkerWriter;
+}
+
+/** Since 0.16: an illustrator's marker for a reply (NAI_STUDIO_API.requestImage). */
+export interface ImageRequest {
+    /** The assistant reply (its index in the chat). */
+    messageIndex: number;
+    /**
+     * The marker object as the chat model writes it inside `data-nai` ({ prompt, chars, ratio, ... }; any key
+     * spelling the marker parser accepts); `caption` is the picture's caption.
+     */
+    marker: Record<string, unknown>;
+    /** A sentence of the reply: the picture goes after the paragraph it ends in (else at the end of the reply). */
+    after?: string;
+    /** The reply swipe the marker was written for: another one shown resolves "stale". */
+    swipeId?: number;
+    /** Free only whatever the marker cost settings say. */
+    freeOnly?: boolean;
+}
+
+export type ImageRequestResult = { ok: true; imageId: string } | { ok: false; error: string };
+
+/** Since 0.16: a picture that goes into no message (NAI_STUDIO_API.drawPicture). */
+export interface PictureInput {
+    marker: Record<string, unknown>;
+    freeOnly?: boolean;
+    /** A word of the file name ("cover"). */
+    name?: string;
+    signal?: AbortSignal;
+}
+
+export interface PictureResult {
+    ok: boolean;
+    /** Path in /user/images ("user/images/<folder>/<file>.png"). */
+    path?: string;
+    /** "inactive", "aborted", "marker", or NAI Studio's error code ("free-only-blocked", ...). */
+    error?: string;
+}
+
+/** Since 0.16: a card's avatar (NAI_STUDIO_API.generateCardAvatar). */
+export interface CardAvatarRequest {
+    /** The card's avatar file ("Alice.png"). */
+    avatar: string;
+    /** Drawn from this passport instead of the card's own as the current chat sees it. */
+    passport?: Passport;
+    signal?: AbortSignal;
 }
 
 export interface NaiStudioApi {
@@ -281,6 +365,47 @@ export interface NaiStudioApi {
      * code of a failed generation ("unauthorized", "rate-limited", ...). Invalid input rejects.
      */
     generatePersonaAvatar(options: PersonaAvatarRequest): Promise<PersonaAvatarResult>;
+    /**
+     * Since 0.16 ("illustrator"). Another extension writes the image markers (Maestro's illustrator agent) while
+     * registered: only then does NAI Studio's setting «Who writes the markers» count — "illustrator": the chat
+     * model gets no marker rules (NAI Studio's instruction is not injected, and a rules block of the preset, the
+     * smallest element like `<images>...</images>` around a `data-nai` example, is cut out of the chat completion
+     * prompt); "fallback": as before, the illustrator draws a reply without a marker; the excerpt-based automatic
+     * pictures are off in both. Registering the same id again replaces it. Returns the unregistration.
+     */
+    registerIllustrator(id: string): () => void;
+    /** Since 0.16. Who writes the markers: the setting and who does now. */
+    markerWriter(): MarkerWriterState;
+    /** Since 0.16. Changes the setting «Who writes the markers» (saved). */
+    setMarkerWriter(writer: MarkerWriter): void;
+    /**
+     * Since 0.16. The marker rules for an illustrator: the rules blocks of the preset as the last real prompt
+     * had them (macros substituted), else NAI Studio's own instruction from its settings.
+     */
+    markerRules(): Promise<string>;
+    /** Since 0.16. Marker pictures of the reply swipe shown: the marker, its status, the saved file. */
+    messageMarkers(messageIndex: number): MessageMarker[];
+    /**
+     * Since 0.16. An illustrator's marker goes into the reply after the paragraph of `after`, as a placeholder,
+     * and is drawn the way the reply's own markers are: scene, passports, style, continuity, the quality gates'
+     * verdict on the reply, the marker cost rules (free only with `freeOnly`), at most `markers.max` per reply.
+     * `{ ok: true, imageId }` once placed (the picture lands later), or `{ ok: false, error }`: "inactive",
+     * "disabled" (markers off), "message", "stale", "limit", "marker". Invalid input rejects.
+     */
+    requestImage(request: ImageRequest): Promise<ImageRequestResult>;
+    /**
+     * Since 0.16. One picture from a marker that goes into no message (a chapter cover): the marker path with
+     * the current chat's scene and passports, the user's place in the queue, saved into /user/images.
+     */
+    drawPicture(input: PictureInput): Promise<PictureResult>;
+    /**
+     * Since 0.16. A card's avatar drawn from its passport (or the given one), free only (as a persona avatar),
+     * set through SillyTavern's /api/characters/edit-avatar (the card's data stays). The previous image is saved
+     * first into /user/images/avatar-backups (as it was, with the card's data): `backup`; when it cannot be,
+     * nothing changes. `{ ok: false, error }`: "inactive", "no-card", "no-passport", "cost", "aborted",
+     * "backup", "upload", or NAI Studio's error code. Never asks: the caller asks the user first.
+     */
+    generateCardAvatar(request: CardAvatarRequest): Promise<CardAvatarResult>;
 }
 
 /** Unsubscriptions of everything registered through the API (dropped on disable). */
@@ -578,6 +703,9 @@ async function generateBackground(input: BackgroundInput): Promise<{ file: strin
         const value = optionalText(input, field);
         if (value) Object.assign(request, { [field]: value });
     }
+    const freeOnly = (input as { freeOnly?: unknown }).freeOnly;
+    if (freeOnly !== undefined && typeof freeOnly !== 'boolean') fail('freeOnly must be a boolean');
+    if (freeOnly) Object.assign(request, { freeOnly: true });
     const service = backgrounds;
     if (!service) {
         requestFailed('background', locationName, new Error('NAI Studio is not active'));
@@ -626,6 +754,105 @@ async function generatePersonaAvatar(options: PersonaAvatarRequest): Promise<Per
     return await generatePersonaAvatarFile(pipeline, key, passport, signal);
 }
 
+/* ------------------------------------------------------------------ the illustrator (0.16) */
+
+function registerIllustratorApi(id: string): () => void {
+    const off = registerIllustrator(requireId(id, 'illustrator id'));
+    const unregister = () => {
+        off();
+        registrations.delete(unregister);
+    };
+    registrations.add(unregister);
+    return unregister;
+}
+
+function setMarkerWriter(writer: MarkerWriter): void {
+    if (!isMarkerWriter(writer)) fail(`writer must be one of ${MARKER_WRITERS.join(', ')}`);
+    if (settings().markers.writer === writer) return;
+    settings().markers.writer = writer;
+    saveSettings();
+    notifyExternalChange();
+    refreshMarkerInstruction().catch((error: unknown) => log.warn('marker instruction not refreshed', error));
+}
+
+async function markerRules(): Promise<string> {
+    return capturedRules() || (await ownMarkerInstruction());
+}
+
+function requireIndex(value: unknown, what = 'messageIndex'): number {
+    if (typeof value !== 'number' || !Number.isInteger(value) || value < 0) fail(`${what} must be an index`);
+    return value;
+}
+
+function requireMarker(value: unknown): Record<string, unknown> {
+    if (typeof value !== 'object' || value === null || Array.isArray(value)) fail('marker must be an object');
+    return value as Record<string, unknown>;
+}
+
+function messageMarkers(messageIndex: number): MessageMarker[] {
+    return markerService()?.messageMarkers(requireIndex(messageIndex)) ?? [];
+}
+
+async function requestImage(request: ImageRequest): Promise<ImageRequestResult> {
+    if (typeof request !== 'object' || request === null) fail('request must be an object');
+    const index = requireIndex(request.messageIndex);
+    const marker = requireMarker(request.marker);
+    const after = optionalText(request, 'after');
+    const swipeId = (request as { swipeId?: unknown }).swipeId;
+    if (swipeId !== undefined) requireIndex(swipeId, 'swipeId');
+    const freeOnly = (request as { freeOnly?: unknown }).freeOnly;
+    if (freeOnly !== undefined && typeof freeOnly !== 'boolean') fail('freeOnly must be a boolean');
+    const service = markerService();
+    if (!service) return { ok: false, error: 'inactive' };
+    return await service.insertMarker(index, marker, {
+        ...(after ? { after } : {}),
+        ...(typeof swipeId === 'number' ? { swipeId } : {}),
+        ...(freeOnly ? { freeOnly: true } : {}),
+    });
+}
+
+async function drawPicture(input: PictureInput): Promise<PictureResult> {
+    if (typeof input !== 'object' || input === null) fail('input must be an object');
+    const marker = requireMarker(input.marker);
+    const name = optionalText(input, 'name');
+    const signal = input.signal as unknown;
+    if (signal !== undefined && !isSignal(signal)) fail('signal must be an AbortSignal');
+    const service = markerService();
+    if (!service) return { ok: false, error: 'inactive' };
+    if (typeof marker.prompt !== 'string' || !marker.prompt.trim()) return { ok: false, error: 'marker' };
+    try {
+        const drawn = await service.drawPicture(marker, {
+            freeOnly: input.freeOnly === true,
+            ...(signal ? { signal } : {}),
+            ...(name ? { name: name.replace(/[^\p{L}\p{N}_-]+/gu, '_').slice(0, 24) } : {}),
+        });
+        return drawn ? { ok: true, path: drawn.path } : { ok: false, error: 'aborted' };
+    } catch (error) {
+        const code = toNaiError(error).code;
+        log.warn(`${API_GLOBAL}: picture not drawn:`, code);
+        return { ok: false, error: code };
+    }
+}
+
+async function generateCardAvatar(request: CardAvatarRequest): Promise<CardAvatarResult> {
+    if (typeof request !== 'object' || request === null) fail('request must be an object');
+    const avatar = requireId(request.avatar, 'avatar');
+    const signal = request.signal as unknown;
+    if (signal !== undefined && !isSignal(signal)) fail('signal must be an AbortSignal');
+    const index = cardIndexByAvatar(avatar);
+    const character = index >= 0 ? ctx().characters[index] : undefined;
+    if (!character?.avatar) return { ok: false, error: 'no-card' };
+    if (!pipeline) return { ok: false, error: 'inactive' };
+    await loadCharacter(index);
+    const given = request.passport as unknown;
+    const passport =
+        given === undefined || given === null
+            ? cardMainPassport(resolvedCardPassports(ctx().characters[index], chatPassportData()))
+            : (normalizePassport(given) ?? fail('passport must be an object'));
+    if (!passport || isPassportEmpty(passport)) return { ok: false, error: 'no-passport' };
+    return await generateCardAvatarFile(pipeline, character.avatar, passport, signal as AbortSignal | undefined);
+}
+
 function createApi(): NaiStudioApi {
     return Object.freeze({
         version: API_VERSION as 1,
@@ -649,6 +876,14 @@ function createApi(): NaiStudioApi {
         requestDesPortrait,
         getPersonaPassport,
         generatePersonaAvatar,
+        registerIllustrator: registerIllustratorApi,
+        markerWriter: (): MarkerWriterState => ({ setting: writerSetting(), effective: effectiveWriter() }),
+        setMarkerWriter,
+        markerRules,
+        messageMarkers,
+        requestImage,
+        drawPicture,
+        generateCardAvatar,
     });
 }
 

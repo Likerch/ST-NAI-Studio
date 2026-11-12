@@ -19,6 +19,7 @@ import {
     detectParticipants,
     findMarkers,
     getCapabilities,
+    insertPictureLine,
     isModelId,
     joinTags,
     limitMarkers,
@@ -27,6 +28,9 @@ import {
     markerGenerationKey,
     markerModel,
     MODE,
+    normalizeParams,
+    pictureOffset,
+    placeholder,
     readEntries,
     replaceMarkers,
     replyExcerpt,
@@ -34,8 +38,10 @@ import {
 } from '../../domain';
 import type { GenerationRequest, InlineImage, MarkerMatch, MarkerParams, PlannedVibe, UcPresetId } from '../../domain';
 import { setCurrentLocation } from '../continuity/continuity-service';
+import { effectiveWriter } from './illustrator';
 import type { CallOverrides, Pipeline, PictureRequest, ProducedImages } from '../generation/pipeline';
 import type { QueuePriority, QueueStatus } from '../generation/queue';
+import { imageFileName, imageFolder, uploadImage } from '../generation/output';
 import { blobToBase64, toPngBlob } from '../images/image-utils';
 import type { InlineImages } from '../inline/inline-service';
 import { qualityGatesActive, replyAbandoned, replyComplete, replyVerdict } from '../quality/quality-gate';
@@ -63,6 +69,38 @@ interface StartOptions {
     streaming?: boolean;
     /** Default "reply"; a click (retry, a menu) is "user". */
     priority?: QueuePriority;
+    /** Free only whatever the marker settings say (v0.16: an illustrator's picture by default). */
+    freeOnly?: boolean;
+}
+
+/** What `insertMarker` answers (v0.16, NAI_STUDIO_API.requestImage). */
+export type InsertMarkerResult = { ok: true; imageId: string } | { ok: false; error: InsertMarkerError };
+
+/**
+ * "disabled": markers are off; "message": no such assistant reply; "stale": its swipe changed; "limit": the
+ * reply has the most markers allowed; "marker": no prompt in the marker.
+ */
+export type InsertMarkerError = 'disabled' | 'message' | 'stale' | 'limit' | 'marker';
+
+export interface InsertMarkerOptions {
+    /** A sentence of the reply: the picture goes after the paragraph it ends in (else at the end). */
+    after?: string;
+    /** The reply swipe the marker was written for; another one shown is "stale". */
+    swipeId?: number;
+    freeOnly?: boolean;
+    /** Default "reply" (an automatic picture); "user" for a click. */
+    priority?: QueuePriority;
+}
+
+/** A marker picture of a reply as another extension reads it (v0.16, NAI_STUDIO_API.messageMarkers). */
+export interface MessageMarker {
+    imageId: string;
+    marker: MarkerParams;
+    status: 'pending' | 'error' | 'done';
+    /** Path in /user/images of the picture shown (none while pending or when not saved on the server). */
+    path?: string;
+    /** "illustrator" when an illustrator wrote it (requestImage); absent: the chat model. */
+    by?: 'illustrator';
 }
 
 /** The message a drawing is for no longer shows it: another chat, the message deleted or swiped. */
@@ -305,7 +343,15 @@ export class MarkerService {
         for (const job of early.values()) job.abort.abort();
         const count = keep.length + existing;
         const filledKey = `${messageId}:${m.swipe_id ?? 0}`;
-        if (s.autoFill && count < s.min && AUTO_FILL_TYPES.has(kind) && !this.filled.has(filledKey)) {
+        // An illustrator (v0.16) illustrates the reply instead of the excerpt-based automatic pictures.
+        const writer = effectiveWriter();
+        if (
+            s.autoFill &&
+            writer === 'main' &&
+            count < s.min &&
+            AUTO_FILL_TYPES.has(kind) &&
+            !this.filled.has(filledKey)
+        ) {
             this.filled.add(filledKey);
             await this.autoFill(messageId, s.min - count);
         }
@@ -345,6 +391,93 @@ export class MarkerService {
         const entry = createPendingImage(id, params, this.inline.displayDefaults(markerDisplay(params)));
         await this.inline.addPending(messageId, `${m.mes}\n[nai:img:${id}]`, [entry]);
         await this.deliver(messageId, id, this.start(params, { messageId, text: m.mes }, { priority: 'user' }));
+    }
+
+    /** Marker pictures of the reply swipe shown (v0.16). */
+    messageMarkers(messageId: number): MessageMarker[] {
+        const m = ctx().chat[messageId];
+        if (!m || m.is_user || m.is_system) return [];
+        const out: MessageMarker[] = [];
+        for (const entry of readEntries(m.extra)) {
+            if (!entry.marker) continue;
+            const item: MessageMarker = {
+                imageId: entry.id,
+                marker: structuredClone(entry.marker.params),
+                status: entry.marker.status,
+            };
+            if (entry.filePath) item.path = entry.filePath;
+            if (entry.marker.by) item.by = entry.marker.by;
+            out.push(item);
+        }
+        return out;
+    }
+
+    /**
+     * A marker written outside the reply (v0.16, an illustrator): it goes into the reply after the paragraph
+     * of `after` as a placeholder and is drawn the way the reply's own markers are — scene, passports, style,
+     * continuity, the quality gates' verdict on the reply, the marker cost rules (free only when asked).
+     */
+    async insertMarker(
+        messageId: number,
+        raw: Record<string, unknown>,
+        options: InsertMarkerOptions = {},
+    ): Promise<InsertMarkerResult> {
+        const s = settings().markers;
+        if (!s.enabled) return { ok: false, error: 'disabled' };
+        const m = ctx().chat[messageId];
+        if (!m || m.is_user || m.is_system) return { ok: false, error: 'message' };
+        if (options.swipeId !== undefined && (m.swipe_id ?? 0) !== options.swipeId)
+            return { ok: false, error: 'stale' };
+        const params = normalizeParams(raw);
+        if (!params) return { ok: false, error: 'marker' };
+        if (readEntries(m.extra).filter((e) => e.marker).length >= s.max) return { ok: false, error: 'limit' };
+        const id = ctx().uuidv4();
+        const entry = createPendingImage(id, params, this.inline.displayDefaults(markerDisplay(params)));
+        if (entry.marker) entry.marker.by = 'illustrator';
+        const text = insertPictureLine(m.mes, placeholder(id), pictureOffset(m.mes, options.after));
+        await this.inline.addPending(messageId, text, [entry]);
+        const job = this.start(
+            params,
+            { messageId, text },
+            {
+                gated: true,
+                priority: options.priority ?? 'reply',
+                ...(options.freeOnly ? { freeOnly: true } : {}),
+            },
+        );
+        void this.deliver(messageId, id, job);
+        return { ok: true, imageId: id };
+    }
+
+    /**
+     * One picture from a marker that goes into no message (v0.16, NAI_STUDIO_API.drawPicture: a chapter cover):
+     * the marker path with the chat's scene, passports and style, through the one queue as the user's request,
+     * saved into /user/images (the chat's folder). Its path, or null when it was cancelled or not drawn.
+     */
+    async drawPicture(
+        raw: Record<string, unknown>,
+        options: { freeOnly?: boolean; signal?: AbortSignal; name?: string } = {},
+    ): Promise<{ path: string; params: MarkerParams } | null> {
+        const params = normalizeParams(raw);
+        if (!params) throw new Error('marker has no prompt');
+        const messageId = ctx().chat.length - 1;
+        const produced = await this.produce(
+            params,
+            options.signal,
+            messageId >= 0 ? { messageId } : {},
+            { priority: 'user', kind: 'marker' },
+            { freeOnly: options.freeOnly === true },
+        );
+        const image = produced?.images[0];
+        if (!image || options.signal?.aborted) return null;
+        const folder = imageFolder();
+        const path = await uploadImage(
+            image.base64,
+            image.mime,
+            folder,
+            imageFileName(folder, options.name || 'picture'),
+        );
+        return { path, params };
     }
 
     /** Generates a marker image again (after an error or an interrupted generation). */
@@ -402,12 +535,18 @@ export class MarkerService {
             return await this.enqueue(job, async () =>
                 abort.signal.aborted || stale?.()
                     ? null
-                    : await this.produce(params, abort.signal, query, {
-                          priority: options.priority ?? 'reply',
-                          kind: 'marker',
-                          ...(stale ? { stale } : {}),
-                          onStatus: (status) => this.setJobStatus(job, status),
-                      }),
+                    : await this.produce(
+                          params,
+                          abort.signal,
+                          query,
+                          {
+                              priority: options.priority ?? 'reply',
+                              kind: 'marker',
+                              ...(stale ? { stale } : {}),
+                              onStatus: (status) => this.setJobStatus(job, status),
+                          },
+                          { freeOnly: options.freeOnly === true },
+                      ),
             );
         })();
         // An early job that is dropped must not end as an unhandled rejection.
@@ -455,9 +594,10 @@ export class MarkerService {
         signal?: AbortSignal,
         query: SceneQuery = {},
         queue: PictureRequest['queue'] = { priority: 'reply', kind: 'marker' },
+        extra: { freeOnly?: boolean } = {},
     ): Promise<ProducedImages | null> {
         const s = settings();
-        const freeOnly = s.anlas.freeOnly || !s.markers.allowPaid;
+        const freeOnly = extra.freeOnly === true || s.anlas.freeOnly || !s.markers.allowPaid;
         const model = markerModel(params.model) ?? s.generation.model;
         const caps = getCapabilities(isModelId(model) ? model : DEFAULT_MODEL);
         const dims = markerDimensions(params.ratio, params.size, freeOnly);

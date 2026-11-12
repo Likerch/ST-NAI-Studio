@@ -225,6 +225,12 @@ export interface NaiStudioSettings {
         /** Paid marker images are allowed up to maxCost each (free-only mode still wins). */
         allowPaid: boolean;
         maxCost: number;
+        /**
+         * Who writes the markers (v0.16): the chat model ("main"), an illustrator of another extension
+         * ("illustrator": the rules leave the chat model's prompt), or the illustrator only for a reply without
+         * a marker ("fallback"). Without a registered illustrator it is always "main".
+         */
+        writer: 'main' | 'illustrator' | 'fallback';
     };
     /** Doom's Enhancement Suite integration (v0.9); works only while DES is installed and on. */
     des: {
@@ -494,6 +500,7 @@ export function defaultSettings(): NaiStudioSettings {
             autoFill: false,
             allowPaid: false,
             maxCost: 5,
+            writer: 'main',
         },
         language: { mode: 'auto', backend: 'main', profileId: '', novelaiModel: 'glm-4-6', russianOnV5: false },
         des: {

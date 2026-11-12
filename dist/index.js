@@ -1057,6 +1057,11 @@ var EN = {
 	"naist.markers.roleUser": "User",
 	"naist.markers.roleAssistant": "Assistant",
 	"naist.markers.earlyStart": "Start generating while the reply is still streaming",
+	"naist.markers.writer": "Who writes the markers",
+	"naist.markers.writerMain": "The chat model",
+	"naist.markers.writerIllustrator": "The illustrator",
+	"naist.markers.writerFallback": "The illustrator, when the chat model wrote none",
+	"naist.markers.writerHint": "The illustrator is an agent of another extension (Maestro's «Illustrator»). It counts only while one is on; otherwise the chat model writes the markers. «The illustrator»: the chat model gets no marker rules — the instruction above is not added, and a rules block of the preset (an element like <images>…</images> around a data-nai example) is left out of the prompt; the illustrator gets those rules. In both illustrator modes automatic illustration of a reply is off.",
 	"naist.markers.autoFill": "Fewer markers than the minimum: illustrate the reply automatically",
 	"naist.markers.legacy": "Understand older marker formats (microservice URL, sillyimages, Auto Illustrator)",
 	"naist.markers.regexCompat": "Show images to display regexes as <img> (keeps HTML widgets working)",
@@ -1398,7 +1403,8 @@ function defaultSettings() {
 			legacy: true,
 			autoFill: false,
 			allowPaid: false,
-			maxCost: 5
+			maxCost: 5,
+			writer: "main"
 		},
 		language: {
 			mode: "auto",
@@ -4847,7 +4853,8 @@ var HINT_FIELDS = [
 	"locationId",
 	"locationName",
 	"tags",
-	"characters"
+	"characters",
+	"poses"
 ];
 function text$2(value) {
 	if (typeof value !== "string") return void 0;
@@ -4873,6 +4880,22 @@ function normalizeSceneHint(raw) {
 		});
 		if (names.length) hint.characters = names;
 	}
+	if (Array.isArray(source.poses)) {
+		const seen = /* @__PURE__ */ new Set();
+		const poses = [];
+		for (const item of source.poses) {
+			if (typeof item !== "object" || item === null) continue;
+			const name = text$2(item.name);
+			const pose = text$2(item.pose);
+			if (!name || !pose || seen.has(name.toLowerCase())) continue;
+			seen.add(name.toLowerCase());
+			poses.push({
+				name,
+				pose: pose.slice(0, 200)
+			});
+		}
+		if (poses.length) hint.poses = poses;
+	}
 	return HINT_FIELDS.some((field) => hint[field] !== void 0) ? hint : null;
 }
 /** Hints in priority order (best first): each field from the first hint that has it. */
@@ -4884,6 +4907,7 @@ function mergeSceneHints(ordered) {
 		if (result.locationName === void 0 && hint.locationName) result.locationName = hint.locationName;
 		if (result.tags === void 0 && hint.tags) result.tags = hint.tags;
 		if (result.characters === void 0 && hint.characters?.length) result.characters = [...hint.characters];
+		if (result.poses === void 0 && hint.poses?.length) result.poses = hint.poses.map((p) => ({ ...p }));
 	}
 	return result;
 }
@@ -4893,6 +4917,12 @@ function byPriority(providers) {
 		provider,
 		index
 	})).sort((a, b) => b.provider.priority - a.provider.priority || a.index - b.index).map(({ provider }) => provider);
+}
+/** The pose a hint gives one of the names of a person (case-insensitive); undefined when none. */
+function hintPose(hint, names) {
+	if (!hint.poses?.length) return void 0;
+	const wanted = new Set(names.map((n) => n.trim().toLowerCase()).filter(Boolean));
+	return hint.poses.find((p) => wanted.has(p.name.toLowerCase()))?.pose;
 }
 //#endregion
 //#region src/domain/poses.ts
@@ -7579,6 +7609,124 @@ function replyExcerpt(text, max = 800) {
 	return (end > max / 2 ? cut.slice(0, end + 1) : cut).trim();
 }
 //#endregion
+//#region src/domain/illustrator.ts
+var MARKER_WRITERS = [
+	"main",
+	"illustrator",
+	"fallback"
+];
+function isMarkerWriter(value) {
+	return typeof value === "string" && MARKER_WRITERS.includes(value);
+}
+/** Tags of a reply's own HTML (a figure around a marker), never a rules block of the preset. */
+var CONTENT_TAGS = /* @__PURE__ */ new Set([
+	"img",
+	"figure",
+	"figcaption",
+	"div",
+	"span",
+	"p",
+	"br",
+	"details",
+	"summary",
+	"b",
+	"i",
+	"em",
+	"strong",
+	"code",
+	"pre",
+	"font",
+	"small",
+	"a"
+]);
+/**
+* The blocks of a prompt text that teach the chat model the marker format: the smallest element
+* `<name …>…</name>` (not a reply's own HTML) around each `data-nai`, as presets wrap their rules
+* (`<images>…</images>`). A `data-nai` outside any such element is no block (nothing is cut then).
+*/
+function findRulesBlocks(text) {
+	const blocks = [];
+	let from = 0;
+	for (;;) {
+		const at = text.indexOf("data-nai", from);
+		if (at < 0) break;
+		const block = enclosing(text, at);
+		if (block) {
+			blocks.push(block);
+			from = block.end;
+		} else from = at + 8;
+	}
+	return blocks;
+}
+function enclosing(text, at) {
+	const open = /<([A-Za-z][\w-]*)\b[^<>]*>/g;
+	let best = null;
+	for (let m = open.exec(text); m && m.index < at; m = open.exec(text)) {
+		const name = m[1].toLowerCase();
+		if (CONTENT_TAGS.has(name)) continue;
+		const close = new RegExp(`</${name}\\s*>`, "ig");
+		close.lastIndex = m.index + m[0].length;
+		let closed = null;
+		for (let c = close.exec(text); c; c = close.exec(text)) if (c.index >= at) {
+			closed = c;
+			break;
+		}
+		if (!closed) continue;
+		const end = closed.index + closed[0].length;
+		if (!best || m.index > best.start) best = {
+			start: m.index,
+			end,
+			text: text.slice(m.index, end)
+		};
+	}
+	return best && best.end - best.start <= 6e3 ? best : null;
+}
+/** The text without its rules blocks (and the blank lines they leave). */
+function stripRulesBlocks(text, blocks) {
+	let out = text;
+	for (const block of [...blocks].sort((a, b) => b.start - a.start)) out = out.slice(0, block.start) + out.slice(block.end);
+	return out.replace(/\n{3,}/g, "\n\n").trim() === "" ? "" : out.replace(/\n{3,}/g, "\n\n");
+}
+var collapse = (text) => text.replace(/\s+/g, " ").trim().toLowerCase();
+/** Where `after` (a sentence of the text, quoted loosely) ends; -1 when it is not found. */
+function findAnchorEnd(text, after) {
+	const wanted = after.trim().replace(/^["'«“„]+|["'»”“]+$/g, "").trim();
+	if (!wanted) return -1;
+	const exact = text.indexOf(wanted);
+	if (exact >= 0) return exact + wanted.length;
+	const words = collapse(wanted).split(" ").filter(Boolean).map((word) => word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+	const takes = [.../* @__PURE__ */ new Set([
+		words.length,
+		Math.min(words.length, 8),
+		Math.min(words.length, 4)
+	])];
+	for (const take of takes) {
+		if (!take) continue;
+		const found = new RegExp(words.slice(0, take).join("\\s+"), "i").exec(text);
+		if (found) return found.index + found[0].length;
+	}
+	return -1;
+}
+/**
+* Where a picture about `after` goes: the end of the paragraph (line) the sentence ends in; the end of
+* the text when the sentence is not found or not given. Never inside a placeholder.
+*/
+function pictureOffset(text, after) {
+	if (!after?.trim()) return text.length;
+	const end = findAnchorEnd(text, after);
+	if (end < 0) return text.length;
+	const lineEnd = text.indexOf("\n", end);
+	return lineEnd < 0 ? text.length : lineEnd;
+}
+/** The text with a placeholder on its own line at `offset` (a line end or the end of the text). */
+function insertPictureLine(text, line, offset) {
+	const at = Math.max(0, Math.min(text.length, offset));
+	const before = text.slice(0, at).replace(/[ \t]+$/, "");
+	const after = text.slice(at);
+	if (!before) return `${line}\n${after.replace(/^\n/, "")}`;
+	return after ? `${before}\n${line}${after.startsWith("\n") ? "" : "\n"}${after}` : `${before}\n${line}`;
+}
+//#endregion
 //#region src/data/interpret-examples.json
 var interpret_examples_default = [
 	{
@@ -9471,7 +9619,7 @@ var MAX_GATE_TIMEOUT_MS = 6e5;
 /** Settled verdicts kept for later drawings of the same reply (DES trackers come late). */
 var MAX_ENTRIES = 64;
 var gates = /* @__PURE__ */ new Set();
-var listeners$1 = /* @__PURE__ */ new Set();
+var listeners$2 = /* @__PURE__ */ new Set();
 var entries = /* @__PURE__ */ new Map();
 /** The time limit in range: 1 s … 10 min, 20 s when unset. */
 function clampGateTimeout(ms) {
@@ -9487,8 +9635,8 @@ var swipeOf = (message) => {
 	return Number.isInteger(id) && id >= 0 ? id : 0;
 };
 var chatIdNow = () => String(ctx().getCurrentChatId() ?? "");
-function changed() {
-	for (const listener of listeners$1) try {
+function changed$1() {
+	for (const listener of listeners$2) try {
 		listener();
 	} catch (error) {
 		log.warn("quality gate listener failed", error);
@@ -9498,11 +9646,11 @@ function changed() {
 function registerQualityGate(gate) {
 	const registration = { gate };
 	gates.add(registration);
-	changed();
+	changed$1();
 	return () => {
 		if (!gates.delete(registration)) return;
 		for (const entry of [...entries.values()]) if (entry.phase === "asking" && entry.waiting.has(registration)) vote(entry, registration, true);
-		changed();
+		changed$1();
 	};
 }
 /** A gate is registered: automatic drawings of a reply wait for its verdict. */
@@ -9511,8 +9659,8 @@ function qualityGatesActive() {
 }
 /** Gates registered or removed (the settings panel shows its section only with a gate). */
 function onQualityGatesChange(listener) {
-	listeners$1.add(listener);
-	return () => listeners$1.delete(listener);
+	listeners$2.add(listener);
+	return () => listeners$2.delete(listener);
 }
 function isCurrent(entry) {
 	const c = ctx();
@@ -9752,21 +9900,21 @@ var STUDIO_EVENTS = [
 	"requestFailed",
 	"passportExcludedChanged"
 ];
-var listeners = {
+var listeners$1 = {
 	passportsSaved: /* @__PURE__ */ new Set(),
 	imageReady: /* @__PURE__ */ new Set(),
 	requestFailed: /* @__PURE__ */ new Set(),
 	passportExcludedChanged: /* @__PURE__ */ new Set()
 };
 function onStudioEvent(event, listener) {
-	const set = listeners[event];
+	const set = listeners$1[event];
 	set.add(listener);
 	return () => {
 		set.delete(listener);
 	};
 }
 function emitStudioEvent(event, detail) {
-	for (const listener of [...listeners[event]]) try {
+	for (const listener of [...listeners$1[event]]) try {
 		const result = listener(structuredClone(detail));
 		if (result instanceof Promise) result.catch((error) => log.warn(`${event} listener failed`, error));
 	} catch (error) {
@@ -10571,7 +10719,8 @@ var BackgroundService = class {
 				priority: "background",
 				kind: "background"
 			},
-			...s.anlas.freeOnly ? { maxCost: 0 } : {},
+			...s.anlas.freeOnly || request.freeOnly ? { maxCost: 0 } : {},
+			...request.freeOnly ? { skipCostConfirm: true } : {},
 			...signal ? { signal } : {}
 		});
 		const image = produced?.images[0];
@@ -13437,7 +13586,17 @@ var SceneService = class {
 		const wanted = picked.map(({ ch }) => markerPosition(ch.pos));
 		const positions = autoLayout(picked.length, caps, picked.map(({ candidate }, i) => wanted[i] ?? candidate.passport?.position ?? null));
 		const library = poseLibrary();
-		spec.participants = picked.map(({ candidate, ch }, i) => {
+		const hint = picked.some(({ ch }) => !ch.pose?.trim() && !ch.action?.trim()) ? await sceneHint(query) : {};
+		spec.participants = picked.map(({ candidate, ch: written }, i) => {
+			const hinted = written.pose?.trim() || written.action?.trim() ? void 0 : hintPose(hint, [
+				candidate.name,
+				written.name,
+				...candidate.aliases
+			]);
+			const ch = hinted ? {
+				...written,
+				pose: hinted
+			} : written;
 			const pose = detectPose(`${ch.pose ?? ""} ${ch.action ?? ""}`, library);
 			const participant = participantFrom(candidate, positions[i] ?? {
 				x: .5,
@@ -19507,6 +19666,75 @@ function setupDes(markers) {
 	return instance;
 }
 //#endregion
+//#region src/features/markers/illustrator.ts
+var illustrators = /* @__PURE__ */ new Map();
+var listeners = /* @__PURE__ */ new Set();
+var seq = 0;
+/** The rules blocks of the last real prompt that had any (substituted macros and all). */
+var lastRules = "";
+function changed() {
+	for (const listener of [...listeners]) try {
+		listener();
+	} catch (error) {
+		log.warn("illustrator listener failed", error);
+	}
+}
+/** An illustrator is on (another extension writes markers); returns the unregistration. */
+function registerIllustrator(id) {
+	const token = ++seq;
+	const had = illustrators.size > 0;
+	illustrators.set(id, token);
+	if (!had) changed();
+	return () => {
+		if (illustrators.get(id) !== token) return;
+		illustrators.delete(id);
+		if (!illustrators.size) changed();
+	};
+}
+function illustratorRegistered() {
+	return illustrators.size > 0;
+}
+/** Registered illustrators came or went (the instruction is rebuilt). */
+function onIllustratorsChange(listener) {
+	listeners.add(listener);
+	return () => listeners.delete(listener);
+}
+/** The setting as stored ("main" when unknown). */
+function writerSetting() {
+	const value = settings().markers.writer;
+	return isMarkerWriter(value) ? value : "main";
+}
+/** Who writes the markers now: the setting while markers are on and an illustrator is registered, else "main". */
+function effectiveWriter() {
+	if (!settings().markers.enabled || !illustratorRegistered()) return "main";
+	return writerSetting();
+}
+function capturedRules() {
+	return lastRules;
+}
+/**
+* CHAT_COMPLETION_PROMPT_READY of a real generation: the rules blocks are remembered, and cut out in the
+* illustrator mode (a message left empty goes too). Returns how many blocks were cut.
+*/
+function handlePrompt(messages, options) {
+	const seen = [];
+	let cut = 0;
+	for (let i = messages.length - 1; i >= 0; i--) {
+		const message = messages[i];
+		if (!message || typeof message.content !== "string" || !message.content.includes("data-nai")) continue;
+		const blocks = findRulesBlocks(message.content);
+		if (!blocks.length) continue;
+		seen.unshift(...blocks.map((block) => block.text));
+		if (!options.strip) continue;
+		const rest = stripRulesBlocks(message.content, blocks);
+		cut += blocks.length;
+		if (rest.trim()) message.content = rest;
+		else messages.splice(i, 1);
+	}
+	if (seen.length) lastRules = seen.join("\n\n");
+	return cut;
+}
+//#endregion
 //#region src/features/markers/marker-service.ts
 /** The message a drawing is for no longer shows it: another chat, the message deleted or swiped. */
 function messageGone(messageId) {
@@ -19720,7 +19948,8 @@ var MarkerService = class {
 		for (const job of early.values()) job.abort.abort();
 		const count = keep.length + existing;
 		const filledKey = `${messageId}:${m.swipe_id ?? 0}`;
-		if (s.autoFill && count < s.min && AUTO_FILL_TYPES.has(kind) && !this.filled.has(filledKey)) {
+		const writer = effectiveWriter();
+		if (s.autoFill && writer === "main" && count < s.min && AUTO_FILL_TYPES.has(kind) && !this.filled.has(filledKey)) {
 			this.filled.add(filledKey);
 			await this.autoFill(messageId, s.min - count);
 		}
@@ -19759,6 +19988,92 @@ var MarkerService = class {
 			messageId,
 			text: m.mes
 		}, { priority: "user" }));
+	}
+	/** Marker pictures of the reply swipe shown (v0.16). */
+	messageMarkers(messageId) {
+		const m = ctx().chat[messageId];
+		if (!m || m.is_user || m.is_system) return [];
+		const out = [];
+		for (const entry of readEntries(m.extra)) {
+			if (!entry.marker) continue;
+			const item = {
+				imageId: entry.id,
+				marker: structuredClone(entry.marker.params),
+				status: entry.marker.status
+			};
+			if (entry.filePath) item.path = entry.filePath;
+			if (entry.marker.by) item.by = entry.marker.by;
+			out.push(item);
+		}
+		return out;
+	}
+	/**
+	* A marker written outside the reply (v0.16, an illustrator): it goes into the reply after the paragraph
+	* of `after` as a placeholder and is drawn the way the reply's own markers are — scene, passports, style,
+	* continuity, the quality gates' verdict on the reply, the marker cost rules (free only when asked).
+	*/
+	async insertMarker(messageId, raw, options = {}) {
+		const s = settings().markers;
+		if (!s.enabled) return {
+			ok: false,
+			error: "disabled"
+		};
+		const m = ctx().chat[messageId];
+		if (!m || m.is_user || m.is_system) return {
+			ok: false,
+			error: "message"
+		};
+		if (options.swipeId !== void 0 && (m.swipe_id ?? 0) !== options.swipeId) return {
+			ok: false,
+			error: "stale"
+		};
+		const params = normalizeParams(raw);
+		if (!params) return {
+			ok: false,
+			error: "marker"
+		};
+		if (readEntries(m.extra).filter((e) => e.marker).length >= s.max) return {
+			ok: false,
+			error: "limit"
+		};
+		const id = ctx().uuidv4();
+		const entry = createPendingImage(id, params, this.inline.displayDefaults(markerDisplay(params)));
+		if (entry.marker) entry.marker.by = "illustrator";
+		const text = insertPictureLine(m.mes, placeholder(id), pictureOffset(m.mes, options.after));
+		await this.inline.addPending(messageId, text, [entry]);
+		const job = this.start(params, {
+			messageId,
+			text
+		}, {
+			gated: true,
+			priority: options.priority ?? "reply",
+			...options.freeOnly ? { freeOnly: true } : {}
+		});
+		this.deliver(messageId, id, job);
+		return {
+			ok: true,
+			imageId: id
+		};
+	}
+	/**
+	* One picture from a marker that goes into no message (v0.16, NAI_STUDIO_API.drawPicture: a chapter cover):
+	* the marker path with the chat's scene, passports and style, through the one queue as the user's request,
+	* saved into /user/images (the chat's folder). Its path, or null when it was cancelled or not drawn.
+	*/
+	async drawPicture(raw, options = {}) {
+		const params = normalizeParams(raw);
+		if (!params) throw new Error("marker has no prompt");
+		const messageId = ctx().chat.length - 1;
+		const image = (await this.produce(params, options.signal, messageId >= 0 ? { messageId } : {}, {
+			priority: "user",
+			kind: "marker"
+		}, { freeOnly: options.freeOnly === true }))?.images[0];
+		if (!image || options.signal?.aborted) return null;
+		const folder = imageFolder();
+		return {
+			path: await uploadImage(image.base64, image.mime, folder, imageFileName(folder, options.name || "picture")),
+			params
+		};
 	}
 	/** Generates a marker image again (after an error or an interrupted generation). */
 	async retry(messageId, imageId) {
@@ -19811,7 +20126,7 @@ var MarkerService = class {
 				kind: "marker",
 				...stale ? { stale } : {},
 				onStatus: (status) => this.setJobStatus(job, status)
-			}));
+			}, { freeOnly: options.freeOnly === true }));
 		})();
 		job.promise.catch(() => void 0);
 		return job;
@@ -19845,9 +20160,9 @@ var MarkerService = class {
 	async produce(params, signal, query = {}, queue = {
 		priority: "reply",
 		kind: "marker"
-	}) {
+	}, extra = {}) {
 		const s = settings();
-		const freeOnly = s.anlas.freeOnly || !s.markers.allowPaid;
+		const freeOnly = extra.freeOnly === true || s.anlas.freeOnly || !s.markers.allowPaid;
 		const model = markerModel(params.model) ?? s.generation.model;
 		const caps = getCapabilities(isModelId(model) ? model : DEFAULT_MODEL);
 		const dims = markerDimensions(params.ratio, params.size, freeOnly);
@@ -20014,6 +20329,9 @@ var NO_INSTRUCTION = /* @__PURE__ */ new Set(["impersonate", "quiet"]);
 var service = null;
 /** Names for {{nai_characters}}, refreshed with the instruction. */
 var knownCharacters = "";
+function markerService() {
+	return service;
+}
 /** Placeholder as <img> for display regexes; the id is in the attribute and in the src fragment. */
 function compatImage(id) {
 	return `<img ${IMG_ATTR}="${id}" class="naist-compat" src="${PIXEL}${WIDGET_SRC_MARK}${id}" alt="">`;
@@ -20038,19 +20356,33 @@ function formatHook(mes, info) {
 	if (s.inline.regexCompat && out.includes("[nai:img:")) out = out.replace(new RegExp(PLACEHOLDER_PATTERN.source, "g"), (_m, id) => compatImage(id));
 	return out;
 }
+/** Characters with a look NAI Studio knows: {{nai_characters}} and the instruction's list. */
+async function knownLooks() {
+	try {
+		return (await sceneCandidates()).filter((cand) => !cand.isUser && (cand.passport || cand.currentLook?.trim())).map((cand) => cand.name);
+	} catch (error) {
+		log.warn("marker instruction: characters not available", error);
+		return [];
+	}
+}
+/** NAI Studio's own marker instruction from the settings, whether it is injected or not (v0.16). */
+async function ownMarkerInstruction() {
+	const s = settings().markers;
+	return markerInstruction(s.preset, s.template, {
+		min: s.min,
+		max: s.max,
+		captionLanguage: s.captionLanguage,
+		chars: await knownLooks()
+	});
+}
 /** Puts the current instruction in place (or clears it); called on settings and chat changes. */
 async function refreshMarkerInstruction() {
 	const c = ctx();
 	const s = settings().markers;
 	let value = "";
-	let chars = [];
-	if (s.enabled) try {
-		chars = (await sceneCandidates()).filter((cand) => !cand.isUser && (cand.passport || cand.currentLook?.trim())).map((cand) => cand.name);
-	} catch (error) {
-		log.warn("marker instruction: characters not available", error);
-	}
+	const chars = s.enabled ? await knownLooks() : [];
 	knownCharacters = chars.join(", ");
-	if (s.enabled && s.inject) value = markerInstruction(s.preset, s.template, {
+	if (s.enabled && s.inject && effectiveWriter() !== "illustrator") value = markerInstruction(s.preset, s.template, {
 		min: s.min,
 		max: s.max,
 		captionLanguage: s.captionLanguage,
@@ -20058,7 +20390,7 @@ async function refreshMarkerInstruction() {
 	});
 	c.setExtensionPrompt(PROMPT_KEY, value, IN_CHAT, Math.max(0, s.depth), false, ROLES[s.role] ?? 0, () => {
 		const now = settings().markers;
-		return now.enabled && now.inject && !NO_INSTRUCTION.has(service?.currentType ?? "");
+		return now.enabled && now.inject && effectiveWriter() !== "illustrator" && !NO_INSTRUCTION.has(service?.currentType ?? "");
 	});
 }
 function setupMarkers(pipeline, inline, scenes) {
@@ -20107,6 +20439,14 @@ function setupMarkers(pipeline, inline, scenes) {
 		markers.chatChanged();
 		refreshMarkerInstruction();
 	});
+	on("CHAT_COMPLETION_PROMPT_READY", (data) => {
+		const ready = data;
+		if (!ready || ready.dryRun || !Array.isArray(ready.chat)) return;
+		if (!settings().markers.enabled || NO_INSTRUCTION.has(markers.currentType)) return;
+		const cut = handlePrompt(ready.chat, { strip: effectiveWriter() === "illustrator" });
+		if (cut) log.debug(`illustrator mode: ${cut} marker rules block(s) left out of the prompt`);
+	});
+	onIllustratorsChange(() => void refreshMarkerInstruction());
 	refreshMarkerInstruction();
 	return markers;
 }
@@ -20236,7 +20576,7 @@ var ComicService = class {
 };
 //#endregion
 //#region package.json
-var version = "0.15.2";
+var version = "0.16.0";
 //#endregion
 //#region src/features/settings-io/settings-io.ts
 async function exportSettingsFile(includeImages) {
@@ -22336,6 +22676,110 @@ function setupIntegrations(pipeline) {
 	});
 }
 //#endregion
+//#region src/features/characters/card-avatar.ts
+/** SillyTavern's endpoint that replaces a card's image and keeps its data (src/endpoints/characters.js, 1.19). */
+var CARD_AVATAR_URL = "/api/characters/edit-avatar";
+/** Folder of /user/images the previous card images go to. */
+var AVATAR_BACKUP_FOLDER = "avatar-backups";
+/** The card's own passport (the card itself, else its first person) as the chat sees it. */
+function cardMainPassport(passports) {
+	const people = passports.filter((p) => p.kind === "character");
+	return people.find((p) => !p.name.trim()) ?? people[0] ?? null;
+}
+function stamp() {
+	return ctx().humanizedDateTime().replace(/[^\w-]+/g, "_");
+}
+/** The card's current image saved as it is (card data kept) into /user/images; its path. */
+async function backupCard(avatar) {
+	const response = await fetch(`/characters/${encodeURIComponent(avatar)}`, { cache: "no-cache" });
+	if (!response.ok) throw new Error(`card image not read: HTTP ${response.status}`);
+	const image = await blobToBase64$1(await response.blob());
+	const name = avatar.replace(/\.png$/i, "").replace(/[^\p{L}\p{N}_-]+/gu, "_").slice(0, 40) || "card";
+	const saved = await fetch("/api/images/upload", {
+		method: "POST",
+		headers: requestHeaders(),
+		body: JSON.stringify({
+			image,
+			format: "png",
+			ch_name: AVATAR_BACKUP_FOLDER,
+			filename: `${name}_${stamp()}`
+		})
+	});
+	if (!saved.ok) throw new Error(`card image not saved: HTTP ${saved.status}`);
+	const { path } = await saved.json();
+	return path;
+}
+async function uploadCardAvatar(avatar, drawn) {
+	const c = ctx();
+	const crop = c.powerUserSettings.never_resize_avatars === true ? null : centeredAvatarCrop(drawn.width, drawn.height);
+	const url = crop ? `${CARD_AVATAR_URL}?crop=${encodeURIComponent(JSON.stringify(crop))}` : CARD_AVATAR_URL;
+	const form = new FormData();
+	form.append("avatar", base64ToBlob(drawn.image.base64, drawn.image.mime), "avatar.png");
+	form.append("avatar_url", avatar);
+	const response = await fetch(url, {
+		method: "POST",
+		headers: requestHeaders(true),
+		body: form
+	});
+	if (!response.ok) throw new Error(`card avatar upload failed: HTTP ${response.status}`);
+	const thumbnail = c.getThumbnailUrl("avatar", avatar);
+	await fetch(thumbnail, { cache: "reload" }).catch(() => null);
+	await fetch(`/characters/${encodeURIComponent(avatar)}`, { cache: "reload" }).catch(() => null);
+	document.querySelectorAll("img").forEach((img) => {
+		const src = img.getAttribute("src") ?? "";
+		if (!src.includes(thumbnail) && !src.includes(encodeURIComponent(avatar))) return;
+		img.src = "";
+		img.src = src;
+	});
+}
+/** Draws a free portrait from the passport, backs the card image up and sets the portrait as the card's image. */
+async function generateCardAvatarFile(pipeline, avatar, passport, signal) {
+	if (signal?.aborted) return {
+		ok: false,
+		error: "aborted"
+	};
+	let drawn;
+	try {
+		drawn = await drawFreePersonaAvatar(pipeline, passport, signal);
+	} catch (error) {
+		const code = toNaiError(error).code;
+		log.warn(`card avatar of "${avatar}" not drawn:`, code);
+		return {
+			ok: false,
+			error: code === "free-only-blocked" ? "cost" : code
+		};
+	}
+	if (!drawn || signal?.aborted) return {
+		ok: false,
+		error: "aborted"
+	};
+	let backup;
+	try {
+		backup = await backupCard(avatar);
+	} catch (error) {
+		log.warn(`card avatar of "${avatar}": the previous image was not saved, nothing changed`, error);
+		return {
+			ok: false,
+			error: "backup"
+		};
+	}
+	try {
+		await uploadCardAvatar(avatar, drawn);
+		log.info(`card avatar of "${avatar}" set (previous image: ${backup})`);
+		return {
+			ok: true,
+			backup
+		};
+	} catch (error) {
+		log.warn(`card avatar of "${avatar}" not uploaded`, error);
+		return {
+			ok: false,
+			error: "upload",
+			backup
+		};
+	}
+}
+//#endregion
 //#region src/integration/public-api.ts
 var API_GLOBAL = "NAI_STUDIO_API";
 /**
@@ -22344,14 +22788,22 @@ var API_GLOBAL = "NAI_STUDIO_API";
 * "requestDesPortrait", "chatNpcPassports" (passports of new DES characters go to the chat by default and
 * carry origin "auto-des"), "chatPortraits" (DES portraits remembered per chat). Since 0.15 "personaKeys"
 * (getPersonaPassport, savePassport's `personaKey`, generatePassport's `persona`, generatePersonaAvatar,
-* `personaKey` in "passportsSaved").
+* `personaKey` in "passportsSaved"). Since 0.16 "illustrator" (registerIllustrator, markerWriter, setMarkerWriter,
+* markerRules), "requestImage" (requestImage, messageMarkers), "drawPicture", "cardAvatar" (generateCardAvatar),
+* "backgroundFreeOnly" (generateBackground's `freeOnly`), "scenePoses" (a scene hint's `poses`).
 */
 var API_FEATURES = [
 	"excludePassport",
 	"requestDesPortrait",
 	"chatNpcPassports",
 	"chatPortraits",
-	"personaKeys"
+	"personaKeys",
+	"illustrator",
+	"requestImage",
+	"drawPicture",
+	"cardAvatar",
+	"backgroundFreeOnly",
+	"scenePoses"
 ];
 /** Unsubscriptions of everything registered through the API (dropped on disable). */
 var registrations = /* @__PURE__ */ new Set();
@@ -22632,6 +23084,9 @@ async function generateBackground(input) {
 		const value = optionalText(input, field);
 		if (value) Object.assign(request, { [field]: value });
 	}
+	const freeOnly = input.freeOnly;
+	if (freeOnly !== void 0 && typeof freeOnly !== "boolean") fail("freeOnly must be a boolean");
+	if (freeOnly) Object.assign(request, { freeOnly: true });
 	const service = backgrounds;
 	if (!service) {
 		requestFailed("background", locationName, /* @__PURE__ */ new Error("NAI Studio is not active"));
@@ -22675,6 +23130,118 @@ async function generatePersonaAvatar(options) {
 	};
 	return await generatePersonaAvatarFile(pipeline, key, passport, signal);
 }
+function registerIllustratorApi(id) {
+	const off = registerIllustrator(requireId(id, "illustrator id"));
+	const unregister = () => {
+		off();
+		registrations.delete(unregister);
+	};
+	registrations.add(unregister);
+	return unregister;
+}
+function setMarkerWriter(writer) {
+	if (!isMarkerWriter(writer)) fail(`writer must be one of ${MARKER_WRITERS.join(", ")}`);
+	if (settings().markers.writer === writer) return;
+	settings().markers.writer = writer;
+	saveSettings();
+	notifyExternalChange();
+	refreshMarkerInstruction().catch((error) => log.warn("marker instruction not refreshed", error));
+}
+async function markerRules() {
+	return capturedRules() || await ownMarkerInstruction();
+}
+function requireIndex(value, what = "messageIndex") {
+	if (typeof value !== "number" || !Number.isInteger(value) || value < 0) fail(`${what} must be an index`);
+	return value;
+}
+function requireMarker(value) {
+	if (typeof value !== "object" || value === null || Array.isArray(value)) fail("marker must be an object");
+	return value;
+}
+function messageMarkers(messageIndex) {
+	return markerService()?.messageMarkers(requireIndex(messageIndex)) ?? [];
+}
+async function requestImage(request) {
+	if (typeof request !== "object" || request === null) fail("request must be an object");
+	const index = requireIndex(request.messageIndex);
+	const marker = requireMarker(request.marker);
+	const after = optionalText(request, "after");
+	const swipeId = request.swipeId;
+	if (swipeId !== void 0) requireIndex(swipeId, "swipeId");
+	const freeOnly = request.freeOnly;
+	if (freeOnly !== void 0 && typeof freeOnly !== "boolean") fail("freeOnly must be a boolean");
+	const service = markerService();
+	if (!service) return {
+		ok: false,
+		error: "inactive"
+	};
+	return await service.insertMarker(index, marker, {
+		...after ? { after } : {},
+		...typeof swipeId === "number" ? { swipeId } : {},
+		...freeOnly ? { freeOnly: true } : {}
+	});
+}
+async function drawPicture(input) {
+	if (typeof input !== "object" || input === null) fail("input must be an object");
+	const marker = requireMarker(input.marker);
+	const name = optionalText(input, "name");
+	const signal = input.signal;
+	if (signal !== void 0 && !isSignal(signal)) fail("signal must be an AbortSignal");
+	const service = markerService();
+	if (!service) return {
+		ok: false,
+		error: "inactive"
+	};
+	if (typeof marker.prompt !== "string" || !marker.prompt.trim()) return {
+		ok: false,
+		error: "marker"
+	};
+	try {
+		const drawn = await service.drawPicture(marker, {
+			freeOnly: input.freeOnly === true,
+			...signal ? { signal } : {},
+			...name ? { name: name.replace(/[^\p{L}\p{N}_-]+/gu, "_").slice(0, 24) } : {}
+		});
+		return drawn ? {
+			ok: true,
+			path: drawn.path
+		} : {
+			ok: false,
+			error: "aborted"
+		};
+	} catch (error) {
+		const code = toNaiError(error).code;
+		log.warn(`${API_GLOBAL}: picture not drawn:`, code);
+		return {
+			ok: false,
+			error: code
+		};
+	}
+}
+async function generateCardAvatar(request) {
+	if (typeof request !== "object" || request === null) fail("request must be an object");
+	const avatar = requireId(request.avatar, "avatar");
+	const signal = request.signal;
+	if (signal !== void 0 && !isSignal(signal)) fail("signal must be an AbortSignal");
+	const index = cardIndexByAvatar(avatar);
+	const character = index >= 0 ? ctx().characters[index] : void 0;
+	if (!character?.avatar) return {
+		ok: false,
+		error: "no-card"
+	};
+	if (!pipeline) return {
+		ok: false,
+		error: "inactive"
+	};
+	await loadCharacter(index);
+	const given = request.passport;
+	const passport = given === void 0 || given === null ? cardMainPassport(resolvedCardPassports(ctx().characters[index], chatPassportData())) : normalizePassport(given) ?? fail("passport must be an object");
+	if (!passport || isPassportEmpty(passport)) return {
+		ok: false,
+		error: "no-passport"
+	};
+	return await generateCardAvatarFile(pipeline, character.avatar, passport, signal);
+}
 function createApi() {
 	return Object.freeze({
 		version: 1,
@@ -22697,7 +23264,18 @@ function createApi() {
 		isPassportExcluded: isExcluded,
 		requestDesPortrait,
 		getPersonaPassport,
-		generatePersonaAvatar
+		generatePersonaAvatar,
+		registerIllustrator: registerIllustratorApi,
+		markerWriter: () => ({
+			setting: writerSetting(),
+			effective: effectiveWriter()
+		}),
+		setMarkerWriter,
+		markerRules,
+		messageMarkers,
+		requestImage,
+		drawPicture,
+		generateCardAvatar
 	});
 }
 var installed = null;
@@ -22852,7 +23430,7 @@ function bindSettings(root, onChange = () => {}) {
 }
 //#endregion
 //#region src/ui/templates/tab-chat.html?raw
-var tab_chat_default = "<div class=\"naist-section\">\n    <b data-i18n=\"naist.chat.visibility\"></b>\n    <div class=\"naist-hint\" data-i18n=\"naist.chat.visibilityHint\"></div>\n    <div class=\"naist-flags\">\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"chat.visibility.panel\" /><span\n                data-i18n=\"naist.initiator.panel\"\n            ></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"chat.visibility.command\" /><span\n                data-i18n=\"naist.initiator.command\"\n            ></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"chat.visibility.wand\" /><span data-i18n=\"naist.initiator.wand\"></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"chat.visibility.interactive\" /><span\n                data-i18n=\"naist.initiator.interactive\"\n            ></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"chat.visibility.tool\" /><span data-i18n=\"naist.initiator.tool\"></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"chat.visibility.auto\" /><span data-i18n=\"naist.initiator.auto\"></span\n        ></label>\n    </div>\n    <div class=\"naist-grid2\">\n        <div>\n            <label for=\"naist_author\" data-i18n=\"naist.chat.author\"></label>\n            <select id=\"naist_author\" class=\"text_pole\" data-setting=\"chat.author\">\n                <option value=\"character\" data-i18n=\"naist.chat.authorCharacter\"></option>\n                <option value=\"user\" data-i18n=\"naist.chat.authorUser\"></option>\n            </select>\n        </div>\n        <div>\n            <label for=\"naist_confirm_above\" data-i18n=\"naist.chat.confirmAbove\"></label>\n            <input id=\"naist_confirm_above\" type=\"number\" min=\"0\" class=\"text_pole\" data-setting=\"anlas.confirmAbove\" />\n        </div>\n    </div>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"chat.hidePrompt\" /><span data-i18n=\"naist.chat.hidePrompt\"></span\n    ></label>\n</div>\n\n<div class=\"naist-section\">\n    <b data-i18n=\"naist.chat.prompting\"></b>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"modes.refine\" /><span data-i18n=\"naist.chat.refine\"></span\n    ></label>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"modes.multimodal\" /><span data-i18n=\"naist.chat.multimodal\"></span\n    ></label>\n    <div class=\"naist-grid2 naist-mm-source\">\n        <div>\n            <label for=\"naist_mm_api\" data-i18n=\"naist.multimodal.api\"></label>\n            <select id=\"naist_mm_api\" class=\"text_pole\" data-setting=\"modes.multimodalApi\"></select>\n        </div>\n        <div>\n            <label for=\"naist_mm_model\" data-i18n=\"naist.multimodal.model\"></label>\n            <input id=\"naist_mm_model\" class=\"text_pole\" data-setting=\"modes.multimodalModel\" />\n        </div>\n    </div>\n    <div class=\"naist-hint\" id=\"naist_mm_hint\"></div>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"modes.freeExtend\" /><span data-i18n=\"naist.chat.freeExtend\"></span\n    ></label>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"modes.snap\" /><span data-i18n=\"naist.chat.snap\"></span\n    ></label>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"modes.minimalProcessing\" /><span\n            data-i18n=\"naist.chat.minimalProcessing\"\n        ></span\n    ></label>\n</div>\n\n<div class=\"naist-section\">\n    <b data-i18n=\"naist.chat.llm\"></b>\n    <div class=\"naist-hint\" data-i18n=\"naist.chat.llmHint\"></div>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"chat.interactive\" /><span data-i18n=\"naist.chat.interactive\"></span\n    ></label>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"chat.functionTool\" /><span data-i18n=\"naist.chat.functionTool\"></span\n    ></label>\n    <label for=\"naist_tool_cooldown\" data-i18n=\"naist.chat.toolCooldown\"></label>\n    <input id=\"naist_tool_cooldown\" type=\"number\" min=\"0\" class=\"text_pole\" data-setting=\"chat.toolCooldownSeconds\" />\n</div>\n\n<div class=\"naist-section\">\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"auto.enabled\" /><b data-i18n=\"naist.auto.enabled\"></b\n    ></label>\n    <div class=\"naist-hint\" data-i18n=\"naist.auto.guardHint\"></div>\n    <label for=\"naist_auto_mode\" data-i18n=\"naist.auto.mode\"></label>\n    <select id=\"naist_auto_mode\" class=\"text_pole\" data-setting=\"auto.mode\" data-type=\"number\"></select>\n    <div class=\"naist-grid2\">\n        <div>\n            <label for=\"naist_auto_every\" data-i18n=\"naist.auto.everyMessages\"></label>\n            <input id=\"naist_auto_every\" type=\"number\" min=\"0\" class=\"text_pole\" data-setting=\"auto.everyMessages\" />\n        </div>\n        <div>\n            <label for=\"naist_auto_cooldown_messages\" data-i18n=\"naist.auto.cooldownMessages\"></label>\n            <input\n                id=\"naist_auto_cooldown_messages\"\n                type=\"number\"\n                min=\"1\"\n                class=\"text_pole\"\n                data-setting=\"auto.cooldownMessages\"\n            />\n        </div>\n    </div>\n    <label for=\"naist_auto_keywords\" data-i18n=\"naist.auto.keywords\"></label>\n    <input id=\"naist_auto_keywords\" type=\"text\" class=\"text_pole\" data-setting=\"auto.keywords\" />\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"auto.sceneChange\" /><span data-i18n=\"naist.auto.sceneChange\"></span\n    ></label>\n    <input\n        id=\"naist_auto_markers\"\n        type=\"text\"\n        class=\"text_pole\"\n        data-setting=\"auto.sceneMarkers\"\n        data-i18n=\"[title]naist.auto.sceneMarkers\"\n    />\n    <label for=\"naist_auto_cooldown_seconds\" data-i18n=\"naist.auto.cooldownSeconds\"></label>\n    <input\n        id=\"naist_auto_cooldown_seconds\"\n        type=\"number\"\n        min=\"0\"\n        class=\"text_pole\"\n        data-setting=\"auto.cooldownSeconds\"\n    />\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" id=\"naist_auto_allow_paid\" data-setting=\"auto.allowPaid\" /><span\n            data-i18n=\"naist.auto.allowPaid\"\n        ></span\n    ></label>\n</div>\n\n<div class=\"naist-section\" id=\"naist_markers_section\">\n    <b data-i18n=\"naist.markers.title\"></b>\n    <div class=\"naist-hint\" data-i18n=\"naist.markers.hint\"></div>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"markers.enabled\" /><span data-i18n=\"naist.markers.enabled\"></span\n    ></label>\n    <div class=\"naist-markers-options\">\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"markers.inject\" /><span data-i18n=\"naist.markers.inject\"></span\n        ></label>\n        <div class=\"naist-grid2\">\n            <div>\n                <label for=\"naist_markers_preset\" data-i18n=\"naist.markers.preset\"></label>\n                <select id=\"naist_markers_preset\" class=\"text_pole\" data-setting=\"markers.preset\">\n                    <option value=\"natural\" data-i18n=\"naist.markers.presetNatural\"></option>\n                    <option value=\"tags\" data-i18n=\"naist.markers.presetTags\"></option>\n                    <option value=\"custom\" data-i18n=\"naist.markers.presetCustom\"></option>\n                </select>\n            </div>\n            <div>\n                <label for=\"naist_markers_caption_lang\" data-i18n=\"naist.markers.captionLanguage\"></label>\n                <input id=\"naist_markers_caption_lang\" class=\"text_pole\" data-setting=\"markers.captionLanguage\" />\n            </div>\n        </div>\n        <div id=\"naist_markers_custom\" class=\"naist-hidden\">\n            <label for=\"naist_markers_template\" data-i18n=\"naist.markers.template\"></label>\n            <textarea\n                id=\"naist_markers_template\"\n                class=\"text_pole textarea_compact\"\n                rows=\"8\"\n                data-setting=\"markers.template\"\n            ></textarea>\n            <div class=\"naist-hint\" data-i18n=\"naist.markers.templateHint\"></div>\n            <div\n                id=\"naist_markers_template_default\"\n                class=\"menu_button\"\n                data-i18n=\"naist.markers.templateDefault\"\n            ></div>\n        </div>\n        <div class=\"naist-grid2\">\n            <div>\n                <label for=\"naist_markers_min\" data-i18n=\"naist.markers.min\"></label>\n                <input\n                    id=\"naist_markers_min\"\n                    type=\"number\"\n                    min=\"0\"\n                    max=\"10\"\n                    class=\"text_pole\"\n                    data-setting=\"markers.min\"\n                />\n            </div>\n            <div>\n                <label for=\"naist_markers_max\" data-i18n=\"naist.markers.max\"></label>\n                <input\n                    id=\"naist_markers_max\"\n                    type=\"number\"\n                    min=\"0\"\n                    max=\"10\"\n                    class=\"text_pole\"\n                    data-setting=\"markers.max\"\n                />\n            </div>\n            <div>\n                <label for=\"naist_markers_depth\" data-i18n=\"naist.markers.depth\"></label>\n                <input\n                    id=\"naist_markers_depth\"\n                    type=\"number\"\n                    min=\"0\"\n                    max=\"100\"\n                    class=\"text_pole\"\n                    data-setting=\"markers.depth\"\n                />\n            </div>\n            <div>\n                <label for=\"naist_markers_role\" data-i18n=\"naist.markers.role\"></label>\n                <select id=\"naist_markers_role\" class=\"text_pole\" data-setting=\"markers.role\">\n                    <option value=\"system\" data-i18n=\"naist.markers.roleSystem\"></option>\n                    <option value=\"user\" data-i18n=\"naist.markers.roleUser\"></option>\n                    <option value=\"assistant\" data-i18n=\"naist.markers.roleAssistant\"></option>\n                </select>\n            </div>\n        </div>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"markers.earlyStart\" /><span\n                data-i18n=\"naist.markers.earlyStart\"\n            ></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"markers.autoFill\" /><span data-i18n=\"naist.markers.autoFill\"></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"markers.legacy\" /><span data-i18n=\"naist.markers.legacy\"></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"inline.regexCompat\" /><span\n                data-i18n=\"naist.markers.regexCompat\"\n            ></span\n        ></label>\n        <div class=\"naist-row\">\n            <label class=\"checkbox_label\"\n                ><input id=\"naist_markers_allow_paid\" type=\"checkbox\" data-setting=\"markers.allowPaid\" /><span\n                    data-i18n=\"naist.markers.allowPaid\"\n                ></span\n            ></label>\n            <input\n                id=\"naist_markers_max_cost\"\n                type=\"number\"\n                min=\"0\"\n                class=\"text_pole naist-narrow\"\n                data-setting=\"markers.maxCost\"\n                data-i18n=\"[title]naist.markers.maxCost\"\n            />\n        </div>\n        <div id=\"naist_markers_preview\" class=\"menu_button\" data-i18n=\"naist.markers.preview\"></div>\n    </div>\n</div>\n\n<div class=\"naist-section\" id=\"naist_des_section\">\n    <b data-i18n=\"naist.des.title\"></b>\n    <div class=\"naist-hint\" data-i18n=\"naist.des.hint\"></div>\n    <div class=\"naist-muted\" id=\"naist_des_status\"></div>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"des.enabled\" /><span data-i18n=\"naist.des.enabled\"></span\n    ></label>\n    <div class=\"naist-des-options\">\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"des.sceneTags\" /><span data-i18n=\"naist.des.sceneTags\"></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"des.characters\" /><span data-i18n=\"naist.des.characters\"></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"des.autoPassports\" /><span data-i18n=\"naist.des.autoPassports\"></span\n        ></label>\n        <div>\n            <label for=\"naist_des_passport_target\" data-i18n=\"naist.des.passportTarget\"></label>\n            <select id=\"naist_des_passport_target\" class=\"text_pole\" data-setting=\"des.npcPassportTarget\">\n                <option value=\"chat\" data-i18n=\"naist.des.passportTargetChat\"></option>\n                <option value=\"card\" data-i18n=\"naist.des.passportTargetCard\"></option>\n            </select>\n            <div class=\"naist-hint\" data-i18n=\"naist.des.passportTargetHint\"></div>\n        </div>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"des.portraits\" /><span data-i18n=\"naist.des.portraits\"></span\n        ></label>\n        <div class=\"naist-grid2\">\n            <div>\n                <label for=\"naist_des_policy\" data-i18n=\"naist.des.policy\"></label>\n                <select id=\"naist_des_policy\" class=\"text_pole\" data-setting=\"des.portraitPolicy\">\n                    <option value=\"missing\" data-i18n=\"naist.des.policyMissing\"></option>\n                    <option value=\"state\" data-i18n=\"naist.des.policyState\"></option>\n                    <option value=\"every\" data-i18n=\"naist.des.policyEvery\"></option>\n                </select>\n            </div>\n            <div>\n                <label for=\"naist_des_framing\" data-i18n=\"naist.des.framing\"></label>\n                <input id=\"naist_des_framing\" class=\"text_pole\" data-setting=\"des.portraitTags\" />\n            </div>\n        </div>\n        <div class=\"naist-hint\" data-i18n=\"naist.des.policyHint\"></div>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"des.emotionsToDes\" /><span data-i18n=\"naist.des.emotionsToDes\"></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"des.menu\" /><span data-i18n=\"naist.des.menu\"></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"des.banners\" /><span data-i18n=\"naist.des.banners\"></span\n        ></label>\n        <div id=\"naist_des_passports\" class=\"menu_button\">\n            <i class=\"fa-solid fa-wand-magic-sparkles\"></i> <span data-i18n=\"naist.des.passportsButton\"></span>\n        </div>\n    </div>\n</div>\n\n<div class=\"naist-section naist-hidden\" id=\"naist_quality_section\">\n    <b data-i18n=\"naist.quality.title\"></b>\n    <div class=\"naist-hint\" data-i18n=\"naist.quality.hint\"></div>\n    <label for=\"naist_quality_timeout\" data-i18n=\"naist.quality.timeout\"></label>\n    <input id=\"naist_quality_timeout\" type=\"number\" min=\"1\" max=\"600\" step=\"1\" class=\"text_pole\" />\n</div>\n";
+var tab_chat_default = "<div class=\"naist-section\">\n    <b data-i18n=\"naist.chat.visibility\"></b>\n    <div class=\"naist-hint\" data-i18n=\"naist.chat.visibilityHint\"></div>\n    <div class=\"naist-flags\">\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"chat.visibility.panel\" /><span\n                data-i18n=\"naist.initiator.panel\"\n            ></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"chat.visibility.command\" /><span\n                data-i18n=\"naist.initiator.command\"\n            ></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"chat.visibility.wand\" /><span data-i18n=\"naist.initiator.wand\"></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"chat.visibility.interactive\" /><span\n                data-i18n=\"naist.initiator.interactive\"\n            ></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"chat.visibility.tool\" /><span data-i18n=\"naist.initiator.tool\"></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"chat.visibility.auto\" /><span data-i18n=\"naist.initiator.auto\"></span\n        ></label>\n    </div>\n    <div class=\"naist-grid2\">\n        <div>\n            <label for=\"naist_author\" data-i18n=\"naist.chat.author\"></label>\n            <select id=\"naist_author\" class=\"text_pole\" data-setting=\"chat.author\">\n                <option value=\"character\" data-i18n=\"naist.chat.authorCharacter\"></option>\n                <option value=\"user\" data-i18n=\"naist.chat.authorUser\"></option>\n            </select>\n        </div>\n        <div>\n            <label for=\"naist_confirm_above\" data-i18n=\"naist.chat.confirmAbove\"></label>\n            <input id=\"naist_confirm_above\" type=\"number\" min=\"0\" class=\"text_pole\" data-setting=\"anlas.confirmAbove\" />\n        </div>\n    </div>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"chat.hidePrompt\" /><span data-i18n=\"naist.chat.hidePrompt\"></span\n    ></label>\n</div>\n\n<div class=\"naist-section\">\n    <b data-i18n=\"naist.chat.prompting\"></b>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"modes.refine\" /><span data-i18n=\"naist.chat.refine\"></span\n    ></label>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"modes.multimodal\" /><span data-i18n=\"naist.chat.multimodal\"></span\n    ></label>\n    <div class=\"naist-grid2 naist-mm-source\">\n        <div>\n            <label for=\"naist_mm_api\" data-i18n=\"naist.multimodal.api\"></label>\n            <select id=\"naist_mm_api\" class=\"text_pole\" data-setting=\"modes.multimodalApi\"></select>\n        </div>\n        <div>\n            <label for=\"naist_mm_model\" data-i18n=\"naist.multimodal.model\"></label>\n            <input id=\"naist_mm_model\" class=\"text_pole\" data-setting=\"modes.multimodalModel\" />\n        </div>\n    </div>\n    <div class=\"naist-hint\" id=\"naist_mm_hint\"></div>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"modes.freeExtend\" /><span data-i18n=\"naist.chat.freeExtend\"></span\n    ></label>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"modes.snap\" /><span data-i18n=\"naist.chat.snap\"></span\n    ></label>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"modes.minimalProcessing\" /><span\n            data-i18n=\"naist.chat.minimalProcessing\"\n        ></span\n    ></label>\n</div>\n\n<div class=\"naist-section\">\n    <b data-i18n=\"naist.chat.llm\"></b>\n    <div class=\"naist-hint\" data-i18n=\"naist.chat.llmHint\"></div>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"chat.interactive\" /><span data-i18n=\"naist.chat.interactive\"></span\n    ></label>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"chat.functionTool\" /><span data-i18n=\"naist.chat.functionTool\"></span\n    ></label>\n    <label for=\"naist_tool_cooldown\" data-i18n=\"naist.chat.toolCooldown\"></label>\n    <input id=\"naist_tool_cooldown\" type=\"number\" min=\"0\" class=\"text_pole\" data-setting=\"chat.toolCooldownSeconds\" />\n</div>\n\n<div class=\"naist-section\">\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"auto.enabled\" /><b data-i18n=\"naist.auto.enabled\"></b\n    ></label>\n    <div class=\"naist-hint\" data-i18n=\"naist.auto.guardHint\"></div>\n    <label for=\"naist_auto_mode\" data-i18n=\"naist.auto.mode\"></label>\n    <select id=\"naist_auto_mode\" class=\"text_pole\" data-setting=\"auto.mode\" data-type=\"number\"></select>\n    <div class=\"naist-grid2\">\n        <div>\n            <label for=\"naist_auto_every\" data-i18n=\"naist.auto.everyMessages\"></label>\n            <input id=\"naist_auto_every\" type=\"number\" min=\"0\" class=\"text_pole\" data-setting=\"auto.everyMessages\" />\n        </div>\n        <div>\n            <label for=\"naist_auto_cooldown_messages\" data-i18n=\"naist.auto.cooldownMessages\"></label>\n            <input\n                id=\"naist_auto_cooldown_messages\"\n                type=\"number\"\n                min=\"1\"\n                class=\"text_pole\"\n                data-setting=\"auto.cooldownMessages\"\n            />\n        </div>\n    </div>\n    <label for=\"naist_auto_keywords\" data-i18n=\"naist.auto.keywords\"></label>\n    <input id=\"naist_auto_keywords\" type=\"text\" class=\"text_pole\" data-setting=\"auto.keywords\" />\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"auto.sceneChange\" /><span data-i18n=\"naist.auto.sceneChange\"></span\n    ></label>\n    <input\n        id=\"naist_auto_markers\"\n        type=\"text\"\n        class=\"text_pole\"\n        data-setting=\"auto.sceneMarkers\"\n        data-i18n=\"[title]naist.auto.sceneMarkers\"\n    />\n    <label for=\"naist_auto_cooldown_seconds\" data-i18n=\"naist.auto.cooldownSeconds\"></label>\n    <input\n        id=\"naist_auto_cooldown_seconds\"\n        type=\"number\"\n        min=\"0\"\n        class=\"text_pole\"\n        data-setting=\"auto.cooldownSeconds\"\n    />\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" id=\"naist_auto_allow_paid\" data-setting=\"auto.allowPaid\" /><span\n            data-i18n=\"naist.auto.allowPaid\"\n        ></span\n    ></label>\n</div>\n\n<div class=\"naist-section\" id=\"naist_markers_section\">\n    <b data-i18n=\"naist.markers.title\"></b>\n    <div class=\"naist-hint\" data-i18n=\"naist.markers.hint\"></div>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"markers.enabled\" /><span data-i18n=\"naist.markers.enabled\"></span\n    ></label>\n    <div class=\"naist-markers-options\">\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"markers.inject\" /><span data-i18n=\"naist.markers.inject\"></span\n        ></label>\n        <div class=\"naist-grid2\">\n            <div>\n                <label for=\"naist_markers_preset\" data-i18n=\"naist.markers.preset\"></label>\n                <select id=\"naist_markers_preset\" class=\"text_pole\" data-setting=\"markers.preset\">\n                    <option value=\"natural\" data-i18n=\"naist.markers.presetNatural\"></option>\n                    <option value=\"tags\" data-i18n=\"naist.markers.presetTags\"></option>\n                    <option value=\"custom\" data-i18n=\"naist.markers.presetCustom\"></option>\n                </select>\n            </div>\n            <div>\n                <label for=\"naist_markers_caption_lang\" data-i18n=\"naist.markers.captionLanguage\"></label>\n                <input id=\"naist_markers_caption_lang\" class=\"text_pole\" data-setting=\"markers.captionLanguage\" />\n            </div>\n        </div>\n        <div id=\"naist_markers_custom\" class=\"naist-hidden\">\n            <label for=\"naist_markers_template\" data-i18n=\"naist.markers.template\"></label>\n            <textarea\n                id=\"naist_markers_template\"\n                class=\"text_pole textarea_compact\"\n                rows=\"8\"\n                data-setting=\"markers.template\"\n            ></textarea>\n            <div class=\"naist-hint\" data-i18n=\"naist.markers.templateHint\"></div>\n            <div\n                id=\"naist_markers_template_default\"\n                class=\"menu_button\"\n                data-i18n=\"naist.markers.templateDefault\"\n            ></div>\n        </div>\n        <div class=\"naist-grid2\">\n            <div>\n                <label for=\"naist_markers_min\" data-i18n=\"naist.markers.min\"></label>\n                <input\n                    id=\"naist_markers_min\"\n                    type=\"number\"\n                    min=\"0\"\n                    max=\"10\"\n                    class=\"text_pole\"\n                    data-setting=\"markers.min\"\n                />\n            </div>\n            <div>\n                <label for=\"naist_markers_max\" data-i18n=\"naist.markers.max\"></label>\n                <input\n                    id=\"naist_markers_max\"\n                    type=\"number\"\n                    min=\"0\"\n                    max=\"10\"\n                    class=\"text_pole\"\n                    data-setting=\"markers.max\"\n                />\n            </div>\n            <div>\n                <label for=\"naist_markers_depth\" data-i18n=\"naist.markers.depth\"></label>\n                <input\n                    id=\"naist_markers_depth\"\n                    type=\"number\"\n                    min=\"0\"\n                    max=\"100\"\n                    class=\"text_pole\"\n                    data-setting=\"markers.depth\"\n                />\n            </div>\n            <div>\n                <label for=\"naist_markers_role\" data-i18n=\"naist.markers.role\"></label>\n                <select id=\"naist_markers_role\" class=\"text_pole\" data-setting=\"markers.role\">\n                    <option value=\"system\" data-i18n=\"naist.markers.roleSystem\"></option>\n                    <option value=\"user\" data-i18n=\"naist.markers.roleUser\"></option>\n                    <option value=\"assistant\" data-i18n=\"naist.markers.roleAssistant\"></option>\n                </select>\n            </div>\n        </div>\n        <div>\n            <label for=\"naist_markers_writer\" data-i18n=\"naist.markers.writer\"></label>\n            <select id=\"naist_markers_writer\" class=\"text_pole\" data-setting=\"markers.writer\">\n                <option value=\"main\" data-i18n=\"naist.markers.writerMain\"></option>\n                <option value=\"illustrator\" data-i18n=\"naist.markers.writerIllustrator\"></option>\n                <option value=\"fallback\" data-i18n=\"naist.markers.writerFallback\"></option>\n            </select>\n            <div class=\"naist-hint\" data-i18n=\"naist.markers.writerHint\"></div>\n        </div>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"markers.earlyStart\" /><span\n                data-i18n=\"naist.markers.earlyStart\"\n            ></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"markers.autoFill\" /><span data-i18n=\"naist.markers.autoFill\"></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"markers.legacy\" /><span data-i18n=\"naist.markers.legacy\"></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"inline.regexCompat\" /><span\n                data-i18n=\"naist.markers.regexCompat\"\n            ></span\n        ></label>\n        <div class=\"naist-row\">\n            <label class=\"checkbox_label\"\n                ><input id=\"naist_markers_allow_paid\" type=\"checkbox\" data-setting=\"markers.allowPaid\" /><span\n                    data-i18n=\"naist.markers.allowPaid\"\n                ></span\n            ></label>\n            <input\n                id=\"naist_markers_max_cost\"\n                type=\"number\"\n                min=\"0\"\n                class=\"text_pole naist-narrow\"\n                data-setting=\"markers.maxCost\"\n                data-i18n=\"[title]naist.markers.maxCost\"\n            />\n        </div>\n        <div id=\"naist_markers_preview\" class=\"menu_button\" data-i18n=\"naist.markers.preview\"></div>\n    </div>\n</div>\n\n<div class=\"naist-section\" id=\"naist_des_section\">\n    <b data-i18n=\"naist.des.title\"></b>\n    <div class=\"naist-hint\" data-i18n=\"naist.des.hint\"></div>\n    <div class=\"naist-muted\" id=\"naist_des_status\"></div>\n    <label class=\"checkbox_label\"\n        ><input type=\"checkbox\" data-setting=\"des.enabled\" /><span data-i18n=\"naist.des.enabled\"></span\n    ></label>\n    <div class=\"naist-des-options\">\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"des.sceneTags\" /><span data-i18n=\"naist.des.sceneTags\"></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"des.characters\" /><span data-i18n=\"naist.des.characters\"></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"des.autoPassports\" /><span data-i18n=\"naist.des.autoPassports\"></span\n        ></label>\n        <div>\n            <label for=\"naist_des_passport_target\" data-i18n=\"naist.des.passportTarget\"></label>\n            <select id=\"naist_des_passport_target\" class=\"text_pole\" data-setting=\"des.npcPassportTarget\">\n                <option value=\"chat\" data-i18n=\"naist.des.passportTargetChat\"></option>\n                <option value=\"card\" data-i18n=\"naist.des.passportTargetCard\"></option>\n            </select>\n            <div class=\"naist-hint\" data-i18n=\"naist.des.passportTargetHint\"></div>\n        </div>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"des.portraits\" /><span data-i18n=\"naist.des.portraits\"></span\n        ></label>\n        <div class=\"naist-grid2\">\n            <div>\n                <label for=\"naist_des_policy\" data-i18n=\"naist.des.policy\"></label>\n                <select id=\"naist_des_policy\" class=\"text_pole\" data-setting=\"des.portraitPolicy\">\n                    <option value=\"missing\" data-i18n=\"naist.des.policyMissing\"></option>\n                    <option value=\"state\" data-i18n=\"naist.des.policyState\"></option>\n                    <option value=\"every\" data-i18n=\"naist.des.policyEvery\"></option>\n                </select>\n            </div>\n            <div>\n                <label for=\"naist_des_framing\" data-i18n=\"naist.des.framing\"></label>\n                <input id=\"naist_des_framing\" class=\"text_pole\" data-setting=\"des.portraitTags\" />\n            </div>\n        </div>\n        <div class=\"naist-hint\" data-i18n=\"naist.des.policyHint\"></div>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"des.emotionsToDes\" /><span data-i18n=\"naist.des.emotionsToDes\"></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"des.menu\" /><span data-i18n=\"naist.des.menu\"></span\n        ></label>\n        <label class=\"checkbox_label\"\n            ><input type=\"checkbox\" data-setting=\"des.banners\" /><span data-i18n=\"naist.des.banners\"></span\n        ></label>\n        <div id=\"naist_des_passports\" class=\"menu_button\">\n            <i class=\"fa-solid fa-wand-magic-sparkles\"></i> <span data-i18n=\"naist.des.passportsButton\"></span>\n        </div>\n    </div>\n</div>\n\n<div class=\"naist-section naist-hidden\" id=\"naist_quality_section\">\n    <b data-i18n=\"naist.quality.title\"></b>\n    <div class=\"naist-hint\" data-i18n=\"naist.quality.hint\"></div>\n    <label for=\"naist_quality_timeout\" data-i18n=\"naist.quality.timeout\"></label>\n    <input id=\"naist_quality_timeout\" type=\"number\" min=\"1\" max=\"600\" step=\"1\" class=\"text_pole\" />\n</div>\n";
 //#endregion
 //#region src/ui/panel/tab-chat.ts
 var ChatTab = class {

@@ -69,6 +69,8 @@ export interface InlineMarkerState {
     params: MarkerParams;
     status: 'pending' | 'error' | 'done';
     error?: string;
+    /** v0.16: written by an illustrator of another extension (absent: the chat model wrote it). */
+    by?: 'illustrator';
 }
 
 /** TZ shape: the active swipe is mirrored in blobKey/filePath/meta for simple readers. */

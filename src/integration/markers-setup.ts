@@ -16,6 +16,7 @@ import {
 import type { MarkerParams } from '../domain';
 import type { Pipeline } from '../features/generation/pipeline';
 import type { InlineImages } from '../features/inline/inline-service';
+import { effectiveWriter, handlePrompt, onIllustratorsChange } from '../features/markers/illustrator';
 import { MarkerService } from '../features/markers/marker-service';
 import type { SceneService } from '../features/scene/scene-service';
 import { sceneCandidates } from '../features/scene/scene-service';
@@ -67,23 +68,38 @@ function formatHook(mes: string, info: STMessageFormattingInfo): string {
     return out;
 }
 
+/** Characters with a look NAI Studio knows: {{nai_characters}} and the instruction's list. */
+async function knownLooks(): Promise<string[]> {
+    try {
+        return (await sceneCandidates())
+            .filter((cand) => !cand.isUser && (cand.passport || cand.currentLook?.trim()))
+            .map((cand) => cand.name);
+    } catch (error) {
+        log.warn('marker instruction: characters not available', error);
+        return [];
+    }
+}
+
+/** NAI Studio's own marker instruction from the settings, whether it is injected or not (v0.16). */
+export async function ownMarkerInstruction(): Promise<string> {
+    const s = settings().markers;
+    return markerInstruction(s.preset, s.template, {
+        min: s.min,
+        max: s.max,
+        captionLanguage: s.captionLanguage,
+        chars: await knownLooks(),
+    });
+}
+
 /** Puts the current instruction in place (or clears it); called on settings and chat changes. */
 export async function refreshMarkerInstruction(): Promise<void> {
     const c = ctx();
     const s = settings().markers;
     let value = '';
-    let chars: string[] = [];
-    if (s.enabled) {
-        try {
-            chars = (await sceneCandidates())
-                .filter((cand) => !cand.isUser && (cand.passport || cand.currentLook?.trim()))
-                .map((cand) => cand.name);
-        } catch (error) {
-            log.warn('marker instruction: characters not available', error);
-        }
-    }
+    const chars = s.enabled ? await knownLooks() : [];
     knownCharacters = chars.join(', ');
-    if (s.enabled && s.inject) {
+    // The illustrator mode (v0.16): the chat model gets no marker rules; the illustrator writes the markers.
+    if (s.enabled && s.inject && effectiveWriter() !== 'illustrator') {
         value = markerInstruction(s.preset, s.template, {
             min: s.min,
             max: s.max,
@@ -93,7 +109,12 @@ export async function refreshMarkerInstruction(): Promise<void> {
     }
     c.setExtensionPrompt(PROMPT_KEY, value, IN_CHAT, Math.max(0, s.depth), false, ROLES[s.role] ?? 0, () => {
         const now = settings().markers;
-        return now.enabled && now.inject && !NO_INSTRUCTION.has(service?.currentType ?? '');
+        return (
+            now.enabled &&
+            now.inject &&
+            effectiveWriter() !== 'illustrator' &&
+            !NO_INSTRUCTION.has(service?.currentType ?? '')
+        );
     });
 }
 
@@ -157,6 +178,17 @@ export function setupMarkers(pipeline: Pipeline, inline: InlineImages, scenes: S
         markers.chatChanged();
         void refreshMarkerInstruction();
     });
+    // v0.16: the rules blocks of the preset are remembered for the illustrator, and cut out in its mode.
+    on('CHAT_COMPLETION_PROMPT_READY', (data) => {
+        const ready = data as { chat?: unknown; dryRun?: boolean } | undefined;
+        if (!ready || ready.dryRun || !Array.isArray(ready.chat)) return;
+        if (!settings().markers.enabled || NO_INSTRUCTION.has(markers.currentType)) return;
+        const cut = handlePrompt(ready.chat as { role?: string; content?: unknown }[], {
+            strip: effectiveWriter() === 'illustrator',
+        });
+        if (cut) log.debug(`illustrator mode: ${cut} marker rules block(s) left out of the prompt`);
+    });
+    onIllustratorsChange(() => void refreshMarkerInstruction());
     void refreshMarkerInstruction();
     return markers;
 }

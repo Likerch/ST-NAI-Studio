@@ -41,6 +41,7 @@ export { ClipTokenizer } from './tokenizers/clip';
 export { T5Tokenizer } from './tokenizers/t5';
 export type { T5Data } from './tokenizers/t5';
 export * from './markers';
+export * from './illustrator';
 export * from './interpret';
 export * from './marker-instructions';
 export * from './passport-gen';

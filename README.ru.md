@@ -231,6 +231,31 @@ interface NaiStudioApi {
     passport?: Passport;
     signal?: AbortSignal;
   }): Promise<{ ok: boolean; path?: string; error?: string }>;
+  // С 0.16; раньше их нет — проверяйте `features` ('illustrator', 'requestImage', 'drawPicture', 'cardAvatar').
+  registerIllustrator(id: string): () => void;
+  markerWriter(): { setting: 'main' | 'illustrator' | 'fallback'; effective: 'main' | 'illustrator' | 'fallback' };
+  setMarkerWriter(writer: 'main' | 'illustrator' | 'fallback'): void;
+  markerRules(): Promise<string>;
+  messageMarkers(
+    messageIndex: number,
+  ): { imageId: string; marker: object; status: string; path?: string; by?: 'illustrator' }[];
+  requestImage(request: {
+    messageIndex: number;
+    marker: object; // объект из data-nai: { prompt, chars, ratio, caption, ... }
+    after?: string;
+    swipeId?: number;
+    freeOnly?: boolean;
+  }): Promise<{ ok: true; imageId: string } | { ok: false; error: string }>;
+  drawPicture(input: { marker: object; freeOnly?: boolean; name?: string; signal?: AbortSignal }): Promise<{
+    ok: boolean;
+    path?: string;
+    error?: string;
+  }>;
+  generateCardAvatar(request: { avatar: string; passport?: Passport; signal?: AbortSignal }): Promise<{
+    ok: boolean;
+    backup?: string;
+    error?: string;
+  }>;
 }
 
 type SceneHint = { locationId?: string; locationName?: string; tags?: string; characters?: string[] };
@@ -347,6 +372,29 @@ type Outfit = { name: string; tags: string; looks?: string[] };
   - Ждёт в общей очереди NovelAI как портрет (после ваших запросов и картинок ответа). Открытие другого чата его не убирает. `signal` убирает его из очереди и прерывает рисование; после отмены ничего не загружается.
   - Картинка уходит в `POST /api/avatars/upload` с `overwrite_name` = `personaKey`, без окна обрезки SillyTavern. Вместо него отправляется обрезка, которую окно ST предлагает до того, как её двигают: самая большая рамка 2:3 по центру с `want_resize: true`, её ST приводит к размеру аватара (512×768). Если ST никогда не меняет размер аватаров (`never_resize_avatars`), обрезка не отправляется и картинка сохраняется как есть — как при загрузке в самом ST. Файл аватара и его миниатюра перезагружаются, список персон ST перерисовывается на этой персоне, аватары на странице подгружают новый файл.
   - Возвращает `{ ok: true, path }` с именем файла, которое сохранил сервер, или `{ ok: false, error }`: `cost`, `aborted`, `no-passport` (паспорта нет и он не передан, или паспорт пустой), `inactive` (NAI Studio не запущен), `upload` (загрузка не удалась) или код ошибки NAI Studio при неудачной генерации (`unauthorized`, `rate-limited`, …). Неверный ввод (нет ключа, ключ с путём, паспорт — не объект, `signal` — не AbortSignal) — отклонённый `Promise`.
+
+**Иллюстратор** (0.16, в `features` есть `illustrator` и `requestImage`): метки картинок ответа пишет другое расширение — в той же форме, что и модель чата («Иллюстратор» Maestro).
+
+- `registerIllustrator(id)` включает настройку «Кто пишет метки» (раздел «Метки картинок в чате»): без зарегистрированного иллюстратора NAI Studio всегда работает как «Модель чата». Повторная регистрация того же id заменяет первую; снятие регистрации (и выключение NAI Studio) возвращает метки модели чата.
+- «Иллюстратор»: модель чата не получает правил о метках. Своя инструкция NAI Studio не добавляется, а блок правил пресета вырезается из промпта chat completion настоящей генерации (пробные прогоны, quiet и impersonate не трогаются): самый внутренний элемент вокруг примера `data-nai`, который не является HTML самого ответа (`<images>…</images>`), до 6000 символов; опустевшее сообщение убирается целиком. Без такого элемента ничего не вырезается. «Иллюстратор, если модель чата не поставила метку»: промпт как раньше. В обоих режимах автоматическая иллюстрация ответа без меток (по отрывку) выключена.
+- `markerWriter()` — настройка и кто пишет метки сейчас; `setMarkerWriter(writer)` меняет и сохраняет настройку.
+- `markerRules()` — правила для иллюстратора: блоки правил пресета такими, какими они были в последнем настоящем промпте (макросы вроде `{{nai_characters}}` подставлены, в обоих режимах), иначе своя инструкция NAI Studio по её настройкам.
+- `requestImage({ messageIndex, marker, after?, swipeId?, freeOnly? })` вставляет метку в ответ сразу после абзаца (строки), в котором кончается фраза `after`. Фраза ищется нестрого: кавычки, пробелы и регистр не важны, хватает начала фразы. Если `after` не найдена или не задана — в конец ответа. Дальше это обычная метка ответа: заглушка в тексте, сцена, паспорта, стиль и непрерывность, вердикт ворот качества на ответ, «Повторить», не больше «max» меток на ответ, правила цены меток; `freeOnly: true` — только бесплатно при любых настройках. Ответ приходит, как только заглушка вставлена (`{ ok: true, imageId }`); картинка — позже. `{ ok: false, error }`: `inactive`, `disabled` (метки выключены), `message` (нет такого ответа ассистента), `stale` (показан не тот свайп, что `swipeId`), `limit`, `marker` (нет `prompt`).
+- `messageMarkers(index)` — картинки по меткам показанного свайпа ответа: `imageId`, метка, `status` (`pending`, `error`, `done`), `path` в /user/images, если сохранена, и `by: 'illustrator'` для метки, которую написал иллюстратор.
+
+**`drawPicture({ marker, freeOnly?, name?, signal? })`** (0.16) — одна картинка по метке, которая не идёт ни в какое сообщение (обложки глав Maestro): путь меток со сценой, паспортами и стилем текущего чата, в очереди как ваш запрос, сохраняется в /user/images в папку чата. `{ ok: true, path }` или `{ ok: false, error }`: `inactive`, `marker`, `aborted` или код ошибки NAI Studio (`free-only-blocked`, …).
+
+**`generateCardAvatar({ avatar, passport?, signal? })`** (0.16) — портрет по паспорту карточки, как его видит текущий чат (паспорт самой карточки, иначе первого её персонажа), или по `passport`; он становится картинкой карточки.
+
+- Только бесплатно, как `generatePersonaAvatar`.
+- Сначала прежняя картинка сохраняется как есть — с данными карточки, её можно импортировать обратно — в /user/images/avatar-backups (`backup`). Если сохранить не удалось, ничего не меняется (`backup`).
+- Новая картинка уходит через `POST /api/characters/edit-avatar` SillyTavern (данные карточки остаются) с обрезкой ST по умолчанию.
+- Никогда не спрашивает: спрашивать пользователя должен вызывающий.
+- Ошибки: `inactive`, `no-card`, `no-passport`, `cost`, `aborted`, `backup`, `upload` или код ошибки NAI Studio.
+
+`generateBackground` с 0.16 принимает `freeOnly: true` (`backgroundFreeOnly`): запрос, который стоил бы Anlas, отклоняется (`free-only-blocked`) до отправки, без вопроса о цене.
+
+Поставщик сцены с 0.16 может давать `poses: [{ name, pose }]` (`scenePoses`, «Мизансцена» Maestro): человек, у которого в метке нет `pose` и `action`, рисуется в этой позе (до 200 символов на позу).
 
 **`generateBackground`** (0.12) — один фон для места.
 

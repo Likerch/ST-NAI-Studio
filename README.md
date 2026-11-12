@@ -231,6 +231,31 @@ interface NaiStudioApi {
     passport?: Passport;
     signal?: AbortSignal;
   }): Promise<{ ok: boolean; path?: string; error?: string }>;
+  // Since 0.16; absent before, check `features` ('illustrator', 'requestImage', 'drawPicture', 'cardAvatar').
+  registerIllustrator(id: string): () => void;
+  markerWriter(): { setting: 'main' | 'illustrator' | 'fallback'; effective: 'main' | 'illustrator' | 'fallback' };
+  setMarkerWriter(writer: 'main' | 'illustrator' | 'fallback'): void;
+  markerRules(): Promise<string>;
+  messageMarkers(
+    messageIndex: number,
+  ): { imageId: string; marker: object; status: string; path?: string; by?: 'illustrator' }[];
+  requestImage(request: {
+    messageIndex: number;
+    marker: object; // the object of data-nai: { prompt, chars, ratio, caption, ... }
+    after?: string;
+    swipeId?: number;
+    freeOnly?: boolean;
+  }): Promise<{ ok: true; imageId: string } | { ok: false; error: string }>;
+  drawPicture(input: { marker: object; freeOnly?: boolean; name?: string; signal?: AbortSignal }): Promise<{
+    ok: boolean;
+    path?: string;
+    error?: string;
+  }>;
+  generateCardAvatar(request: { avatar: string; passport?: Passport; signal?: AbortSignal }): Promise<{
+    ok: boolean;
+    backup?: string;
+    error?: string;
+  }>;
 }
 
 type SceneHint = { locationId?: string; locationName?: string; tags?: string; characters?: string[] };
@@ -286,6 +311,17 @@ type Outfit = { name: string; tags: string; looks?: string[] };
     - It waits in NAI Studio's one NovelAI queue as a portrait (after your own requests and the pictures of a reply). Opening another chat does not drop it. `signal` drops it while it waits and aborts it while it is drawn; nothing is uploaded after an abort.
     - The image goes to `POST /api/avatars/upload` with `overwrite_name` = `personaKey`, without SillyTavern's crop popup. The crop sent instead is the one ST's popup proposes before you move it: the largest centred 2:3 box with `want_resize: true`, which ST covers to its avatar size (512x768). When ST never resizes avatars (`never_resize_avatars`), no crop is sent and ST keeps the image as it is, as in its own upload. The avatar file and its thumbnail are reloaded, ST's persona list is rendered again at that persona, and avatars already on the page load the new file.
     - Resolves `{ ok: true, path }` with the file name the server stored, or `{ ok: false, error }`: `cost`, `aborted`, `no-passport` (none stored and none given, or an empty passport), `inactive` (NAI Studio is not running), `upload` (the upload failed), or NAI Studio's error code of a failed generation (`unauthorized`, `rate-limited`, ...). Invalid input (no key, a key with a path, a passport that is not an object, a signal that is not an AbortSignal) rejects.
+- **The illustrator** (0.16, `features` has `illustrator` and `requestImage`): another extension writes the image markers of a reply in the same form as the chat model (Maestro's agent «Illustrator»).
+  - `registerIllustrator(id)` turns the setting «Who writes the markers» on (Image markers in chat): without a registered illustrator NAI Studio always behaves as «The chat model». The same id registered again replaces the first registration; the unregistration (and disabling NAI Studio) brings the chat model's markers back.
+  - «The illustrator»: the chat model gets no marker rules. NAI Studio's own instruction is not added, and a rules block of the preset is cut out of the chat completion prompt of a real generation (dry runs, quiet and impersonate generations are left alone): the smallest element around a `data-nai` example that is not a reply's own HTML (`<images>…</images>`), up to 6000 characters; a message left empty goes too. Without such an element nothing is cut. «The illustrator, when the chat model wrote none»: the prompt is as before. In both modes the automatic illustration of a reply without markers (from an excerpt) is off.
+  - `markerWriter()` gives the setting and who writes now; `setMarkerWriter(writer)` changes and saves the setting.
+  - `markerRules()` is what the illustrator should follow: the rules blocks of the preset as the last real prompt had them (macros such as `{{nai_characters}}` substituted, both modes), else NAI Studio's own instruction from its settings.
+  - `requestImage({ messageIndex, marker, after?, swipeId?, freeOnly? })` puts the marker into the reply right after the paragraph (line) in which the sentence `after` ends — found loosely (quotes, spacing and case; the start of the sentence is enough) — or at the end of the reply. From there it is the reply's own marker: a placeholder in the text, the scene, passports, style and continuity, the quality gates' verdict on the reply, «Retry», at most «max» markers per reply, the marker cost rules; `freeOnly: true` draws it free only whatever those say. It resolves once the placeholder is in (`{ ok: true, imageId }`); the picture lands later. `{ ok: false, error }`: `inactive`, `disabled` (markers are off), `message` (no such assistant reply), `stale` (another swipe is shown than `swipeId`), `limit`, `marker` (no prompt).
+  - `messageMarkers(index)` lists the marker pictures of the reply swipe shown: `imageId`, the marker, `status` (`pending`, `error`, `done`), `path` in /user/images when saved, and `by: 'illustrator'` for a marker an illustrator wrote.
+- **`drawPicture({ marker, freeOnly?, name?, signal? })`** (0.16) draws one picture from a marker that goes into no message (Maestro's chapter covers): the marker path with the current chat's scene, passports and style, as your own request in the queue, saved into /user/images in the chat's folder. `{ ok: true, path }`, or `{ ok: false, error }`: `inactive`, `marker`, `aborted`, or NAI Studio's error code (`free-only-blocked`, …).
+- **`generateCardAvatar({ avatar, passport?, signal? })`** (0.16) draws a portrait from the card's own passport as the current chat sees it (the passport of the card itself, else its first person) or from `passport`, and makes it the card's image. Free only, as `generatePersonaAvatar`. The previous image is saved first, as it was (with the card's data, so it can be imported back), into /user/images/avatar-backups: `backup`. If it cannot be saved, nothing changes (`backup`). The new image goes through SillyTavern's `POST /api/characters/edit-avatar`, which keeps the card's data, with ST's default crop. It never asks: the caller asks the user first. Errors: `inactive`, `no-card`, `no-passport`, `cost`, `aborted`, `backup`, `upload`, or NAI Studio's error code.
+- `generateBackground` takes `freeOnly: true` since 0.16 (`backgroundFreeOnly`): a request that would cost Anlas is refused (`free-only-blocked`) before anything is sent, with no cost question.
+- A scene provider may give `poses: [{ name, pose }]` since 0.16 (`scenePoses`, Maestro's «Staging»): a person whose marker gives no `pose` or `action` is drawn in that pose (up to 200 characters each).
 - **`generateBackground`** (0.12) draws one background for a place.
   - The prompt has nobody in it (`no humans, scenery`, people in the undesired content): the tags of `passportId` (a location or world passport of the chat or of a provider; else the place name), `tags`, and the time of day and weather as tags (tracker words are read like the DES scene: `evening`, `19:40`, `rain`, Russian too). `style` is a saved style by name, which replaces the active style for this picture (its prefix, suffix, UC preset and undesired content, with the base negative in the append mode); a name that is not a saved style is used as style tags.
   - One 16:9 image within the free budget (1344×768) through the normal pipeline and its Anlas guards: in free-only mode a request that would cost Anlas is refused; otherwise the usual cost confirmation.
